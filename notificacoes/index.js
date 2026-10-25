@@ -1,25 +1,20 @@
-/* Notificações da casa (Firebase Cloud Messaging).
-   - resumoDiario: às 9h (hora de Lisboa) envia contas a vencer, validades a terminar e o resumo do dia.
-   - lembretesMarcacoes: de 15 em 15 minutos avisa das marcações com hora que começam na próxima hora.
-   - novaMarcacao: quando alguém marca algo no calendário, avisa os outros telemóveis da casa. */
-const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onDocumentCreated} = require("firebase-functions/v2/firestore");
-const {setGlobalOptions, logger} = require("firebase-functions/v2");
-const {defineString} = require("firebase-functions/params");
-const {initializeApp} = require("firebase-admin/app");
-const {getFirestore, FieldValue, Timestamp} = require("firebase-admin/firestore");
+/* Notificações da casa (Firebase Cloud Messaging), enviadas pelo GitHub Actions de 15 em 15 minutos.
+   Assim o Firebase fica no plano gratuito (Spark), sem cartão.
+   Em cada execução, para cada casa:
+   - Resumo às 9h (hora de Lisboa), uma vez por dia: contas a pagar, validades a terminar e marcações/compras.
+   - Lembrete cerca de 1 hora antes das marcações com hora.
+   - "Nova marcação" quando alguém marca algo (avisa os outros telemóveis, não quem marcou).
+   O que já foi enviado fica em households/{código}/sent/estado (só o servidor lá chega). */
+const {initializeApp, cert} = require("firebase-admin/app");
+const {getFirestore} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
 
-initializeApp();
-const db = getFirestore();
-
 const TZ = "Europe/Lisbon";
-/* Tem de ser a mesma região (localização) que escolheste para a base de dados Firestore. */
-setGlobalOptions({region: "europe-west1", maxInstances: 2});
+const APP_URL = process.env.APP_URL;
+const SA = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-const APP_URL = defineString("APP_URL", {
-  description: "Endereço da app no GitHub Pages, ex.: https://o-teu-utilizador.github.io/Casa-Martins/",
-});
+initializeApp(SA ? {credential: cert(JSON.parse(SA))} : undefined);
+const db = getFirestore();
 
 /* ---------- datas na hora de Lisboa ---------- */
 function lisbonNow() {
@@ -42,8 +37,8 @@ async function send(code, {title, body, go, tag}, except) {
   const snap = await db.collection(`households/${code}/tokens`).get();
   const docs = snap.docs.filter((d) => d.id !== except && d.get("token"));
   if (!docs.length) return;
-  const link = new URL(go ? "#" + go : "", APP_URL.value()).toString();
-  /* Só "data": quem mostra a notificação é o service worker da app (sw.js). */
+  const link = new URL(go ? "#" + go : "", APP_URL).toString();
+  /* Só "data": quem mostra a notificação é o service worker da app (docs/sw.js). */
   const res = await getMessaging().sendEach(docs.map((d) => ({
     token: d.get("token"),
     data: {title, body, link, tag: tag || ""},
@@ -54,14 +49,12 @@ async function send(code, {title, body, go, tag}, except) {
     if (c === "messaging/registration-token-not-registered" || c === "messaging/invalid-registration-token") {
       return docs[i].ref.delete();
     }
-    if (r.error) logger.warn("Falha no envio", code, c);
+    if (r.error) console.warn("Falha no envio:", c);
     return null;
   }));
+  console.log(`  enviada (${tag || "sem tag"}) para ${docs.length} telemóvel(is)`);
 }
 
-async function households() {
-  return (await db.collection("households").listDocuments()).map((r) => r.id);
-}
 async function load(code, name) {
   return (await db.collection(`households/${code}/${name}`).get()).docs.map((d) => d.data());
 }
@@ -114,54 +107,74 @@ async function morning(code, now) {
   }
 }
 
-exports.resumoDiario = onSchedule({schedule: "0 9 * * *", timeZone: TZ}, async () => {
-  const now = lisbonNow();
-  for (const code of await households()) {
-    try {
-      await morning(code, now);
-      /* Limpa os registos de lembretes já enviados com mais de 3 dias. */
-      const old = await db.collection(`households/${code}/sent`)
-          .where("at", "<", Timestamp.fromMillis(Date.now() - 3 * 864e5)).get();
-      await Promise.all(old.docs.map((d) => d.ref.delete()));
-    } catch (e) {
-      logger.error("Resumo diário falhou", code, e);
+/* ---------- uma casa ---------- */
+async function house(code, now) {
+  const ref = db.doc(`households/${code}/sent/estado`);
+  const snap = await ref.get();
+  const first = !snap.exists;
+  const st = {resumo: "", vistos: [], lembrados: [], ...(snap.exists ? snap.data() : {})};
+
+  /* Só as marcações de hoje em diante: as que contam para lembretes e para "nova marcação". */
+  const evSnap = await db.collection(`households/${code}/events`).where("date", ">=", now.date).get();
+  const evs = evSnap.docs.map((d) => ({...d.data(), id: d.id}));
+  const ids = new Set(evs.map((e) => e.id));
+  const vistos = new Set(st.vistos.filter((id) => ids.has(id)));
+  const lembrados = new Set(st.lembrados.filter((id) => ids.has(id)));
+
+  /* Primeiro decide-se o que enviar e grava-se o estado; só depois se envia (assim nunca se repete). */
+  const jobs = [];
+
+  /* Nova marcação (na primeira execução só regista as que já existem, sem avisar). */
+  for (const e of evs) {
+    if (vistos.has(e.id)) continue;
+    vistos.add(e.id);
+    if (!first) {
+      jobs.push(() => send(code, {title: "Nova marcação", body: `${e.title} · ${longDate(e.date)}${e.time ? " às " + e.time : ""}`,
+        go: "calendario", tag: "nova-" + e.id}, e.by));
     }
   }
-});
 
-/* ---------- lembrete 1 hora antes das marcações com hora ---------- */
-exports.lembretesMarcacoes = onSchedule({schedule: "every 15 minutes", timeZone: TZ}, async () => {
-  const now = lisbonNow();
+  /* Lembrete: marcações com hora que começam nos próximos 75 minutos (margem para atrasos do GitHub). */
   const tom = addDays(now.date, 1);
-  for (const code of await households()) {
+  for (const e of evs) {
+    if (lembrados.has(e.id) || !/^\d{2}:\d{2}$/.test(e.time || "")) continue;
+    if (e.date !== now.date && e.date !== tom) continue;
+    const [hh, mm] = e.time.split(":").map(Number);
+    const diff = hh * 60 + mm + (e.date === tom ? 1440 : 0) - now.min;
+    if (diff <= 0 || diff > 75) continue;
+    lembrados.add(e.id);
+    jobs.push(() => send(code, {title: e.title, body: `${e.date === tom ? "Amanhã" : "Hoje"} às ${e.time} (daqui a ${diff} min)`,
+      go: "calendario", tag: "ev-" + e.id}));
+  }
+
+  /* Resumo diário: a partir das 9h, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
+  let resumo = st.resumo;
+  if (resumo !== now.date && now.min >= 9 * 60 && now.min < 21 * 60) {
+    resumo = now.date;
+    jobs.push(() => morning(code, now));
+  }
+
+  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], at: new Date()});
+  for (const job of jobs) await job();
+}
+
+(async () => {
+  if (!APP_URL) throw new Error("Falta APP_URL");
+  const now = lisbonNow();
+  const codes = (await db.collection("households").listDocuments()).map((r) => r.id);
+  console.log(`Lisboa ${now.date} ${String(Math.floor(now.min / 60)).padStart(2, "0")}:${String(now.min % 60).padStart(2, "0")} · ${codes.length} casa(s)`);
+  let fail = 0;
+  for (const [n, code] of codes.entries()) {
+    console.log(`Casa ${n + 1}`);
     try {
-      const snap = await db.collection(`households/${code}/events`).where("date", "in", [now.date, tom]).get();
-      for (const doc of snap.docs) {
-        const e = doc.data();
-        if (!/^\d{2}:\d{2}$/.test(e.time || "")) continue;
-        const [hh, mm] = e.time.split(":").map(Number);
-        const diff = hh * 60 + mm + (e.date === tom ? 1440 : 0) - now.min;
-        if (diff <= 0 || diff > 60) continue;
-        /* Marca como enviado antes de enviar, para nunca repetir. */
-        try {
-          await db.doc(`households/${code}/sent/lembrete-${doc.id}`).create({at: FieldValue.serverTimestamp()});
-        } catch (err) {
-          if (err.code === 6) continue; // já enviado
-          throw err;
-        }
-        await send(code, {title: e.title, body: `${e.date === tom ? "Amanhã" : "Hoje"} às ${e.time} (daqui a ${diff} min)`,
-          go: "calendario", tag: "ev-" + doc.id});
-      }
+      await house(code, now);
     } catch (e) {
-      logger.error("Lembretes falharam", code, e);
+      fail++;
+      console.error("Falhou:", e.message);
     }
   }
-});
-
-/* ---------- nova marcação feita no outro telemóvel ---------- */
-exports.novaMarcacao = onDocumentCreated("households/{code}/events/{id}", async (event) => {
-  const e = event.data && event.data.data();
-  if (!e || !e.date || e.date < lisbonNow().date) return;
-  await send(event.params.code, {title: "Nova marcação", body: `${e.title} · ${longDate(e.date)}${e.time ? " às " + e.time : ""}`,
-    go: "calendario", tag: "nova-" + event.params.id}, e.by);
+  process.exit(fail ? 1 : 0);
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });

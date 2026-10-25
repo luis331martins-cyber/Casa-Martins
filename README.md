@@ -4,16 +4,20 @@ App para gerir a casa a dois: despensa, carne e peixe, lista de compras, despesa
 Os dados ficam no Firebase Firestore e aparecem logo nos dois telemóveis. A app instala-se no ecrã principal do iPhone,
 funciona sem rede e envia notificações.
 
+**Endereço da app:** <https://luis331martins-cyber.github.io/Casa-Martins/> (fica ativo depois do passo 7).
+
+Tudo é gratuito e sem cartão: o Firebase fica no plano **Spark** e as notificações são enviadas pelo **GitHub Actions**.
+
 ```
-docs/                 ← a app (publicada no GitHub Pages)
-  index.html          ← a app
-  casa-firebase.js    ← ligação ao Firebase (código da casa, dados, notificações)
-  firebase-config.js  ← ⚠️ preenche com os dados do teu projeto Firebase
-  sw.js               ← service worker (funcionamento offline e notificações)
+docs/                     ← a app (publicada no GitHub Pages)
+  index.html              ← a app
+  casa-firebase.js        ← ligação ao Firebase (código da casa, dados, notificações)
+  firebase-config.js      ← ⚠️ preenche com os dados do teu projeto Firebase
+  sw.js                   ← service worker (funcionamento offline e notificações)
   manifest.json, icons/
-functions/index.js    ← Cloud Functions: resumo às 9h, contas, validades, marcações
-firestore.rules       ← regras de segurança do Firestore
-firebase.json, .firebaserc
+notificacoes/index.js     ← envia as notificações (corre no GitHub Actions)
+.github/workflows/notificacoes.yml ← agenda: de 15 em 15 minutos
+firestore.rules           ← regras de segurança do Firestore
 ```
 
 ## Como funciona o "código da casa"
@@ -31,13 +35,14 @@ firebase.json, .firebaserc
 
 ## Passo a passo (o que tens de fazer manualmente)
 
-Precisas de: um computador com [Node.js 22](https://nodejs.org) e a tua conta Google.
+Só precisas do browser e da tua conta Google. Não é preciso instalar nada no computador.
 
 ### 1. Criar o projeto no Firebase
 
 1. Abre <https://console.firebase.google.com> e toca em **Criar um projeto**.
-2. Nome: por exemplo `casa-martins`. Anota o **ID do projeto** que aparece por baixo (ex.: `casa-martins-1a2b3`).
+2. Nome: por exemplo `casa-martins`.
 3. O Google Analytics não é preciso: podes desativá-lo.
+4. O projeto fica no plano **Spark (gratuito)**. Não mudes de plano nem associes cartão.
 
 ### 2. Registar a app Web e copiar a configuração
 
@@ -45,9 +50,8 @@ Precisas de: um computador com [Node.js 22](https://nodejs.org) e a tua conta Go
 2. Alcunha: `Casa`. **Não** marques o Firebase Hosting. Toca em **Registar app**.
 3. Aparece um bloco `const firebaseConfig = { ... }`. Copia esses valores para
    [`docs/firebase-config.js`](docs/firebase-config.js) (`apiKey`, `authDomain`, `projectId`, `storageBucket`,
-   `messagingSenderId`, `appId`).
+   `messagingSenderId`, `appId`). No GitHub, abre o ficheiro e usa o lápis ✏️ para o editar.
    Estes valores não são secretos; quem protege os dados são as regras do Firestore.
-4. Em [`.firebaserc`](.firebaserc), troca `ID-DO-TEU-PROJETO` pelo ID do projeto.
 
 ### 3. Ativar a autenticação anónima
 
@@ -55,13 +59,13 @@ Precisas de: um computador com [Node.js 22](https://nodejs.org) e a tua conta Go
 2. Separador **Método de início de sessão → Anónimo → Ativar → Guardar**.
 3. Separador **Definições → Domínios autorizados → Adicionar domínio**: `luis331martins-cyber.github.io`.
 
-### 4. Criar a base de dados Firestore
+### 4. Criar a base de dados Firestore e publicar as regras
 
 1. Menu **Criação → Firestore Database → Criar base de dados**.
-2. Edição **Standard**.
-3. Localização: **`europe-west1` (Bélgica)**. Tem de ser esta, porque é a região das Cloud Functions
-   ([`functions/index.js`](functions/index.js)). Se escolheres outra, muda `region` nesse ficheiro para a mesma.
-4. Começa em **modo de produção** (tudo fechado). As regras certas são publicadas no passo 7.
+2. Edição **Standard**, localização **`europe-west1` (Bélgica)** (ou outra na Europa).
+3. Começa em **modo de produção**.
+4. Separador **Regras**: apaga o que lá está, cola todo o conteúdo de [`firestore.rules`](firestore.rules)
+   e toca em **Publicar**.
 
 ### 5. Ativar o Cloud Messaging (notificações)
 
@@ -70,55 +74,41 @@ Precisas de: um computador com [Node.js 22](https://nodejs.org) e a tua conta Go
 3. Em baixo, **Configuração Web → Certificados push da Web → Gerar par de chaves**.
 4. Copia a chave (começa por `B...`) para `self.FIREBASE_VAPID_KEY` em [`docs/firebase-config.js`](docs/firebase-config.js).
 
-### 6. Passar para o plano Blaze (necessário para as Cloud Functions)
+### 6. Dar ao GitHub a chave para enviar notificações
 
-As funções agendadas (resumo às 9h e lembretes) só funcionam no plano **Blaze** (pagar consoante o uso).
-Para uma casa com dois telemóveis o uso fica muito abaixo das quotas gratuitas, por isso o custo esperado é **0 €**.
+O GitHub precisa de uma chave da conta de serviço do Firebase para ler a agenda, as contas e as validades, e para
+enviar as notificações.
 
-1. No canto inferior esquerdo da consola: **Atualizar → Blaze** e associa um cartão.
-2. Por segurança, cria um **alerta de orçamento** de 1 € (a consola sugere-o ao mudar de plano).
+1. Firebase: engrenagem ⚙️ → **Definições do projeto → Contas de serviço → Gerar nova chave privada → Gerar chave**.
+   Descarrega um ficheiro `.json`. **Esta chave é secreta**: dá acesso total ao projeto. Não a envies a ninguém
+   nem a ponhas no código.
+2. GitHub: no repositório, **Settings → Secrets and variables → Actions → New repository secret**.
+   - Name: `FIREBASE_SERVICE_ACCOUNT`
+   - Secret: abre o ficheiro `.json` num editor de texto, copia **todo** o conteúdo e cola aqui.
+   - **Add secret**.
+3. Apaga o ficheiro `.json` do computador.
 
-O que se usa por mês: ~3 000 execuções de funções (gratuito até 2 milhões), 2 tarefas do Cloud Scheduler (3 grátis),
-leituras do Firestore muito abaixo das 50 000 grátis por dia. As notificações FCM são gratuitas.
+Os segredos do GitHub ficam encriptados e não aparecem a ninguém, mesmo com o repositório público.
 
-### 7. Publicar as regras e as Cloud Functions
+### 7. Publicar a app no GitHub Pages
 
-No computador, na pasta do repositório:
-
-```bash
-npm install -g firebase-tools
-firebase login
-cd functions && npm install && cd ..
-firebase deploy --only firestore:rules,functions
-```
-
-Na primeira vez pergunta o valor de **`APP_URL`**: escreve `https://luis331martins-cyber.github.io/Casa-Martins/`
-(é para onde a notificação te leva quando tocas nela). Fica guardado em `functions/.env.<id-do-projeto>`.
-
-Se aparecer um erro a pedir para ativar APIs (Cloud Build, Artifact Registry, Cloud Scheduler, Eventarc),
-espera um minuto e repete o comando: o Firebase ativa-as na primeira publicação.
-
-Para ver se correu bem: consola → **Functions** deve mostrar `resumoDiario`, `lembretesMarcacoes` e `novaMarcacao`.
-
-### 8. Publicar a app no GitHub Pages
-
-1. Junta este ramo ao `main`: no GitHub abre um pull request de `claude/app-casa-firebase-pwa-y2ehpo` para `main` e faz merge.
-   Se o repositório ainda não tiver `main`: **Code → Branches → New branch**, nome `main`, a partir de
-   `claude/app-casa-firebase-pwa-y2ehpo`; depois **Settings → General → Default branch → main**.
-2. O GitHub Pages grátis só funciona em repositórios **públicos**: **Settings → General → Danger Zone →
-   Change visibility → Public**. Não há nada secreto no repositório (os dados estão no Firebase e o código da casa
-   não fica no GitHub).
-3. **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main`, pasta `/docs` → Save**.
-4. Ao fim de 1–2 minutos a app fica em **<https://luis331martins-cyber.github.io/Casa-Martins/>**.
+1. O GitHub Pages grátis só funciona em repositórios **públicos**: **Settings → General → Danger Zone →
+   Change visibility → Public**. Não há nada secreto no repositório: os dados estão no Firebase, a chave está nos
+   segredos e o código da casa não fica no GitHub.
+2. **Settings → Pages → Build and deployment → Source: Deploy from a branch →
+   Branch: `claude/app-casa-firebase-pwa-y2ehpo`, pasta `/docs` → Save**.
+3. Ao fim de 1–2 minutos a app fica em **<https://luis331martins-cyber.github.io/Casa-Martins/>**.
+4. Separador **Actions**: se aparecer um aviso, toca em **I understand my workflows, go ahead and enable them**.
+   Para testar já, abre **Notificações → Run workflow**. Deve ficar com um visto verde ✅.
 
 Sempre que mudares `docs/firebase-config.js` ou outro ficheiro da app, sobe a versão em
 [`docs/sw.js`](docs/sw.js) (`casa-v1` → `casa-v2`) para os telemóveis irem buscar a versão nova.
 
-### 9. Instalar nos dois iPhones
+### 8. Instalar nos dois iPhones
 
 **No teu telemóvel**
 
-1. Abre o endereço da app no **Safari**.
+1. Abre <https://luis331martins-cyber.github.io/Casa-Martins/> no **Safari**.
 2. **Partilhar** (quadrado com a seta) → **Adicionar ao ecrã principal** → **Adicionar**.
 3. Abre a app **pelo ícone "Casa"** no ecrã principal.
 4. Toca em **Criar casa nova**. Aparece o código em **Início → Esta casa**. Toca em **Partilhar** para o enviar à tua esposa.
@@ -134,31 +124,42 @@ Sempre que mudares `docs/firebase-config.js` ou outro ficheiro da app, sobe a ve
 
 ## Notificações
 
+O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em 15 minutos e decide o que enviar:
+
 | Quando | O quê |
 |---|---|
-| Todos os dias às 9h (hora de Lisboa) | **Contas a pagar**: atrasadas, a vencer hoje e nos próximos 3 dias (as que ainda não estão marcadas como pagas) |
-| Todos os dias às 9h | **Validades a terminar**: produtos que terminam nos próximos 3 dias ou já passaram do prazo |
-| Todos os dias às 9h | **Resumo**: marcações de hoje e de amanhã e quantos produtos há para comprar |
-| Cerca de 1 hora antes | **Lembrete** de cada marcação com hora (verificado de 15 em 15 minutos, por isso chega entre 45 e 60 min antes) |
-| Quando alguém marca algo | **Nova marcação** no outro telemóvel (quem marcou não recebe) |
+| A partir das 9h (hora de Lisboa), uma vez por dia | **Contas a pagar**: atrasadas, a vencer hoje e nos próximos 3 dias (as que ainda não estão marcadas como pagas) |
+| A partir das 9h, uma vez por dia | **Validades a terminar**: produtos que terminam nos próximos 3 dias ou já passaram do prazo |
+| A partir das 9h, uma vez por dia | **Resumo**: marcações de hoje e de amanhã e quantos produtos há para comprar |
+| Cerca de 1 hora antes | **Lembrete** de cada marcação com hora |
+| Até ~15 min depois de alguém marcar algo | **Nova marcação** no outro telemóvel (quem marcou não recebe) |
 
 Se não houver nada para dizer, a notificação desse tipo não é enviada.
 Tocar numa notificação abre a app no separador certo (Despesas, Despensa, Calendário ou Compras).
+
+### Limites do GitHub Actions
+
+- O GitHub não garante a hora exata: com muito movimento, uma execução pode atrasar alguns minutos ou falhar.
+  O resumo das 9h pode chegar às 9h10 ou 9h20; se a execução das 9h falhar, sai na seguinte (até às 21h).
+- Os lembretes saem entre ~60 e ~75 minutos antes da marcação.
+- Em repositórios públicos, o GitHub pode desligar os agendamentos quando não há atividade há 60 dias. O workflow
+  tenta manter-se ligado sozinho; se mesmo assim for desligado, recebes um email do GitHub e voltas a ligá-lo em
+  **Actions → Notificações → Enable workflow**.
+- Os registos do Actions são públicos, por isso o script não escreve neles o código da casa nem o conteúdo das notificações.
 
 ### Limites do iPhone
 
 - **iOS/iPadOS 16.4 ou mais recente.** Em versões anteriores, as apps Web não recebem notificações.
 - **Só com a app no ecrã principal.** No separador normal do Safari não há notificações; a app avisa disso em
-  **Início → Esta casa**. Usa o Safari para a adicionar (é o caminho mais fiável).
+  **Início → Esta casa**. Usa o Safari para a adicionar.
 - **A permissão só pode ser pedida depois de um toque** (por isso há o botão **Ativar**). Se tocares em "Não permitir",
   só se volta a ativar em **Definições → Notificações → Casa**.
 - **Cada telemóvel ativa as suas.** O código da casa partilha os dados, não as notificações.
 - **Se apagares a app do ecrã principal**, perdes o registo de notificações e os dados guardados nesse telemóvel
   (os da casa continuam no Firebase): volta a adicioná-la e a escrever o código.
-- **Não há sons nem badges personalizados** e as notificações podem chegar com algum atraso se o telemóvel estiver em
-  poupança de energia ou em modo Foco.
-- O resumo e os lembretes vêm do servidor, por isso chegam mesmo com a app fechada. O que não se consegue é o iPhone
-  avisar sozinho sem internet: as notificações precisam de rede.
+- **Não há sons personalizados** e as notificações podem chegar com atraso se o telemóvel estiver em poupança de
+  energia ou em modo Foco.
+- As notificações chegam mesmo com a app fechada, mas o telemóvel precisa de internet para as receber.
 
 ## Funcionamento sem rede
 
@@ -175,3 +176,9 @@ Enquanto `apiKey` estiver vazio em `docs/firebase-config.js`, a app funciona com
 
 **Início → Esta casa → Sair desta casa neste telemóvel.** O telemóvel deixa de ter acesso e de receber notificações.
 Os dados continuam no Firebase para quem tem o código.
+
+## Para programadores (opcional)
+
+`firebase.json` e `.firebaserc` permitem publicar as regras pela linha de comandos
+(`firebase deploy --only firestore:rules`) e testar com os emuladores (`firebase emulators:start`).
+Com `self.FIREBASE_EMULATORS = true` em `docs/firebase-config.js`, a app liga-se aos emuladores locais.

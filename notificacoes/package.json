@@ -1,0 +1,9 @@
+{
+  "name": "casa-notificacoes",
+  "description": "Notificações da app da casa, enviadas pelo GitHub Actions",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node index.js" },
+  "dependencies": { "firebase-admin": "^14.5.0" }
+}

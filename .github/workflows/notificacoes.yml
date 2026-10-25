@@ -1,0 +1,48 @@
+# Envia as notificações da casa de 15 em 15 minutos (resumo às 9h, lembretes e novas marcações).
+# Precisa do segredo FIREBASE_SERVICE_ACCOUNT (ver README). Sem ele, não faz nada.
+name: Notificações
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: notificacoes
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: notificacoes/package-lock.json
+      - name: Instalar
+        working-directory: notificacoes
+        run: npm ci --no-audit --no-fund
+      - name: Enviar notificações
+        working-directory: notificacoes
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APP_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "Ainda não há o segredo FIREBASE_SERVICE_ACCOUNT. Vê o README, passo 6."
+            exit 0
+          fi
+          node index.js
+      # O GitHub desliga agendamentos de repositórios sem atividade há 60 dias; isto tenta mantê-lo ligado.
+      - name: Manter o agendamento ativo
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/notificacoes.yml/enable" || true
