@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Despensa de Casa</title>
+<meta name="description" content="Despensa, carne e peixe, lista de compras, despesas mensais e agenda da casa, partilhadas entre o casal.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f3f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121815" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Base: margens das zonas seguras do iPhone (notch e barra inferior) */
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]:not([hidden=until-found i]){display:none!important}
+/* Layout: uma coluna estreita tipo app, cabeçalho com resumo, separadores fixos em baixo */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --fg:#1e2a22; --muted:#5f6d63; --line:#dbe2da;
+  --accent:#2f6b4f; --accent-fg:#ffffff; --accent-soft:#e1eee6;
+  --warn:#b7791f; --warn-soft:#fbf0dc; --bad:#b4413a; --bad-soft:#f8e3e1;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1b2420; --fg:#e6ece7; --muted:#9aa89f; --line:#2c3832;
+  --accent:#6fbf96; --accent-fg:#0d1a13; --accent-soft:#1f3329;
+  --warn:#e3b35a; --warn-soft:#3a2e17; --bad:#ec8a82; --bad-soft:#3d2220; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1b2420; --fg:#e6ece7; --muted:#9aa89f; --line:#2c3832;
+  --accent:#6fbf96; --accent-fg:#0d1a13; --accent-soft:#1f3329;
+  --warn:#e3b35a; --warn-soft:#3a2e17; --bad:#ec8a82; --bad-soft:#3d2220; color-scheme:dark}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 60px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:1.15rem;margin:0}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+.summary{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:.85rem;font-weight:600;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.ok{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+form.add{display:grid;grid-template-columns:1fr auto;gap:8px}
+form.add .more{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input,select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0;width:100%;box-sizing:border-box}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px}
+.btn{background:var(--accent);color:var(--accent-fg);font-weight:600;padding:11px 18px}
+.btn.ghost{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
+.btn:disabled{opacity:.6;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:transparent;border:1px dashed var(--line);color:var(--muted);padding:6px 11px;border-radius:999px;font-size:.88rem}
+.chip:hover{color:var(--fg);border-color:var(--muted)}
+.group{display:flex;flex-direction:column;gap:6px}
+.group h3{margin:6px 0 2px;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.item .name{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.item .meta{font-size:.82rem;color:var(--muted);margin-top:2px}
+.meta .bad{color:var(--bad);font-weight:600}.meta .warn{color:var(--warn);font-weight:600}
+.lvl{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lvl button{background:transparent;color:var(--muted);padding:6px 10px;font-size:.8rem;border-radius:0;font-weight:600}
+.lvl button[aria-pressed="true"].s2{background:var(--accent-soft);color:var(--accent)}
+.lvl button[aria-pressed="true"].s1{background:var(--warn-soft);color:var(--warn)}
+.lvl button[aria-pressed="true"].s0{background:var(--bad-soft);color:var(--bad)}
+.row-actions{display:flex;gap:6px;align-items:center}
+.x{background:transparent;color:var(--muted);width:32px;height:32px;font-size:1.1rem;line-height:1}
+.x:hover{color:var(--bad)}
+.check{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.check input{width:22px;height:22px;flex:none;accent-color:var(--accent)}
+.check.done .name{text-decoration:line-through;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--muted);text-align:center}
+/* Ecrã de início: ícones de app ao estilo iPhone */
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px}
+.app{background:transparent;display:flex;flex-direction:column;align-items:center;gap:7px;padding:0;color:var(--fg)}
+.ico{position:relative;width:64px;height:64px;border-radius:15px;display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.25)}
+.ico svg{width:34px;height:34px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.i-desp{background:linear-gradient(160deg,#4f9a72,#2a6448)} .i-desp svg path:first-child{fill:rgba(255,255,255,.3)}
+.i-shop{background:linear-gradient(160deg,#f0a43a,#d6731d)} .i-shop circle{fill:#fff;stroke:none}
+.i-bill{background:linear-gradient(160deg,#4f86d9,#2d5bb0)}
+.i-meat{background:linear-gradient(160deg,#e0605a,#b53236)}
+.app .lbl{text-align:center;line-height:1.2}
+.app:active .ico{transform:scale(.94)}
+.app .lbl{font-size:.8rem;font-weight:500}
+.nbadge{position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#e5483b;color:#fff;font-size:.75rem;font-weight:600;line-height:22px;text-align:center;font-variant-numeric:tabular-nums;border:2px solid var(--bg)}
+.appbar{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.back{background:transparent;color:var(--accent);padding:4px 0;font-weight:600}
+/* Calendário */
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cal .nav-m{width:36px;height:36px}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+#cHead span{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;padding:4px 0}
+.day{background:transparent;color:var(--fg);aspect-ratio:1;max-width:100%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;font-size:.95rem;padding:0}
+.day.out{color:var(--muted);opacity:.45}
+.day.today{color:var(--bad);font-weight:700}
+.day.sel{background:var(--fg);color:var(--bg)}
+.day.today.sel{background:var(--bad);color:#fff}
+.dots{display:flex;gap:2px;height:5px}
+.dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+.dot.ev{background:var(--accent)}.dot.bl{background:#2d5bb0}.dot.ex{background:var(--warn)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.75rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.ev-row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.ev-row .t{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--muted);min-width:42px}
+.ev-row .name{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.ev-row.auto{background:transparent;border-style:dashed}
+form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
+@media (max-width:420px){form.addev{grid-template-columns:1fr auto}form.addev #evTitle{grid-column:1/-1}}
+.note{font-size:.8rem;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:.88rem;z-index:6}
+.month{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month h2{text-transform:capitalize}
+.nav-m{background:var(--surface);border:1px solid var(--line);color:var(--fg);width:40px;height:40px;font-size:1.1rem}
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.tot .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.tot .v{font-family:var(--display);font-weight:800;font-size:1.25rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tot.paid .v{color:var(--accent)}.tot.due .v{color:var(--bad)}
+.bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent)}
+.bill{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center}
+.bill input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.bill .meta{font-size:.82rem;color:var(--muted);margin-top:2px}
+.bill .amt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.bill.paid .name{color:var(--muted);text-decoration:line-through}
+form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}
+@media (max-width:480px){form.addbill{grid-template-columns:1fr 1fr}form.addbill .wide{grid-column:1/-1}}
+.i-cal{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:7px;box-sizing:border-box}
+.cal-wd{color:#e5483b;font-size:.62rem;font-weight:600;text-transform:capitalize;line-height:1}
+.cal-d{color:#1b1b1b;font-size:1.85rem;font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums}
+.alert{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;color:var(--fg);width:100%;font:inherit}
+.alert .name{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.alert .meta{font-size:.82rem;color:var(--muted)}
+.alert .go{color:var(--muted)}
+.alert.bad{border-color:var(--bad);background:var(--bad-soft)}
+.alert.warn{border-color:transparent;background:var(--warn-soft)}
+.adot{width:10px;height:10px;border-radius:50%}
+.adot.ev{background:var(--accent)}.adot.bl{background:#2d5bb0}.adot.ex{background:var(--warn)}.adot.bad{background:var(--bad)}
+/* Casa partilhada: código e notificações */
+.code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+form.join{display:flex;flex-direction:column;gap:8px}
+form.join input{text-transform:uppercase;letter-spacing:.06em}
+.msg{margin:0;color:var(--bad);font-size:.88rem}
+@media (prefers-reduced-motion:no-preference){.item,.check{transition:background .15s}}
+</style>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <section id="tab-setup" class="group" style="gap:20px" hidden>
+    <header>
+      <h1>A nossa casa</h1>
+      <p class="sub">Para partilhar a despensa, as compras, as despesas e a agenda, escreve o mesmo código da casa em cada telemóvel. Só é preciso fazer isto uma vez.</p>
+    </header>
+    <form class="join" id="joinForm" autocomplete="off">
+      <label class="f">Código da casa<input id="joinCode" placeholder="ex.: CASA-7K4Q-9XPA" autocapitalize="characters" autocorrect="off" spellcheck="false" required></label>
+      <button class="btn" type="submit" id="joinBtn">Entrar</button>
+    </form>
+    <p class="msg" id="setupMsg" role="alert" hidden></p>
+    <div class="group" style="gap:8px">
+      <h2>Primeira vez?</h2>
+      <p class="note" style="margin:0">Cria a casa neste telemóvel. Aparece um código que depois escreves no telemóvel da outra pessoa. O que já estiver guardado neste aparelho passa para a casa nova.</p>
+      <button class="btn ghost" type="button" id="newHouse">Criar casa nova</button>
+    </div>
+    <button class="back" type="button" id="useLocal" style="align-self:flex-start">Usar só neste aparelho</button>
+  </section>
+
+  <section id="tab-inicio" class="group" style="gap:22px">
+    <header>
+      <p class="sub" id="today" style="margin:0 0 2px;text-transform:capitalize"></p>
+      <h1 id="hello">A nossa casa</h1>
+      <p class="sub" id="sub">Despensa, compras, despesas e agenda.</p>
+    </header>
+    <div class="apps">
+      <button class="app" data-go="despensa"><span class="ico i-desp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7 6h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/><path d="M6 11h12M6 16h12" class="cut"/></svg><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Despensa</span></button>
+      <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
+      <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
+      <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Despesas</span></button>
+      <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
+    </div>
+    <div class="group" style="gap:8px">
+      <h2>Alertas</h2>
+      <div id="alerts" class="group"></div>
+    </div>
+    <div class="group" style="gap:8px" id="houseBox" hidden>
+      <h2>Esta casa</h2>
+      <div id="houseShared" class="group" hidden>
+        <div class="item">
+          <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
+          <button class="chip" type="button" id="shareCode">Partilhar</button>
+        </div>
+        <div class="item">
+          <div style="min-width:0"><div class="name">Notificações</div><div class="meta" id="pushMeta"></div></div>
+          <button class="btn" type="button" id="pushBtn" hidden>Ativar</button>
+        </div>
+        <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
+      </div>
+      <div id="houseLocal" class="item" hidden>
+        <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
+        <button class="btn" type="button" data-go="setup">Partilhar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-calendario" class="group" style="gap:16px" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Calendário</h1></div>
+    <div class="cal">
+      <div class="month">
+        <button class="nav-m" id="cPrev" aria-label="Mês anterior">‹</button>
+        <h2 id="cLabel"></h2>
+        <button class="nav-m" id="cNext" aria-label="Mês seguinte">›</button>
+      </div>
+      <div class="cgrid" id="cHead"></div>
+      <div class="cgrid" id="cGrid"></div>
+      <div class="legend"><span><i class="dot ev"></i>Marcação</span><span><i class="dot bl"></i>Conta a pagar</span><span><i class="dot ex"></i>Validade</span></div>
+    </div>
+    <div class="group" style="gap:10px">
+      <h2 id="dayLabel" style="text-transform:capitalize"></h2>
+      <div id="dayList" class="group"></div>
+      <form class="addev" id="evForm" autocomplete="off">
+        <input id="evTitle" placeholder="Marcar algo (ex.: Jantar com os pais)" aria-label="O que marcar" required>
+        <input id="evTime" type="time" aria-label="Hora (opcional)">
+        <button class="btn" type="submit">Marcar</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="tab-despensa" class="group" style="gap:16px" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Despensa</h1></div>
+    <div class="summary" id="summary"></div>
+    <form class="add" id="addForm" autocomplete="off">
+      <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
+      <button class="btn" type="submit">Adicionar</button>
+      <div class="more">
+        <label class="f">Categoria
+          <select id="newCat">
+            <option>Frigorífico</option><option>Despensa</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Outros</option>
+          </select>
+        </label>
+        <label class="f">Validade (opcional)<input type="date" id="newExp"></label>
+      </div>
+    </form>
+    <div>
+      <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div id="pantry" class="group"></div>
+  </section>
+
+  <section id="tab-carne" class="group" style="gap:16px" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Carne e Peixe</h1></div>
+    <form class="add" id="meatForm" autocomplete="off">
+      <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
+      <button class="btn" type="submit">Adicionar</button>
+      <div class="more">
+        <label class="f">Tipo<select id="mCat"><option>Carne</option><option>Peixe</option></select></label>
+        <label class="f">Validade<input type="date" id="mExp"></label>
+      </div>
+    </form>
+    <div>
+      <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
+      <div class="chips" id="meatChips"></div>
+    </div>
+    <div id="meat" class="group"></div>
+    <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
+  </section>
+
+  <section id="tab-lista" class="group" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Compras</h1></div>
+    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”. Ao marcar como comprado, volta a “tenho”.</p>
+    <div id="shop" class="group"></div>
+  </section>
+
+  <section id="tab-despesas" class="group" style="gap:14px" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Despesas</h1></div>
+    <div class="month">
+      <button class="nav-m" id="mPrev" aria-label="Mês anterior">‹</button>
+      <h2 id="mLabel"></h2>
+      <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
+    </div>
+    <div class="totals">
+      <div class="tot"><div class="k">Total</div><div class="v" id="vTot"></div></div>
+      <div class="tot paid"><div class="k">Pago</div><div class="v" id="vPaid"></div></div>
+      <div class="tot due"><div class="k">Falta</div><div class="v" id="vDue"></div></div>
+    </div>
+    <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
+    <div id="bills" class="group"></div>
+    <form class="addbill" id="billForm" autocomplete="off">
+      <label class="f wide">Despesa<input id="bName" placeholder="ex.: Luz" required></label>
+      <label class="f">Valor (€)<input id="bAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="45,00" required></label>
+      <label class="f">Dia<input id="bDay" type="number" min="1" max="31" inputmode="numeric" placeholder="8"></label>
+      <button class="btn wide" type="submit">Adicionar</button>
+    </form>
+    <div>
+      <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
+      <div class="chips" id="billChips"></div>
+    </div>
+    <p class="note" style="margin:0">Cada despesa repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar.</p>
+  </section>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Fruta","Outros"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
+const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Outros"];
+const MEAT=["Carne","Peixe"];
+const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
+const LV=[["Acabou","s0"],["Pouco","s1"],["Tenho","s2"]];
+let items=[]; let store=null;
+
+/* ---------- armazenamento: partilhado (Firestore) ou neste aparelho ---------- */
+const local={
+  key:"despensa-itens",
+  load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},
+  save(){try{localStorage.setItem(this.key,JSON.stringify(items))}catch(e){}}
+};
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+async function put(it){
+  if(store){try{await store.collection("items").doc(it.id).set(it)}catch(e){toast(e&&e.code==="resource-exhausted"?"Lista cheia: apaga alguns produtos.":"Não foi possível guardar. Tenta outra vez.")}}
+  else{local.save();render()}
+}
+async function remove(id){
+  items=items.filter(i=>i.id!==id);
+  if(store){try{await store.collection("items").doc(id).delete()}catch(e){toast("Não foi possível apagar.")}}
+  else{local.save();render()}
+}
+function upsert(it){const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);if(store)render()}
+
+/* ---------- ações ---------- */
+function addItem(name,cat,exp){
+  name=name.trim(); if(!name)return;
+  const ex=items.find(i=>i.name.toLowerCase()===name.toLowerCase());
+  if(ex){toast(ex.name+" já está na lista");return}
+  const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now()};
+  items.push(it);render();put(it);toast(name+" adicionado");
+}
+function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};upsert(n);render();put(n)}
+
+/* ---------- datas ---------- */
+function daysLeft(exp){if(!exp)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(exp+"T00:00:00")-t)/864e5)}
+function expText(exp){const d=daysLeft(exp);if(d===null)return"";if(d<0)return`<span class="bad">Passou do prazo há ${-d} dia${d===-1?"":"s"}</span>`;if(d===0)return`<span class="bad">Termina hoje</span>`;if(d<=3)return`<span class="warn">Termina em ${d} dia${d===1?"":"s"}</span>`;return"Validade "+new Date(exp+"T00:00").toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+/* ---------- render ---------- */
+function render(){
+  const pantry=document.getElementById("pantry"), shop=document.getElementById("shop");
+  const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,"pt"));
+  const toBuy=sorted.filter(i=>i.lvl<2);
+  const expiring=items.filter(i=>{const d=daysLeft(i.exp);return d!==null&&d<=3});
+
+  document.getElementById("summary").innerHTML=
+    `<span class="pill ok">${items.filter(i=>i.lvl===2).length} em casa</span>`+
+    `<span class="pill ${toBuy.length?"bad":""}">${toBuy.length} para comprar</span>`+
+    (expiring.length?`<span class="pill warn">${expiring.length} a terminar prazo</span>`:"");
+  const b=document.getElementById("shopBadge");b.hidden=!toBuy.length;b.textContent=toBuy.length;
+  const pExp=expiring.filter(i=>!MEAT.includes(i.cat));
+  const pb=document.getElementById("pantryBadge");pb.hidden=!pExp.length;pb.textContent=pExp.length;
+  if(typeof renderCal==="function")renderCal();
+
+  const have=new Set(items.map(i=>i.name.toLowerCase()));
+  document.getElementById("chips").innerHTML=QUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os básicos na lista.</span>`;
+
+  const row=i=>{const e=expText(i.exp);return `
+      <div class="item">
+        <div style="min-width:0"><div class="name">${esc(i.name)}</div>${e?`<div class="meta">${e}</div>`:""}</div>
+        <div class="row-actions">
+          <div class="lvl" role="group" aria-label="Quantidade de ${esc(i.name)}">
+            ${LV.map(([t,c],k)=>`<button class="${c}" data-id="${i.id}" data-l="${k}" aria-pressed="${i.lvl===k}">${t}</button>`).join("")}
+          </div>
+          <button class="x" data-del="${i.id}" aria-label="Apagar ${esc(i.name)}">×</button>
+        </div>
+      </div>`};
+  const groups=cats=>cats.map(cat=>{const list=sorted.filter(i=>i.cat===cat);return list.length?`<h3>${cat}</h3>`+list.map(row).join(""):""}).join("");
+
+  if(!sorted.some(i=>!MEAT.includes(i.cat))){pantry.innerHTML=`<div class="empty">A despensa está vazia.<br>Escreve um produto acima ou toca num dos básicos para começar.</div>`}
+  else pantry.innerHTML=groups(CATS);
+
+  const meat=document.getElementById("meat");
+  meat.innerHTML=sorted.some(i=>MEAT.includes(i.cat))?groups(MEAT):`<div class="empty">Ainda não tens carne nem peixe registados.<br>Adiciona acima ou toca num dos atalhos.</div>`;
+  document.getElementById("meatChips").innerHTML=MQUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
+  const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
+  const mb=document.getElementById("meatBadge");mb.hidden=!mExp.length;mb.textContent=mExp.length;
+
+  shop.innerHTML=toBuy.length?toBuy.map(i=>`
+    <label class="check"><input type="checkbox" data-buy="${i.id}">
+      <div><div class="name">${esc(i.name)}</div><div class="meta" style="font-size:.82rem;color:var(--muted)">${i.lvl===0?"Acabou":"Está a acabar"} · ${i.cat}</div></div>
+    </label>`).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
+}
+
+/* ---------- eventos ---------- */
+document.getElementById("meatForm").addEventListener("submit",e=>{e.preventDefault();
+  addItem(document.getElementById("mName").value,document.getElementById("mCat").value,document.getElementById("mExp").value);
+  document.getElementById("mName").value="";document.getElementById("mExp").value=""});
+document.getElementById("addForm").addEventListener("submit",e=>{e.preventDefault();
+  addItem(document.getElementById("newName").value,document.getElementById("newCat").value,document.getElementById("newExp").value);
+  document.getElementById("newName").value="";document.getElementById("newExp").value=""});
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.n)addItem(t.dataset.n,t.dataset.c,"");
+  else if(t.dataset.l!==undefined)setLevel(t.dataset.id,+t.dataset.l);
+  else if(t.dataset.del)remove(t.dataset.del);
+});
+document.addEventListener("change",e=>{
+  const id=e.target.dataset.buy;if(!id)return;
+  e.target.closest(".check").classList.add("done");
+  setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
+});
+function show(tab){["setup","inicio","despensa","carne","lista","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
+/* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
+const ROUTES={"#inicio":"inicio","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#calendario":"calendario"};
+function route(h){if(ROUTES[h])show(ROUTES[h])}
+route(location.hash);
+addEventListener("hashchange",()=>route(location.hash));
+
+/* ---------- despesas mensais ---------- */
+let bills=[];
+const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
+const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
+const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
+const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
+const eur=v=>v.toLocaleString("pt-PT",{style:"currency",currency:"EUR"});
+async function putBill(b){
+  const i=bills.findIndex(x=>x.id===b.id); if(i>=0)bills[i]=b; else bills.push(b); renderBills();
+  if(store){try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
+}
+async function delBill(id){
+  bills=bills.filter(b=>b.id!==id); renderBills();
+  if(store){try{await store.collection("bills").doc(id).delete()}catch(e){toast("Não foi possível apagar.")}} else billLocal.save();
+}
+function renderBills(){
+  const k=mKey();
+  const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
+  document.getElementById("mLabel").textContent=label;
+  const list=[...bills].sort((a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt"));
+  const tot=list.reduce((s,b)=>s+(+b.amount||0),0);
+  const paid=list.filter(b=>b.paid&&b.paid[k]).reduce((s,b)=>s+(+b.amount||0),0);
+  document.getElementById("vTot").textContent=eur(tot);
+  document.getElementById("vPaid").textContent=eur(paid);
+  document.getElementById("vDue").textContent=eur(tot-paid);
+  document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
+  const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
+  const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const overdue=bills.filter(b=>b.day&&b.day<=today&&!(b.paid&&b.paid[curK])).length;
+  const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
+  if(typeof renderCal==="function")renderCal();
+  const el=document.getElementById("bills");
+  el.innerHTML=list.length?list.map(b=>{
+    const p=!!(b.paid&&b.paid[k]);
+    let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
+    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.day===today?"Vence hoje":"Vence dia "+b.day}</span>`; }
+    if(p) when="Paga";
+    return `<div class="bill${p?" paid":""}">
+      <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
+      <div style="min-width:0"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></div>
+      <div class="amt">${eur(+b.amount||0)}</div>
+      <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
+    </div>`}).join(""):`<div class="empty">Ainda não há despesas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
+  const have=new Set(bills.map(b=>b.name.toLowerCase()));
+  document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as despesas habituais.</span>`;
+}
+document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefault();
+  const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
+  if(!name||isNaN(amount))return;
+  if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  putBill({id:uid(),name,amount,day:Math.min(Math.max(day,0),31),paid:{}});
+  e.target.reset(); toast(name+" adicionada");
+});
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t)return;
+  if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
+  else if(t.dataset.delbill)delBill(t.dataset.delbill);
+});
+document.addEventListener("change",e=>{
+  const id=e.target.dataset.pay; if(!id)return;
+  const b=bills.find(x=>x.id===id); if(!b)return;
+  const paid={...(b.paid||{})}; const k=mKey();
+  if(e.target.checked)paid[k]=true; else delete paid[k];
+  putBill({...b,paid});
+});
+document.getElementById("mPrev").onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}renderBills()};
+document.getElementById("mNext").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}renderBills()};
+let tt;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+
+/* ---------- calendário ---------- */
+let events=[];
+const evLocal={key:"agenda-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(events))}catch(e){}}};
+const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+let calY=now.getFullYear(), calM=now.getMonth(), selDay=ymd(now);
+const WD=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+document.getElementById("cHead").innerHTML=WD.map(d=>`<span>${d}</span>`).join("");
+document.getElementById("today").textContent=now.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
+document.getElementById("icoWd").textContent=now.toLocaleDateString("pt-PT",{weekday:"long"}).split("-")[0];
+document.getElementById("icoD").textContent=now.getDate();
+const h=now.getHours();document.getElementById("hello").textContent=h<6?"Boa noite":h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
+function billsOn(dateStr){const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return bills.filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
+function dayInfo(ds){return{ev:events.filter(e=>e.date===ds),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
+function renderCal(){
+  document.getElementById("cLabel").textContent=new Date(calY,calM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
+  document.getElementById("cLabel").style.textTransform="capitalize";
+  const first=new Date(calY,calM,1), start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
+  const todayS=ymd(now); let html="";
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d);
+    if(i===35&&d.getMonth()!==calM)break;
+    const inf=dayInfo(ds);
+    const dots=(inf.ev.length?'<i class="dot ev"></i>':"")+(inf.bl.length?'<i class="dot bl"></i>':"")+(inf.ex.length?'<i class="dot ex"></i>':"");
+    html+=`<button class="day${d.getMonth()!==calM?" out":""}${ds===todayS?" today":""}${ds===selDay?" sel":""}" data-day="${ds}" aria-label="${d.toLocaleDateString("pt-PT",{day:"numeric",month:"long"})}">${d.getDate()}<span class="dots">${dots}</span></button>`;
+  }
+  document.getElementById("cGrid").innerHTML=html;
+  const sd=new Date(selDay+"T00:00");
+  document.getElementById("dayLabel").textContent=selDay===todayS?"Hoje":sd.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
+  const inf=dayInfo(selDay);
+  const evs=[...inf.ev].sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+  let rows=evs.map(e=>`<div class="ev-row"><span class="t">${e.time||"—"}</span><span class="name">${esc(e.title)}</span><button class="x" data-delev="${e.id}" aria-label="Apagar ${esc(e.title)}">×</button></div>`).join("");
+  const mk=selDay.slice(0,7);
+  rows+=inf.bl.map(b=>`<div class="ev-row auto"><i class="dot bl"></i><span class="name">${esc(b.name)} · ${eur(+b.amount||0)}${b.paid&&b.paid[mk]?" (paga)":""}</span><span></span></div>`).join("");
+  rows+=inf.ex.map(i=>`<div class="ev-row auto"><i class="dot ex"></i><span class="name">Termina a validade: ${esc(i.name)}</span><span></span></div>`).join("");
+  document.getElementById("dayList").innerHTML=rows||`<p class="note" style="margin:0">Nada marcado para este dia.</p>`;
+  renderAlerts();
+}
+function renderAlerts(){
+  const todayS=ymd(now), tm=new Date(now); tm.setDate(tm.getDate()+1); const tomS=ymd(tm);
+  const A=[];
+  const evs=events.filter(e=>e.date===todayS||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
+  evs.forEach(e=>A.push({o:e.date===todayS?1:3,cls:"",dot:"ev",go:"calendario",day:e.date,name:e.title,meta:(e.date===todayS?"Hoje":"Amanhã")+(e.time?" às "+e.time:"")}));
+  const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
+  bills.forEach(b=>{if(!b.day||(b.paid&&b.paid[mk]))return;const d=Math.min(b.day,last);
+    if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${eur(+b.amount||0)}`});
+    else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:`Pagar ${b.name}`,meta:`${d===td?"Vence hoje":"Vence dia "+d} · ${eur(+b.amount||0)}`});});
+  items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
+    A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
+  const toBuy=items.filter(i=>i.lvl<2).length;
+  if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
+  A.sort((a,b)=>a.o-b.o);
+  document.getElementById("alerts").innerHTML=A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
+  const nToday=events.filter(e=>e.date===todayS).length;
+  const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-alday]");if(!t)return;
+  selDay=t.dataset.alday;const d=new Date(selDay+"T00:00");calM=d.getMonth();calY=d.getFullYear();renderCal()});
+async function putEv(ev){events.push(ev);renderCal();
+  if(store){try{await store.collection("events").doc(ev.id).set(ev)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}}else evLocal.save()}
+async function delEv(id){events=events.filter(e=>e.id!==id);renderCal();
+  if(store){try{await store.collection("events").doc(id).delete()}catch(e){toast("Não foi possível apagar.")}}else evLocal.save()}
+document.getElementById("evForm").addEventListener("submit",e=>{e.preventDefault();
+  const title=document.getElementById("evTitle").value.trim();if(!title)return;
+  /* "by" permite à notificação de nova marcação não avisar quem a criou */
+  putEv({id:uid(),date:selDay,title,time:document.getElementById("evTime").value||"",...(store&&meId?{by:meId}:{})});
+  e.target.reset();toast("Marcado")});
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.day){selDay=t.dataset.day;const d=new Date(selDay+"T00:00");if(d.getMonth()!==calM){calM=d.getMonth();calY=d.getFullYear()}renderCal()}
+  else if(t.dataset.delev)delEv(t.dataset.delev)});
+document.getElementById("cPrev").onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
+document.getElementById("cNext").onclick=()=>{calM++;if(calM>11){calM=0;calY++}renderCal()};
+
+/* ---------- casa partilhada (Firebase) ---------- */
+const ls={get(k){try{return localStorage.getItem(k)||""}catch(e){return""}},set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+const hasFb=!!(window.FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey);
+const SUB="Despensa, compras, despesas e agenda.", SUB_LOCAL=SUB+" Guardado neste aparelho.";
+const normCode=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const fmtCode=c=>c.match(/.{1,4}/g).join("-");
+let fb=null, houseCode=ls.get("casa-codigo"), meId="", pushOk=null;
+const loadFb=async()=>fb||(fb=await import("./casa-firebase.js"));
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+
+function listen(){
+  store.collection("items").onSnapshot(snap=>{items=snap.docs.map(d=>({...d.data()}));local.save();render()},
+    ()=>{store=null;items=local.load();render()});
+  store.collection("bills").onSnapshot(snap=>{bills=snap.docs.map(d=>({...d.data()}));billLocal.save();renderBills()},
+    ()=>{store=null;bills=billLocal.load();renderBills()});
+  store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();renderCal()},
+    ()=>{store=null;events=evLocal.load();renderCal()});
+}
+async function startShared(){
+  document.getElementById("sub").textContent=SUB;
+  const f=await loadFb();
+  try{await f.join(houseCode)}
+  catch(e){
+    if(e&&e.code==="permission-denied"){houseCode="";ls.set("casa-codigo","");setup("Este código já não dá acesso. Escreve-o outra vez ou cria uma casa nova.");return}
+    /* sem rede: segue com a cópia guardada no aparelho; sincroniza quando voltar */
+  }
+  meId=await f.me().catch(()=>"");
+  store=f.store(houseCode);listen();renderHouse();
+  if(typeof Notification!=="undefined"&&Notification.permission==="granted"&&await f.pushSupported())
+    navigator.serviceWorker.ready.then(reg=>f.enablePush(houseCode,reg)).then(()=>ls.set("casa-push",houseCode)).catch(()=>{});
+}
+function setup(msg){
+  const m=document.getElementById("setupMsg");m.hidden=!msg;m.textContent=msg||"";
+  show("setup");
+}
+function busy(on){["joinBtn","newHouse"].forEach(id=>document.getElementById(id).disabled=on)}
+async function enter(c,how){
+  houseCode=c;ls.set("casa-codigo",c);ls.set("casa-local","");busy(false);
+  document.getElementById("joinCode").value="";show("inicio");
+  await startShared();toast(how);
+}
+function renderHouse(){
+  const box=document.getElementById("houseBox");box.hidden=!hasFb;if(!hasFb)return;
+  document.getElementById("houseShared").hidden=!houseCode;
+  document.getElementById("houseLocal").hidden=!!houseCode;
+  if(houseCode){document.getElementById("houseCode").textContent=fmtCode(houseCode);renderPush()}
+}
+async function renderPush(){
+  const meta=document.getElementById("pushMeta"), btn=document.getElementById("pushBtn");
+  btn.hidden=true;
+  if(pushOk===null)pushOk=fb?await fb.pushSupported():false;
+  if(!pushOk){meta.textContent=isIOS&&!standalone?"No iPhone, adiciona primeiro a app ao ecrã principal (Partilhar → Adicionar ao ecrã principal) e abre-a a partir do ícone."
+    :!window.FIREBASE_VAPID_KEY?"Ainda não estão configuradas.":"Este navegador não suporta notificações.";return}
+  const p=Notification.permission;
+  if(p==="denied"){meta.textContent="Bloqueadas. Ativa em Definições → Notificações → Casa.";return}
+  if(p==="granted"&&ls.get("casa-push")===houseCode){meta.textContent="Ativas neste telemóvel: marcações, contas, validades e resumo às 9h.";return}
+  meta.textContent="Lembretes de marcações, contas a pagar e validades, e um resumo às 9h.";btn.hidden=false;
+}
+
+document.getElementById("joinForm").addEventListener("submit",async e=>{e.preventDefault();
+  const c=normCode(document.getElementById("joinCode").value);
+  if(c.length<8){setup("O código tem pelo menos 8 letras ou números.");return}
+  if(!navigator.onLine){setup("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
+  busy(true);
+  try{await(await loadFb()).join(c)}
+  catch(err){busy(false);setup(err&&err.code==="permission-denied"?"Não há nenhuma casa com esse código. Confirma as letras e os números.":"Não foi possível entrar. Verifica a internet e tenta outra vez.");return}
+  enter(c,"Entraste na casa");
+});
+document.getElementById("newHouse").addEventListener("click",async()=>{
+  if(!navigator.onLine){setup("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
+  busy(true);
+  try{const c=await(await loadFb()).create({items,bills,events});enter(c,"Casa criada. Partilha o código.")}
+  catch(err){busy(false);setup("Não foi possível criar a casa. Verifica a internet e tenta outra vez.")}
+});
+document.getElementById("useLocal").addEventListener("click",()=>{ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});
+document.getElementById("shareCode").addEventListener("click",async()=>{
+  const c=fmtCode(houseCode), text=`Código da nossa casa: ${c}\nAbre ${location.origin+location.pathname} no iPhone, adiciona ao ecrã principal e escreve o código.`;
+  if(navigator.share){try{await navigator.share({text});return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(c);toast("Código copiado")}catch(e){toast(c)}
+});
+document.getElementById("pushBtn").addEventListener("click",async()=>{
+  /* No iPhone o pedido de permissão tem de vir logo do toque no botão */
+  const p=await Notification.requestPermission();
+  if(p==="granted"){
+    try{const reg=await navigator.serviceWorker.ready;await fb.enablePush(houseCode,reg);ls.set("casa-push",houseCode);toast("Notificações ativas")}
+    catch(e){toast("Não foi possível ativar as notificações.")}
+  }
+  renderPush();
+});
+document.getElementById("leaveHouse").addEventListener("click",async()=>{
+  if(!confirm("Sair desta casa neste telemóvel? Os dados continuam guardados para quem tiver o código."))return;
+  try{await fb.leave(houseCode)}catch(e){}
+  ["casa-codigo","casa-push",local.key,billLocal.key,evLocal.key].forEach(k=>ls.set(k,""));
+  location.reload();
+});
+
+/* ---------- arranque ---------- */
+items=local.load();bills=billLocal.load();events=evLocal.load();render();renderBills();renderCal();
+if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
+else if(houseCode)startShared().catch(()=>{document.getElementById("sub").textContent=SUB_LOCAL});
+else if(ls.get("casa-local")){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
+else setup();
+
+/* ---------- app instalada (PWA) ---------- */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  /* Toque numa notificação com a app já aberta */
+  navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go)route("#"+e.data.go)});
+}
+/* A app pode ficar aberta em segundo plano de um dia para o outro: recarrega para as datas ficarem certas */
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ymd(new Date())!==ymd(now))location.reload()});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Casa partilhada por código: households/{código}/...
+// Só entra quem tem sessão (autenticação anónima) E conhece o código de uma casa que já existe.
+// Não é possível listar casas, por isso o código funciona como uma chave.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isMember(code) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/households/$(code)/members/$(request.auth.uid));
+    }
+
+    match /households/{code} {
+      allow get: if isMember(code);
+      allow list: if false;
+      // Criar uma casa nova: código só com letras maiúsculas e números, entre 8 e 40.
+      // Se o código já existir, isto conta como "update" e é recusado.
+      allow create: if signedIn()
+        && code.matches('^[A-Z0-9]{8,40}$')
+        && request.resource.data.keys().hasOnly(['created', 'by'])
+        && request.resource.data.by == request.auth.uid;
+      allow update, delete: if false;
+
+      // Cada aparelho regista-se como membro ao escrever o código.
+      match /members/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || isMember(code));
+        allow list: if isMember(code);
+        allow create: if signedIn() && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/households/$(code))
+          && request.resource.data.keys().hasOnly(['joined']);
+        allow update: if false;
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      // Token de notificações de cada aparelho (só o próprio aparelho lê e escreve o seu).
+      match /tokens/{uid} {
+        allow get, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if isMember(code) && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['token', 'updated', 'ua'])
+          && request.resource.data.token is string
+          && request.resource.data.token.size() < 4096;
+      }
+
+      // Dados da app: despensa, carne e peixe (items), despesas (bills) e calendário (events).
+      match /{coll}/{docId} {
+        allow read, delete: if coll in ['items', 'bills', 'events'] && isMember(code);
+        allow create, update: if coll in ['items', 'bills', 'events'] && isMember(code)
+          && request.resource.data.id == docId
+          && request.resource.data.size() <= 20;
+      }
+    }
+  }
+}
