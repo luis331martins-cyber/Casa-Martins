@@ -3,12 +3,12 @@
    Estes valores não são secretos: quem protege os dados são as regras do Firestore.
    Enquanto apiKey estiver vazio, a app funciona só neste aparelho (localStorage). */
 self.FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyDWHdg-oDKxajewRlQa1IYJrvVOhrxJeqs",
+  authDomain: "casa-martins-a983d.firebaseapp.com",
+  projectId: "casa-martins-a983d",
+  storageBucket: "casa-martins-a983d.firebasestorage.app",
+  messagingSenderId: "26519856939",
+  appId: "1:26519856939:web:16e774cf78801e3078c76e"
 };
 
 /* Cloud Messaging → Certificados push da Web → par de chaves (chave pública). */
