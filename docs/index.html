@@ -937,7 +937,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <p class="msg" id="carPdfMsg" hidden></p>
     <button class="btn ghost" type="button" id="addCar">+ Juntar carro</button>
     <div id="carNew"></div>
-    <p class="note" style="margin:0">Importar PDF: escolhe a apólice do seguro, a ficha de inspeção, o comprovativo do IUC ou a fatura da revisão. A app lê as datas, o valor, a matrícula e os km, preenche o carro e só tens de confirmar e tocar em Guardar. Funciona com PDFs com texto (não com fotografias digitalizadas). Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
+    <p class="note" style="margin:0">Revisão: escreve a data e os km da última; a app calcula a próxima (1 ano ou 25.000 km, o que chegar primeiro) e avisa. Atualiza os km de vez em quando em Editar. Importar PDF: escolhe a apólice do seguro, a ficha de inspeção, o comprovativo do IUC ou a fatura da revisão. A app lê as datas, o valor, a matrícula e os km, preenche o carro e só tens de confirmar e tocar em Guardar. Funciona com PDFs com texto (não com fotografias digitalizadas). Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
   </section>
 
   <section id="tab-docs" class="group" style="gap:16px" hidden>
@@ -2624,7 +2624,7 @@ function parseDocs(txt){let who="";const L=[];
 let docShow=false;
 const RECS={
   car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome (com a marca, ex.: Mercedes CLA)","text",1,"ex.: Mercedes CLA"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
-    ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revisao","Revisão: data","date"],["revKm","Revisão: aos km","number",0,"opcional"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
+    ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revUlt","Última revisão: data","date"],["revUltKm","Última revisão: km","number",0,"ex.: 134010"],["revIntKm","Revisão a cada (km)","number",0,"25000"],["revIntAnos","…ou a cada (anos)","number",0,"1"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
@@ -2636,6 +2636,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
   else if(b.dataset.reccancel){editRec[b.dataset.reccancel]="";RECS[b.dataset.reccancel].render()}
   else if(b.dataset.recdel){const [k,id]=b.dataset.recdel.split("|"), x=bills.find(y=>y.id===id);if(!x||!confirm("Apagar?"))return;
     if(x.ev)delEv(x.ev);editRec[k]="";delBill(id);RECS[k].render();toast("Apagado")}
+  else if(b.dataset.revdone){const c=bills.find(y=>y.id===b.dataset.revdone);if(!c)return;
+    const v=prompt("Quantos km tinha o carro nesta revisão?",c.km!=null?String(Math.round(c.km)):"");if(v===null)return;const km=parseFloat(String(v).replace(/[.\s]/g,"").replace(",","."));
+    const n={...c,revUlt:ymd(new Date())};if(!isNaN(km)){n.revUltKm=km;if(c.km==null||km>c.km){n.km=km;n.kmAt=Date.now()}}carRevCalc(n);putBill(n);renderCars();
+    toast(`Próxima revisão: ${fmtD(n.revisao)}${n.revKm?" ou aos "+fmtN(n.revKm)+" km":""}`)}
   else if(b.dataset.carbump){const [id,f]=b.dataset.carbump.split("|"), c=bills.find(y=>y.id===id);if(!c||!c[f])return;
     const n=f==="inspecao"&&c.inspecaoAnos?+c.inspecaoAnos:1;let d=c[f];while(daysTo(d)<=60)d=addYears(d,n);putBill({...c,[f]:d});renderCars();toast("Próximo: "+fmtD(d))}});
 document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!ref)return;e.preventDefault();
@@ -2650,6 +2654,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   for(const [n,,t] of F.fields){const el=f[n];if(!el)continue;let v=t==="check"?el.checked:el.value.trim();if(t==="number")v=v===""?null:parseFloat(v.replace(",","."));
     if(v===""||v===null||(typeof v==="number"&&isNaN(v)))delete x[n];else x[n]=v}
   if(k==="car"&&x.km!=null&&(!old||old.km!==x.km))x.kmAt=Date.now();
+  if(k==="car")carRevCalc(x);
   if(k==="doc")x.name=`${x.type} (${x.who})`;if(k==="health")x.name=`${x.who}: ${x.title||x.type}`;
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
@@ -2664,13 +2669,21 @@ const CARBRANDS=[[/mercedes|benz/,"mercedes"],[/\bbmw\b/,"bmw"],[/\baudi\b/,"aud
 function carLogo(c){const n=noAcc(`${c.name||""} ${c.brand||""}`), b=CARBRANDS.find(([re])=>re.test(n));
   return b?`<span class="carlogo"><img src="https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/${b[1]}.svg" alt="${b[1]}" onerror="this.parentNode.className='carlogo none';this.remove()"></span>`
     :`<span class="carlogo none"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5v-4l1.8-4.6A2 2 0 0 1 8.2 6.5h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4M3.5 12.5h17v4.5h-17zM7 19.5v-2.5M17 19.5v-2.5"/></svg></span>`}
+/* Revisão: a próxima é 1 ano depois da última OU 25.000 km depois (valores que se podem mudar), o que chegar primeiro */
+function carRevCalc(x){const anos=+x.revIntAnos||1, int=+x.revIntKm||25000;
+  if(x.revUlt)x.revisao=addYears(x.revUlt,anos);if(x.revUltKm!=null&&!isNaN(x.revUltKm))x.revKm=Math.round(+x.revUltKm+int)}
+function revRow(c){if(!c.revisao&&!c.revKm)return"";const d=c.revisao?daysTo(c.revisao):null, kmLeft=c.revKm&&c.km!=null?c.revKm-c.km:null;
+  const kmTag=kmLeft!=null?`<span class="due ${kmLeft<=0?"bad":kmLeft<=1500?"warn":"ok"}">${kmLeft<=0?"Passou "+fmtN(-kmLeft)+" km":"Faltam "+fmtN(kmLeft)+" km"}</span>`:"";
+  const last=c.revUlt||c.revUltKm!=null?`<br>Última: ${[c.revUlt?fmtD(c.revUlt):"",c.revUltKm!=null?fmtN(c.revUltKm)+" km":""].filter(Boolean).join(" · ")}`:"";
+  const near=(d!=null&&d<=30)||(kmLeft!=null&&kmLeft<=1500);
+  return`<div class="rrow"><span class="rl">Revisão</span><span class="rm">${[c.revisao?fmtD(c.revisao):"",c.revKm?"ou aos "+fmtN(c.revKm)+" km":""].filter(Boolean).join(" ")}${c.revUlt||c.revUltKm!=null?" (o que chegar primeiro)":""}${last}</span>
+    <span class="rs">${c.revisao?dueTag(c.revisao,30):""}${kmTag}${near?`<button type="button" class="bump" data-revdone="${c.id}">Revisão feita ›</button>`:""}</span></div>`}
 function renderCars(){const el=document.getElementById("carList");if(!el)return;const L=recsOf("car").sort((a,b)=>a.name.localeCompare(b.name,"pt"));
   const row=(c,f,label,extra)=>{if(!c[f])return"";const d=daysTo(c[f]);
     return`<div class="rrow"><span class="rl">${label}</span><span class="rm">${fmtD(c[f])}${extra?" · "+extra:""}</span><span class="rs">${dueTag(c[f],30)}${d<=30?`<button type="button" class="bump" data-carbump="${c.id}|${f}">Renovado ›</button>`:""}</span></div>`};
   el.innerHTML=L.map(c=>c.id===editRec.car?recFormFor("car",c):`<div class="rcard"><button type="button" class="rhead" data-recedit="car|${c.id}"><span style="display:flex;align-items:center;min-width:0">${carLogo(c)}<span style="min-width:0"><b>${esc(c.name)}</b>${c.plate?`<span class="plate"><i>P</i><span>${esc(c.plate.toUpperCase())}</span></span>`:""}</span></span><span class="edit">Editar</span></button>
     ${c.km!=null?`<div class="rrow"><span class="rl">${fmtN(c.km)} km</span><span class="rm">Atualizado ${c.kmAt?(daysTo(ymd(new Date(c.kmAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.kmAt)))} dias`):""}</span></div>`:""}
-    ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${row(c,"revisao","Revisão",c.revKm?`ou aos ${fmtN(c.revKm)} km`:"")}
-    ${!c.revisao&&c.revKm?`<div class="rrow"><span class="rl">Revisão</span><span class="rm">aos ${fmtN(c.revKm)} km</span><span class="rs">${c.km!=null?`<span class="due ${c.revKm-c.km<=1000?"warn":"ok"}">Faltam ${fmtN(Math.max(0,c.revKm-c.km))} km</span>`:""}</span></div>`:""}
+    ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${revRow(c)}
     ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
   document.getElementById("addCar").hidden=editRec.car==="new"}
 function renderDocs(){const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
@@ -2743,8 +2756,9 @@ function parseCarPdf(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(n
     if(!out.inspecao){const d=after(/(data (?:da|de) inspec\w*|inspec\w* realizada)/)||D.map(x=>x.ds).filter(x=>x<=today).sort().pop();if(d)out.inspecao=addYears(d,1)}}
   if(out.kind==="iuc"){out.iuc=after(/(data limite(?: de pagamento)?|pagamento ate|prazo de pagamento)/)||latest(addYears(today,-1),addYears(today,1));
     if(out.iuc&&out.iuc<today)out.iuc=addYears(out.iuc,1)}
-  if(out.kind==="revisao"){out.revisao=after(/proxima (?:revisao|manutencao)/,80);
-    const pm=t.match(/proxima (?:revisao|manutencao)/);if(pm){const rk=t.slice(pm.index,pm.index+120).match(/(\d{1,3}(?:[.\s]\d{3})+|\d{4,7})\s*(?:km|quilometros)/);if(rk)out.revKm=numPT(rk[1])}}
+  /* Fatura da revisão: guarda a data e os km desta revisão; a próxima é calculada (+1 ano ou +25.000 km) */
+  if(out.kind==="revisao"){out.revUlt=after(/(data(?: da fatura| do servico| de emissao)?\s*:?|ordem de reparacao)/,60)||D.map(x=>x.ds).filter(x=>x<=today).sort().pop()||null;
+    if(out.revUlt&&out.revUlt>today)out.revUlt=null;if(out.km!=null)out.revUltKm=out.km}
   return out}
 /* Valor do seguro: junta todos os valores em euros do PDF e dá pontos a cada um conforme as palavras à volta.
    Prémio total/anual/a pagar sobe; capital, franquia, limite e coberturas descem (não são o que se paga). */
@@ -2786,7 +2800,7 @@ function premio(t){const C=[];const ins=insurerOf(t), R=pdfRules(), rule=R[ins||
   if(k>1){note=`${eur(v)} × ${k}${fr?" (pagamento "+fr+")":""}`;v=Math.round(v*k*100)/100}
   const seen=new Set([best.v]), alt=C.filter(c=>c.sc>=0&&!seen.has(c.v)&&seen.add(c.v)).slice(0,6).map(c=>({v:c.v,ctx:c.ctx,fr:frOf(c)}));
   return{v,alt,note,ins,ctx:best.ctx,learned:isLearned,all:C.map(c=>({v:c.v,ctx:c.ctx}))}}
-const CARLBL={seguro:"Seguro: renovação",seguroVal:"Seguro: valor",inspecao:"Inspeção",iuc:"IUC",revisao:"Revisão: data",revKm:"Revisão: aos km",km:"Quilómetros",plate:"Matrícula"};
+const CARLBL={seguro:"Seguro: renovação",seguroVal:"Seguro: valor",inspecao:"Inspeção",iuc:"IUC",revUlt:"Última revisão",revUltKm:"Km na revisão",km:"Quilómetros",plate:"Matrícula"};
 var pdfIns="", pdfLearn=null, pdfAll=null, pdfProp=null;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setval]");if(!b)return;const f=b.closest("form");if(!f||!f.seguroVal)return;
   const k=FRK[b.dataset.fr]||1, v=Math.round(+b.dataset.setval*k*100)/100;f.seguroVal.value=v;pdfProp=v;
@@ -2806,13 +2820,14 @@ document.getElementById("carPdf").addEventListener("change",async e=>{const file
   if(!car&&cars.length>1)car=cars.find(c=>confirm(`Este PDF é do carro "${c.name}"?`));
   pdfIns=f.ins||"";pdfLearn=null;pdfAll=f.valAll||null;pdfProp=f.seguroVal!=null?f.seguroVal:null;
   if(car&&car.km!=null&&f.km!=null&&f.km<=car.km){delete f.km;keys.splice(keys.indexOf("km"),1)}/* não volta a km mais antigos */
+  if(car&&car.revUlt&&f.revUlt&&f.revUlt<=car.revUlt){for(const k of ["revUlt","revUltKm"])if(keys.includes(k))keys.splice(keys.indexOf(k),1)}/* nem a revisões mais antigas */
   editRec.car=car?car.id:"new";renderCars();
   const form=document.querySelector(`[data-recform="car|${editRec.car}"]`);if(!form)return;
   const set=(k,v)=>{const el=form[k];if(!el||v==null)return;el.value=v;el.closest("label").style.outline="2px solid #34c759";el.closest("label").style.borderRadius="10px"};
   keys.forEach(k=>set(k,f[k]));if(f.plate&&(!car||!car.plate))set("plate",f.plate);if(!car&&!form.name.value)form.name.value="Carro";
   const nomes={seguro:"apólice de seguro",inspecao:"ficha de inspeção",iuc:"IUC",revisao:"revisão"};
   if(f.valAlt&&f.valAlt.length||f.valNote)form.querySelector('[name=seguroVal]').closest("label").insertAdjacentHTML("afterend",`<div class="chips wide" style="align-items:center"><span class="note" style="margin:0">${f.valLearned?"✓ Escolhido como da última vez"+(f.ins?" ("+esc(f.ins)+")":"")+". ":""}${f.valNote?"Valor anual = "+esc(f.valNote)+". ":""}${f.valCtx?"Junto a “"+esc(f.valCtx)+"”. ":""}${f.valAlt.length?"Não é este? Toca no certo e a app aprende para a próxima:":""}</span>${f.valAlt.map(a=>`<button type="button" class="chip" data-setval="${a.v}" data-ctx="${esc(a.ctx)}" data-fr="${a.fr||""}" style="text-align:left">${eur(a.v)}${a.ctx?`<small style="display:block;font-size:11px;opacity:.8">${esc(a.ctx)}</small>`:""}</button>`).join("")}</div>`);
-  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>`);
+  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"||k==="revUltKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>`);
   say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})});
 
 /* ---------- Plano de refeições da semana ----------
@@ -3076,7 +3091,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v64";
+const APPV="casa-v65";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
