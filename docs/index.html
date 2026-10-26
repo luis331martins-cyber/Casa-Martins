@@ -334,6 +334,9 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
 .bill-edit{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .bill-edit .f{min-width:0}
 .bill-edit input,.bill-edit select{min-width:0;width:100%;box-sizing:border-box}
+/* iPhone: os campos de mês e data ignoram a largura sem isto e saem da caixa */
+.bill-edit input[type=month],.bill-edit input[type=date]{-webkit-appearance:none;appearance:none;display:block;max-width:100%;text-align:left}
+.bill-edit input[type=month]::-webkit-date-and-time-value,.bill-edit input[type=date]::-webkit-date-and-time-value{text-align:left}
 .bill,.bill.inc{grid-template-columns:auto 1fr auto}
 .budget .head{grid-template-columns:auto 1fr auto}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
