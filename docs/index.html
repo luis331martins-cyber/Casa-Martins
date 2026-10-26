@@ -175,7 +175,12 @@ form.join{display:flex;flex-direction:column;gap:8px}
 #today{margin:0;font-size:15px;font-weight:600;color:var(--fg);opacity:.85}
 #clock{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0 8px;color:var(--fg)}
 /* Chat da casa: botão no canto inferior direito do Início */
-.chatfab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;width:58px;height:58px;border-radius:50%;
+.fabs{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;gap:14px}
+#tab-inicio{padding-bottom:150px}
+.calfab{position:relative;width:58px;height:58px;border-radius:50%;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.calfab .cal-wd{font-size:10px;font-weight:700}.calfab .cal-d{font-size:24px;font-weight:600;line-height:1}
+.calfab .nbadge{top:-2px;right:-2px}
+.chatfab{position:relative;width:58px;height:58px;border-radius:50%;
   background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0}
 .chatfab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chatfab b{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#ff3b30;color:#fff;font-size:13px;line-height:22px;font-weight:700}
@@ -191,6 +196,17 @@ form.join{display:flex;flex-direction:column;gap:8px}
 .chatbar textarea{flex:1;resize:none;min-height:38px;max-height:120px;border-radius:19px;padding:8px 14px;font:inherit;font-size:16px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .chatbar button{width:38px;height:38px;border-radius:50%;padding:0;display:grid;place-items:center;background:#0a84ff;color:#fff;flex:none}
 .chatbar button svg{width:20px;height:20px;fill:currentColor}
+.agenda{display:block;width:100%;text-align:left;background:var(--surface);border-radius:16px;padding:14px 16px;font:inherit;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.agenda .ahead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.agenda .ahead b{font-size:13px;color:#ff3b30;text-transform:uppercase;letter-spacing:.03em}
+.agenda .ahead span{font-size:13px;color:var(--accent)}
+.agenda .arow{display:grid;grid-template-columns:44px 4px minmax(0,1fr);gap:10px;align-items:center;padding:7px 0}
+.agenda .adate{text-align:center;line-height:1.05}.agenda .adate small{display:block;font-size:11px;font-weight:700;color:#ff3b30;text-transform:uppercase}.agenda .adate span{font-size:22px;font-weight:700}
+.agenda .abar{height:34px;border-radius:2px}
+.agenda .at{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.agenda .am{font-size:13px;color:var(--muted)}
+.agenda .anone{color:var(--muted);font-size:15px;padding:6px 0}
+form.addev .range{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:15px;color:var(--muted)}
+form.addev .range input{flex:1;min-width:0}
 header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .gear{flex:none;display:grid;place-items:center;padding:0}
 .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -561,6 +577,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       </div>
       <button class="nav-m gear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </header>
+    <button type="button" class="agenda" id="agenda" data-go="calendario" aria-label="Agenda: abrir o calendário"></button>
     <div class="group" style="gap:8px">
       <h2>Alertas</h2>
       <div id="alerts" class="group"></div>
@@ -576,7 +593,6 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <h3>Casa e família</h3>
       <div class="apps">
         <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
-        <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
         <button class="app" data-go="creditos"><span class="ico i-loan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M9.7 10v8M14.3 10v8M19 10v8M3 20.5h18"/></svg></span><span class="lbl">Créditos</span></button>
         <button class="app" data-go="meds"><span class="ico i-med"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
       </div>
@@ -674,12 +690,13 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <div class="legend"><span><i class="dot ev"></i>Marcação</span><span><i class="dot bl"></i>Conta a pagar</span><span><i class="dot ex"></i>Validade</span></div>
     </div>
     <div class="group" style="gap:10px">
-      <h2 id="dayLabel" style="text-transform:capitalize"></h2>
+      <h2 id="dayLabel"></h2>
       <div id="dayList" class="group"></div>
       <form class="addev" id="evForm" autocomplete="off">
         <input id="evTitle" placeholder="Marcar algo (ex.: Jantar com os pais)" aria-label="O que marcar" required>
         <input id="evTime" type="time" aria-label="Hora (opcional)">
         <button class="btn" type="submit">Marcar</button>
+        <label class="range">Até ao dia<input id="evEnd" type="date" aria-label="Último dia (opcional, para vários dias)"></label>
       </form>
     </div>
   </section>
@@ -901,7 +918,10 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
   </section>
 </div>
 
+<div class="fabs" id="fabs" hidden>
+<button class="calfab" type="button" data-go="calendario" aria-label="Calendário"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></button>
 <button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.8-.8L3 20.5l1.4-4.3A8 8 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/></svg><b id="chatBadge" hidden></b></button>
+</div>
 <div class="toast" id="toast" hidden></div>
 <datalist id="shopList"></datalist>
 
@@ -1514,7 +1534,7 @@ let calY=now.getFullYear(), calM=now.getMonth(), selDay=ymd(now);
 const WD=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
 document.getElementById("cHead").innerHTML=WD.map(d=>`<span>${d}</span>`).join("");
 document.getElementById("today").textContent=now.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
-document.getElementById("icoWd").textContent=now.toLocaleDateString("pt-PT",{weekday:"long"}).split("-")[0];
+document.getElementById("icoWd").textContent=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][now.getDay()];
 document.getElementById("icoD").textContent=now.getDate();
 /* Saudação: "Olá, <nome>" se este telemóvel tiver nome, senão bom dia/boa tarde/boa noite */
 function myName(){try{return localStorage.getItem("casa-nome")||""}catch(e){return""}}
@@ -1527,10 +1547,16 @@ document.getElementById("nameForm").addEventListener("submit",e=>{e.preventDefau
   const n=document.getElementById("myName").value.trim();if(!n)return;setMyName(n);toast("Olá, "+myName()+"!");show("inicio")});
 function billsOn(dateStr){if(dateStr.slice(0,7)<START)return[];const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
   return fixas().filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
-function dayInfo(ds){return{ev:events.filter(e=>e.date===ds),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
+/* Marcações de vários dias: {date (primeiro dia), end (último dia)} */
+const evEnd=e=>e.end&&e.end>e.date?e.end:e.date, evOn=(e,ds)=>ds>=e.date&&ds<=evEnd(e);
+const dDiff=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
+const wdS=d=>["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][d.getDay()];
+const shortD=ds=>{const d=new Date(ds+"T12:00");return`${wdS(d)} ${d.getDate()}/${d.getMonth()+1}`};
+function evSpan(e,ds){if(evEnd(e)===e.date)return"";const n=dDiff(e.date,evEnd(e))+1;return ds?`Dia ${dDiff(e.date,ds)+1} de ${n}`:`${n} dias · ${shortD(e.date)} a ${shortD(evEnd(e))}`}
+function dayInfo(ds){return{ev:events.filter(e=>evOn(e,ds)),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
 function renderCal(){
-  document.getElementById("cLabel").textContent=new Date(calY,calM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
-  document.getElementById("cLabel").style.textTransform="capitalize";
+  const cap=t=>t[0].toUpperCase()+t.slice(1);
+  document.getElementById("cLabel").textContent=cap(new Date(calY,calM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"}));
   const first=new Date(calY,calM,1), start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
   const todayS=ymd(now); let html="";
   for(let i=0;i<42;i++){
@@ -1542,10 +1568,10 @@ function renderCal(){
   }
   document.getElementById("cGrid").innerHTML=html;
   const sd=new Date(selDay+"T00:00");
-  document.getElementById("dayLabel").textContent=selDay===todayS?"Hoje":sd.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
+  document.getElementById("dayLabel").textContent=selDay===todayS?"Hoje":cap(sd.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}));
   const inf=dayInfo(selDay);
   const evs=[...inf.ev].sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
-  let rows=evs.map(e=>`<div class="ev-row"><span class="t">${e.time||"—"}</span><span class="name">${esc(e.title)}${e.byName?`<span class="meta" style="display:block;font-weight:400;font-size:.8rem;color:var(--muted)">Marcado por ${esc(e.byName)}</span>`:""}</span><button class="x" data-delev="${e.id}" aria-label="Apagar ${esc(e.title)}">×</button></div>`).join("");
+  let rows=evs.map(e=>`<button type="button" class="ev-row" data-delev="${e.id}" aria-label="${esc(e.title)} (tocar para apagar)" style="width:100%;text-align:left;font:inherit;color:var(--fg)"><span class="t">${e.time&&e.date===selDay?e.time:"—"}</span><span class="name">${esc(e.title)}${e.byName||evSpan(e)?`<span class="meta" style="display:block;font-weight:400;font-size:.8rem;color:var(--muted)">${[evSpan(e)?evSpan(e,selDay)+" ("+shortD(e.date)+" a "+shortD(evEnd(e))+")":"",e.byName?"Marcado por "+esc(e.byName):""].filter(Boolean).join(" · ")}</span>`:""}</span><span></span></button>`).join("");
   const mk=selDay.slice(0,7);
   rows+=inf.bl.map(b=>`<div class="ev-row auto"><i class="dot bl"></i><span class="name">${esc(b.name)} · ${eur(monthAmt(b,mk))}${isPaid(b,mk)?" (paga)":""}</span><span></span></div>`).join("");
   rows+=inf.ex.map(i=>`<div class="ev-row auto"><i class="dot ex"></i><span class="name">Termina a validade: ${esc(i.name)}</span><span></span></div>`).join("");
@@ -1555,8 +1581,9 @@ function renderCal(){
 function renderAlerts(){
   const todayS=ymd(now), tm=new Date(now); tm.setDate(tm.getDate()+1); const tomS=ymd(tm);
   const A=[];
-  const evs=events.filter(e=>e.date===todayS||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
-  evs.forEach(e=>A.push({o:e.date===todayS?1:3,cls:"",dot:"ev",go:"calendario",day:e.date,name:e.title,meta:(e.date===todayS?"Hoje":"Amanhã")+(e.time?" às "+e.time:"")}));
+  const evs=events.filter(e=>evOn(e,todayS)||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
+  evs.forEach(e=>{const on=evOn(e,todayS), day=on?todayS:tomS;A.push({o:on?1:3,cls:"",dot:"ev",go:"calendario",day,name:e.title,
+    meta:(on?"Hoje":"Amanhã")+(e.time&&e.date===day?" às "+e.time:"")+(evSpan(e)?" · "+evSpan(e,day):"")})});
   const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
   if(mk>=START)contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=monthAmt(b,mk);
     if(lim&&sp>lim)A.push({o:2,cls:"warn",dot:"bad",go:"despesas",name:`${b.name}: acima do orçamento`,meta:`Gasto ${eur(sp)} de ${eur(lim)}`});});
@@ -1575,11 +1602,25 @@ function renderAlerts(){
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alerts").innerHTML=A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
-  const nToday=events.filter(e=>e.date===todayS).length;
+  const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
+  safe("Agenda",renderAgenda);
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-alday]");if(!t)return;
   selDay=t.dataset.alday;const d=new Date(selDay+"T00:00");calM=d.getMonth();calY=d.getFullYear();renderCal()});
+/* Cartão Agenda no Início: as próximas 3 marcações ou contas a pagar (até 60 dias) */
+function renderAgenda(){const el=document.getElementById("agenda");if(!el)return;
+  const todayS=ymd(now), lim=new Date(now);lim.setDate(lim.getDate()+60);const limS=ymd(lim), L=[];
+  events.filter(e=>evEnd(e)>=todayS&&e.date<=limS).forEach(e=>{const day=e.date<todayS?todayS:e.date;L.push({day,key:day+(e.date===day?e.time||"99":"00"),t:e.title,col:"#0a84ff",
+    m:[e.date===day&&e.time?e.time:"",evSpan(e)?evSpan(e,day):""].filter(Boolean).join(" · ")})});
+  for(let i=0;i<60&&L.length<12;i++){const d=new Date(now);d.setDate(d.getDate()+i);const ds=ymd(d), mk=ds.slice(0,7);
+    billsOn(ds).forEach(b=>{if(!isPaid(b,mk))L.push({day:ds,key:ds+"98",t:b.name,col:"#ff9f0a",m:`${b.dd?"Débito direto":"Conta a pagar"} · ${eur(monthAmt(b,mk))}`})})}
+  L.sort((a,b)=>a.key.localeCompare(b.key));
+  const tm=new Date(now);tm.setDate(tm.getDate()+1);const tomS=ymd(tm);
+  const when=ds=>ds===todayS?"Hoje":ds===tomS?"Amanhã":new Date(ds+"T12:00").toLocaleDateString("pt-PT",{weekday:"long"});
+  el.innerHTML=`<div class="ahead"><b>Agenda</b><span>Ver calendário ›</span></div>`+(L.length?L.slice(0,3).map(x=>{const d=new Date(x.day+"T12:00");
+    return`<div class="arow"><div class="adate"><small>${wdS(d)}</small><span>${d.getDate()}</span></div><div class="abar" style="background:${x.col}"></div><div style="min-width:0"><div class="at">${esc(x.t)}</div><div class="am">${esc(when(x.day)[0].toUpperCase()+when(x.day).slice(1))}${x.m?" · "+esc(x.m):""}</div></div></div>`}).join("")
+    :`<div class="anone">Nada marcado nos próximos dias. Toca para marcar.</div>`)}
 async function putEv(ev){events.push(ev);renderCal();
   if(store){try{await store.collection("events").doc(ev.id).set(ev)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}}else evLocal.save()}
 async function delEv(id){events=events.filter(e=>e.id!==id);renderCal();
@@ -1587,11 +1628,13 @@ async function delEv(id){events=events.filter(e=>e.id!==id);renderCal();
 document.getElementById("evForm").addEventListener("submit",e=>{e.preventDefault();
   const title=document.getElementById("evTitle").value.trim();if(!title)return;
   /* "by" permite à notificação de nova marcação não avisar quem a criou */
-  putEv({id:uid(),date:selDay,title,time:document.getElementById("evTime").value||"",...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})});
-  e.target.reset();toast("Marcado")});
+  const end=document.getElementById("evEnd").value;
+  if(end&&end<selDay){toast("O último dia tem de ser depois do primeiro.");return}
+  putEv({id:uid(),date:selDay,title,time:document.getElementById("evTime").value||"",...(end&&end>selDay?{end}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})});
+  e.target.reset();toast(end&&end>selDay?`Marcado: ${dDiff(selDay,end)+1} dias`:"Marcado")});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.dataset.day){selDay=t.dataset.day;const d=new Date(selDay+"T00:00");if(d.getMonth()!==calM){calM=d.getMonth();calY=d.getFullYear()}renderCal()}
-  else if(t.dataset.delev)delEv(t.dataset.delev)});
+  else if(t.dataset.delev){const ev=events.find(x=>x.id===t.dataset.delev);if(ev&&confirm(`Apagar "${ev.title}"${evSpan(ev)?" (todos os dias)":""}?`)){delEv(ev.id);toast("Apagado")}}});
 document.getElementById("cPrev").onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
 document.getElementById("cNext").onclick=()=>{calM++;if(calM>11){calM=0;calY++}renderCal()};
 
@@ -2005,7 +2048,7 @@ const isMine=m=>meId?m.uid===meId:m.name===myName();
 function chatRead(){try{return+localStorage.getItem("casa-chat-lido")||0}catch(e){return 0}}
 function chatMarkRead(){const L=chatMsgs();const t=L.length?L[L.length-1].at||0:0;try{localStorage.setItem("casa-chat-lido",Math.max(t,chatRead()))}catch(e){}}
 function chatFabState(){const fab=document.getElementById("chatFab");
-  fab.hidden=!houseCode||document.getElementById("tab-inicio").hidden;
+  fab.hidden=!houseCode;document.getElementById("fabs").hidden=document.getElementById("tab-inicio").hidden;
   const n=chatOn?0:chatMsgs().filter(m=>!isMine(m)&&(m.at||0)>chatRead()).length, b=document.getElementById("chatBadge");
   b.hidden=!n;b.textContent=n>9?"9+":n;fab.setAttribute("aria-label",n?`Mensagens, ${n} por ler`:"Mensagens")}
 function chatOpened(){chatOn=!document.getElementById("tab-chat").hidden;if(chatOn){chatMarkRead();renderChat();window.scrollTo(0,document.body.scrollHeight)}chatFabState()}

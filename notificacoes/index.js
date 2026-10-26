@@ -115,11 +115,14 @@ async function morning(code, now) {
   /* Resumo do dia: marcações de hoje e amanhã e lista de compras. */
   const byTime = (a, b) => (a.time || "99").localeCompare(b.time || "99");
   const tom = addDays(now.date, 1);
-  const hoje = events.filter((e) => e.date === now.date).sort(byTime);
+  /* Marcações de vários dias (end = último dia) contam em todos os dias */
+  const on = (e, ds) => ds >= e.date && ds <= (e.end && e.end > e.date ? e.end : e.date);
+  const hoje = events.filter((e) => on(e, now.date)).sort(byTime);
   const amanha = events.filter((e) => e.date === tom).sort(byTime);
   const toBuy = items.filter((i) => i.lvl < 2).length;
   const linhas = [
-    ...hoje.map((e) => `${e.time || "Hoje"} · ${e.title}`),
+    ...hoje.map((e) => `${e.time && e.date === now.date ? e.time : "Hoje"} · ${e.title}${e.end && e.end > e.date ?
+      ` (dia ${daysBetween(e.date, now.date) + 1} de ${daysBetween(e.date, e.end) + 1})` : ""}`),
     ...amanha.map((e) => `Amanhã${e.time ? " às " + e.time : ""} · ${e.title}`),
   ];
   if (toBuy) linhas.push(`${plural(toBuy, "produto", "produtos")} para comprar`);
@@ -153,7 +156,8 @@ async function house(code, now) {
     if (vistos.has(e.id)) continue;
     vistos.add(e.id);
     if (!first) {
-      const quando = `${longDate(e.date)}${e.time ? " às " + e.time : ""}`;
+      const quando = e.end && e.end > e.date ? `de ${longDate(e.date)} a ${longDate(e.end)}` :
+        `${longDate(e.date)}${e.time ? " às " + e.time : ""}`;
       /* "Bianca marcou: Jantar com os pais" quando a marcação traz o nome de quem a fez */
       const msg = e.byName ?
         {title: `${e.byName} marcou: ${e.title}`, body: quando[0].toUpperCase() + quando.slice(1)} :
