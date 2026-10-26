@@ -1617,7 +1617,7 @@ function renderAgenda(){const el=document.getElementById("agenda");if(!el)return
   L.sort((a,b)=>a.key.localeCompare(b.key));
   const tm=new Date(now);tm.setDate(tm.getDate()+1);const tomS=ymd(tm);
   const when=ds=>ds===todayS?"Hoje":ds===tomS?"Amanhã":new Date(ds+"T12:00").toLocaleDateString("pt-PT",{weekday:"long"});
-  el.innerHTML=`<div class="ahead"><b>Agenda</b><span>Ver calendário ›</span></div>`+(L.length?L.slice(0,3).map(x=>{const d=new Date(x.day+"T12:00");
+  el.innerHTML=`<div class="ahead"><b>Agenda</b></div>`+(L.length?L.slice(0,3).map(x=>{const d=new Date(x.day+"T12:00");
     return`<div class="arow"><div class="adate"><small>${wdS(d)}</small><span>${d.getDate()}</span></div><div class="abar" style="background:${x.col}"></div><div style="min-width:0"><div class="at">${esc(x.t)}</div><div class="am">${esc(when(x.day)[0].toUpperCase()+when(x.day).slice(1))}${x.m?" · "+esc(x.m):""}</div></div></div>`}).join("")
     :`<div class="anone">Nada marcado nos próximos dias. Toca para marcar.</div>`)}
 async function putEv(ev){events.push(ev);renderCal();
