@@ -1,8 +1,8 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v22";
+const VERSION="casa-v23";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
-  "icons/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
+  "icons/casa.svg","icons/casa-180.png","icons/casa-192.png","icons/casa-512.png"];
 const SDK=["app","auth","firestore","messaging"].map(n=>`https://www.gstatic.com/firebasejs/12.19.0/firebase-${n}.js`);
 const CDN=["https://www.gstatic.com","https://fonts.googleapis.com","https://fonts.gstatic.com"];
 
@@ -60,8 +60,8 @@ self.addEventListener("push",e=>{
   e.waitUntil(self.registration.showNotification(title,{
     body:d.body||n.body||"",
     tag:d.tag||undefined,
-    icon:"icons/icon-192.png",
-    badge:"icons/icon-192.png",
+    icon:"icons/casa-192.png",
+    badge:"icons/casa-192.png",
     data:{link:d.link||(p.fcmOptions&&p.fcmOptions.link)||"./"}
   }));
 });
