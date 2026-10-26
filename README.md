@@ -26,7 +26,8 @@ firestore.rules           ← regras de segurança do Firestore
   Firebase Authentication com um endereço interno (`<utilizador>@casa-martins.invalid`, que não recebe e-mails).
 - Esqueceu-se do PIN: no Firebase, **Authentication → Utilizadores**, apaga-se esse utilizador e cria-se a conta
   outra vez com o mesmo nome; a seguir escreve-se o código da casa (os dados não se perdem).
-- Na primeira vez, cria-se a casa ou escreve-se o **código da casa**; o código fica guardado na conta
+- Ao **criar a conta** escreve-se logo o nome e o **código da casa** (quem ainda não tem casa deixa vazio e cria-a a seguir);
+  o código fica guardado na conta
   (`users/{uid}`), por isso noutro telemóvel basta entrar com a conta.
 - Sessões anónimas de versões anteriores passam a conta sem perder nada (o utilizador mantém-se).
 - Para isto funcionar: **Authentication → Método de login → E-mail/senha → Ativar** e as regras de

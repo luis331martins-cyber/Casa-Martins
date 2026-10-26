@@ -171,7 +171,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 /* Casa partilhada: código e notificações */
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
-#joinCode{text-transform:uppercase;letter-spacing:.06em}
+#joinCode,#authCode{text-transform:uppercase;letter-spacing:.06em}
 header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .gear{flex:none;display:grid;place-items:center;padding:0}
 .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -447,6 +447,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <label class="f">Nome de utilizador<input id="authUser" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required maxlength="20" placeholder="ex.: luis"></label>
       <label class="f">PIN (6 números)<input id="authPass" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="current-password" required placeholder="••••••"></label>
       <label class="f" id="authPass2Box" hidden>Repete o PIN<input id="authPass2" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password" placeholder="••••••"></label>
+      <label class="f" id="authCodeBox" hidden>Código da casa<input id="authCode" placeholder="ex.: CASA-7K4Q-9XPA" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off"></label>
+      <p class="note" id="authCodeNote" style="margin:-4px 0 0" hidden>Escreve o código que recebeste. Se ainda não há casa, deixa vazio e cria-a no passo seguinte.</p>
       <button class="btn" type="submit" id="authBtn">Entrar</button>
     </form>
     <p class="msg" id="authMsg" role="alert" hidden></p>
@@ -459,7 +461,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <h1>A nossa casa</h1>
       <p class="sub">Para partilhar a despensa, as compras, as contas e a agenda, escreve o mesmo código da casa em cada telemóvel. Só é preciso fazer isto uma vez.</p>
     </header>
-    <label class="f">O teu nome<input id="setupName" placeholder="ex.: Bianca" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
+    <label class="f" id="setupNameBox">O teu nome<input id="setupName" placeholder="ex.: Bianca" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
     <form class="join" id="joinForm" autocomplete="off">
       <label class="f">Código da casa<input id="joinCode" placeholder="ex.: CASA-7K4Q-9XPA" autocapitalize="characters" autocorrect="off" spellcheck="false" required></label>
       <button class="btn" type="submit" id="joinBtn">Entrar</button>
@@ -1495,7 +1497,8 @@ async function startShared(){
 let authMode="in", acct=null;
 function authMsg(m){const el=document.getElementById("authMsg");el.hidden=!m;el.textContent=m||""}
 function setAuthMode(m){authMode=m;document.querySelectorAll("[data-authmode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.authmode===m));
-  document.getElementById("authNameBox").hidden=m!=="up";document.getElementById("authPass2Box").hidden=m!=="up";document.getElementById("authBtn").textContent=m==="up"?"Criar conta":"Entrar";
+  document.getElementById("authNameBox").hidden=m!=="up";document.getElementById("authPass2Box").hidden=m!=="up";
+  document.getElementById("authCodeBox").hidden=document.getElementById("authCodeNote").hidden=m!=="up"||!!houseCode;document.getElementById("authBtn").textContent=m==="up"?"Criar conta":"Entrar";
   document.getElementById("authPass").autocomplete=m==="up"?"new-password":"current-password";authMsg("")}
 function login(msg,mode){setAuthMode(mode||authMode);if(msg)authMsg(msg);
   if(!document.getElementById("authName").value)document.getElementById("authName").value=myName();show("login")}
@@ -1532,12 +1535,19 @@ document.getElementById("authForm").addEventListener("submit",async e=>{e.preven
   if(!/^[a-z0-9][a-z0-9._-]{1,19}$/.test(u)){authMsg("O nome de utilizador tem de ter 2 a 20 carateres: letras, números, ponto ou hífen.");return}
   if(!/^\d{6}$/.test(pass)){authMsg("O PIN tem de ter 6 números.");return}
   if(authMode==="up"&&document.getElementById("authPass2").value!==pass){authMsg("Os dois PIN não são iguais.");return}
+  const code=authMode==="up"&&!houseCode?normCode(document.getElementById("authCode").value):"";
+  if(code&&code.length<8){authMsg("O código da casa tem pelo menos 8 letras ou números.");return}
   const email=userEmail(u);
   if(!navigator.onLine){authMsg("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
   const btn=document.getElementById("authBtn");btn.disabled=true;authMsg("");
   try{const f=await loadFb();const a=authMode==="up"?await f.signUp(email,pass,name):await f.signIn(email,pass);
     if(authMode==="up")setMyName(name);
-    document.getElementById("authPass").value="";document.getElementById("authPass2").value="";await afterLogin(a);toast(authMode==="up"?"Conta criada":"Sessão iniciada")}
+    document.getElementById("authPass").value="";document.getElementById("authPass2").value="";document.getElementById("authCode").value="";
+    /* Conta nova com código: entra logo na casa, sem passar pelo ecrã do código */
+    if(code){acct=a;try{await f.join(code)}
+      catch(err){btn.disabled=false;setup(err&&err.code==="permission-denied"?"A conta foi criada, mas não há nenhuma casa com esse código. Confirma as letras e os números.":"A conta foi criada, mas não foi possível entrar na casa. Verifica a internet e tenta outra vez.");return}
+      btn.disabled=false;return enter(code,"Conta criada. Entraste na casa")}
+    await afterLogin(a);toast(authMode==="up"?"Conta criada":"Sessão iniciada")}
   catch(err){authMsg(authErr(err))}
   btn.disabled=false;
 });
@@ -1551,6 +1561,8 @@ document.getElementById("logoutBtn").addEventListener("click",async()=>{
 
 function setup(msg){
   const m=document.getElementById("setupMsg");m.hidden=!msg;m.textContent=msg||"";
+  /* O nome já foi escrito ao criar a conta: só se pede se ainda não houver */
+  document.getElementById("setupNameBox").hidden=!!myName();
   show("setup");
 }
 function busy(on){["joinBtn","newHouse"].forEach(id=>document.getElementById(id).disabled=on)}
