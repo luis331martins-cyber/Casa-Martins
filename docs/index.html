@@ -136,7 +136,6 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 .bill input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);margin:0}
 .bill .meta{font-size:.82rem;color:var(--muted);margin-top:2px}
 .bill .amt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.bill.inc{grid-template-columns:1fr auto auto}
 .budget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .budget .head{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center}
 .budget .name{font-weight:600;min-width:0;overflow-wrap:anywhere}
@@ -154,6 +153,9 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 label.tick{display:flex;gap:8px;align-items:center;font-size:.88rem;color:var(--muted)}
 label.tick input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .bill.inc .amt{color:var(--accent)}
+.bill.inc.got .name{color:var(--muted)}
+button.tot{text-align:left;color:var(--fg);font:inherit;cursor:pointer}
+#incFill{background:var(--accent)}
 .tot.neg .v{color:var(--bad)}
 .bill.paid .name{color:var(--muted);text-decoration:line-through}
 form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}
@@ -337,47 +339,57 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
       <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
     </div>
     <div class="totals">
-      <div class="tot paid"><div class="k">Entra</div><div class="v" id="vIn"></div></div>
-      <div class="tot"><div class="k">Sai</div><div class="v" id="vTot"></div></div>
+      <button class="tot paid" type="button" data-scroll="incSec"><div class="k">Entra</div><div class="v" id="vIn"></div></button>
+      <button class="tot" type="button" data-scroll="expSec"><div class="k">Sai</div><div class="v" id="vTot"></div></button>
       <div class="tot" id="totLeft"><div class="k">Sobra</div><div class="v" id="vLeft"></div></div>
     </div>
-    <p class="note" style="margin:0">Pago <b id="vPaid"></b> · Falta <b id="vDue" style="color:var(--bad)"></b></p>
-    <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
-    <div id="budBox" class="group" style="gap:8px">
-      <h2 style="margin-top:6px">Gastos do mês</h2>
-      <p class="note" style="margin:0">Toca no <b>+</b> para juntar o que gastaste (ex.: uma ida ao Continente).</p>
-      <div id="budgets" class="group"></div>
+
+    <div id="incSec" class="group" style="gap:8px">
+      <h2 style="margin-top:8px">Receitas</h2>
+      <p class="note" style="margin:0" id="incLine"></p>
+      <div class="bar" aria-hidden="true"><span id="incFill" style="width:0"></span></div>
+      <div id="incomes" class="group"></div>
     </div>
-    <h2 style="margin-top:6px">A pagar</h2>
-    <div id="bills" class="group"></div>
-    <button class="back" type="button" id="payAll" style="align-self:flex-start" hidden></button>
-    <h2 style="margin-top:10px">Nova despesa</h2>
-    <form class="addbill" id="billForm" autocomplete="off">
-      <label class="f wide">Despesa<input id="bName" placeholder="ex.: Luz" required></label>
-      <label class="f">Valor por mês (€)<input id="bAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="45,00" required></label>
-      <label class="f">Dia<input id="bDay" type="number" min="1" max="31" inputmode="numeric" placeholder="8"></label>
-      <label class="tick wide"><input type="checkbox" id="bBud"> Vários gastos ao longo do mês (ex.: supermercado)</label>
-      <button class="btn wide" type="submit">Adicionar</button>
-    </form>
-    <div>
-      <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
-      <div class="chips" id="billChips"></div>
+
+    <div id="expSec" class="group" style="gap:8px">
+      <h2 style="margin-top:8px">Despesas</h2>
+      <p class="note" style="margin:0">Pago <b id="vPaid"></b> · Falta <b id="vDue" style="color:var(--bad)"></b></p>
+      <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
+      <div id="budBox" class="group" style="gap:8px">
+        <h3>Gastos do mês</h3>
+        <p class="note" style="margin:0">Toca no <b>+</b> para juntar o que gastaste (ex.: uma ida ao Continente).</p>
+        <div id="budgets" class="group"></div>
+      </div>
+      <h3>A pagar</h3>
+      <div id="bills" class="group"></div>
+      <button class="back" type="button" id="payAll" style="align-self:flex-start" hidden></button>
     </div>
-    <h2 style="margin-top:10px">Receitas</h2>
-    <div id="incomes" class="group"></div>
-    <form class="addbill" id="incForm" autocomplete="off">
-      <label class="f wide">Receita<input id="iName" placeholder="ex.: Ordenado" required></label>
-      <label class="f">Valor (€)<input id="iAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="1000,00" required></label>
-      <label class="f">Dia<input id="iDay" type="number" min="1" max="31" inputmode="numeric" placeholder="25"></label>
-      <button class="btn wide" type="submit">Adicionar</button>
-    </form>
-    <details class="import" id="billImport">
-      <summary>Colar uma lista de contas ou receitas</summary>
-      <p class="note" style="margin:0">Uma por linha: nome; valor; dia. O dia é opcional e o que já existe é ignorado. Uma linha só com “RECEITAS” faz com que as linhas seguintes sejam receitas; “CONTAS” volta às contas.</p>
-      <textarea id="bImport" rows="8" placeholder="Luz; 45,00; 8&#10;Água; 20,00" aria-label="Lista de contas"></textarea>
-      <button class="btn" type="button" id="bImportBtn">Adicionar contas</button>
-    </details>
-    <p class="note" style="margin:0">Tudo se repete todos os meses. Marca cada conta quando estiver paga; o mês seguinte começa por pagar. Toca num nome para o editar ou para escrever quanto pagaste nesse mês.</p>
+
+    <div class="group" style="gap:8px">
+      <h2 style="margin-top:8px">Adicionar</h2>
+      <form class="addbill" id="billForm" autocomplete="off">
+        <label class="f wide">Tipo<select id="bType">
+          <option value="fixa">Conta a pagar (uma vez por mês)</option>
+          <option value="budget">Gastos do mês (vários gastos, ex.: supermercado)</option>
+          <option value="income">Receita (ex.: ordenado)</option>
+        </select></label>
+        <label class="f wide">Nome<input id="bName" placeholder="ex.: Luz" required></label>
+        <label class="f">Valor por mês (€)<input id="bAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="45,00" required></label>
+        <label class="f">Dia<input id="bDay" type="number" min="1" max="31" inputmode="numeric" placeholder="8"></label>
+        <button class="btn wide" type="submit">Adicionar</button>
+      </form>
+      <div id="chipBox">
+        <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
+        <div class="chips" id="billChips"></div>
+      </div>
+      <details class="import" id="billImport">
+        <summary>Colar uma lista de contas ou receitas</summary>
+        <p class="note" style="margin:0">Uma por linha: nome; valor; dia. O dia é opcional e o que já existe é ignorado. Uma linha só com “RECEITAS” faz com que as linhas seguintes sejam receitas; “CONTAS” volta às contas.</p>
+        <textarea id="bImport" rows="8" placeholder="Luz; 45,00; 8&#10;Água; 20,00" aria-label="Lista de contas"></textarea>
+        <button class="btn" type="button" id="bImportBtn">Adicionar</button>
+      </details>
+    </div>
+    <p class="note" style="margin:0">Tudo se repete todos os meses. Marca as receitas quando entrarem e as contas quando estiverem pagas; o mês seguinte começa do zero. Toca num nome para o editar ou para escrever o valor certo desse mês.</p>
   </section>
 </div>
 
@@ -530,7 +542,11 @@ function renderBills(){
   const byDay=(a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt");
   const all=contas(), list=fixas().sort(byDay), buds=all.filter(isBud).sort((a,b)=>a.name.localeCompare(b.name,"pt"));
   const inc=bills.filter(isInc).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
-  const tot=all.reduce((s,b)=>s+planned(b,k),0), tin=inc.reduce((s,b)=>s+(+b.amount||0),0);
+  const tot=all.reduce((s,b)=>s+planned(b,k),0), tin=inc.reduce((s,b)=>s+planned(b,k),0), got=inc.reduce((s,b)=>s+paidAmt(b,k),0);
+  document.getElementById("incSec").hidden=false;
+  document.getElementById("incLine").innerHTML=inc.length?`Recebido <b>${eur(got)}</b> · Falta receber <b>${eur(tin-got)}</b>`:"";
+  document.getElementById("incFill").parentElement.hidden=!inc.length;
+  document.getElementById("incFill").style.width=tin?(got/tin*100)+"%":"0";
   document.getElementById("vIn").textContent=inc.length?eur(tin):"—";
   document.getElementById("vLeft").textContent=inc.length?eur(tin-tot):"—";
   document.getElementById("totLeft").className="tot"+(inc.length?(tin-tot<0?" neg":" paid"):"");
@@ -553,7 +569,7 @@ function renderBills(){
       <label class="f wide">${what}<input name="n" value="${esc(b.name)}" required></label>
       <label class="f">${isBud(b)?"Orçamento por mês (€)":"Valor por mês (€)"}<input name="a" type="number" min="0" step="0.01" inputmode="decimal" value="${+b.amount||0}" required></label>
       <label class="f">Dia<input name="d" type="number" min="0" max="31" inputmode="numeric" value="${b.day||""}" placeholder="Sem dia"></label>
-      ${isInc(b)?"":isBud(b)?"":`<label class="f wide">Pago em ${mName} (€)<input name="m" type="number" min="0" step="0.01" inputmode="decimal" value="${typeof pv==="number"?pv:""}" placeholder="Igual ao valor por mês"></label>`}
+      ${isBud(b)?"":`<label class="f wide">${isInc(b)?"Recebido":"Pago"} em ${mName} (€)<input name="m" type="number" min="0" step="0.01" inputmode="decimal" value="${typeof pv==="number"?pv:""}" placeholder="Igual ao valor por mês"></label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
@@ -582,11 +598,15 @@ function renderBills(){
       </form>
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
-  document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>b.id===editBill?editRow(b,"Receita"):`<div class="bill inc">
-      <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${b.day?"Dia "+b.day:"Sem dia fixo"}</div></button>
-      <div class="amt">+${eur(+b.amount||0)}</div>
+  document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>{if(b.id===editBill)return editRow(b,"Receita");
+    const g=!!(b.paid&&b.paid[k]), gv=b.paid&&b.paid[k];
+    const meta=g?(typeof gv==="number"&&gv!==(+b.amount||0)?`Recebida · habitual ${eur(+b.amount||0)}`:"Recebida"):(b.day?"Dia "+b.day:"Sem dia fixo");
+    return `<div class="bill inc${g?" got":""}">
+      <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
+      <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></button>
+      <div class="amt">+${eur(planned(b,k))}</div>
       <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
-    </div>`).join(""):`<div class="empty">Ainda não há receitas.<br>Adiciona os ordenados e outras entradas abaixo para veres quanto sobra.</div>`;
+    </div>`}).join(""):`<div class="empty">Ainda não há receitas.<br>Adiciona os ordenados em baixo, em <b>Adicionar → Receita</b>, para veres quanto sobra.</div>`;
   el.innerHTML=list.length?list.map(b=>{
     const p=!!(b.paid&&b.paid[k]), pv=b.paid&&b.paid[k];
     let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
@@ -608,17 +628,17 @@ document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefau
   const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
   if(!name||isNaN(amount))return;
   if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
-  const bud=document.getElementById("bBud").checked;
-  putBill(bud?{id:uid(),name,amount,day:0,kind:"budget",spent:{}}:{id:uid(),name,amount,day:Math.min(Math.max(day,0),31),paid:{}});
-  e.target.reset(); toast(name+" adicionada");
+  const type=document.getElementById("bType").value, d=Math.min(Math.max(day,0),31);
+  putBill(type==="budget"?{id:uid(),name,amount,day:0,kind:"budget",spent:{}}:type==="income"?{id:uid(),name,amount,day:d,kind:"income",paid:{}}:{id:uid(),name,amount,day:d,paid:{}});
+  ["bName","bAmt","bDay"].forEach(i=>document.getElementById(i).value="");toast(name+" adicionada");
 });
-document.getElementById("incForm").addEventListener("submit",e=>{e.preventDefault();
-  const name=document.getElementById("iName").value.trim(), amount=parseFloat(document.getElementById("iAmt").value), day=parseInt(document.getElementById("iDay").value)||0;
-  if(!name||isNaN(amount))return;
-  if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
-  putBill({id:uid(),name,amount,day:Math.min(Math.max(day,0),31),kind:"income"});
-  e.target.reset(); toast(name+" adicionada");
-});
+/* Tipo no formulário Adicionar: muda os exemplos e só mostra os atalhos para contas */
+document.getElementById("bType").addEventListener("change",e=>{const t=e.target.value;
+  document.getElementById("bName").placeholder=t==="income"?"ex.: Ordenado":t==="budget"?"ex.: Continente":"ex.: Luz";
+  document.getElementById("bAmt").placeholder=t==="income"?"1000,00":t==="budget"?"450,00":"45,00";
+  document.getElementById("bDay").disabled=t==="budget";document.getElementById("chipBox").hidden=t!=="fixa"});
+/* As caixas Entra e Sai levam às receitas e às despesas */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-scroll]");if(t)document.getElementById(t.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});
 document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t)return;
   if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
@@ -653,11 +673,8 @@ document.addEventListener("submit",e=>{
   if(!name||isNaN(amount))return;
   if(bills.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
   const nb={...b,name,amount,day:Math.min(Math.max(day,0),31)};
-  if(!isInc(b)){
-    const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;
-    if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}
-    else if(e.target.m&&e.target.m.value!==""){const v=parseFloat(e.target.m.value);if(!isNaN(v))nb.paid={...(b.paid||{}),[mKey()]:v}}
-  }
+  if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
+  if(!isBud(nb)&&e.target.m&&e.target.m.value!==""){const v=parseFloat(e.target.m.value);if(!isNaN(v))nb.paid={...(b.paid||{}),[mKey()]:v}}
   editBill="";putBill(nb);toast("Guardado");
 });
 /* Colar uma lista: "nome; valor; dia" por linha (também aceita colunas separadas por tabulação) */
