@@ -1,0 +1,35 @@
+# Repor o PIN de quem se esqueceu: Actions → Repor PIN → Run workflow → escreve o nome de utilizador.
+# O PIN temporário chega por notificação aos telemóveis da casa (não aparece nos registos, que são públicos).
+name: Repor PIN
+
+on:
+  workflow_dispatch:
+    inputs:
+      utilizador:
+        description: "Nome de utilizador (ex.: luis)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  repor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: notificacoes/package-lock.json
+      - name: Instalar
+        working-directory: notificacoes
+        run: npm ci --no-audit --no-fund
+      - name: Repor o PIN
+        working-directory: notificacoes
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APP_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          UTILIZADOR: ${{ inputs.utilizador }}
+        run: node repor-pin.js

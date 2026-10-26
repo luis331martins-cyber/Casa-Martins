@@ -24,8 +24,12 @@ firestore.rules           ← regras de segurança do Firestore
 
 - Cada pessoa entra com **nome de utilizador e PIN de 6 números**. Por trás é uma conta de e-mail do
   Firebase Authentication com um endereço interno (`<utilizador>@casa-martins.invalid`, que não recebe e-mails).
-- Esqueceu-se do PIN: no Firebase, **Authentication → Utilizadores**, apaga-se esse utilizador e cria-se a conta
-  outra vez com o mesmo nome; a seguir escreve-se o código da casa (os dados não se perdem).
+- **Mudar o PIN:** ⚙️ → Conta → **Mudar PIN**.
+- **Esqueceu-se do PIN:** no GitHub, **Actions → Repor PIN → Run workflow**, escreve o nome de utilizador e toca em
+  **Run workflow**. É gerado um PIN temporário que chega **por notificação** aos telemóveis da casa (só a quem tem as
+  notificações ativas). O PIN nunca aparece nos registos do Actions, que são públicos. Depois entra-se com ele e muda-se na ⚙️.
+- **Cópia de segurança:** ⚙️ → **Cópia de segurança → Exportar** guarda um ficheiro com tudo (tem dados pessoais:
+  guarda-o no iCloud e não o partilhes). **Repor** volta a pôr o que estava na cópia (o que foi criado depois fica).
 - Ao **criar a conta** escreve-se logo o nome e o **código da casa** (quem ainda não tem casa deixa vazio e cria-a a seguir);
   o código fica guardado na conta
   (`users/{uid}`), por isso noutro telemóvel basta entrar com a conta.
@@ -157,9 +161,9 @@ Tocar numa notificação abre a app no separador certo (Contas, Despensa, Calend
 - O GitHub não garante a hora exata: com muito movimento, uma execução pode atrasar alguns minutos ou falhar.
   O resumo das 9h pode chegar às 9h10 ou 9h20; se a execução das 9h falhar, sai na seguinte (até às 21h).
 - Os lembretes saem entre ~60 e ~75 minutos antes da marcação.
-- Em repositórios públicos, o GitHub pode desligar os agendamentos quando não há atividade há 60 dias. O workflow
-  tenta manter-se ligado sozinho; se mesmo assim for desligado, recebes um email do GitHub e voltas a ligá-lo em
-  **Actions → Notificações → Enable workflow**.
+- Em repositórios públicos, o GitHub desliga os agendamentos quando não há alterações há 60 dias. Para isso não
+  acontecer, se passarem 45 dias sem alterações o próprio workflow grava a data em `.github/ativo.txt`. Se mesmo assim
+  for desligado, recebes um email do GitHub e voltas a ligá-lo em **Actions → Notificações → Enable workflow**.
 - Os registos do Actions são públicos, por isso o script não escreve neles o código da casa nem o conteúdo das notificações.
 
 ### Limites do iPhone

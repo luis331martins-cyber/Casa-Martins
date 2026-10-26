@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -40,9 +40,17 @@ jobs:
             exit 0
           fi
           node index.js
-      # O GitHub desliga agendamentos de repositórios sem atividade há 60 dias; isto tenta mantê-lo ligado.
+      # O GitHub desliga os agendamentos de repositórios sem alterações há 60 dias. Se passarem 45 dias sem alterações,
+      # grava a data num ficheiro (.github/ativo.txt) para o repositório contar como ativo.
       - name: Manter o agendamento ativo
         if: github.event_name == 'schedule'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/notificacoes.yml/enable" || true
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt $(( 45 * 86400 )) ]; then
+            date -u +%F > .github/ativo.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/ativo.txt
+            git commit -m "Manter as notificações ativas"
+            git push
+          fi

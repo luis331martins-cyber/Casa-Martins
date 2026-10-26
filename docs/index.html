@@ -657,7 +657,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <button class="btn" type="submit" id="authBtn">Entrar</button>
     </form>
     <p class="msg" id="authMsg" role="alert" hidden></p>
-    <p class="note" id="forgotNote" style="margin:0">Esqueceste-te do PIN? No Firebase, em <b>Authentication → Utilizadores</b>, apaga o teu utilizador e cria a conta outra vez com o mesmo nome. Os dados da casa não se perdem.</p>
+    <p class="note" id="forgotNote" style="margin:0">Esqueceste-te do PIN? No GitHub do Luís: <b>Actions → Repor PIN → Run workflow</b>, escreve o nome de utilizador e toca em Run. Chega uma notificação com um PIN temporário aos telemóveis da casa; depois muda-o na ⚙️. Os dados da casa não se perdem.</p>
     <button class="back" type="button" id="useLocalNoAcc" style="align-self:flex-start;color:var(--muted)">Usar só neste aparelho, sem conta</button>
   </section>
 
@@ -781,6 +781,10 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       </div>
       <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
+    <div class="item" style="flex-wrap:wrap;row-gap:8px">
+      <div style="min-width:0;flex:1 1 100%"><div class="name">Cópia de segurança</div><div class="meta" id="bkMeta">Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega.</div></div>
+      <div style="display:flex;gap:8px;margin-left:auto"><button class="btn ghost" type="button" id="bkExport">Exportar</button><label class="btn ghost" role="button">Repor<input type="file" id="bkImport" accept="application/json,.json" hidden></label></div>
+    </div>
     <div class="item">
       <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
       <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
@@ -790,6 +794,13 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
         <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
         <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
       </div>
+      <div class="item"><div style="min-width:0"><div class="name">PIN</div><div class="meta">Muda o teu PIN de 6 números</div></div><button class="btn ghost" type="button" id="pinBtn">Mudar PIN</button></div>
+      <form class="bill-edit" id="pinForm" hidden autocomplete="off">
+        <label class="f wide">PIN atual<input name="o" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="current-password" required></label>
+        <label class="f">PIN novo<input name="n" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password" required></label>
+        <label class="f">Repete<input name="r" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password" required></label>
+        <button class="btn" type="submit">Guardar PIN</button><button class="btn ghost" type="button" id="pinCancel">Cancelar</button>
+      </form>
     </div>
     <div id="houseLocal" class="item" hidden>
       <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
@@ -2813,6 +2824,33 @@ document.getElementById("planShop").addEventListener("click",()=>{const ws=weekS
   need.forEach(g=>{const ex=findIngr(g,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}else{const it={id:uid(),name:g.label,cat:g.cat,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
   render();renderPlan();toast(`${need.size} ingrediente${need.size===1?"":"s"} nas compras: ${[...need.values()].map(g=>g.label).join(", ")}`)});
 
+/* ---------- Cópia de segurança e PIN ---------- */
+document.getElementById("bkExport").addEventListener("click",()=>{
+  const data={app:"casa-martins",version:APPV,at:new Date().toISOString(),by:myName(),items,bills,events};
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=`casa-copia-${ymd(new Date())}.json`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  try{localStorage.setItem("casa-copia",ymd(new Date()))}catch(e){}bkMeta();
+  toast("Cópia criada. Guarda o ficheiro (ex.: Ficheiros → iCloud). Tem dados pessoais: não o partilhes.")});
+document.getElementById("bkImport").addEventListener("change",async e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  let d;try{d=JSON.parse(await f.text())}catch(err){toast("Este ficheiro não é uma cópia da app.");return}
+  if(!d||d.app!=="casa-martins"||!Array.isArray(d.items)||!Array.isArray(d.bills)||!Array.isArray(d.events)){toast("Este ficheiro não é uma cópia da app.");return}
+  if(!confirm(`Repor a cópia de ${String(d.at||"").slice(0,10)}? Volta tudo o que estava na cópia (${d.items.length} produtos, ${d.bills.length} contas e registos, ${d.events.length} marcações). O que foi criado depois fica como está.`))return;
+  toast("A repor…");let n=0;
+  for(const it of d.items)if(it&&it.id){const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);await put(it);n++}
+  for(const b of d.bills)if(b&&b.id){await putBill(b);n++}
+  for(const ev of d.events)if(ev&&ev.id){events=events.filter(x=>x.id!==ev.id);await putEv(ev);n++}
+  render();renderBills();toast(`Cópia reposta: ${n} registos`)});
+function bkMeta(){let l="";try{l=localStorage.getItem("casa-copia")||""}catch(e){}const el=document.getElementById("bkMeta");if(!el)return;
+  const d=l?dDiff(l,ymd(new Date())):null;el.textContent=l?`Última cópia neste telemóvel: ${fmtD(l)}${d>31?" · já passou um mês, faz outra":""}`:"Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega."}
+setTimeout(()=>safe("Cópia",bkMeta),0);
+document.getElementById("pinBtn").addEventListener("click",()=>{document.getElementById("pinForm").hidden=false;document.getElementById("pinBtn").hidden=true});
+document.getElementById("pinCancel").addEventListener("click",()=>{const f=document.getElementById("pinForm");f.reset();f.hidden=true;document.getElementById("pinBtn").hidden=false});
+document.getElementById("pinForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.target;
+  if(!/^\d{6}$/.test(f.n.value)){toast("O PIN tem de ter 6 números.");return}if(f.n.value!==f.r.value){toast("Os dois PIN novos não são iguais.");return}
+  try{await(await loadFb()).changePass(f.o.value,f.n.value);f.reset();f.hidden=true;document.getElementById("pinBtn").hidden=false;toast("PIN mudado ✓")}
+  catch(err){toast(/wrong-password|invalid-credential/.test(err&&err.code||"")?"O PIN atual está errado.":err&&err.code==="auth/too-many-requests"?"Muitas tentativas. Espera um pouco.":"Não foi possível mudar o PIN. Verifica a internet.")}});
+
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
 var chatOn=false;
@@ -2982,7 +3020,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v61";
+const APPV="casa-v62";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

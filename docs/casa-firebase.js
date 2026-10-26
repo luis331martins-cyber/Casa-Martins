@@ -2,7 +2,7 @@
    Os dados ficam em households/{código}/items|bills|events; o código de cada pessoa fica em users/{uid}. */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,
-  EmailAuthProvider,linkWithCredential,updateProfile} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  EmailAuthProvider,linkWithCredential,updateProfile,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,connectFirestoreEmulator,
   doc,collection,setDoc,deleteDoc,getDoc,getDocFromCache,getDocsFromServer,onSnapshot,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
@@ -35,6 +35,9 @@ export async function signUp(email,pass,name){
 export async function signIn(email,pass){await signInWithEmailAndPassword(auth,email,pass);return account()}
 export async function logout(){await signOut(auth)}
 export async function resetPass(email){await sendPasswordResetEmail(auth,email)}
+/* Mudar o PIN: confirma o PIN atual e grava o novo */
+export async function changePass(oldPass,newPass){const u=await user();
+  await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,oldPass));await updatePassword(u,newPass)}
 /* Código da casa guardado na conta: ao entrar noutro telemóvel não é preciso escrevê-lo */
 export async function myCode(){const u=await user();const s=await getDoc(doc(db,"users",u.uid));return s.exists()?(s.get("code")||""):""}
 export async function saveMyCode(code,name){const u=await user();const ref=doc(db,"users",u.uid);
