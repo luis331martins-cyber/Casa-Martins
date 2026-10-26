@@ -24,13 +24,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: notificacoes/package-lock.json
+      - name: Instalar
+        working-directory: notificacoes
+        run: npm ci --no-audit --no-fund
       - name: Publicar firestore.rules
+        working-directory: notificacoes
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "Falta o segredo FIREBASE_SERVICE_ACCOUNT."; exit 1; fi
-          KEY="$RUNNER_TEMP/chave.json"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY"
-          export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
-          npx --yes firebase-tools@15.32.1 deploy --only firestore:rules --project casa-martins-a983d --non-interactive
-          rm -f "$KEY"
+        run: node regras.js
