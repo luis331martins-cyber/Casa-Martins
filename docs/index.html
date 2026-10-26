@@ -206,6 +206,25 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 #tab-inicio .ico.ios.i-health svg.sf{filter:drop-shadow(0 1px 1.5px rgba(255,31,75,.35))}
 /* Ícones com objetos 3D (Fluent Emoji da Microsoft, licença MIT), guardados na app */
 #tab-inicio .ico.ios img.e3d{position:relative;width:80%;height:80%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.22));-webkit-user-drag:none;user-select:none;pointer-events:none}
+#tab-inicio .ico.ios .eap{display:none;position:relative;width:100%;height:100%;place-items:center}
+:root[data-icons="apple"] #tab-inicio .ico.ios .eap{display:grid}:root[data-icons="apple"] #tab-inicio .ico.ios img.e3d{display:none}
+#tab-inicio .ico.ios .eap b{font-size:34px;line-height:1;font-weight:400;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+#tab-inicio .ico.ios .eap.two b{transform:translate(-5px,-4px)}#tab-inicio .ico.ios .eap i{position:absolute;right:5px;bottom:4px;font-size:22px;font-style:normal;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+/* Animados: os ícones sem animação própria flutuam, balançam ou andam, cada um ao seu ritmo */
+@keyframes icoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes icoWig{0%,70%,100%{transform:rotate(0)}76%{transform:rotate(-9deg)}84%{transform:rotate(8deg)}92%{transform:rotate(-4deg)}}
+@keyframes icoRoll{0%,100%{transform:translateX(0)}40%{transform:translateX(4px) rotate(2deg)}60%{transform:translateX(-3px) rotate(-2deg)}}
+@keyframes icoTilt{0%,100%{transform:perspective(80px) rotateY(0)}50%{transform:perspective(80px) rotateY(24deg)}}
+@keyframes icoSpin{0%,80%,100%{transform:rotate(0)}90%{transform:rotate(25deg)}}
+:root[data-icons="anim"] #tab-inicio .app[data-go="despensa"] img.e3d{animation:icoBob 2.6s ease-in-out infinite}
+:root[data-icons="anim"] #tab-inicio .app[data-go="lista"] img.e3d{animation:icoRoll 2.2s ease-in-out infinite}
+:root[data-icons="anim"] #tab-inicio .app[data-go="creditos"] img.e3d{animation:icoBob 3.2s ease-in-out infinite .4s}
+:root[data-icons="anim"] #tab-inicio .app[data-go="cartoes"] img.e3d{animation:icoTilt 2.8s ease-in-out infinite}
+:root[data-icons="anim"] #tab-inicio .app[data-go="docs"] img.e3d{animation:icoWig 3.4s ease-in-out infinite .8s}
+:root[data-icons="anim"] #tab-inicio .app[data-go="meds"] img.e3d{animation:icoSpin 3s ease-in-out infinite}
+:root[data-icons="anim"] #tab-inicio .app[data-go="videos"] img.e3d{animation:icoWig 3s ease-in-out infinite 1.4s}
+:root[data-icons="anim"] #tab-inicio .app[data-go="jogos"] img.e3d{animation:icoWig 2.4s ease-in-out infinite .3s}
+@media (prefers-reduced-motion:reduce){:root[data-icons="anim"] #tab-inicio .ico.ios img.e3d{animation:none!important}}
 .app:active .ico.ios img.e3d{transform:scale(1.06) rotate(-4deg);transition:transform .15s}
 
 /* Chat da casa: botão no canto inferior direito do Início */
@@ -883,6 +902,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="name">Aspeto</div>
       <div class="seg" role="group" aria-label="Aspeto" style="display:grid;grid-template-columns:1fr 1fr 1fr">
         <button type="button" data-tema="light">Claro</button><button type="button" data-tema="auto">Automático</button><button type="button" data-tema="dark">Escuro</button>
+      </div>
+      <div class="name">Estilo dos ícones</div>
+      <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr 1fr">
+        <button type="button" data-icostyle="3d">3D</button><button type="button" data-icostyle="apple">iPhone</button><button type="button" data-icostyle="anim">Animados</button>
       </div>
       <div class="name">Fundo da app</div>
       <div class="walls" role="group" aria-label="Fundo da app">
@@ -3686,6 +3709,20 @@ function markTheme(){const t=theme();document.querySelectorAll("[data-tema]").fo
 function setTheme(t){try{localStorage.setItem("casa-tema",t)}catch(e){}if(t==="auto")delete root.dataset.theme;else root.dataset.theme=t;markTheme()}
 markTheme();
 document.addEventListener("click",e=>{const t=e.target.closest("[data-tema]");if(t)setTheme(t.dataset.tema)});
+/* Estilo dos ícones do Início (cada telemóvel escolhe): 3D (imagens na app), iPhone (os emojis do próprio iPhone) ou Animados */
+const ICO_EMO={despensa:["🫙","🥫"],carne:["🥩","🐟"],lista:["🛒"],comer:["🍝"],plano:["🗓️"],despesas:["💶"],creditos:["🏦"],cartoes:["💳"],poupancas:["🐷"],docs:["🪪"],meds:["💊"],saude:["❤️"],carro:["🚗"],videos:["📺"],jogos:["🎮"]};
+/* Com animação própria (Fluent Emoji animados); os outros mexem-se com um movimento suave */
+const ICO_ANIM=["carne","comer","despesas","poupancas","plano","carro","saude"];
+function iconStyle(){try{const v=localStorage.getItem("casa-icones");return["3d","apple","anim"].includes(v)?v:"3d"}catch(e){return"3d"}}
+function applyIcons(){const st=iconStyle();root.dataset.icons=st;
+  document.querySelectorAll("#tab-inicio .app[data-go] .ico.ios").forEach(el=>{const go=el.parentElement.dataset.go, img=el.querySelector("img.e3d");
+    if(st==="apple"&&!el.querySelector(".eap")){const E=ICO_EMO[go]||["⭐"], ap=document.createElement("span");ap.className="eap"+(E[1]?" two":"");ap.setAttribute("aria-hidden","true");
+      ap.innerHTML=`<b>${E[0]}</b>${E[1]?`<i>${E[1]}</i>`:""}`;el.insertBefore(ap,el.firstChild)}
+    if(img){const want=`icons/${st==="anim"&&ICO_ANIM.includes(go)?"anim":"3d"}/${go}.webp`;if(img.getAttribute("src")!==want)img.setAttribute("src",want)}});
+  document.querySelectorAll("[data-icostyle]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.icostyle===st))}
+applyIcons();
+document.addEventListener("click",e=>{const t=e.target.closest("[data-icostyle]");if(!t)return;try{localStorage.setItem("casa-icones",t.dataset.icostyle)}catch(err){}applyIcons();
+  toast({"3d":"Ícones 3D","apple":"Ícones com os emojis do iPhone","anim":"Ícones animados"}[t.dataset.icostyle])});
 document.getElementById("wallColorsBtn").addEventListener("click",()=>{const f=document.getElementById("wallColors");f.hidden=!f.hidden});
 document.getElementById("wallColors").addEventListener("submit",e=>{e.preventDefault();
   const a=document.getElementById("wallA").value, b=document.getElementById("wallB").value;
@@ -3711,7 +3748,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v83";
+const APPV="casa-v84";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

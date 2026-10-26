@@ -209,4 +209,4 @@ Com `self.FIREBASE_EMULATORS = true` em `docs/firebase-config.js`, a app liga-se
 
 ## Créditos das imagens
 
-Os ícones 3D do Início (`docs/icons/3d/`) são do [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) da Microsoft (licença MIT), copiados do pacote `@lobehub/fluent-emoji-3d@1.1.0`.
+Os ícones 3D do Início (`docs/icons/3d/`) são do [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) da Microsoft (licença MIT), copiados do pacote `@lobehub/fluent-emoji-3d@1.1.0`. Os animados (`docs/icons/anim/`) vêm dos pacotes `@lobehub/fluent-emoji-anim-1…4@1.0.0` (também MIT), reduzidos para 168 px. No estilo "iPhone" (⚙️ → Estilo dos ícones) usam-se os emojis do próprio telemóvel.
