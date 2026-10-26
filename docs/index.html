@@ -243,6 +243,18 @@ h1.large{margin-top:2px}
 #pantry,#meat,#shop,#bills,#incomes,#budgets,#alerts,#dayList,#houseShared,#accounts{gap:0}
 .totals.two{grid-template-columns:1fr 1fr}
 .bill.acc{grid-template-columns:1fr auto}
+/* Contas bancárias com a cor do banco: cartão colorido com texto branco */
+#accounts:has(.bank){gap:8px}
+#accounts:has(.bank)>*{border-radius:14px!important}
+#accounts:has(.bank)>*::after{display:none}
+#accounts .bill.acc.bank{border:0;border-radius:14px!important;padding:16px;color:#fff;background:linear-gradient(135deg,var(--bk) 0,color-mix(in srgb,var(--bk) 70%,#000) 100%);box-shadow:0 3px 10px rgba(0,0,0,.12)}
+#accounts .bill.acc.bank::after{display:none}
+#accounts .bill.acc.bank .name{color:#fff;font-weight:700;font-size:17px}
+#accounts .bill.acc.bank .meta{color:rgba(255,255,255,.82)!important}
+#accounts .bill.acc.bank .amt{color:#fff!important;font-size:19px}
+#accounts .bill.acc.bank.lightbk{color:#163300}
+#accounts .bill.acc.bank.lightbk .name,#accounts .bill.acc.bank.lightbk .amt{color:#163300!important}
+#accounts .bill.acc.bank.lightbk .meta{color:rgba(22,51,0,.75)!important}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit){border:0!important;border-radius:0;position:relative;padding:11px 16px;min-height:44px;box-sizing:border-box}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit) + *){border-top-left-radius:12px;border-top-right-radius:12px}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:has(+ :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit))){border-bottom-left-radius:12px;border-bottom-right-radius:12px}
@@ -1304,15 +1316,16 @@ function renderBills(){
   const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
   const accForm=a=>`<form class="bill-edit" data-accform="${a?a.id:"new"}" autocomplete="off">
       <label class="f wide">Conta<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: CGD" autocapitalize="words"></label>
+      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&a.color===c?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
       <label class="f wide">Saldo atual (€)<input name="b" type="number" step="0.01" inputmode="decimal" required value="${a?Math.round((+a.bal||0)*100)/100:""}" placeholder="1.250,00"></label>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
       ${a?`<button class="btn danger wide" type="button" data-delacc="${a.id}">Apagar ${esc(a.name)}</button>`:""}
     </form>`;
-  document.getElementById("accounts").innerHTML=accs.map(a=>a.id===editAcc?accForm(a):`<div class="bill acc">
+  document.getElementById("accounts").innerHTML=accs.map(a=>{const c=bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}"`:""}>
       <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(a.name)}</div><div class="meta"${a.at&&Date.now()-a.at>7*864e5?' style="color:var(--warn)"':""}>Atualizado ${ago(a.at)}${a.by?" por "+esc(a.by):""}</div></button>
-      <div class="amt"${(+a.bal||0)<0?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
-    </div>`).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
+      <div class="amt"${(+a.bal||0)<0&&!c?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
+    </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
   if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat)}
@@ -1360,10 +1373,18 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
 });
 document.addEventListener("submit",e=>{
   const id=e.target.dataset.accform;if(!id)return;e.preventDefault();
-  const name=e.target.n.value.trim(), bal=parseFloat(e.target.b.value);if(!name||isNaN(bal))return;
+  const name=e.target.n.value.trim(), bal=parseFloat(e.target.b.value), color=e.target.c.value;if(!name||isNaN(bal))return;
   const old=id==="new"?null:accounts().find(x=>x.id===id);
-  editAcc="";putBill({...(old||{}),id:old?old.id:uid(),kind:"account",name,bal,at:Date.now(),...(myName()?{by:myName()}:{})});toast("Saldo guardado");
+  const a={...(old||{}),id:old?old.id:uid(),kind:"account",name,bal,at:Date.now(),...(myName()?{by:myName()}:{})};if(color)a.color=color;else delete a.color;
+  editAcc="";putBill(a);toast("Saldo guardado");
 });
+/* Cores dos bancos: reconhecidas pelo nome da conta, ou escolhidas ao editar */
+const BANKS=[[/cr[eé]dito agr[ií]cola|caixa agr[ií]cola|\bca\b/i,"#00703c","Crédito Agrícola"],[/\bcgd\b|caixa geral|^caixa\b/i,"#0060a9","Caixa Geral de Depósitos"],[/millennium|\bbcp\b/i,"#c8005b","Millennium bcp"],[/santander/i,"#ec0000","Santander"],
+  [/novo ?banco/i,"#00953b","novobanco"],[/\bbpi\b/i,"#f26c21","BPI"],[/activo ?bank/i,"#5fae2e","ActivoBank"],
+  [/montepio/i,"#1d4f91","Banco Montepio"],[/bankinter/i,"#ff6600","Bankinter"],[/revolut/i,"#0666eb","Revolut"],[/moey/i,"#6f2dbd","Moey!"],[/\bn26\b/i,"#36a18b","N26"],
+  [/openbank/i,"#e5004f","Openbank"],[/banco ctt|\bctt\b/i,"#d50f25","Banco CTT"],[/eurobic|\bbic\b/i,"#0b3b7a","EuroBic"],[/\bwise\b/i,"#9fe870","Wise"]];
+const LIGHTBK=new Set(["#9fe870"]);
+function bankColor(a){if(a.color==="none")return"";if(a.color)return a.color;const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
