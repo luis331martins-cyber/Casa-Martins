@@ -54,10 +54,10 @@ service cloud.firestore {
           && request.resource.data.token.size() < 4096;
       }
 
-      // Dados da app: despensa, carne e peixe (items), despesas (bills) e calendário (events).
+      // Dados da app: despensa, carne e peixe (items), despesas (bills), calendário (events) e anexos (files).
       match /{coll}/{docId} {
-        allow read, delete: if coll in ['items', 'bills', 'events'] && isMember(code);
-        allow create, update: if coll in ['items', 'bills', 'events'] && isMember(code)
+        allow read, delete: if coll in ['items', 'bills', 'events', 'files'] && isMember(code);
+        allow create, update: if coll in ['items', 'bills', 'events', 'files'] && isMember(code)
           && request.resource.data.id == docId
           && request.resource.data.size() <= 20;
       }

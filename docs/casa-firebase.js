@@ -4,7 +4,7 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.19.0/firebase
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,
   EmailAuthProvider,linkWithCredential,updateProfile,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,connectFirestoreEmulator,
-  doc,collection,setDoc,deleteDoc,getDoc,getDocFromCache,getDocsFromServer,onSnapshot,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+  doc,collection,setDoc,deleteDoc,getDoc,getDocFromCache,getDocsFromServer,getDocs,query,where,onSnapshot,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const app=initializeApp(self.FIREBASE_CONFIG);
 const auth=getAuth(app);
@@ -85,6 +85,15 @@ export function store(code){
 
 /* Lê a coleção diretamente do servidor (não da cópia no telemóvel): para decidir com a certeza do que já existe. */
 export async function fromServer(code,n){const q=await getDocsFromServer(collection(db,"households",code,n));return q.docs.map(d=>({...d.data(),id:d.id}))}
+
+/* ---------- anexos (PDF e fotografias) ----------
+   Em households/{código}/files, em partes de ~700 KB ({id:"<ficheiro>-<n>", file, i, n, data}); só se lêem quando se abrem. */
+export async function putFile(code,fileId,parts){const b=writeBatch(db);
+  parts.forEach((data,i)=>b.set(doc(db,"households",code,"files",`${fileId}-${i}`),{id:`${fileId}-${i}`,file:fileId,i,n:parts.length,data}));await b.commit()}
+async function fileDocs(code,fileId){return(await getDocs(query(collection(db,"households",code,"files"),where("file","==",fileId)))).docs}
+export async function getFile(code,fileId){const D=(await fileDocs(code,fileId)).map(d=>d.data()).sort((a,b)=>a.i-b.i);
+  if(!D.length||D.length!==D[0].n)throw new Error("incompleto");return D.map(d=>d.data).join("")}
+export async function delFile(code,fileId){const D=await fileDocs(code,fileId);if(!D.length)return;const b=writeBatch(db);D.forEach(d=>b.delete(d.ref));await b.commit()}
 
 /* ---------- notificações (Firebase Cloud Messaging) ---------- */
 export async function pushSupported(){

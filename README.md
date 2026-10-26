@@ -28,6 +28,9 @@ firestore.rules           ← regras de segurança do Firestore
 - **Esqueceu-se do PIN:** no GitHub, **Actions → Repor PIN → Run workflow**, escreve o nome de utilizador e toca em
   **Run workflow**. É gerado um PIN temporário que chega **por notificação** aos telemóveis da casa (só a quem tem as
   notificações ativas). O PIN nunca aparece nos registos do Actions, que são públicos. Depois entra-se com ele e muda-se na ⚙️.
+- **Anexos (PDF e fotografias)** no Carro, nos Documentos e na Saúde: ficam no Firestore em `households/{código}/files`,
+  em partes de ~900 KB (o plano grátis já não inclui Cloud Storage). Só se descarregam quando se abrem. PDFs até 5 MB;
+  as fotografias são reduzidas no telemóvel. Precisa das regras atuais de [`firestore.rules`](firestore.rules) (com `files`).
 - **Cópia de segurança:** ⚙️ → **Cópia de segurança → Exportar** guarda um ficheiro com tudo (tem dados pessoais:
   guarda-o no iCloud e não o partilhes). **Repor** volta a pôr o que estava na cópia (o que foi criado depois fica).
 - Ao **criar a conta** escreve-se logo o nome e o **código da casa** (quem ainda não tem casa deixa vazio e cria-a a seguir);
