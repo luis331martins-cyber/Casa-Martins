@@ -10,6 +10,7 @@ const {getFirestore} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
 
 const TZ = "Europe/Lisbon";
+const START = "2026-11";
 const APP_URL = process.env.APP_URL;
 const SA = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -81,7 +82,8 @@ async function morning(code, now) {
   /* Contas: as mesmas regras dos alertas da app (atrasadas, hoje, próximos 3 dias).
      Débito direto (dd) não fica "atrasado": avisa só no dia e nos 3 dias antes, para haver saldo. */
   const contas = [];
-  for (const b of bills) {
+  /* A app começa a contar em novembro de 2026: antes disso não há contas para avisar */
+  if (mk >= START) for (const b of bills) {
     if (b.kind === "income" || b.kind === "budget" || !b.day) continue;
     const p = b.paid && b.paid[mk];
     if (p != null && p !== false) continue;

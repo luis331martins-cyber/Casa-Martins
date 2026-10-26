@@ -282,6 +282,16 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
 .bill-edit input,.bill-edit select,.budget input,form.item input{background:var(--fill)}
 .bill-edit label.tick{background:transparent;padding:6px 0}
 .bill-edit{gap:10px}
+.bill,.bill.inc{grid-template-columns:auto 1fr auto}
+.budget .head{grid-template-columns:auto 1fr auto}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.sortbar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px}
+.seg button{background:transparent;color:var(--fg);font-size:13px;font-weight:500;padding:6px 14px;border-radius:7px}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);font-weight:600}
+button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;font:inherit;font-size:15px;padding:8px 0 2px;border-radius:0}
+.spend b{font-weight:600}
+.shops{font-size:13px;color:var(--muted)}
 
 </style>
 <script src="firebase-config.js"></script>
@@ -447,6 +457,12 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
       <div class="tot" id="totLeft"><div class="k">Sobra</div><div class="v" id="vLeft"></div></div>
     </div>
 
+    <div class="sortbar"><span class="note">Ordenar por</span>
+      <div class="seg" role="group" aria-label="Ordenar">
+        <button type="button" data-sort="day">Dia</button><button type="button" data-sort="amt">Valor</button><button type="button" data-sort="name">Nome</button>
+      </div>
+    </div>
+
     <div id="incSec" class="group" style="gap:8px">
       <h2 style="margin-top:8px">Receitas</h2>
       <p class="note" style="margin:0" id="incLine"></p>
@@ -460,7 +476,7 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
       <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
       <div id="budBox" class="group" style="gap:8px">
         <h3>Gastos do mês</h3>
-        <p class="note" style="margin:0">Toca no <b>+</b> para juntar o que gastaste (ex.: uma ida ao Continente).</p>
+        <p class="note" style="margin:0">Toca no <b>+</b> para juntar o que gastaste e onde (ex.: Continente, Lidl, um jantar fora). Toca num gasto para o corrigir ou apagar.</p>
         <div id="budgets" class="group"></div>
       </div>
       <h3>A pagar</h3>
@@ -630,10 +646,17 @@ const isPaid=(b,k)=>{const p=b.paid&&b.paid[k];if(p!=null)return p!==false;if(!b
 const paidAmt=(b,k)=>isPaid(b,k)?monthAmt(b,k):0;
 const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k),spentOf(b,k)):monthAmt(b,k);
 const doneOf=(b,k)=>isBud(b)?spentOf(b,k):paidAmt(b,k);
-let openBud="";
+let openBud="", editSpend="";
+/* A app começa a contar a 1 de novembro de 2026: antes disso não há contas atrasadas nem meses para ver */
+const START="2026-11";
+let sortBy=(()=>{try{return localStorage.getItem("casa-ordem")||"day"}catch(e){return"day"}})();
+const BUDQUICK=["Supermercado","Restauração","Combustível","Farmácia"], INCQUICK=["Ordenado","Subsídio de alimentação","Abono"];
+/* Sugestões de "onde / o quê" para cada gasto: as já usadas nessa despesa e algumas habituais */
+const SHOPS={super:["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Auchan","Minipreço"],rest:["Almoço","Jantar","Café","Take-away"]};
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
 const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
 const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
+if(`${viewY}-${String(viewM+1).padStart(2,"0")}`<START){viewY=+START.slice(0,4);viewM=+START.slice(5)-1}
 const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
 /* 3.589,57 € — ponto nos milhares e vírgula nos cêntimos (o formato do sistema não separa números de 4 algarismos) */
 const eur=v=>{v=Math.round((+v||0)*100)/100;const [i,d]=Math.abs(v).toFixed(2).split(".");return(v<0?"−":"")+i.replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+d+"\u00a0€"};
@@ -649,9 +672,12 @@ function renderBills(){
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
   document.getElementById("mLabel").textContent=label;
-  const byDay=(a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt");
-  const all=contas(), list=fixas().sort(byDay), buds=all.filter(isBud).sort((a,b)=>a.name.localeCompare(b.name,"pt"));
-  const inc=bills.filter(isInc).sort((a,b)=>monthAmt(b,k)-monthAmt(a,k));
+  const byName=(a,b)=>a.name.localeCompare(b.name,"pt");
+  const order=sortBy==="name"?byName:sortBy==="amt"?(a,b)=>planned(b,k)-planned(a,k)||byName(a,b):(a,b)=>(a.day||99)-(b.day||99)||byName(a,b);
+  const all=contas(), list=fixas().sort(order), buds=all.filter(isBud).sort(sortBy==="day"?byName:order);
+  const inc=bills.filter(isInc).sort(order);
+  document.querySelectorAll("[data-sort]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.sort===sortBy));
+  document.getElementById("mPrev").disabled=k<=START;
   const tot=all.reduce((s,b)=>s+planned(b,k),0), tin=inc.reduce((s,b)=>s+planned(b,k),0), got=inc.reduce((s,b)=>s+paidAmt(b,k),0);
   document.getElementById("incSec").hidden=false;
   document.getElementById("incLine").innerHTML=inc.length?`Recebido <b>${eur(got)}</b> · Falta receber <b>${eur(tin-got)}</b>`:"";
@@ -670,7 +696,7 @@ function renderBills(){
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
   const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
   const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const overdue=fixas().filter(b=>b.day&&b.day<=today&&!isPaid(b,curK)).length;
+  const overdue=curK<START?0:fixas().filter(b=>b.day&&b.day<=today&&!isPaid(b,curK)).length;
   const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
   if(typeof renderCal==="function")renderCal();
   const el=document.getElementById("bills");
@@ -685,10 +711,24 @@ function renderBills(){
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
+      <button class="btn danger wide" type="button" data-delask="${b.id}">Apagar ${esc(b.name)}</button>
     </form>`;
   /* Gastos do mês */
   document.getElementById("budBox").hidden=!buds.length;
   const today2=isCur?today:1;
+  /* Total por loja quando há mais de uma */
+  const shopSum=L=>{const t={};L.forEach(x=>{const n=x.n||"Outros";t[n]=(t[n]||0)+(+x.v||0)});const e=Object.entries(t).sort((a,c)=>c[1]-a[1]);
+    return e.length>1?`<p class="shops" style="margin:0">${e.map(([n,v])=>`${esc(n)} ${eur(v)}`).join(" · ")}</p>`:""};
+  const suggest=b=>{const used={};Object.values(b.spent||{}).flat().forEach(x=>{if(x&&x.n)used[x.n]=(used[x.n]||0)+1});
+    const base=/super|continente|mercado|compras/i.test(b.name)?SHOPS.super:/restaura|comer|almo|jantar/i.test(b.name)?SHOPS.rest:[];
+    return [...new Set([...Object.keys(used).sort((a,c)=>used[c]-used[a]),...base])].slice(0,8)};
+  const spendForm=(b,x,mode)=>`<form class="spend-add" data-${mode==="add"?"spendform":"spendedit"}="${mode==="add"?b.id:b.id+"|"+x.i}" autocomplete="off">
+        <label class="f">Valor (€)<input name="v" type="number" min="0" step="0.01" inputmode="decimal" placeholder="35,90" value="${mode==="edit"?x.v:""}" required></label>
+        <label class="f">Dia<input name="d" type="number" min="1" max="31" inputmode="numeric" value="${x.d||""}"></label>
+        <label class="f wide">Onde / o quê (opcional)<input name="n" maxlength="40" placeholder="ex.: Continente" value="${mode==="edit"?esc(x.n||""):""}"></label>
+        ${suggest(b).length?`<div class="chips wide">${suggest(b).map(n=>`<button type="button" class="chip" data-note="${esc(n)}">${esc(n)}</button>`).join("")}</div>`:""}
+        ${mode==="add"?`<button class="btn wide" type="submit">Juntar gasto</button>`:`<button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelspend="1">Cancelar</button><button class="btn danger wide" type="button" data-delspend="${b.id}|${x.i}">Apagar este gasto</button>`}
+      </form>`;
   document.getElementById("budgets").innerHTML=buds.map(b=>{
     if(b.id===editBill)return editRow(b,"Despesa");
     const sp=spentOf(b,k), lim=monthAmt(b,k), left=lim-sp, open=b.id===openBud, pct=lim?Math.min(sp/lim*100,100):(sp?100:0);
@@ -698,16 +738,10 @@ function renderBills(){
         <button class="plus" type="button" data-spend="${b.id}" aria-label="Juntar gasto em ${esc(b.name)}">+</button>
         <button type="button" class="bname" data-openbud="${b.id}" aria-expanded="${open}"><div class="name">${esc(b.name)}</div><div class="meta">Gasto ${eur(sp)} de ${eur(lim)}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}</div></button>
         <div class="amt">${left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${left>=0?"disponível":"acima"}</small></div>
-        <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
       </div>
       <div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>
-      ${open?`${L.map(x=>`<div class="spend"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}</span><b>${eur(+x.v||0)}</b><button class="x" data-delspend="${b.id}|${x.i}" aria-label="Apagar gasto">×</button></div>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
-      <form class="spend-add" data-spendform="${b.id}" autocomplete="off">
-        <label class="f">Valor (€)<input name="v" type="number" min="0" step="0.01" inputmode="decimal" placeholder="35,90" required></label>
-        <label class="f">Dia<input name="d" type="number" min="1" max="31" inputmode="numeric" value="${today2}"></label>
-        <label class="f wide">Nota (opcional)<input name="n" maxlength="40" placeholder="ex.: compras da semana"></label>
-        <button class="btn wide" type="submit">Juntar gasto</button>
-      </form>
+      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
+      ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
   document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>{if(b.id===editBill)return editRow(b,"Receita");
@@ -717,7 +751,6 @@ function renderBills(){
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></button>
       <div class="amt">+${eur(monthAmt(b,k))}</div>
-      <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
     </div>`}).join(""):`<div class="empty">Ainda não há receitas.<br>Adiciona os ordenados em baixo, em <b>Adicionar → Receita</b>, para veres quanto sobra.</div>`;
   el.innerHTML=list.length?list.map(b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
@@ -730,12 +763,12 @@ function renderBills(){
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></button>
       <div class="amt">${eur(monthAmt(b,k))}</div>
-      <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
     </div>`}).join(""):`<div class="empty">Ainda não há contas fixas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
   const unpaid=list.filter(b=>!isPaid(b,k)).length, pa=document.getElementById("payAll");
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>b.name.toLowerCase()));
-  document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as contas habituais.</span>`;
+  const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
+  document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
 document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefault();
   const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
@@ -749,19 +782,33 @@ document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefau
 document.getElementById("bType").addEventListener("change",e=>{const t=e.target.value;
   document.getElementById("bName").placeholder=t==="income"?"ex.: Ordenado":t==="budget"?"ex.: Continente":"ex.: Luz";
   document.getElementById("bAmt").placeholder=t==="income"?"1000,00":t==="budget"?"450,00":"45,00";
-  document.getElementById("bDay").disabled=t==="budget";document.getElementById("chipBox").hidden=t!=="fixa"});
+  document.getElementById("bDay").disabled=t==="budget";renderBills()});
 /* As caixas Entra e Sai levam às receitas e às despesas */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-scroll]");if(t)document.getElementById(t.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});
 document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t)return;
   if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
-  else if(t.dataset.delbill)delBill(t.dataset.delbill);
+  else if(t.dataset.delask){const b=bills.find(x=>x.id===t.dataset.delask);
+    if(b&&confirm(`Apagar "${b.name}"? Desaparece de todos os meses, incluindo os anteriores.`)){editBill="";delBill(b.id);toast(b.name+" apagada")}}
+  else if(t.dataset.sort){sortBy=t.dataset.sort;try{localStorage.setItem("casa-ordem",sortBy)}catch(e){}renderBills()}
+  else if(t.dataset.note){const f=t.closest("form");if(f)f.n.value=t.dataset.note}
+  else if(t.dataset.editspend){editSpend=t.dataset.editspend;renderBills()}
+  else if(t.dataset.cancelspend){editSpend="";renderBills()}
   else if(t.dataset.editbill){editBill=t.dataset.editbill;renderBills();const f=document.querySelector(`[data-editform="${editBill}"] [name=v]`);if(f)f.focus()}
   else if(t.dataset.canceledit){editBill="";renderBills()}
   else if(t.dataset.openbud){openBud=openBud===t.dataset.openbud?"":t.dataset.openbud;renderBills()}
   else if(t.dataset.spend){openBud=t.dataset.spend;renderBills();const f=document.querySelector(`[data-spendform="${openBud}"] [name=v]`);if(f)f.focus()}
   else if(t.dataset.delspend){const [id,i]=t.dataset.delspend.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
-    const L=[...spends(b,k)];L.splice(+i,1);putBill({...b,spent:{...(b.spent||{}),[k]:L}})}
+    const L=[...spends(b,k)], x=L[+i];if(!x||!confirm(`Apagar o gasto de ${eur(+x.v||0)}${x.n?" ("+x.n+")":""}?`))return;
+    L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});toast("Gasto apagado")}
+});
+/* Corrigir um gasto já registado */
+document.addEventListener("submit",e=>{
+  const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
+  const [id,i]=ref.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
+  const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
+  if(isNaN(v)||v<=0)return;
+  const L=[...spends(b,k)];L[+i]={v,d,...(n?{n}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});toast("Gasto corrigido");
 });
 /* Juntar um gasto a uma despesa de "vários gastos" */
 document.addEventListener("submit",e=>{
@@ -824,8 +871,8 @@ document.addEventListener("change",e=>{
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   putBill({...b,paid});
 });
-document.getElementById("mPrev").onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}renderBills()};
-document.getElementById("mNext").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}renderBills()};
+document.getElementById("mPrev").onclick=()=>{if(mKey()<=START)return;viewM--;if(viewM<0){viewM=11;viewY--}editBill="";editSpend="";renderBills()};
+document.getElementById("mNext").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}editBill="";editSpend="";renderBills()};
 let tt;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
 
 /* ---------- calendário ---------- */
@@ -847,7 +894,7 @@ function hello(){const n=myName(), h=now.getHours();
 hello();
 document.getElementById("nameForm").addEventListener("submit",e=>{e.preventDefault();
   const n=document.getElementById("myName").value.trim();if(!n)return;setMyName(n);toast("Olá, "+myName()+"!");show("inicio")});
-function billsOn(dateStr){const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+function billsOn(dateStr){if(dateStr.slice(0,7)<START)return[];const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
   return fixas().filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
 function dayInfo(ds){return{ev:events.filter(e=>e.date===ds),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
 function renderCal(){
@@ -880,9 +927,9 @@ function renderAlerts(){
   const evs=events.filter(e=>e.date===todayS||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
   evs.forEach(e=>A.push({o:e.date===todayS?1:3,cls:"",dot:"ev",go:"calendario",day:e.date,name:e.title,meta:(e.date===todayS?"Hoje":"Amanhã")+(e.time?" às "+e.time:"")}));
   const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
-  contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=monthAmt(b,mk);
+  if(mk>=START)contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=monthAmt(b,mk);
     if(lim&&sp>lim)A.push({o:2,cls:"warn",dot:"bad",go:"despesas",name:`${b.name}: acima do orçamento`,meta:`Gasto ${eur(sp)} de ${eur(lim)}`});});
-  fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
+  if(mk>=START)fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
     const v=eur(monthAmt(b,mk));
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto dia "+d:d===td?"Vence hoje":"Vence dia "+d} · ${v}`});});
