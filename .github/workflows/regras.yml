@@ -1,0 +1,36 @@
+# Publica as regras do Firestore (firestore.rules) no Firebase, com a chave da conta de serviço.
+# Corre sozinho quando firestore.rules muda; também se pode correr à mão (Actions → Publicar regras → Run workflow).
+name: Publicar regras
+
+on:
+  push:
+    paths:
+      - firestore.rules
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regras
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publicar firestore.rules
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "Falta o segredo FIREBASE_SERVICE_ACCOUNT."; exit 1; fi
+          KEY="$RUNNER_TEMP/chave.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY"
+          export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
+          npx --yes firebase-tools@15.32.1 deploy --only firestore:rules --project casa-martins-a983d --non-interactive
+          rm -f "$KEY"
