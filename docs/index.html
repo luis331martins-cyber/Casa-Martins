@@ -1177,10 +1177,12 @@ const HABITUAIS=[
   ["Ervilhas","Congelados"],["Douradinhos","Congelados"],
   ["Detergente da loiça","Limpeza"],["Detergente da roupa","Limpeza"],["Lixívia","Limpeza"],["Sacos do lixo","Limpeza"],["Rolo de cozinha","Limpeza"],
   ["Papel higiénico","Higiene"],["Gel de banho","Higiene"],["Champô","Higiene"],["Pasta de dentes","Higiene"]];
-var liveItems=false, liveBills=false;
-function seedHabituais(){if(!store||!liveItems||!liveBills||bills.some(b=>b.id==="habituais-v1"))return;
-  const have=new Set(items.map(i=>noAcc(i.name))), slug=t=>noAcc(t).replace(/[^a-z0-9]+/g,"-");let n=0;
-  for(const [name,cat,shop] of HABITUAIS){if(have.has(noAcc(name))||items.some(i=>i.id==="hab-"+slug(name)))continue;
+/* Decide com os dados lidos do servidor (a cópia do telemóvel pode estar atrasada) */
+async function seedHabituais(){if(!store||!fb||!houseCode||!navigator.onLine)return;
+  let SI,SB;try{[SI,SB]=await Promise.all([fb.fromServer(houseCode,"items"),fb.fromServer(houseCode,"bills")])}catch(e){return}
+  if(SB.some(b=>b.id==="habituais-v1"))return;
+  const all=[...SI,...items], have=new Set(all.map(i=>noAcc(i.name||""))), slug=t=>noAcc(t).replace(/[^a-z0-9]+/g,"-");let n=0;
+  for(const [name,cat,shop] of HABITUAIS){if(have.has(noAcc(name))||all.some(i=>i.id==="hab-"+slug(name)))continue;
     const it={id:"hab-"+slug(name),name,cat,exp:"",lvl:2,added:Date.now(),...(shop?{shop}:{})};upsert(it);put(it);n++}
   putBill({id:"habituais-v1",kind:"setting",name:"Produtos habituais juntados"});if(n){render();toast(`${n} produtos habituais juntados`)}}
 const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",doses:"dose"};
@@ -1867,9 +1869,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();if(!snap.metadata.fromCache)liveItems=true;safe("Despensa",render);safe("Habituais",seedHabituais)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();if(!snap.metadata.fromCache)liveBills=true;safe("Contas",renderBills);safe("Habituais",seedHabituais)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -1883,7 +1885,7 @@ async function startShared(){
     /* sem rede: segue com a cópia guardada no aparelho; sincroniza quando voltar */
   }
   meId=await f.me().catch(()=>"");
-  store=f.store(houseCode);listen();renderHouse();
+  store=f.store(houseCode);listen();renderHouse();setTimeout(()=>safe("Habituais",()=>{seedHabituais()}),1500);
   if(typeof Notification!=="undefined"&&Notification.permission==="granted"&&await f.pushSupported())
     navigator.serviceWorker.ready.then(reg=>f.enablePush(houseCode,reg)).then(()=>ls.set("casa-push",houseCode)).catch(()=>{});
 }

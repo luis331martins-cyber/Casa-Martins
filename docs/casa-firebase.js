@@ -4,7 +4,7 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.19.0/firebase
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,
   EmailAuthProvider,linkWithCredential,updateProfile} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,connectFirestoreEmulator,
-  doc,collection,setDoc,deleteDoc,getDoc,getDocFromCache,onSnapshot,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+  doc,collection,setDoc,deleteDoc,getDoc,getDocFromCache,getDocsFromServer,onSnapshot,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const app=initializeApp(self.FIREBASE_CONFIG);
 const auth=getAuth(app);
@@ -79,6 +79,9 @@ export function store(code){
     onSnapshot:(ok,err)=>onSnapshot(col(n),ok,err)
   })};
 }
+
+/* Lê a coleção diretamente do servidor (não da cópia no telemóvel): para decidir com a certeza do que já existe. */
+export async function fromServer(code,n){const q=await getDocsFromServer(collection(db,"households",code,n));return q.docs.map(d=>({...d.data(),id:d.id}))}
 
 /* ---------- notificações (Firebase Cloud Messaging) ---------- */
 export async function pushSupported(){
