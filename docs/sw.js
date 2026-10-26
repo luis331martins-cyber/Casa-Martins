@@ -1,10 +1,11 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v66";
+const VERSION="casa-v67";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
   "icons/casam.svg","icons/casam-180.png","icons/casam-192.png","icons/casam-512.png"];
 const SDK=["app","auth","firestore","messaging"].map(n=>`https://www.gstatic.com/firebasejs/12.19.0/firebase-${n}.js`);
-const CDN=["https://www.gstatic.com","https://fonts.googleapis.com","https://fonts.gstatic.com"];
+/* Bibliotecas (Firebase, letras, leitor de PDF, leitor de fotografias): têm a versão no endereço, não mudam */
+const CDN=["https://www.gstatic.com","https://fonts.googleapis.com","https://fonts.gstatic.com","https://cdn.jsdelivr.net","https://cdnjs.cloudflare.com"];
 
 self.addEventListener("install",e=>{
   e.waitUntil((async()=>{

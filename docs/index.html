@@ -949,6 +949,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <h1 class="large">Carro</h1>
     <div id="carList" class="rlist"></div>
     <label class="btn ghost" role="button" id="carPdfBtn" style="text-align:center">📄 Importar PDF (seguro, inspeção, IUC, revisão)<input type="file" id="carPdf" accept="application/pdf,.pdf" hidden></label>
+    <label class="btn ghost" role="button" style="text-align:center">📷 Fotografar documento (lê e preenche)<input type="file" id="carPhoto" accept="image/*" capture="environment" hidden></label>
     <p class="msg" id="carPdfMsg" hidden></p>
     <button class="btn ghost" type="button" id="addCar">+ Juntar carro</button>
     <div id="carNew"></div>
@@ -2824,19 +2825,28 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-setval]");
   const k=FRK[b.dataset.fr]||1, v=Math.round(+b.dataset.setval*k*100)/100;f.seguroVal.value=v;pdfProp=v;
   b.parentNode.querySelectorAll("[data-setval]").forEach(x=>x.style.outline="");b.style.outline="2px solid #34c759";
   pdfLearn={ins:pdfIns,ctx:b.dataset.ctx,k};toast(`Valor: ${eur(v)}${k>1?` (${b.dataset.fr} × ${k})`:""} · a app aprende ao guardar`)});
-document.getElementById("carPdf").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;
-  const msg=document.getElementById("carPdfMsg");const say=(t,ok)=>{msg.hidden=!t;msg.textContent=t||"";msg.style.color=ok?"var(--fg)":""};
+document.addEventListener("change",e=>{if(e.target.id!=="carPhoto")return;const file=e.target.files&&e.target.files[0];e.target.value="";if(file)importCarFile(file)});
+const carSay=(t,ok)=>{const msg=document.getElementById("carPdfMsg");msg.hidden=!t;msg.textContent=t||"";msg.style.color=ok?"var(--fg)":""};
+document.getElementById("carPdf").addEventListener("change",e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(file)importCarFile(file)});
+async function importCarFile(file){const say=carSay;
+  /* Fotografia: lê o texto com OCR; PDF: lê o texto do ficheiro */
+  if(!(file.type==="application/pdf"||/\.pdf$/i.test(file.name))){let txt="";say("A ler a fotografia… (da primeira vez demora mais)",true);
+    try{txt=await ocrImage(await shrinkDoc(file))}catch(err){say("Não foi possível ler a fotografia. Verifica a internet e tenta outra vez.");return}
+    return carFromText(txt,file,{src:"foto"})}
   say("A ler o PDF…",true);let txt="";
   try{txt=await pdfText(file)}catch(err){say(err.message==="pdfjs"?"Não foi possível abrir o leitor de PDF. Verifica a internet e tenta outra vez.":"Não consegui abrir este PDF.");return}
-  if(txt.replace(/\s/g,"").length<30){say("Este PDF não tem texto (deve ser uma fotografia digitalizada). Escreve as datas à mão em Editar.");return}
+  if(txt.replace(/\s/g,"").length<30){say("Este PDF não tem texto (é uma digitalização): fotografa-o com “📷 Fotografar documento”.");return}
+  carFromText(txt,file,{src:"PDF"})}
+/* Preenche o carro com o que foi lido (de um PDF ou de uma fotografia). opts.carId: carro já escolhido; file: para guardar nos anexos */
+function carFromText(txt,file,opts){const say=carSay, src=opts.src==="foto"?"fotografia":"PDF";
   const f=parseCarPdf(txt), keys=Object.keys(CARLBL).filter(k=>f[k]!=null&&k!=="plate");
-  if(!f.kind&&!keys.length){say("Não encontrei datas de seguro, inspeção, IUC ou revisão neste PDF.");return}
+  if(!f.kind&&!keys.length){say(`Não encontrei datas de seguro, inspeção, IUC ou revisão ${opts.src==="foto"?"nesta fotografia (tenta com mais luz e o documento direito)":"neste PDF"}.`);return}
   /* Que carro: pela matrícula, ou o único, ou pergunta */
   const cars=recsOf("car"), norm=x=>String(x||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
-  let car=f.plate&&cars.find(c=>norm(c.plate)===norm(f.plate));
+  let car=opts.carId?cars.find(c=>c.id===opts.carId):f.plate&&cars.find(c=>norm(c.plate)===norm(f.plate));
   if(!car&&cars.length===1)car=cars[0];
-  if(!car&&cars.length>1)car=cars.find(c=>confirm(`Este PDF é do carro "${c.name}"?`));
-  pdfIns=f.ins||"";pdfLearn=null;pdfKeep=file;pdfAll=f.valAll||null;pdfProp=f.seguroVal!=null?f.seguroVal:null;
+  if(!car&&cars.length>1)car=cars.find(c=>confirm(`Est${opts.src==="foto"?"a fotografia":"e PDF"} é do carro "${c.name}"?`));
+  pdfIns=f.ins||"";pdfLearn=null;pdfKeep=file||null;pdfAll=f.valAll||null;pdfProp=f.seguroVal!=null?f.seguroVal:null;
   if(car&&car.km!=null&&f.km!=null&&f.km<=car.km){delete f.km;keys.splice(keys.indexOf("km"),1)}/* não volta a km mais antigos */
   if(car&&car.revUlt&&f.revUlt&&f.revUlt<=car.revUlt){for(const k of ["revUlt","revUltKm"])if(keys.includes(k))keys.splice(keys.indexOf(k),1)}/* nem a revisões mais antigas */
   editRec.car=car?car.id:"new";renderCars();
@@ -2845,8 +2855,31 @@ document.getElementById("carPdf").addEventListener("change",async e=>{const file
   keys.forEach(k=>set(k,f[k]));if(f.plate&&(!car||!car.plate))set("plate",f.plate);if(!car&&!form.name.value)form.name.value="Carro";
   const nomes={seguro:"apólice de seguro",inspecao:"ficha de inspeção",iuc:"IUC",revisao:"revisão"};
   if(f.valAlt&&f.valAlt.length||f.valNote)form.querySelector('[name=seguroVal]').closest("label").insertAdjacentHTML("afterend",`<div class="chips wide" style="align-items:center"><span class="note" style="margin:0">${f.valLearned?"✓ Escolhido como da última vez"+(f.ins?" ("+esc(f.ins)+")":"")+". ":""}${f.valNote?"Valor anual = "+esc(f.valNote)+". ":""}${f.valCtx?"Junto a “"+esc(f.valCtx)+"”. ":""}${f.valAlt.length?"Não é este? Toca no certo e a app aprende para a próxima:":""}</span>${f.valAlt.map(a=>`<button type="button" class="chip" data-setval="${a.v}" data-ctx="${esc(a.ctx)}" data-fr="${a.fr||""}" style="text-align:left">${eur(a.v)}${a.ctx?`<small style="display:block;font-size:11px;opacity:.8">${esc(a.ctx)}</small>`:""}</button>`).join("")}</div>`);
-  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"||k==="revUltKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>${store?`<label class="tick wide" style="margin:0"><input type="checkbox" class="switch" name="attpdf" checked> Guardar também o PDF nos anexos do carro</label>`:""}`);
-  say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})});
+  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">${opts.src==="foto"?"📷":"📄"} ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):src[0].toUpperCase()+src.slice(1)+" lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"||k==="revUltKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.${opts.src==="foto"?" A leitura de fotografias pode trocar algum número: confirma bem.":""}</p>${store&&file?`<label class="tick wide" style="margin:0"><input type="checkbox" class="switch" name="attpdf" checked> Guardar também ${opts.src==="foto"?"a fotografia":"o PDF"} nos anexos do carro</label>`:""}`);
+  say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})}
+
+/* ---------- Ler texto de fotografias (OCR com o Tesseract, corre no telemóvel) ---------- */
+const TESS="https://cdn.jsdelivr.net/npm/";let tessWorker=null;
+function loadTess(){if(window.Tesseract)return Promise.resolve();return new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src=TESS+"tesseract.js@6.0.1/dist/tesseract.min.js";sc.onload=ok;sc.onerror=()=>ko(new Error("tess"));document.head.appendChild(sc)})}
+async function ocrImage(src){await loadTess();
+  if(!tessWorker)tessWorker=await Tesseract.createWorker("por",1,{workerPath:TESS+"tesseract.js@6.0.1/dist/worker.min.js",corePath:TESS+"tesseract.js-core@6.0.0",langPath:TESS+"@tesseract.js-data/por@1.0.0/4.0.0_best_int"});
+  const {data}=await tessWorker.recognize(src);return data.text||""}
+/* Documentos: número e validade a partir da fotografia (Cartão de Cidadão, passaporte, carta…) */
+function parseDocText(raw,type){const t=noAcc(raw), up=raw.toUpperCase(), today=ymd(new Date()), out={};
+  /* datas com espaços (como no CC: "15 11 2031") também contam */
+  const D=[...findDates(t),...[...t.matchAll(/\b(\d{2}) (\d{2}) (\d{4})\b/g)].map(m=>({i:m.index,ds:`${m[3]}-${m[2]}-${m[1]}`}))].filter(d=>!isNaN(new Date(d.ds))).sort((a,b)=>a.i-b.i);
+  const m=t.match(/(?:validade|valido ate|data de validade|expiry|date of expiry|expira)\D{0,30}/);
+  const cand=D.filter(d=>d.ds>today);
+  if(m){const d=D.find(x=>x.i>=m.index&&x.i<=m.index+m[0].length+40);if(d)out.date=d.ds}
+  if(!out.date&&cand.length)out.date=cand.map(x=>x.ds).sort().pop();
+  /* Cartão de Cidadão: 8 números + 1 número + 2 letras + 1 número; o OCR às vezes lê as letras como números (Z→2, O→0…) */
+  const L={"0":"O","1":"I","2":"Z","4":"A","5":"S","6":"G","7":"Z","8":"B"}, ccm=up.match(/\b(\d{8})\s?(\d)\s?([A-Z0-9]{2})\s?([0-9OISZB])\b/);
+  const cc=ccm?[ccm[0],ccm[1],ccm[2],ccm[3].replace(/\d/g,d=>L[d]||d)+ccm[4].replace(/O/,"0").replace(/I/,"1").replace(/S/,"5").replace(/Z/,"2").replace(/B/,"8")]:null, pass=up.match(/\b([A-Z]{1,2}\d{6,7})\b/), nif=up.match(/\b(\d{3}\s?\d{3}\s?\d{3})\b/);
+  if(/cidad/i.test(type||"")&&cc)out.num=`${cc[1]} ${cc[2]}${cc[3]}`;
+  else if(/passaporte/i.test(type||"")&&pass)out.num=pass[1];
+  else if(/nif/i.test(type||"")&&nif)out.num=nif[1];
+  else if(cc)out.num=`${cc[1]} ${cc[2]}${cc[3]}`;
+  return out}
 
 /* ---------- Plano de refeições da semana ----------
    Um documento por dia em "bills": {id:"plano-AAAA-MM-DD", kind:"plan", date, almoco, jantar} */
@@ -2964,7 +2997,16 @@ async function attachFile(recId,file){const rec=bills.find(b=>b.id===recId);if(!
   const name=(pdf?file.name.replace(/\.pdf$/i,""):(file.name&&!/^image\.|^IMG_/i.test(file.name)?file.name.replace(/\.\w+$/,""):"Fotografia "+fmtD(ymd(new Date())))).slice(0,60)||"Anexo";
   try{await fb.putFile(houseCode,id,parts)}catch(err){toast(err&&err.code==="permission-denied"?"Falta atualizar as regras do Firebase para os anexos (vê o README).":"Não foi possível guardar o anexo. Tenta outra vez.");return}
   const fresh=bills.find(b=>b.id===rec.id)||rec;putBill({...fresh,files:[...(fresh.files||[]),{id,name,type:pdf?"application/pdf":"image/jpeg",size:Math.round(data.length*.75),at:Date.now(),...(myName()?{by:myName()}:{})}]});
-  RECS[fresh.kind]&&RECS[fresh.kind].render();toast("Anexo guardado 📎")}
+  RECS[fresh.kind]&&RECS[fresh.kind].render();toast("Anexo guardado 📎");
+  /* Fotografia de um documento: lê o texto e preenche o que corresponde (o carro ou o documento) */
+  if(!pdf&&(fresh.kind==="car"||fresh.kind==="doc")){let txt="";
+    try{toast("A ler a fotografia…");txt=await ocrImage(data)}catch(err){toast("Anexo guardado, mas não foi possível ler o texto.");return}
+    if(fresh.kind==="car"){if(fresh.kind==="car"&&!document.getElementById("tab-carro").hidden)carFromText(txt,null,{src:"foto",carId:fresh.id});return}
+    const g=parseDocText(txt,fresh.type);if(!g.num&&!g.date){toast("Anexo guardado. Não encontrei número nem validade na fotografia.");return}
+    editRec.doc=fresh.id;renderDocs();const form=document.querySelector(`[data-recform="doc|${fresh.id}"]`);if(!form)return;
+    const set=(k,v)=>{const el=form[k];if(!el||v==null||el.value===v)return;el.value=v;el.closest("label").style.outline="2px solid #34c759";el.closest("label").style.borderRadius="10px"};
+    set("num",g.num);set("date",g.date);
+    form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📷 Li na fotografia: ${[g.num?"<b>número</b> "+esc(g.num):"",g.date?"<b>válido até</b> "+fmtD(g.date):""].filter(Boolean).join(", ")}. Confirma (a verde) e toca em Guardar.</p>`)}}
 let fvCur=null, fvUrl="";
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-fopen]");if(!b)return;e.preventDefault();e.stopPropagation();const [rid,fid]=b.dataset.fopen.split("|");
   const rec=bills.find(x=>x.id===rid), f=rec&&(rec.files||[]).find(x=>x.id===fid);if(!f)return;
@@ -3157,7 +3199,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v66";
+const APPV="casa-v67";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
