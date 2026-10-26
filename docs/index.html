@@ -315,9 +315,9 @@ h1.large{margin-top:2px}
 #accounts .bill.acc.bank .name{color:#fff;font-weight:700;font-size:17px}
 #accounts .bill.acc.bank .meta{color:rgba(255,255,255,.82)!important}
 #accounts .bill.acc.bank .amt{color:#fff!important;font-size:19px}
-#accounts .bill.acc.bank.lightbk{color:#163300}
-#accounts .bill.acc.bank.lightbk .name,#accounts .bill.acc.bank.lightbk .amt{color:#163300!important}
-#accounts .bill.acc.bank.lightbk .meta{color:rgba(22,51,0,.75)!important}
+#accounts .bill.acc.bank.lightbk{color:var(--bkfg);background:linear-gradient(135deg,var(--bk) 0,color-mix(in srgb,var(--bk) 88%,#000) 100%)}
+#accounts .bill.acc.bank.lightbk .name,#accounts .bill.acc.bank.lightbk .amt{color:var(--bkfg)!important}
+#accounts .bill.acc.bank.lightbk .meta{color:var(--bkfg)!important;opacity:.8}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit){border:0!important;border-radius:0;position:relative;padding:11px 16px;min-height:44px;box-sizing:border-box}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit) + *){border-top-left-radius:12px;border-top-right-radius:12px}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:has(+ :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit))){border-bottom-left-radius:12px;border-bottom-right-radius:12px}
@@ -540,14 +540,14 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 /* Créditos: cartão com a cor do banco e barra do que já está pago */
 #loanList{display:flex;flex-direction:column;gap:10px}
 .loan{display:block;width:100%;text-align:left;border-radius:14px;padding:16px;color:#fff;font:inherit;background:linear-gradient(135deg,var(--bk,#636366) 0,color-mix(in srgb,var(--bk,#636366) 70%,#000) 100%);box-shadow:0 3px 10px rgba(0,0,0,.12)}
-.loan.lightbk{color:#163300}
+.loan.lightbk{color:var(--bkfg);background:linear-gradient(135deg,var(--bk) 0,color-mix(in srgb,var(--bk) 88%,#000) 100%)}
 .loan .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 .loan .name{font-weight:700;font-size:17px;min-width:0;overflow-wrap:anywhere}
 .loan .amt{font-weight:700;font-size:19px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .loan .meta{font-size:13px;opacity:.85;margin-top:2px}
 .loan .lbar{height:8px;border-radius:4px;background:rgba(255,255,255,.28);overflow:hidden;margin:12px 0 6px}
 .loan .lbar span{display:block;height:100%;background:#fff;border-radius:4px}
-.loan.lightbk .lbar{background:rgba(22,51,0,.18)}.loan.lightbk .lbar span{background:#163300}
+.loan.lightbk .lbar{background:rgba(0,0,0,.14)}.loan.lightbk .lbar span{background:var(--bkfg)}
 .loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
 .loan.done{--bk:#8e8e93}
 .loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
@@ -1798,13 +1798,13 @@ function renderBills(){
   const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
   const accForm=a=>`<form class="bill-edit" data-accform="${a?a.id:"new"}" autocomplete="off">
       <label class="f wide">Conta<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: CGD" autocapitalize="words"></label>
-      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&(a.color===c||a.color==="#5fae2e"&&c==="#00a3e0")?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
+      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&(a.color===c||["#5fae2e","#00a3e0"].includes(a.color)&&c==="#7dd3fc")?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
       <label class="f wide">Saldo atual (€)<input name="b" type="number" step="0.01" inputmode="decimal" required value="${a?Math.round((+a.bal||0)*100)/100:""}" placeholder="1.250,00"></label>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
       ${a?`<button class="btn danger wide" type="button" data-delacc="${a.id}">Apagar ${esc(a.name)}</button>`:""}
     </form>`;
-  document.getElementById("accounts").innerHTML=accs.map(a=>{const c=bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}"`:""}>
+  document.getElementById("accounts").innerHTML=accs.map(a=>{const c=bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""}>
       <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(a.name)}</div><div class="meta"${a.at&&Date.now()-a.at>7*864e5?' style="color:var(--warn)"':""}>Atualizado ${ago(a.at)}${a.by?" por "+esc(a.by):""}</div></button>
       <div class="amt"${(+a.bal||0)<0&&!c?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
@@ -1862,11 +1862,12 @@ document.addEventListener("submit",e=>{
 });
 /* Cores dos bancos: reconhecidas pelo nome da conta, ou escolhidas ao editar */
 const BANKS=[[/cr[eé]dito agr[ií]cola|caixa agr[ií]cola|\bca\b/i,"#00703c","Crédito Agrícola"],[/\bcgd\b|caixa geral|^caixa\b/i,"#0060a9","Caixa Geral de Depósitos"],[/millennium|\bbcp\b/i,"#c8005b","Millennium bcp"],[/santander/i,"#ec0000","Santander"],
-  [/novo ?banco/i,"#00953b","novobanco"],[/\bbpi\b/i,"#f26c21","BPI"],[/activo ?bank/i,"#00a3e0","ActivoBank"],
+  [/novo ?banco/i,"#00953b","novobanco"],[/\bbpi\b/i,"#f26c21","BPI"],[/activo ?bank/i,"#7dd3fc","ActivoBank"],
   [/montepio/i,"#1d4f91","Banco Montepio"],[/bankinter/i,"#ff6600","Bankinter"],[/revolut/i,"#0666eb","Revolut"],[/moey/i,"#6f2dbd","Moey!"],[/\bn26\b/i,"#36a18b","N26"],
   [/openbank/i,"#e5004f","Openbank"],[/banco ctt|\bctt\b/i,"#d50f25","Banco CTT"],[/eurobic|\bbic\b/i,"#0b3b7a","EuroBic"],[/\bwise\b/i,"#9fe870","Wise"]];
-const LIGHTBK=new Set(["#9fe870"]);
-function bankColor(a){if(a.color==="none")return"";if(a.color)return a.color==="#5fae2e"?"#00a3e0":a.color; /* ActivoBank passou de verde a azul claro */const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
+/* Cores claras levam letra escura (cor da letra por banco) */
+const LIGHTBK=new Map([["#9fe870","#163300"],["#7dd3fc","#0b3a5c"]]);
+function bankColor(a){if(a.color==="none")return"";if(a.color)return ["#5fae2e","#00a3e0"].includes(a.color)?"#7dd3fc":a.color; /* ActivoBank passou de verde a azul claro */const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
 /* Contagem (leitura) da água, luz, gás: dia limite em b.rd, dada por mês em b.rdone["AAAA-MM"] */
 function rdState(b,mk){if(!b.rd||b.kind)return null;const [y,m]=mk.split("-").map(Number), d=Math.min(b.rd,new Date(y,m,0).getDate());
   return {d,done:!!(b.rdone&&b.rdone[mk]),left:Math.round((new Date(y,m-1,d)-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5)}}
@@ -2445,7 +2446,7 @@ const normN=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toL
 function sameName(a,b){a=normN(a);b=normN(b);return!!a&&!!b&&(a===b||(Math.min(a.length,b.length)>=3&&(a.includes(b)||b.includes(a))))}
 function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data-loanform="${l?l.id:"new"}" autocomplete="off">
     <label class="f wide">Nome<input name="n" required value="${l?esc(l.name):""}" placeholder="ex.: Crédito do carro" autocapitalize="sentences"></label>
-    <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&(l.color===c||l.color==="#5fae2e"&&c==="#00a3e0")?" selected":""}>${n}</option>`).join("")}</select></label>
+    <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&(l.color===c||["#5fae2e","#00a3e0"].includes(l.color)&&c==="#7dd3fc")?" selected":""}>${n}</option>`).join("")}</select></label>
     <label class="f">Prestação (€)<input name="p" type="number" step="0.01" min="0" inputmode="decimal" required value="${l?v(l.pay):""}" placeholder="250,00"></label>
     <label class="f">Dia do débito<input name="d" type="number" min="1" max="31" inputmode="numeric" required value="${l?v(l.day):""}" placeholder="5"></label>
     <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
@@ -2465,7 +2466,7 @@ function renderLoans(){const el=document.getElementById("loanList");if(!el)retur
   document.getElementById("vLoanLeft").textContent=eur(act.reduce((t,x)=>t+x.s.leftAmt,0));
   el.innerHTML=L.map(({l,s})=>{if(l.id===editLoan)return loanForm(l);
     const c=s.done?"":bankColor(l), pct=Math.round(s.paid/s.n*100);
-    return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}"`:""} aria-label="Editar ${esc(l.name)}">
+    return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""} aria-label="Editar ${esc(l.name)}">
       <div class="top"><span class="name">${esc(l.name)}</span><span class="amt">${eur(+l.pay||0)}<span style="font-size:13px;font-weight:500">/mês</span></span></div>
       <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last)+(l.bill&&bills.some(b=>b.id===l.bill)?" · já podes apagar a linha nas Contas":""):`Dia ${l.day} · termina em ${mLong(l.last)}${l.bill&&bills.some(b=>b.id===l.bill)?" · nas Contas":""}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
       <div class="lbar"><span style="width:${pct}%"></span></div>
@@ -3367,7 +3368,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v74";
+const APPV="casa-v75";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
