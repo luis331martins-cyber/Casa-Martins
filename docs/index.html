@@ -127,7 +127,8 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .tot .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.tot .v{font-family:var(--display);font-weight:800;font-size:1.25rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tot .v{font-family:var(--display);font-weight:800;font-size:clamp(.95rem,4.3vw,1.25rem);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tot{padding:10px}
 .tot.paid .v{color:var(--accent)}.tot.due .v{color:var(--bad)}
 .bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
 .bar span{display:block;height:100%;background:var(--accent)}
@@ -135,6 +136,9 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 .bill input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);margin:0}
 .bill .meta{font-size:.82rem;color:var(--muted);margin-top:2px}
 .bill .amt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.bill.inc{grid-template-columns:1fr auto auto}
+.bill.inc .amt{color:var(--accent)}
+.tot.neg .v{color:var(--bad)}
 .bill.paid .name{color:var(--muted);text-decoration:line-through}
 form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}
 @media (max-width:480px){form.addbill{grid-template-columns:1fr 1fr}form.addbill .wide{grid-column:1/-1}}
@@ -312,10 +316,12 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
       <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
     </div>
     <div class="totals">
-      <div class="tot"><div class="k">Total</div><div class="v" id="vTot"></div></div>
-      <div class="tot paid"><div class="k">Pago</div><div class="v" id="vPaid"></div></div>
-      <div class="tot due"><div class="k">Falta</div><div class="v" id="vDue"></div></div>
+      <div class="tot paid"><div class="k">Entra</div><div class="v" id="vIn"></div></div>
+      <div class="tot"><div class="k">Sai</div><div class="v" id="vTot"></div></div>
+      <div class="tot" id="totLeft"><div class="k">Sobra</div><div class="v" id="vLeft"></div></div>
     </div>
+    <h2 style="margin-top:6px">A pagar</h2>
+    <p class="note" style="margin:0">Pago <b id="vPaid"></b> · Falta <b id="vDue" style="color:var(--bad)"></b></p>
     <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
     <div id="bills" class="group"></div>
     <button class="back" type="button" id="payAll" style="align-self:flex-start" hidden></button>
@@ -329,13 +335,21 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
       <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
       <div class="chips" id="billChips"></div>
     </div>
+    <h2 style="margin-top:10px">Receitas</h2>
+    <div id="incomes" class="group"></div>
+    <form class="addbill" id="incForm" autocomplete="off">
+      <label class="f wide">Receita<input id="iName" placeholder="ex.: Ordenado" required></label>
+      <label class="f">Valor (€)<input id="iAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="1000,00" required></label>
+      <label class="f">Dia<input id="iDay" type="number" min="1" max="31" inputmode="numeric" placeholder="25"></label>
+      <button class="btn wide" type="submit">Adicionar</button>
+    </form>
     <details class="import" id="billImport">
-      <summary>Colar uma lista de contas</summary>
-      <p class="note" style="margin:0">Uma conta por linha: nome; valor; dia. O dia é opcional e as contas que já existem são ignoradas.</p>
+      <summary>Colar uma lista de contas ou receitas</summary>
+      <p class="note" style="margin:0">Uma por linha: nome; valor; dia. O dia é opcional e o que já existe é ignorado. Uma linha só com “RECEITAS” faz com que as linhas seguintes sejam receitas; “CONTAS” volta às contas.</p>
       <textarea id="bImport" rows="8" placeholder="Luz; 45,00; 8&#10;Água; 20,00" aria-label="Lista de contas"></textarea>
       <button class="btn" type="button" id="bImportBtn">Adicionar contas</button>
     </details>
-    <p class="note" style="margin:0">Cada conta repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar. Toca no nome de uma conta para mudar o valor ou o dia.</p>
+    <p class="note" style="margin:0">Contas e receitas repetem-se todos os meses. Marca cada conta quando estiver paga; o mês seguinte começa por pagar. Toca num nome para mudar o valor ou o dia.</p>
   </section>
 </div>
 
@@ -456,11 +470,14 @@ addEventListener("hashchange",()=>route(location.hash));
 
 /* ---------- despesas mensais ---------- */
 let bills=[]; let editBill="";
+/* Receitas ficam na mesma coleção "bills", com kind:"income" */
+const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>!isInc(b));
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
 const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
 const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
 const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
 const eur=v=>v.toLocaleString("pt-PT",{style:"currency",currency:"EUR"});
+const eur0=v=>Math.round(v).toLocaleString("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0,minimumFractionDigits:0});
 async function putBill(b){
   const i=bills.findIndex(x=>x.id===b.id); if(i>=0)bills[i]=b; else bills.push(b); renderBills();
   if(store){try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
@@ -473,31 +490,41 @@ function renderBills(){
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
   document.getElementById("mLabel").textContent=label;
-  const list=[...bills].sort((a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt"));
-  const tot=list.reduce((s,b)=>s+(+b.amount||0),0);
+  const byDay=(a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt");
+  const list=contas().sort(byDay), inc=bills.filter(isInc).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
+  const tot=list.reduce((s,b)=>s+(+b.amount||0),0), tin=inc.reduce((s,b)=>s+(+b.amount||0),0);
+  document.getElementById("vIn").textContent=inc.length?eur0(tin):"—";
+  document.getElementById("vLeft").textContent=inc.length?eur0(tin-tot):"—";
+  document.getElementById("totLeft").className="tot"+(inc.length?(tin-tot<0?" neg":" paid"):"");
   const paid=list.filter(b=>b.paid&&b.paid[k]).reduce((s,b)=>s+(+b.amount||0),0);
-  document.getElementById("vTot").textContent=eur(tot);
+  document.getElementById("vTot").textContent=eur0(tot);
   document.getElementById("vPaid").textContent=eur(paid);
   document.getElementById("vDue").textContent=eur(tot-paid);
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
   const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
   const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const overdue=bills.filter(b=>b.day&&b.day<=today&&!(b.paid&&b.paid[curK])).length;
+  const overdue=contas().filter(b=>b.day&&b.day<=today&&!(b.paid&&b.paid[curK])).length;
   const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
   if(typeof renderCal==="function")renderCal();
   const el=document.getElementById("bills");
-  el.innerHTML=list.length?list.map(b=>{
-    const p=!!(b.paid&&b.paid[k]);
-    let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
-    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.day===today?"Vence hoje":"Vence dia "+b.day}</span>`; }
-    if(p) when="Paga";
-    if(b.id===editBill)return `<form class="bill-edit" data-editform="${b.id}" autocomplete="off">
-      <label class="f wide">Conta<input name="n" value="${esc(b.name)}" required></label>
+  const editRow=(b,what)=>`<form class="bill-edit" data-editform="${b.id}" autocomplete="off">
+      <label class="f wide">${what}<input name="n" value="${esc(b.name)}" required></label>
       <label class="f">Valor (€)<input name="a" type="number" min="0" step="0.01" inputmode="decimal" value="${+b.amount||0}" required></label>
       <label class="f">Dia<input name="d" type="number" min="0" max="31" inputmode="numeric" value="${b.day||""}" placeholder="Sem dia"></label>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
     </form>`;
+  document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>b.id===editBill?editRow(b,"Receita"):`<div class="bill inc">
+      <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${b.day?"Dia "+b.day:"Sem dia fixo"}</div></button>
+      <div class="amt">+${eur(+b.amount||0)}</div>
+      <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
+    </div>`).join(""):`<div class="empty">Ainda não há receitas.<br>Adiciona os ordenados e outras entradas abaixo para veres quanto sobra.</div>`;
+  el.innerHTML=list.length?list.map(b=>{
+    const p=!!(b.paid&&b.paid[k]);
+    let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
+    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.day===today?"Vence hoje":"Vence dia "+b.day}</span>`; }
+    if(p) when="Paga";
+    if(b.id===editBill)return editRow(b,"Conta");
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></button>
@@ -516,6 +543,13 @@ document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefau
   putBill({id:uid(),name,amount,day:Math.min(Math.max(day,0),31),paid:{}});
   e.target.reset(); toast(name+" adicionada");
 });
+document.getElementById("incForm").addEventListener("submit",e=>{e.preventDefault();
+  const name=document.getElementById("iName").value.trim(), amount=parseFloat(document.getElementById("iAmt").value), day=parseInt(document.getElementById("iDay").value)||0;
+  if(!name||isNaN(amount))return;
+  if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  putBill({id:uid(),name,amount,day:Math.min(Math.max(day,0),31),kind:"income"});
+  e.target.reset(); toast(name+" adicionada");
+});
 document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t)return;
   if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
@@ -524,7 +558,7 @@ document.addEventListener("click",e=>{
   else if(t.dataset.canceledit){editBill="";renderBills()}
 });
 document.getElementById("payAll").addEventListener("click",()=>{
-  const k=mKey(), todo=bills.filter(b=>!(b.paid&&b.paid[k]));
+  const k=mKey(), todo=contas().filter(b=>!(b.paid&&b.paid[k]));
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long"});
   if(!todo.length||!confirm(`Marcar ${todo.length} conta${todo.length===1?"":"s"} como paga${todo.length===1?"":"s"} em ${label}?`))return;
   todo.forEach(b=>putBill({...b,paid:{...(b.paid||{}),[k]:true}}));toast("Marcadas como pagas");
@@ -541,15 +575,18 @@ document.addEventListener("submit",e=>{
 /* Colar uma lista: "nome; valor; dia" por linha (também aceita colunas separadas por tabulação) */
 const money=s=>{const m=String(s||"").match(/\d[\d.\s]*(,\d+)?/);if(!m)return 0;let v=m[0].replace(/\s/g,"");v=m[1]?v.replace(/\./g,"").replace(",","."):v;return parseFloat(v)||0};
 document.getElementById("bImportBtn").addEventListener("click",()=>{
-  const ta=document.getElementById("bImport");let n=0,dup=0;
+  const ta=document.getElementById("bImport");let n=0,dup=0,inc=false;
   for(const line of ta.value.split("\n")){
     const f=line.split(/;|\t/).map(x=>x.trim());const name=f[0];if(!name)continue;
+    if(/^receitas?:?$/i.test(name)&&!f.slice(1).some(Boolean)){inc=true;continue}
+    if(/^(contas|despesas|gastos)( mensais)?:?$/i.test(name)&&!f.slice(1).some(Boolean)){inc=false;continue}
     if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){dup++;continue}
     const day=parseInt((String(f[2]||"").match(/\d+/)||[0])[0])||0;
-    putBill({id:uid(),name,amount:money(f[1]),day:Math.min(Math.max(day,0),31),paid:{}});n++;
+    const b={id:uid(),name,amount:money(f[1]),day:Math.min(Math.max(day,0),31)};
+    putBill(inc?{...b,kind:"income"}:{...b,paid:{}});n++;
   }
   ta.value="";document.getElementById("billImport").open=false;
-  toast(`${n} conta${n===1?"":"s"} adicionada${n===1?"":"s"}`+(dup?` · ${dup} já existia${dup===1?"":"m"}`:""));
+  toast(`${n} adicionada${n===1?"":"s"}`+(dup?` · ${dup} já existia${dup===1?"":"m"}`:""));
 });
 document.addEventListener("change",e=>{
   const id=e.target.dataset.pay; if(!id)return;
@@ -574,7 +611,7 @@ document.getElementById("icoWd").textContent=now.toLocaleDateString("pt-PT",{wee
 document.getElementById("icoD").textContent=now.getDate();
 const h=now.getHours();document.getElementById("hello").textContent=h<6?"Boa noite":h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
 function billsOn(dateStr){const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-  return bills.filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
+  return contas().filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
 function dayInfo(ds){return{ev:events.filter(e=>e.date===ds),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
 function renderCal(){
   document.getElementById("cLabel").textContent=new Date(calY,calM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
@@ -606,7 +643,7 @@ function renderAlerts(){
   const evs=events.filter(e=>e.date===todayS||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
   evs.forEach(e=>A.push({o:e.date===todayS?1:3,cls:"",dot:"ev",go:"calendario",day:e.date,name:e.title,meta:(e.date===todayS?"Hoje":"Amanhã")+(e.time?" às "+e.time:"")}));
   const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
-  bills.forEach(b=>{if(!b.day||(b.paid&&b.paid[mk]))return;const d=Math.min(b.day,last);
+  contas().forEach(b=>{if(!b.day||(b.paid&&b.paid[mk]))return;const d=Math.min(b.day,last);
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${eur(+b.amount||0)}`});
     else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:`Pagar ${b.name}`,meta:`${d===td?"Vence hoje":"Vence dia "+d} · ${eur(+b.amount||0)}`});});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";

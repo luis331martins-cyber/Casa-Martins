@@ -1,6 +1,6 @@
 # A nossa casa
 
-App para gerir a casa a dois: despensa, carne e peixe, lista de compras, contas mensais, calendário e alertas.
+App para gerir a casa a dois: despensa, carne e peixe, lista de compras, contas e receitas mensais (quanto entra, sai e sobra), calendário e alertas.
 Os dados ficam no Firebase Firestore e aparecem logo nos dois telemóveis. A app instala-se no ecrã principal do iPhone,
 funciona sem rede e envia notificações.
 
