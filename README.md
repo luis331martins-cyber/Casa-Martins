@@ -154,7 +154,7 @@ O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em
 | A partir das 9h, uma vez por dia | **Resumo**: marcações de hoje e de amanhã e quantos produtos há para comprar |
 | Cerca de 1 hora antes | **Lembrete** de cada marcação com hora |
 | Até ~15 min depois de alguém marcar algo | **Nova marcação** no outro telemóvel (quem marcou não recebe) |
-| A partir das 9h, uma vez por dia | **Prazos**: seguro, inspeção, IUC e revisão do carro (30, 7 e 1 dia antes) e validade dos documentos (90, 30 e 7 dias antes) |
+| A partir das 9h, uma vez por dia | **Prazos**: seguro, inspeção, IUC e revisão do carro (30, 7 e 1 dia antes), validade dos documentos (90, 30 e 7 dias antes) e dos cartões (30 e 7 dias antes) |
 | Até ~15 min depois de alguém juntar algo | **🏠 Bianca juntou**: contas, medicamentos, consultas, documentos, carro, créditos, pratos, plano, vídeos e produtos que entram nas compras (quem juntou não recebe) |
 | Até ~15 min depois de uma mensagem | **💬 Mensagem** do chat da casa no outro telemóvel (quem escreveu não recebe) |
 

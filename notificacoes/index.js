@@ -147,6 +147,11 @@ async function morning(code, now) {
   for (const b of bills) {
     if (b.kind === "car") for (const [f, n] of CAR) if (b[f]) prazos.push({date: b[f], t: `${b.name}: ${n}`, at: [30, 7, 1, 0], go: "carro"});
     if (b.kind === "doc" && b.date) prazos.push({date: b.date, t: `${b.type} (${b.who})`, at: [90, 30, 7, 0], go: "docs"});
+    /* Cartões: válido até ao último dia do mês escrito (AAAA-MM) */
+    if (b.kind === "card" && /^\d{4}-\d{2}$/.test(b.exp || "")) {
+      const [y, m] = b.exp.split("-").map(Number), fim = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+      prazos.push({date: fim, t: `Cartão ${b.name}${b.who ? ` (${b.who})` : ""}`, at: [30, 7, 0], go: "cartoes"});
+    }
   }
   const avisar = prazos.map((x) => ({...x, d: daysBetween(now.date, x.date)}))
       .filter((x) => x.at.includes(x.d) || (x.d < 0 && x.d >= -28 && -x.d % 7 === 0)).sort((a, b) => a.d - b.d);
@@ -289,7 +294,7 @@ async function house(code, now) {
   const primeiraVez = !Array.isArray(st.seenB);
   const seenB = new Set(st.seenB || []), compraAntes = new Set(st.buy || []);
   const TIPO = {"": ["Conta", "despesas"], income: ["Receita", "despesas"], budget: ["Gastos do mês", "despesas"], med: ["Medicamento", "medicamentos"],
-    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], recipe: ["Prato", "comer"],
+    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Poupança", "poupancas"], recipe: ["Prato", "comer"],
     plan: ["Plano de refeições", "plano"], video: ["Vídeo", "videos"]};
   const porQuem = new Map();
   const juntar = (lb, rotulo, nome, go) => {
