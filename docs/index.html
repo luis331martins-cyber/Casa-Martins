@@ -153,6 +153,9 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
 form.join input{text-transform:uppercase;letter-spacing:.06em}
+header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.gear{flex:none;display:grid;place-items:center;padding:0}
+.gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .msg{margin:0;color:var(--bad);font-size:.88rem}
 @media (prefers-reduced-motion:no-preference){.item,.check{transition:background .15s}}
 </style>
@@ -180,11 +183,18 @@ form.join input{text-transform:uppercase;letter-spacing:.06em}
   </section>
 
   <section id="tab-inicio" class="group" style="gap:22px">
-    <header>
-      <p class="sub" id="today" style="margin:0 0 2px;text-transform:capitalize"></p>
-      <h1 id="hello">A nossa casa</h1>
-      <p class="sub" id="sub">Despensa, compras, despesas e agenda.</p>
+    <header class="top">
+      <div style="min-width:0">
+        <p class="sub" id="today" style="margin:0 0 2px;text-transform:capitalize"></p>
+        <h1 id="hello">A nossa casa</h1>
+        <p class="sub" id="sub">Despensa, compras, despesas e agenda.</p>
+      </div>
+      <button class="nav-m gear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </header>
+    <div class="group" style="gap:8px">
+      <h2>Alertas</h2>
+      <div id="alerts" class="group"></div>
+    </div>
     <div class="apps">
       <button class="app" data-go="despensa"><span class="ico i-desp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7 6h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/><path d="M6 11h12M6 16h12" class="cut"/></svg><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Despensa</span></button>
       <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
@@ -192,27 +202,24 @@ form.join input{text-transform:uppercase;letter-spacing:.06em}
       <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Despesas</span></button>
       <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
     </div>
-    <div class="group" style="gap:8px">
-      <h2>Alertas</h2>
-      <div id="alerts" class="group"></div>
+  </section>
+
+  <section id="tab-definicoes" class="group" style="gap:16px" hidden>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Esta casa</h1></div>
+    <div id="houseShared" class="group" hidden>
+      <div class="item">
+        <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
+        <button class="chip" type="button" id="shareCode">Partilhar</button>
+      </div>
+      <div class="item">
+        <div style="min-width:0"><div class="name">Notificações</div><div class="meta" id="pushMeta"></div></div>
+        <button class="btn" type="button" id="pushBtn" hidden>Ativar</button>
+      </div>
+      <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
-    <div class="group" style="gap:8px" id="houseBox" hidden>
-      <h2>Esta casa</h2>
-      <div id="houseShared" class="group" hidden>
-        <div class="item">
-          <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
-          <button class="chip" type="button" id="shareCode">Partilhar</button>
-        </div>
-        <div class="item">
-          <div style="min-width:0"><div class="name">Notificações</div><div class="meta" id="pushMeta"></div></div>
-          <button class="btn" type="button" id="pushBtn" hidden>Ativar</button>
-        </div>
-        <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
-      </div>
-      <div id="houseLocal" class="item" hidden>
-        <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
-        <button class="btn" type="button" data-go="setup">Partilhar</button>
-      </div>
+    <div id="houseLocal" class="item" hidden>
+      <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
+      <button class="btn" type="button" data-go="setup">Partilhar</button>
     </div>
   </section>
 
@@ -420,10 +427,10 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["setup","inicio","despensa","carne","lista","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
+function show(tab){["setup","inicio","definicoes","despensa","carne","lista","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#inicio":"inicio","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#calendario":"calendario"};
+const ROUTES={"#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -607,13 +614,13 @@ function setup(msg){
   show("setup");
 }
 function busy(on){["joinBtn","newHouse"].forEach(id=>document.getElementById(id).disabled=on)}
-async function enter(c,how){
+async function enter(c,how,tab){
   houseCode=c;ls.set("casa-codigo",c);ls.set("casa-local","");busy(false);
-  document.getElementById("joinCode").value="";show("inicio");
+  document.getElementById("joinCode").value="";show(tab||"inicio");
   await startShared();toast(how);
 }
 function renderHouse(){
-  const box=document.getElementById("houseBox");box.hidden=!hasFb;if(!hasFb)return;
+  document.getElementById("gear").hidden=!hasFb;if(!hasFb)return;
   document.getElementById("houseShared").hidden=!houseCode;
   document.getElementById("houseLocal").hidden=!!houseCode;
   if(houseCode){document.getElementById("houseCode").textContent=fmtCode(houseCode);renderPush()}
@@ -642,7 +649,7 @@ document.getElementById("joinForm").addEventListener("submit",async e=>{e.preven
 document.getElementById("newHouse").addEventListener("click",async()=>{
   if(!navigator.onLine){setup("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
   busy(true);
-  try{const c=await(await loadFb()).create({items,bills,events});enter(c,"Casa criada. Partilha o código.")}
+  try{const c=await(await loadFb()).create({items,bills,events});enter(c,"Casa criada. Partilha o código.","definicoes")}
   catch(err){busy(false);setup("Não foi possível criar a casa. Verifica a internet e tenta outra vez.")}
 });
 document.getElementById("useLocal").addEventListener("click",()=>{ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});

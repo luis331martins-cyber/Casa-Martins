@@ -111,7 +111,7 @@ Sempre que mudares `docs/firebase-config.js` ou outro ficheiro da app, sobe a ve
 1. Abre <https://luis331martins-cyber.github.io/Casa-Martins/> no **Safari**.
 2. **Partilhar** (quadrado com a seta) → **Adicionar ao ecrã principal** → **Adicionar**.
 3. Abre a app **pelo ícone "Casa"** no ecrã principal.
-4. Toca em **Criar casa nova**. Aparece o código em **Início → Esta casa**. Toca em **Partilhar** para o enviar à tua esposa.
+4. Toca em **Criar casa nova**. Aparece o código no ecrã **⚙️ Esta casa** (botão ⚙️ no canto do Início). Toca em **Partilhar** para o enviar à tua esposa.
 5. Em **Notificações**, toca em **Ativar** e aceita.
 
 **No telemóvel da tua esposa**
@@ -150,8 +150,8 @@ Tocar numa notificação abre a app no separador certo (Despesas, Despensa, Cale
 ### Limites do iPhone
 
 - **iOS/iPadOS 16.4 ou mais recente.** Em versões anteriores, as apps Web não recebem notificações.
-- **Só com a app no ecrã principal.** No separador normal do Safari não há notificações; a app avisa disso em
-  **Início → Esta casa**. Usa o Safari para a adicionar.
+- **Só com a app no ecrã principal.** No separador normal do Safari não há notificações; a app avisa disso no ecrã
+  **⚙️ Esta casa**. Usa o Safari para a adicionar.
 - **A permissão só pode ser pedida depois de um toque** (por isso há o botão **Ativar**). Se tocares em "Não permitir",
   só se volta a ativar em **Definições → Notificações → Casa**.
 - **Cada telemóvel ativa as suas.** O código da casa partilha os dados, não as notificações.
@@ -174,7 +174,7 @@ Enquanto `apiKey` estiver vazio em `docs/firebase-config.js`, a app funciona com
 
 ## Sair de uma casa
 
-**Início → Esta casa → Sair desta casa neste telemóvel.** O telemóvel deixa de ter acesso e de receber notificações.
+**⚙️ (no Início) → Sair desta casa neste telemóvel.** O telemóvel deixa de ter acesso e de receber notificações.
 Os dados continuam no Firebase para quem tem o código.
 
 ## Para programadores (opcional)
