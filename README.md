@@ -146,9 +146,10 @@ O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em
 | A partir das 9h, uma vez por dia | **Resumo**: marcações de hoje e de amanhã e quantos produtos há para comprar |
 | Cerca de 1 hora antes | **Lembrete** de cada marcação com hora |
 | Até ~15 min depois de alguém marcar algo | **Nova marcação** no outro telemóvel (quem marcou não recebe) |
+| Até ~15 min depois de uma mensagem | **💬 Mensagem** do chat da casa no outro telemóvel (quem escreveu não recebe) |
 
 Se não houver nada para dizer, a notificação desse tipo não é enviada.
-Tocar numa notificação abre a app no separador certo (Contas, Despensa, Calendário ou Compras).
+Tocar numa notificação abre a app no separador certo (Contas, Despensa, Calendário, Compras ou Mensagens).
 
 ### Limites do GitHub Actions
 
