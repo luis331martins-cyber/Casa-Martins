@@ -12,4 +12,4 @@ self.FIREBASE_CONFIG = {
 };
 
 /* Cloud Messaging → Certificados push da Web → par de chaves (chave pública). */
-self.FIREBASE_VAPID_KEY = "";
+self.FIREBASE_VAPID_KEY = "BLjM7SMIN_7PVaRJrPp98OmxKZOqq8rjuM7h51bbc0JqC4iEIc6kZBdQRICS2cahca9SSyHka50ArkJnUIEVZDg";
