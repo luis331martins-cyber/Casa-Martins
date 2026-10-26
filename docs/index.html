@@ -1794,7 +1794,7 @@ function renderBills(){
   const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
   const accForm=a=>`<form class="bill-edit" data-accform="${a?a.id:"new"}" autocomplete="off">
       <label class="f wide">Conta<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: CGD" autocapitalize="words"></label>
-      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&a.color===c?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
+      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&(a.color===c||a.color==="#5fae2e"&&c==="#00a3e0")?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
       <label class="f wide">Saldo atual (€)<input name="b" type="number" step="0.01" inputmode="decimal" required value="${a?Math.round((+a.bal||0)*100)/100:""}" placeholder="1.250,00"></label>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
@@ -1858,11 +1858,11 @@ document.addEventListener("submit",e=>{
 });
 /* Cores dos bancos: reconhecidas pelo nome da conta, ou escolhidas ao editar */
 const BANKS=[[/cr[eé]dito agr[ií]cola|caixa agr[ií]cola|\bca\b/i,"#00703c","Crédito Agrícola"],[/\bcgd\b|caixa geral|^caixa\b/i,"#0060a9","Caixa Geral de Depósitos"],[/millennium|\bbcp\b/i,"#c8005b","Millennium bcp"],[/santander/i,"#ec0000","Santander"],
-  [/novo ?banco/i,"#00953b","novobanco"],[/\bbpi\b/i,"#f26c21","BPI"],[/activo ?bank/i,"#5fae2e","ActivoBank"],
+  [/novo ?banco/i,"#00953b","novobanco"],[/\bbpi\b/i,"#f26c21","BPI"],[/activo ?bank/i,"#00a3e0","ActivoBank"],
   [/montepio/i,"#1d4f91","Banco Montepio"],[/bankinter/i,"#ff6600","Bankinter"],[/revolut/i,"#0666eb","Revolut"],[/moey/i,"#6f2dbd","Moey!"],[/\bn26\b/i,"#36a18b","N26"],
   [/openbank/i,"#e5004f","Openbank"],[/banco ctt|\bctt\b/i,"#d50f25","Banco CTT"],[/eurobic|\bbic\b/i,"#0b3b7a","EuroBic"],[/\bwise\b/i,"#9fe870","Wise"]];
 const LIGHTBK=new Set(["#9fe870"]);
-function bankColor(a){if(a.color==="none")return"";if(a.color)return a.color;const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
+function bankColor(a){if(a.color==="none")return"";if(a.color)return a.color==="#5fae2e"?"#00a3e0":a.color; /* ActivoBank passou de verde a azul claro */const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
@@ -2431,7 +2431,7 @@ const normN=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toL
 function sameName(a,b){a=normN(a);b=normN(b);return!!a&&!!b&&(a===b||(Math.min(a.length,b.length)>=3&&(a.includes(b)||b.includes(a))))}
 function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data-loanform="${l?l.id:"new"}" autocomplete="off">
     <label class="f wide">Nome<input name="n" required value="${l?esc(l.name):""}" placeholder="ex.: Crédito do carro" autocapitalize="sentences"></label>
-    <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&l.color===c?" selected":""}>${n}</option>`).join("")}</select></label>
+    <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&(l.color===c||l.color==="#5fae2e"&&c==="#00a3e0")?" selected":""}>${n}</option>`).join("")}</select></label>
     <label class="f">Prestação (€)<input name="p" type="number" step="0.01" min="0" inputmode="decimal" required value="${l?v(l.pay):""}" placeholder="250,00"></label>
     <label class="f">Dia do débito<input name="d" type="number" min="1" max="31" inputmode="numeric" required value="${l?v(l.day):""}" placeholder="5"></label>
     <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
@@ -3353,7 +3353,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v72";
+const APPV="casa-v73";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
