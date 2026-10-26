@@ -463,6 +463,27 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 .i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
+.i-health{background:linear-gradient(160deg,#ff8787,#e03131)}
+.i-car{background:linear-gradient(160deg,#7d7aff,#3634a3)}
+.i-doc{background:linear-gradient(160deg,#9be15d,#3f8f1f)}
+/* Carro, Saúde e Documentos: cartões com prazos */
+.rlist{display:flex;flex-direction:column;gap:12px}
+.rcard{background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:12px 16px;background:transparent;color:var(--fg);font:inherit;text-align:left;border-bottom:.5px solid var(--line)}
+.rhead b{font-size:17px;min-width:0;overflow-wrap:anywhere}.rhead small{color:var(--muted);font-size:13px;display:block;font-weight:400}
+.rhead .edit{color:var(--accent);font-size:15px;flex:none}
+.rrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 16px;position:relative}
+.rrow+.rrow::before{content:"";position:absolute;left:16px;right:0;top:0;height:.5px;background:var(--line)}
+.rrow .rl{font-weight:500}.rrow .rm{grid-column:1;font-size:13px;color:var(--muted)}
+.rrow .rs{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.due{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--fill);color:var(--muted);white-space:nowrap}
+.due.warn{background:#fff1d6;color:#9a5b00}.due.bad{background:#ffe1df;color:#c4271b}.due.ok{background:#dcf5e3;color:#1d7a3a}
+.bump{font-size:13px;color:var(--accent);background:transparent;padding:0;font-weight:600}
+.plate{display:flex;width:max-content;align-items:stretch;border:1.5px solid #222;border-radius:5px;overflow:hidden;font:700 13px/1 ui-monospace,Menlo,monospace;background:#fff;color:#111;margin-top:4px}
+.plate i{background:#1a47b8;color:#fff;font:700 8px/1 var(--body);font-style:normal;padding:3px 3px;display:flex;align-items:flex-end}
+.plate span{padding:4px 7px;letter-spacing:.06em}
+.rempty{padding:14px 16px;color:var(--muted);font-size:15px}
+.tel{color:var(--accent);font-weight:600;text-decoration:none}
 .i-games{background:linear-gradient(160deg,#ff9f0a,#ff375f)}
 /* Jogos: lista de jogos */
 .gamegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -635,6 +656,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
         <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
         <button class="app" data-go="creditos"><span class="ico i-loan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M9.7 10v8M14.3 10v8M19 10v8M3 20.5h18"/></svg></span><span class="lbl">Créditos</span></button>
         <button class="app" data-go="meds"><span class="ico i-med"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
+        <button class="app" data-go="saude"><span class="ico i-health"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/><path d="M6.5 12.5h3l1.3-2.3 2 4.3 1.4-2h3.3" style="stroke:#e03131;stroke-width:1.6"/></svg></span><span class="lbl">Saúde</span></button>
+        <button class="app" data-go="carro"><span class="ico i-car"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 16.5v-4l1.8-4.6A2 2 0 0 1 8.2 6.5h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4M3.5 12.5h17v4.5h-17zM7 19.5v-2.5M17 19.5v-2.5"/><circle cx="7.3" cy="14.7" r=".9" style="fill:#fff;stroke:none"/><circle cx="16.7" cy="14.7" r=".9" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Carro</span></button>
+        <button class="app" data-go="docs"><span class="ico i-doc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4.5M14 13h3"/></svg></span><span class="lbl">Documentos</span></button>
       </div>
       <h3>Lazer</h3>
       <div class="apps">
@@ -797,6 +821,35 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <button class="btn ghost" type="button" id="addLoan">+ Juntar crédito</button>
     <div id="loanNew"></div>
     <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam (a do mês atual já conta como paga). “Falta pagar” é a soma das prestações que faltam (com juros).</p>
+  </section>
+
+  <section id="tab-carro" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carro</span><span></span></nav>
+    <h1 class="large">Carro</h1>
+    <div id="carList" class="rlist"></div>
+    <button class="btn ghost" type="button" id="addCar">+ Juntar carro</button>
+    <div id="carNew"></div>
+    <p class="note" style="margin:0">Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
+  </section>
+
+  <section id="tab-docs" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Documentos</span><span></span></nav>
+    <h1 class="large">Documentos</h1>
+    <div id="docList" class="rlist"></div>
+    <button class="btn ghost" type="button" id="addDoc">+ Juntar documento</button>
+    <div id="docNew"></div>
+    <p class="note" style="margin:0">Só a validade: não é preciso guardar números de documentos. Recebes uma notificação 90, 30 e 7 dias antes de terminar.</p>
+  </section>
+
+  <section id="tab-saude" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Saúde</span><span></span></nav>
+    <h1 class="large">Saúde</h1>
+    <div class="seg" role="group" aria-label="Pessoa" id="hWho" style="align-self:flex-start"></div>
+    <div class="group" style="gap:8px"><h2>Próximas</h2><div id="hNext" class="rlist"></div>
+      <button class="btn ghost" type="button" id="addHealth">+ Juntar consulta, análises ou vacina</button><div id="hNew"></div></div>
+    <div class="group" style="gap:8px"><h2>Médicos</h2><div id="hDocs" class="rlist"></div>
+      <button class="btn ghost" type="button" id="addDoctor">+ Juntar médico</button><div id="dNew"></div></div>
+    <div class="group" style="gap:8px"><h2>Histórico</h2><div id="hPast" class="rlist"></div></div>
   </section>
 
   <section id="tab-meds" class="group" style="gap:16px" hidden>
@@ -1174,12 +1227,12 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1460,7 +1513,7 @@ function renderBills(){
     </div>`}).join(""):`<div class="empty">Ainda não há contas fixas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
   const unpaid=list.filter(b=>!isPaid(b,k)).length, pa=document.getElementById("payAll");
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
-  const have=new Set(bills.map(b=>b.name.toLowerCase()));
+  const have=new Set(bills.map(b=>String(b.name||"").toLowerCase()));
   /* Saldo das contas e previsão para o fim do mês (só para o mês atual, ou novembro de 2026 antes de começar) */
   const accs=accounts().sort((a,b)=>a.name.localeCompare(b.name,"pt")), bal=accs.reduce((s,a)=>s+(+a.bal||0),0);
   const fk=ymOf(now)<START?START:ymOf(now);
@@ -1488,7 +1541,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1688,6 +1741,9 @@ function renderAlerts(){
     dosesToday("").forEach(({m,t,done})=>{if(!done&&tMin(t)<nm){medLate++;A.push({o:1,cls:"warn",dot:"bad",go:"meds",name:`${m.who}: ${m.name}`,meta:`Toma das ${t} por tomar${m.dose?" · "+m.dose:""}`})}});
     meds().filter(m=>m.stock!=null&&m.stock<=5&&medActive(m,todayS)).forEach(m=>A.push({o:3,cls:"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`Restam ${m.stock} dose${m.stock===1?"":"s"} (${m.who})`}))}
   const mdb=document.getElementById("medBadge");if(mdb){mdb.hidden=!medLate;mdb.textContent=medLate}
+  /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
+  deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
+    A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":`Faltam ${d} dia${d===1?"":"s"} · ${fmtD(x.date)}`})});
   const toBuy=items.filter(i=>i.lvl<2).length;
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
@@ -1706,6 +1762,9 @@ function renderAgenda(){const el=document.getElementById("agenda");if(!el)return
     m:[e.date===day&&e.time?e.time:"",evSpan(e)?evSpan(e,day):""].filter(Boolean).join(" · ")})});
   for(let i=0;i<60&&L.length<12;i++){const d=new Date(now);d.setDate(d.getDate()+i);const ds=ymd(d), mk=ds.slice(0,7);
     billsOn(ds).forEach(b=>{if(!isPaid(b,mk))L.push({day:ds,key:ds+"98",t:b.name,col:"#ff9f0a",m:`${b.dd?"Débito direto":"Conta a pagar"} · ${eur(monthAmt(b,mk))}`})})}
+  /* Prazos do carro e documentos, e consultas que não estão no calendário */
+  deadlines().forEach(x=>{if(x.date>=todayS&&x.date<=limS)L.push({day:x.date,key:x.date+"97",t:x.t,col:"#af52de",m:x.m})});
+  bills.filter(b=>b.kind==="health"&&!b.ev&&b.date>=todayS&&b.date<=limS).forEach(h=>L.push({day:h.date,key:h.date+(h.time||"99"),t:`🩺 ${h.who}: ${h.title||h.type}`,col:"#ff375f",m:h.time||""}));
   L.sort((a,b)=>a.key.localeCompare(b.key));
   const tm=new Date(now);tm.setDate(tm.getDate()+1);const tomS=ymd(tm);
   const when=ds=>ds===todayS?"Hoje":ds===tomS?"Amanhã":new Date(ds+"T12:00").toLocaleDateString("pt-PT",{weekday:"long"});
@@ -2274,6 +2333,88 @@ document.querySelector(".spad").addEventListener("pointerdown",e=>{const b=e.tar
   ["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>on=false))})();
 document.addEventListener("keydown",e=>{if(document.getElementById("tab-snake").hidden)return;const k={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"}[e.key];if(k){e.preventDefault();sTurn(k)}});
 document.addEventListener("visibilitychange",()=>{if(document.hidden)sPause()});
+
+/* ---------- Prazos: carro e documentos ---------- */
+const CARF=[["seguro","Seguro"],["inspecao","Inspeção"],["iuc","IUC"],["revisao","Revisão"]];
+function deadlines(){const L=[];
+  bills.filter(b=>b.kind==="car").forEach(c=>CARF.forEach(([f,n])=>{if(c[f])L.push({date:c[f],t:`${c.name}: ${n}`,m:"Carro",go:"carro",alert:7,past:"Passou"})}));
+  bills.filter(b=>b.kind==="doc"&&b.date).forEach(d=>L.push({date:d.date,t:`${d.type} (${d.who})`,m:"Documento termina",go:"docs",alert:30,past:"Caducou"}));
+  return L}
+const fmtN=v=>String(Math.round(+v||0)).replace(/\B(?=(\d{3})+(?!\d))/g,".");
+const MES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const fmtD=ds=>{if(!ds)return"";const [y,m,d]=ds.split("-").map(Number);return`${d} ${MES[m-1]} ${y}`};
+const daysTo=ds=>ds?dDiff(ymd(new Date()),ds):null;
+/* Etiqueta do prazo: vermelho se passou, laranja se está perto (warn dias), verde se ainda falta */
+function dueTag(ds,warn){const d=daysTo(ds);if(d===null)return"";
+  const t=d<0?`Passou há ${-d} dia${d===-1?"":"s"}`:d===0?"Hoje":d===1?"Amanhã":d<=60?`Faltam ${d} dias`:d<=730?`Faltam ${Math.round(d/30.4)} meses`:`Faltam ${Math.round(d/365)} anos`;
+  return`<span class="due ${d<0?"bad":d<=warn?"warn":"ok"}">${t}</span>`}
+const addYears=(ds,n)=>{const d=new Date(ds+"T12:00");d.setFullYear(d.getFullYear()+n);return ymd(d)};
+/* Formulário simples a partir de uma lista de campos [nome, rótulo, tipo, largo?, sugestão] */
+function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recform="${kind}|${rec?rec.id:"new"}" autocomplete="off">
+  ${fields.map(([n,l,t,w,ph,opts])=>t==="select"?`<label class="f${w?" wide":""}">${l}<select name="${n}">${opts.map(o=>`<option${rec&&rec[n]===o?" selected":""}>${esc(o)}</option>`).join("")}</select></label>`
+    :t==="check"?`<label class="f wide" style="flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--fg)"><input type="checkbox" name="${n}" style="width:22px;height:22px"${rec?(rec[n]?" checked":""):" checked"}>${l}</label>`
+    :`<label class="f${w?" wide":""}">${l}<input name="${n}" type="${t||"text"}"${t==="number"?' step="any" inputmode="decimal"':""}${t==="tel"?' inputmode="tel"':""} value="${rec&&rec[n]!=null?esc(rec[n]):""}" placeholder="${esc(ph||"")}"${n==="name"||n==="who"&&w?" required":""}></label>`).join("")}
+  ${extra||""}
+  <button class="btn" type="submit">Guardar</button>
+  <button class="btn ghost" type="button" data-reccancel="${kind}">Cancelar</button>
+  ${rec?`<button class="btn danger wide" type="button" data-recdel="${kind}|${rec.id}">Apagar</button>`:""}</form>`}
+const whoChips=(cur)=>`<div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-setwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-setwho]");if(!b)return;const f=b.closest("form");if(f&&f.who)f.who.value=b.dataset.setwho});
+var editRec={car:"",doc:"",health:"",doctor:""};
+const RECS={
+  car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome","text",1,"ex.: Carro da Bianca"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
+    ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revisao","Revisão: data","date"],["revKm","Revisão: aos km","number",0,"opcional"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
+  doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",["Cartão de Cidadão","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Seguro de saúde","Autorização de residência","Outro"]],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
+  health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
+  doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
+const recsOf=k=>bills.filter(b=>b.kind===k);
+function recFormFor(k,rec){const F=RECS[k];return recForm(k,rec,F.fields.filter(f=>f[0]!=="who"||true).map(f=>f),"").replace(/(<label class="f wide">(?:De quem|Para quem)<input[^>]*><\/label>)/,"$1"+whoChips())}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  for(const k of Object.keys(RECS))if(b.id===RECS[k].add){editRec[k]="new";RECS[k].render();setTimeout(()=>{const f=document.querySelector(`[data-recform="${k}|new"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},30)}
+  if(b.dataset.recedit){const [k,id]=b.dataset.recedit.split("|");editRec[k]=id;RECS[k].render()}
+  else if(b.dataset.reccancel){editRec[b.dataset.reccancel]="";RECS[b.dataset.reccancel].render()}
+  else if(b.dataset.recdel){const [k,id]=b.dataset.recdel.split("|"), x=bills.find(y=>y.id===id);if(!x||!confirm("Apagar?"))return;
+    if(x.ev)delEv(x.ev);editRec[k]="";delBill(id);RECS[k].render();toast("Apagado")}
+  else if(b.dataset.carbump){const [id,f]=b.dataset.carbump.split("|"), c=bills.find(y=>y.id===id);if(!c||!c[f])return;
+    const n=f==="inspecao"&&c.inspecaoAnos?+c.inspecaoAnos:1;let d=c[f];while(daysTo(d)<=60)d=addYears(d,n);putBill({...c,[f]:d});renderCars();toast("Próximo: "+fmtD(d))}});
+document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!ref)return;e.preventDefault();const [k,id]=ref.split("|"), f=e.target, F=RECS[k];
+  const old=id==="new"?null:bills.find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:k};
+  for(const [n,,t] of F.fields){const el=f[n];if(!el)continue;let v=t==="check"?el.checked:el.value.trim();if(t==="number")v=v===""?null:parseFloat(v.replace(",","."));
+    if(v===""||v===null||(typeof v==="number"&&isNaN(v)))delete x[n];else x[n]=v}
+  if(k==="car"&&x.km!=null&&(!old||old.km!==x.km))x.kmAt=Date.now();
+  if(k==="doc")x.name=`${x.type} (${x.who})`;if(k==="health")x.name=`${x.who}: ${x.title||x.type}`;
+  /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
+  if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
+      events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
+  editRec[k]="";putBill(x);F.render();toast("Guardado")});
+function renderCars(){const el=document.getElementById("carList");if(!el)return;const L=recsOf("car").sort((a,b)=>a.name.localeCompare(b.name,"pt"));
+  const row=(c,f,label,extra)=>{if(!c[f])return"";const d=daysTo(c[f]);
+    return`<div class="rrow"><span class="rl">${label}</span><span class="rm">${fmtD(c[f])}${extra?" · "+extra:""}</span><span class="rs">${dueTag(c[f],30)}${d<=30?`<button type="button" class="bump" data-carbump="${c.id}|${f}">Renovado ›</button>`:""}</span></div>`};
+  el.innerHTML=L.map(c=>c.id===editRec.car?recFormFor("car",c):`<div class="rcard"><button type="button" class="rhead" data-recedit="car|${c.id}"><span><b>${esc(c.name)}</b>${c.plate?`<span class="plate"><i>P</i><span>${esc(c.plate.toUpperCase())}</span></span>`:""}</span><span class="edit">Editar</span></button>
+    ${c.km!=null?`<div class="rrow"><span class="rl">${fmtN(c.km)} km</span><span class="rm">Atualizado ${c.kmAt?(daysTo(ymd(new Date(c.kmAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.kmAt)))} dias`):""}</span></div>`:""}
+    ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${row(c,"revisao","Revisão",c.revKm?`ou aos ${fmtN(c.revKm)} km`:"")}
+    ${!c.revisao&&c.revKm?`<div class="rrow"><span class="rl">Revisão</span><span class="rm">aos ${fmtN(c.revKm)} km</span><span class="rs">${c.km!=null?`<span class="due ${c.revKm-c.km<=1000?"warn":"ok"}">Faltam ${fmtN(Math.max(0,c.revKm-c.km))} km</span>`:""}</span></div>`:""}
+    ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
+  document.getElementById("addCar").hidden=editRec.car==="new"}
+function renderDocs(){const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
+  const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
+  el.innerHTML=whos.map(w=>`<div class="rcard"><div class="rhead" style="cursor:default"><b>${esc(w)}</b></div>${L.filter(d=>d.who===w).sort((a,b)=>(a.date||"9").localeCompare(b.date||"9")).map(d=>d.id===editRec.doc?recFormFor("doc",d):
+    `<button type="button" class="rrow" data-recedit="doc|${d.id}" style="width:100%;background:transparent;color:var(--fg);font:inherit;text-align:left"><span class="rl">${esc(d.type)}</span><span class="rm">${d.date?"Válido até "+fmtD(d.date):"Sem validade"}${d.notes?" · "+esc(d.notes):""}</span><span class="rs">${dueTag(d.date,90)}</span></button>`).join("")}</div>`).join("")
+    +(editRec.doc==="new"?recFormFor("doc",null):"")||`<div class="rcard"><div class="rempty">Ainda não há documentos. Junta o Cartão de Cidadão, passaportes e cartas de condução para seres avisado antes de terminarem.</div></div>`;
+  document.getElementById("addDoc").hidden=editRec.doc==="new"}
+let hWho="";
+function renderHealth(){const el=document.getElementById("hNext");if(!el)return;const today=ymd(new Date());
+  const H=recsOf("health").filter(h=>!hWho||h.who===hWho), D=recsOf("doctor").filter(d=>!hWho||!d.who||d.who===hWho);
+  const whos=[...new Set([...PEOPLE,...recsOf("health").map(h=>h.who).filter(Boolean)])];
+  document.getElementById("hWho").innerHTML=[["","Todos"],...whos.map(w=>[w,w])].map(([v,l])=>`<button type="button" data-hwho="${esc(v)}" aria-pressed="${hWho===v}">${esc(l)}</button>`).join("");
+  const item=h=>h.id===editRec.health?recFormFor("health",h):`<button type="button" class="rrow" data-recedit="health|${h.id}" style="width:100%;background:transparent;color:var(--fg);font:inherit;text-align:left"><span class="rl">${esc(h.who)}: ${esc(h.title||h.type)}</span><span class="rm">${fmtD(h.date)}${h.time?" · "+h.time:""}${h.place?" · "+esc(h.place):""}${h.title&&h.type!=="Consulta"?" · "+esc(h.type):""}${h.notes?" · "+esc(h.notes):""}</span><span class="rs">${h.date>=today?dueTag(h.date,7):""}</span></button>`;
+  const next=H.filter(h=>!h.date||h.date>=today).sort((a,b)=>((a.date||"9")+(a.time||"")).localeCompare((b.date||"9")+(b.time||"")));
+  const past=H.filter(h=>h.date&&h.date<today).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+  el.innerHTML=(next.length?`<div class="rcard">${next.map(item).join("")}</div>`:"")+(editRec.health==="new"?recFormFor("health",{who:hWho,type:"Consulta",cal:true,id:"",_new:1}).replace('data-recform="health|"','data-recform="health|new"').replace(/<button class="btn danger wide"[^>]*>Apagar<\/button>/,""):"")||`<div class="rcard"><div class="rempty">Nada marcado.</div></div>`;
+  document.getElementById("hPast").innerHTML=past.length?`<div class="rcard">${past.map(item).join("")}</div>`:`<div class="rcard"><div class="rempty">As consultas que já passaram aparecem aqui.</div></div>`;
+  document.getElementById("hDocs").innerHTML=(D.length?`<div class="rcard">${D.sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(d=>d.id===editRec.doctor?recFormFor("doctor",d):`<div class="rrow"><button type="button" data-recedit="doctor|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name)}</span><span class="rm" style="display:block">${[d.spec,d.who,d.place].filter(Boolean).map(esc).join(" · ")}</span></button><span class="rs">${d.phone?`<a class="tel" href="tel:${esc(d.phone.replace(/[^\d+]/g,""))}">📞 Ligar</a>`:""}</span></div>`).join("")}</div>`:"")+(editRec.doctor==="new"?recFormFor("doctor",null):"")||`<div class="rcard"><div class="rempty">Junta os médicos e clínicas para ligares com um toque.</div></div>`;
+  document.getElementById("addHealth").hidden=editRec.health==="new";document.getElementById("addDoctor").hidden=editRec.doctor==="new"}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hwho]");if(b){hWho=b.dataset.hwho;renderHealth()}});
 
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
