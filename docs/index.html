@@ -14,9 +14,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f3f5f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121815" media="(prefers-color-scheme: dark)">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
 <style>
 /* Base: margens das zonas seguras do iPhone (notch e barra inferior) */
 :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
@@ -186,6 +183,106 @@ details.import[open]{display:flex;flex-direction:column;gap:8px}
 textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;box-sizing:border-box;resize:vertical}
 .msg{margin:0;color:var(--bad);font-size:.88rem}
 @media (prefers-reduced-motion:no-preference){.item,.check{transition:background .15s}}
+/* ======================= Estilo iPhone (iOS) ======================= */
+:root{
+  --bg:#f2f2f7; --surface:#fff; --fg:#000; --muted:#6c6c70; --line:#c6c6c8; --fill:rgba(118,118,128,.12); --fill2:#e9e9eb;
+  --accent:#007aff; --accent-fg:#fff; --accent-soft:rgba(0,122,255,.12);
+  --good:#248a3d; --good-bg:#34c759; --good-soft:rgba(52,199,89,.16);
+  --warn:#c93400; --warn-soft:rgba(255,149,0,.16); --bad:#d70015; --bad-bg:#ff3b30; --bad-soft:rgba(255,59,48,.12);
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#000; --surface:#1c1c1e; --fg:#fff; --muted:#98989f; --line:#38383a; --fill:rgba(118,118,128,.24); --fill2:#39393d;
+  --accent:#0a84ff; --accent-fg:#fff; --accent-soft:rgba(10,132,255,.2);
+  --good:#30d158; --good-bg:#30d158; --good-soft:rgba(48,209,88,.2);
+  --warn:#ff9f0a; --warn-soft:rgba(255,159,10,.2); --bad:#ff453a; --bad-bg:#ff453a; --bad-soft:rgba(255,69,58,.2)}}
+:root[data-theme="dark"]{
+  --bg:#000; --surface:#1c1c1e; --fg:#fff; --muted:#98989f; --line:#38383a; --fill:rgba(118,118,128,.24); --fill2:#39393d;
+  --accent:#0a84ff; --accent-fg:#fff; --accent-soft:rgba(10,132,255,.2);
+  --good:#30d158; --good-bg:#30d158; --good-soft:rgba(48,209,88,.2);
+  --warn:#ff9f0a; --warn-soft:rgba(255,159,10,.2); --bad:#ff453a; --bad-bg:#ff453a; --bad-soft:rgba(255,69,58,.2)}
+body{font-size:17px;line-height:1.29;letter-spacing:-.01em;padding-block:12px 60px}
+.wrap{gap:22px}
+h1{font-weight:700;font-size:34px;line-height:1.1;letter-spacing:.01em}
+h2{font-weight:700;font-size:22px;letter-spacing:.01em}
+.group h3{font-size:13px;letter-spacing:.02em;font-weight:400;margin:14px 16px 6px;text-transform:uppercase}
+.sub{font-size:15px}
+.note{font-size:13px}
+/* Barra de navegação fixa, como no iPhone */
+.navbar{position:sticky;top:0;z-index:5;margin:-12px calc(-1*max(16px,env(safe-area-inset-left,0px))) 0;padding:0 16px;height:44px;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
+.navbar.scrolled{border-bottom-color:var(--line)}
+.navback{justify-self:start;background:none;color:var(--accent);font-size:17px;display:inline-flex;align-items:center;gap:6px;padding:8px 8px 8px 0;margin-left:-4px}
+.navback svg{width:12px;height:21px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.navtitle{font-weight:600;font-size:17px;opacity:0;transition:opacity .2s;white-space:nowrap}
+.navbar.scrolled .navtitle{opacity:1}
+h1.large{margin-top:2px}
+.back{color:var(--accent);font-weight:400;font-size:17px}
+/* Listas agrupadas: linhas brancas juntas, separadas por uma linha fina */
+#pantry,#meat,#shop,#bills,#incomes,#budgets,#alerts,#dayList,#houseShared{gap:0}
+:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit){border:0!important;border-radius:0;position:relative;padding:11px 16px;min-height:44px;box-sizing:border-box}
+:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit) + *){border-top-left-radius:12px;border-top-right-radius:12px}
+:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:has(+ :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit))){border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):has(+ :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit))::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line);pointer-events:none}
+.bill:has(input[type=checkbox])::after,.check::after{left:52px!important}
+.item .name,.bill .name,.alert .name,.ev-row .name,.budget .name{font-weight:400}
+.item .meta,.bill .meta,.alert .meta,.budget .meta{font-size:15px}
+.meta .ok{color:var(--good);font-weight:600}
+.empty{border:0;background:var(--surface);border-radius:12px;font-size:15px}
+.ev-row.auto{background:var(--surface);color:var(--muted)}
+.alert.bad{background:var(--surface)}.alert.warn{background:var(--surface)}
+.alert.bad .name{color:var(--bad)}
+.alert .go,.x{color:#c4c4c6}
+.x{font-size:1.3rem}
+/* Visto redondo (como nos Lembretes): sem risco por cima quando está pago */
+input[type=checkbox]:not(.switch){-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;border:1.5px solid #c4c4c6;background:transparent;
+  display:grid;place-items:center;margin:0;padding:0;flex:none;cursor:pointer;transition:background .15s,border-color .15s}
+input[type=checkbox]:not(.switch):checked{background:var(--good-bg);border-color:var(--good-bg)}
+input[type=checkbox]:not(.switch):checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.bill.paid .name,.bill.inc.got .name{color:var(--fg);text-decoration:none}
+.check.done .name{text-decoration:none;color:var(--muted)}
+/* Interruptores iOS */
+label.tick{justify-content:space-between;flex-direction:row-reverse;background:var(--surface);border-radius:10px;padding:8px 12px;color:var(--fg);font-size:15px;gap:12px}
+input.switch{-webkit-appearance:none;appearance:none;width:51px!important;height:31px!important;padding:0;border:0;border-radius:999px;background:var(--fill2);position:relative;margin:0;flex:none;cursor:pointer;transition:background .2s}
+input.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);transition:transform .2s}
+input.switch:checked{background:var(--good-bg)}
+input.switch:checked::after{transform:translateX(20px)}
+/* Campos, botões e etiquetas */
+input,select,textarea{border:0;border-radius:10px;font-size:17px;padding:11px 14px}
+label.f{font-size:13px;letter-spacing:.02em;font-weight:400;padding-left:4px}
+label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
+.btn{border-radius:12px;font-size:17px;padding:14px 18px}
+.btn.ghost{background:var(--accent-soft);color:var(--accent);border:0}
+.chip{background:var(--accent-soft);color:var(--accent);border:0;font-size:15px;padding:7px 13px}
+.pill{border:0;font-size:13px}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.lvl{border:0;background:var(--fill);border-radius:9px;padding:2px}
+.lvl button{border-radius:7px;color:var(--fg);font-weight:500;font-size:13px;padding:6px 10px}
+.lvl button[aria-pressed="true"]{box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+.lvl button[aria-pressed="true"].s2{background:var(--surface);color:var(--good)}
+.lvl button[aria-pressed="true"].s1{background:var(--surface);color:var(--warn)}
+.lvl button[aria-pressed="true"].s0{background:var(--surface);color:var(--bad)}
+.gear,.nav-m{border:0;background:var(--fill);color:var(--accent);border-radius:50%;width:36px;height:36px}
+.month h2{font-size:20px;font-weight:600}
+/* Caixas de resumo e barras */
+.tot{border:0;border-radius:12px}
+.tot .k{font-size:12px;letter-spacing:.02em;font-weight:500}
+.tot .v{font-weight:700}
+.tot.paid .v,.bill.inc .amt{color:var(--good)}
+.bar,.minibar{background:var(--fill)}
+.bar span,.minibar span,#incFill{background:var(--good-bg)}
+.cal{border:0;border-radius:12px}
+.dot.bl{background:var(--accent)}.dot.ev{background:var(--good-bg)}.adot.ev{background:var(--good-bg)}.adot.bl{background:var(--accent)}
+.toast{background:rgba(30,30,30,.86);color:#fff;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);font-size:15px;padding:10px 18px}
+.code{font-weight:700}
+.budget .head{gap:12px}
+.spend{border-top:.5px solid var(--line)}
+.bill-edit input,.bill-edit select,.budget input,form.item input{background:var(--fill)}
+.bill-edit label.tick{background:transparent;padding:6px 0}
+.bill-edit{gap:10px}
+
 </style>
 <script src="firebase-config.js"></script>
 </head>
@@ -240,7 +337,8 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
   </section>
 
   <section id="tab-definicoes" class="group" style="gap:16px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Esta casa</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Esta casa</span><span></span></nav>
+    <h1 class="large">Esta casa</h1>
     <form class="item" id="nameForm" autocomplete="off" style="align-items:end">
       <label class="f" style="min-width:0">O teu nome neste telemóvel<input id="myName" placeholder="ex.: Luís" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
       <button class="btn" type="submit">Guardar</button>
@@ -263,7 +361,8 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
   </section>
 
   <section id="tab-calendario" class="group" style="gap:16px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Calendário</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Calendário</span><span></span></nav>
+    <h1 class="large">Calendário</h1>
     <div class="cal">
       <div class="month">
         <button class="nav-m" id="cPrev" aria-label="Mês anterior">‹</button>
@@ -286,7 +385,8 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
   </section>
 
   <section id="tab-despensa" class="group" style="gap:16px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Despensa</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Despensa</span><span></span></nav>
+    <h1 class="large">Despensa</h1>
     <div class="summary" id="summary"></div>
     <form class="add" id="addForm" autocomplete="off">
       <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
@@ -308,7 +408,8 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
   </section>
 
   <section id="tab-carne" class="group" style="gap:16px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Carne e Peixe</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carne e Peixe</span><span></span></nav>
+    <h1 class="large">Carne e Peixe</h1>
     <form class="add" id="meatForm" autocomplete="off">
       <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -326,13 +427,15 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
   </section>
 
   <section id="tab-lista" class="group" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Compras</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
+    <h1 class="large">Compras</h1>
     <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”. Ao marcar como comprado, volta a “tenho”.</p>
     <div id="shop" class="group"></div>
   </section>
 
   <section id="tab-despesas" class="group" style="gap:14px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Contas</h1></div>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Contas</span><span></span></nav>
+    <h1 class="large">Contas</h1>
     <div class="month">
       <button class="nav-m" id="mPrev" aria-label="Mês anterior">‹</button>
       <h2 id="mLabel"></h2>
@@ -516,9 +619,16 @@ const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>!isInc(b));
 const isBud=b=>b.kind==="budget", fixas=()=>contas().filter(b=>!isBud(b));
 const spends=(b,k)=>(b.spent&&b.spent[k])||[];
 const spentOf=(b,k)=>spends(b,k).reduce((s,x)=>s+(+x.v||0),0);
-/* Contas fixas: paid[mês]=true (pagou o valor habitual) ou um número (o valor pago nesse mês) */
-const paidAmt=(b,k)=>{const p=b.paid&&b.paid[k];return typeof p==="number"?p:p?(+b.amount||0):0};
-const planned=(b,k)=>isBud(b)?Math.max(+b.amount||0,spentOf(b,k)):(typeof(b.paid&&b.paid[k])==="number"?b.paid[k]:+b.amount||0);
+/* Valor de um mês: amounts[mês] (só nesse mês), senão o valor em vigor desde from[mês] (meses seguintes), senão amount.
+   Versões antigas guardavam o valor pago em paid[mês] como número: ainda conta. */
+const baseAmt=(b,k)=>{let v=+b.amount||0;if(b.from)for(const m of Object.keys(b.from).sort())if(m<=k)v=+b.from[m]||0;return v};
+const monthAmt=(b,k)=>b.amounts&&b.amounts[k]!=null?+b.amounts[k]:typeof(b.paid&&b.paid[k])==="number"?b.paid[k]:baseAmt(b,k);
+const ymOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+/* Paga (ou recebida): paid[mês]=true/false; com débito direto (dd) fica paga sozinha quando passa o dia */
+const isPaid=(b,k)=>{const p=b.paid&&b.paid[k];if(p!=null)return p!==false;if(!b.dd||!b.day)return false;
+  const cur=ymOf(now);if(k!==cur)return k<cur;return Math.min(b.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())<=now.getDate()};
+const paidAmt=(b,k)=>isPaid(b,k)?monthAmt(b,k):0;
+const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k),spentOf(b,k)):monthAmt(b,k);
 const doneOf=(b,k)=>isBud(b)?spentOf(b,k):paidAmt(b,k);
 let openBud="";
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
@@ -541,7 +651,7 @@ function renderBills(){
   document.getElementById("mLabel").textContent=label;
   const byDay=(a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt");
   const all=contas(), list=fixas().sort(byDay), buds=all.filter(isBud).sort((a,b)=>a.name.localeCompare(b.name,"pt"));
-  const inc=bills.filter(isInc).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
+  const inc=bills.filter(isInc).sort((a,b)=>monthAmt(b,k)-monthAmt(a,k));
   const tot=all.reduce((s,b)=>s+planned(b,k),0), tin=inc.reduce((s,b)=>s+planned(b,k),0), got=inc.reduce((s,b)=>s+paidAmt(b,k),0);
   document.getElementById("incSec").hidden=false;
   document.getElementById("incLine").innerHTML=inc.length?`Recebido <b>${eur(got)}</b> · Falta receber <b>${eur(tin-got)}</b>`:"";
@@ -560,26 +670,28 @@ function renderBills(){
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
   const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
   const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const overdue=fixas().filter(b=>b.day&&b.day<=today&&!(b.paid&&b.paid[curK])).length;
+  const overdue=fixas().filter(b=>b.day&&b.day<=today&&!isPaid(b,curK)).length;
   const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
   if(typeof renderCal==="function")renderCal();
   const el=document.getElementById("bills");
   const mName=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long"});
-  const editRow=(b,what)=>{const pv=b.paid&&b.paid[k];return `<form class="bill-edit" data-editform="${b.id}" autocomplete="off">
+  const editRow=(b,what)=>`<form class="bill-edit" data-editform="${b.id}" autocomplete="off">
       <label class="f wide">${what}<input name="n" value="${esc(b.name)}" required></label>
-      <label class="f">${isBud(b)?"Orçamento por mês (€)":"Valor por mês (€)"}<input name="a" type="number" min="0" step="0.01" inputmode="decimal" value="${+b.amount||0}" required></label>
-      <label class="f">Dia<input name="d" type="number" min="0" max="31" inputmode="numeric" value="${b.day||""}" placeholder="Sem dia"></label>
-      ${isBud(b)?"":`<label class="f wide">${isInc(b)?"Recebido":"Pago"} em ${mName} (€)<input name="m" type="number" min="0" step="0.01" inputmode="decimal" value="${typeof pv==="number"?pv:""}" placeholder="Igual ao valor por mês"></label>`}
-      ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
+      <label class="f">${isBud(b)?"Orçamento":"Valor"} em ${mName} (€)<input name="v" type="number" min="0" step="0.01" inputmode="decimal" value="${Math.round(monthAmt(b,k)*100)/100}" required></label>
+      <label class="f">Dia<input name="d" type="number" min="0" max="31" inputmode="numeric" value="${b.day||""}" placeholder="Sem dia" ${isBud(b)?"disabled":""}></label>
+      <label class="tick wide"><input type="checkbox" class="switch" name="keep"> Manter este valor nos meses seguintes</label>
+      ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
+      ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
+      <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
-    </form>`};
+    </form>`;
   /* Gastos do mês */
   document.getElementById("budBox").hidden=!buds.length;
   const today2=isCur?today:1;
   document.getElementById("budgets").innerHTML=buds.map(b=>{
     if(b.id===editBill)return editRow(b,"Despesa");
-    const sp=spentOf(b,k), lim=+b.amount||0, left=lim-sp, open=b.id===openBud, pct=lim?Math.min(sp/lim*100,100):(sp?100:0);
+    const sp=spentOf(b,k), lim=monthAmt(b,k), left=lim-sp, open=b.id===openBud, pct=lim?Math.min(sp/lim*100,100):(sp?100:0);
     const L=spends(b,k).map((x,i)=>({...x,i})).sort((a,c)=>(c.d||0)-(a.d||0));
     return `<div class="budget">
       <div class="head">
@@ -599,27 +711,28 @@ function renderBills(){
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
   document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>{if(b.id===editBill)return editRow(b,"Receita");
-    const g=!!(b.paid&&b.paid[k]), gv=b.paid&&b.paid[k];
-    const meta=g?(typeof gv==="number"&&gv!==(+b.amount||0)?`Recebida · habitual ${eur(+b.amount||0)}`:"Recebida"):(b.day?"Dia "+b.day:"Sem dia fixo");
+    const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
+    const meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></button>
-      <div class="amt">+${eur(planned(b,k))}</div>
+      <div class="amt">+${eur(monthAmt(b,k))}</div>
       <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
     </div>`}).join(""):`<div class="empty">Ainda não há receitas.<br>Adiciona os ordenados em baixo, em <b>Adicionar → Receita</b>, para veres quanto sobra.</div>`;
   el.innerHTML=list.length?list.map(b=>{
-    const p=!!(b.paid&&b.paid[k]), pv=b.paid&&b.paid[k];
-    let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
-    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.day===today?"Vence hoje":"Vence dia "+b.day}</span>`; }
-    if(p) when=typeof pv==="number"&&pv!==(+b.amount||0)?`Paga · habitual ${eur(+b.amount||0)}`:"Paga";
+    const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
+    let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:"Sem dia fixo";
+    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
+    if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
+    when+=only;
     if(b.id===editBill)return editRow(b,"Despesa");
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></button>
-      <div class="amt">${eur(typeof pv==="number"?pv:+b.amount||0)}</div>
+      <div class="amt">${eur(monthAmt(b,k))}</div>
       <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
     </div>`}).join(""):`<div class="empty">Ainda não há contas fixas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
-  const unpaid=list.filter(b=>!(b.paid&&b.paid[k])).length, pa=document.getElementById("payAll");
+  const unpaid=list.filter(b=>!isPaid(b,k)).length, pa=document.getElementById("payAll");
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>b.name.toLowerCase()));
   document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as contas habituais.</span>`;
@@ -643,7 +756,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t)return;
   if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
   else if(t.dataset.delbill)delBill(t.dataset.delbill);
-  else if(t.dataset.editbill){editBill=t.dataset.editbill;renderBills();const f=document.querySelector(`[data-editform="${editBill}"] [name=a]`);if(f)f.focus()}
+  else if(t.dataset.editbill){editBill=t.dataset.editbill;renderBills();const f=document.querySelector(`[data-editform="${editBill}"] [name=v]`);if(f)f.focus()}
   else if(t.dataset.canceledit){editBill="";renderBills()}
   else if(t.dataset.openbud){openBud=openBud===t.dataset.openbud?"":t.dataset.openbud;renderBills()}
   else if(t.dataset.spend){openBud=t.dataset.spend;renderBills();const f=document.querySelector(`[data-spendform="${openBud}"] [name=v]`);if(f)f.focus()}
@@ -660,7 +773,7 @@ document.addEventListener("submit",e=>{
   toast(`${eur(v)} em ${b.name}`);
 });
 document.getElementById("payAll").addEventListener("click",()=>{
-  const k=mKey(), todo=fixas().filter(b=>!(b.paid&&b.paid[k]));
+  const k=mKey(), todo=fixas().filter(b=>!isPaid(b,k));
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long"});
   if(!todo.length||!confirm(`Marcar ${todo.length} conta${todo.length===1?"":"s"} como paga${todo.length===1?"":"s"} em ${label}?`))return;
   todo.forEach(b=>putBill({...b,paid:{...(b.paid||{}),[k]:true}}));toast("Marcadas como pagas");
@@ -669,13 +782,23 @@ document.getElementById("payAll").addEventListener("click",()=>{
 document.addEventListener("submit",e=>{
   const id=e.target.dataset.editform;if(!id)return;e.preventDefault();
   const b=bills.find(x=>x.id===id);if(!b)return;
-  const name=e.target.n.value.trim(), amount=parseFloat(e.target.a.value), day=parseInt(e.target.d.value)||0;
-  if(!name||isNaN(amount))return;
+  const name=e.target.n.value.trim(), v=parseFloat(e.target.v.value), day=parseInt(e.target.d.value)||0, k=mKey();
+  if(!name||isNaN(v))return;
   if(bills.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
-  const nb={...b,name,amount,day:Math.min(Math.max(day,0),31)};
+  const nb={...b,name,day:Math.min(Math.max(day,0),31)};
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
-  if(!isBud(nb)&&e.target.m&&e.target.m.value!==""){const v=parseFloat(e.target.m.value);if(!isNaN(v))nb.paid={...(b.paid||{}),[mKey()]:v}}
-  editBill="";putBill(nb);toast("Guardado");
+  delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
+  /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
+  if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
+  const amounts={...(b.amounts||{})};
+  if(e.target.keep.checked){
+    /* A partir deste mês: os meses anteriores ficam como estavam */
+    const from={...(b.from||{})};for(const m of Object.keys(from))if(m>k)delete from[m];
+    for(const m of Object.keys(amounts))if(m>=k)delete amounts[m];
+    from[k]=v;nb.from=from;
+  }else{delete amounts[k];if(Math.abs(v-baseAmt(nb,k))>.004)amounts[k]=v}
+  nb.amounts=amounts;
+  editBill="";putBill(nb);toast(e.target.keep.checked?"Guardado para este mês e os seguintes":"Guardado só para "+new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long"}));
 });
 /* Colar uma lista: "nome; valor; dia" por linha (também aceita colunas separadas por tabulação) */
 const money=s=>{const m=String(s||"").match(/\d[\d.\s]*(,\d+)?/);if(!m)return 0;let v=m[0].replace(/\s/g,"");v=m[1]?v.replace(/\./g,"").replace(",","."):v;return parseFloat(v)||0};
@@ -697,7 +820,8 @@ document.addEventListener("change",e=>{
   const id=e.target.dataset.pay; if(!id)return;
   const b=bills.find(x=>x.id===id); if(!b)return;
   const paid={...(b.paid||{})}; const k=mKey();
-  if(e.target.checked)paid[k]=true; else delete paid[k];
+  /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
+  if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   putBill({...b,paid});
 });
 document.getElementById("mPrev").onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}renderBills()};
@@ -745,7 +869,7 @@ function renderCal(){
   const evs=[...inf.ev].sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
   let rows=evs.map(e=>`<div class="ev-row"><span class="t">${e.time||"—"}</span><span class="name">${esc(e.title)}${e.byName?`<span class="meta" style="display:block;font-weight:400;font-size:.8rem;color:var(--muted)">Marcado por ${esc(e.byName)}</span>`:""}</span><button class="x" data-delev="${e.id}" aria-label="Apagar ${esc(e.title)}">×</button></div>`).join("");
   const mk=selDay.slice(0,7);
-  rows+=inf.bl.map(b=>`<div class="ev-row auto"><i class="dot bl"></i><span class="name">${esc(b.name)} · ${eur(+b.amount||0)}${b.paid&&b.paid[mk]?" (paga)":""}</span><span></span></div>`).join("");
+  rows+=inf.bl.map(b=>`<div class="ev-row auto"><i class="dot bl"></i><span class="name">${esc(b.name)} · ${eur(monthAmt(b,mk))}${isPaid(b,mk)?" (paga)":""}</span><span></span></div>`).join("");
   rows+=inf.ex.map(i=>`<div class="ev-row auto"><i class="dot ex"></i><span class="name">Termina a validade: ${esc(i.name)}</span><span></span></div>`).join("");
   document.getElementById("dayList").innerHTML=rows||`<p class="note" style="margin:0">Nada marcado para este dia.</p>`;
   renderAlerts();
@@ -756,11 +880,12 @@ function renderAlerts(){
   const evs=events.filter(e=>e.date===todayS||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
   evs.forEach(e=>A.push({o:e.date===todayS?1:3,cls:"",dot:"ev",go:"calendario",day:e.date,name:e.title,meta:(e.date===todayS?"Hoje":"Amanhã")+(e.time?" às "+e.time:"")}));
   const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
-  contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=+b.amount||0;
+  contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=monthAmt(b,mk);
     if(lim&&sp>lim)A.push({o:2,cls:"warn",dot:"bad",go:"despesas",name:`${b.name}: acima do orçamento`,meta:`Gasto ${eur(sp)} de ${eur(lim)}`});});
-  fixas().forEach(b=>{if(!b.day||(b.paid&&b.paid[mk]))return;const d=Math.min(b.day,last);
-    if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${eur(+b.amount||0)}`});
-    else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:`Pagar ${b.name}`,meta:`${d===td?"Vence hoje":"Vence dia "+d} · ${eur(+b.amount||0)}`});});
+  fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
+    const v=eur(monthAmt(b,mk));
+    if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
+    else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto dia "+d:d===td?"Vence hoje":"Vence dia "+d} · ${v}`});});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
   const toBuy=items.filter(i=>i.lvl<2).length;
@@ -891,6 +1016,9 @@ if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(houseCode)startShared().catch(()=>{document.getElementById("sub").textContent=SUB_LOCAL});
 else if(ls.get("casa-local")){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else setup();
+
+/* Barra de navegação: mostra o título pequeno e a linha quando a página desce, como no iPhone */
+addEventListener("scroll",()=>document.querySelectorAll(".navbar").forEach(n=>n.classList.toggle("scrolled",scrollY>36)),{passive:true});
 
 /* ---------- app instalada (PWA) ---------- */
 if("serviceWorker" in navigator){

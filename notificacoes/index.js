@@ -34,6 +34,14 @@ const eur = (v) => {
   return (v < 0 ? "−" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "," + d + "\u00a0€";
 };
 const longDate = (ds) => new Date(ds + "T12:00:00Z").toLocaleDateString("pt-PT", {weekday: "long", day: "numeric", month: "long", timeZone: "UTC"});
+/* Valor de uma conta num mês (igual à app): só nesse mês, em vigor desde um mês, ou o valor habitual */
+const baseAmt = (b, k) => {
+  let v = +b.amount || 0;
+  if (b.from) for (const m of Object.keys(b.from).sort()) if (m <= k) v = +b.from[m] || 0;
+  return v;
+};
+const monthAmt = (b, k) => b.amounts && b.amounts[k] != null ? +b.amounts[k] :
+  typeof (b.paid && b.paid[k]) === "number" ? b.paid[k] : baseAmt(b, k);
 const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
 
 /* ---------- envio ---------- */
@@ -70,14 +78,20 @@ async function morning(code, now) {
   const mk = now.date.slice(0, 7);
   const last = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
 
-  /* Contas: as mesmas regras dos alertas da app (atrasadas, hoje, próximos 3 dias). */
+  /* Contas: as mesmas regras dos alertas da app (atrasadas, hoje, próximos 3 dias).
+     Débito direto (dd) não fica "atrasado": avisa só no dia e nos 3 dias antes, para haver saldo. */
   const contas = [];
   for (const b of bills) {
-    if (b.kind === "income" || b.kind === "budget" || !b.day || (b.paid && b.paid[mk])) continue;
+    if (b.kind === "income" || b.kind === "budget" || !b.day) continue;
+    const p = b.paid && b.paid[mk];
+    if (p != null && p !== false) continue;
+    const dd = b.dd && p !== false;
     const d = Math.min(b.day, last);
-    if (d < now.d) contas.push({o: 0, t: `Atrasada: ${b.name} · ${eur(b.amount)}`});
-    else if (d === now.d) contas.push({o: 1, t: `Hoje: ${b.name} · ${eur(b.amount)}`});
-    else if (d - now.d <= 3) contas.push({o: 2 + d, t: `Dia ${d}: ${b.name} · ${eur(b.amount)}`});
+    const v = eur(monthAmt(b, mk));
+    if (d < now.d) {
+      if (!dd) contas.push({o: 0, t: `Atrasada: ${b.name} · ${v}`});
+    } else if (d === now.d) contas.push({o: 1, t: `${dd ? "Débito hoje" : "Hoje"}: ${b.name} · ${v}`});
+    else if (d - now.d <= 3) contas.push({o: 2 + d, t: `${dd ? "Débito dia" : "Dia"} ${d}: ${b.name} · ${v}`});
   }
   if (contas.length) {
     contas.sort((a, b) => a.o - b.o);
