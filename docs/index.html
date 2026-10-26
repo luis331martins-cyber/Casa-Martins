@@ -566,6 +566,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .sav .sbtns{display:flex;gap:8px}.sav .sbtns .btn{flex:1;padding:10px}
 .sav.done .sbar span{background:linear-gradient(90deg,#34c759,#30d158)}
 .emos{display:flex;flex-wrap:wrap;gap:6px}.emos button{font-size:22px;width:42px;height:42px;border-radius:10px;background:var(--fill);padding:0}.emos button[aria-pressed=true]{outline:2px solid var(--accent)}
+.hold{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;text-align:left;color:var(--fg);font:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:6px solid var(--hc,#e8457e)}
+.hold .hemo{font-size:24px;flex:none}.hold .hn{font-weight:700;font-size:16px}.hold .hm{font-size:13px;color:var(--muted)}
+.hold .hv{margin-left:auto;font-weight:700;font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
 .boom{position:fixed;font-size:28px;pointer-events:none;z-index:99;animation:boom 1.4s ease-out forwards}
 @keyframes boom{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 /* Créditos: cartão com a cor do banco e barra do que já está pago */
@@ -1063,9 +1066,13 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Poupanças</span><span></span></nav>
     <h1 class="large">Poupanças</h1>
     <div class="totals two" id="savTot" hidden>
-      <div class="tot paid"><div class="k">Poupado</div><div class="v" id="vSavHave"></div></div>
+      <div class="tot paid"><div class="k" id="vSavHaveK">Tenho poupado</div><div class="v" id="vSavHave"></div></div>
       <div class="tot"><div class="k">Por mês</div><div class="v" id="vSavMonth"></div></div>
     </div>
+    <h2 style="margin-top:4px">O que tenho</h2>
+    <div id="holdList"></div>
+    <button class="btn ghost" type="button" id="addHold">+ Juntar poupança</button>
+    <h2 style="margin-top:12px">Objetivos</h2>
     <div id="savList"></div>
     <button class="btn ghost" type="button" id="addSav">+ Novo objetivo</button>
     <p class="note" style="margin:0">Cria um objetivo (férias, fundo de emergência, Maria…), põe a meta e, se quiseres, até quando. A app diz quanto pôr por mês. Toca em <b>+ Pus</b> sempre que juntares dinheiro.</p>
@@ -2736,8 +2743,10 @@ function savForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" 
   </form>`}
 function renderSavs(){const el=document.getElementById("savList");if(!el)return;
   const L=savs().map(x=>({x,s:savState(x)})).sort((a,b)=>a.s.done-b.s.done||(a.x.until||"9").localeCompare(b.x.until||"9")||a.x.name.localeCompare(b.x.name,"pt"));
-  document.getElementById("savTot").hidden=!L.length;
-  document.getElementById("vSavHave").textContent=eur(L.reduce((t,y)=>t+y.s.have,0));
+  const H=typeof holds==="function"?holds():[];
+  document.getElementById("savTot").hidden=!L.length&&!H.length;
+  document.getElementById("vSavHave").textContent=eur(H.length?H.reduce((t,h)=>t+(+h.val||0),0):L.reduce((t,y)=>t+y.s.have,0));
+  if(typeof renderHolds==="function")safe("O que tenho",renderHolds);
   document.getElementById("vSavMonth").textContent=eur(L.reduce((t,y)=>t+(y.s.perM||0),0));
   const COL=["#e8457e","#ff9f0a","#30b0c7","#5e5ce6","#34c759","#ff6b6b"];
   el.innerHTML=L.map(({x,s},i)=>{if(x.id===editSav)return savForm(x);const last=(x.log||[]).slice(-1)[0];
@@ -2775,6 +2784,48 @@ document.addEventListener("submit",e=>{const f=e.target;
   if(f.u.value)x.until=f.u.value;else delete x.until;
   editSav="";putBill(x);renderSavs();toast("Guardado")});
 
+/* ---------- O que tenho em poupanças (kind:"hold") ----------
+   {name, type, who, val, valAt, rate (% ao ano), end (vencimento, AAAA-MM-DD), color (banco)} */
+const holds=()=>bills.filter(b=>b.kind==="hold");
+let editHold="";
+const HTYPES=[["Conta poupança","🐷"],["Depósito a prazo","🏦"],["Certificados de Aforro","📜"],["Certificados do Tesouro","🏛️"],["PPR","🧓"],["Fundos / ações","📈"],["Dinheiro em casa","💶"],["Outro","💰"]];
+const hEmo=t=>(HTYPES.find(x=>x[0]===t)||HTYPES[HTYPES.length-1])[1];
+function holdForm(h){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-holdform="${h?h.id:"new"}" autocomplete="off">
+    <label class="f wide">Nome<input name="n" required value="${h?esc(h.name):""}" placeholder="ex.: Depósito CGD" autocapitalize="sentences"></label>
+    <label class="f">Tipo<select name="t">${HTYPES.map(([t,e])=>`<option value="${t}"${h&&h.type===t?" selected":""}>${e} ${t}</option>`).join("")}</select></label>
+    <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" required value="${h?v(h.val):""}" placeholder="5000"></label>
+    <label class="f">De quem<select name="w"><option value="">Da casa</option>${PEOPLE.map(p=>`<option${h&&h.who===p?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
+    <label class="f">Taxa (% ao ano)<input name="r" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.rate):""}" placeholder="opcional"></label>
+    <label class="f wide">Vence / termina em (opcional)<input name="e" type="date" value="${h?v(h.end):""}"></label>
+    <label class="f wide">Banco (cor)<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${h&&h.color===c?" selected":""}>${n}</option>`).join("")}</select></label>
+    <p class="note wide" style="margin:0">Não escrevas números de conta nem IBAN: o nome e o valor chegam.</p>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cancelhold="1">Cancelar</button>
+    ${h?`<button class="btn danger wide" type="button" data-delhold="${h.id}">Apagar ${esc(h.name)}</button>`:""}
+  </form>`}
+function renderHolds(){const el=document.getElementById("holdList");if(!el)return;
+  const L=holds().sort((a,b)=>(+b.val||0)-(+a.val||0));
+  el.innerHTML=L.map(h=>{if(h.id===editHold)return holdForm(h);const c=bankColor(h)||"#e8457e", d=h.end?daysTo(h.end):null;
+    const meta=[noAcc(h.name).includes(noAcc(h.type))?"":h.type,h.who,h.rate?`${String(h.rate).replace(".",",")}% ao ano`:"",h.end?(d<0?`Venceu a ${fmtD(h.end)}`:`Vence a ${fmtD(h.end)}`):""].filter(Boolean).join(" · ");
+    const at=h.valAt?(daysTo(ymd(new Date(h.valAt)))===0?"atualizado hoje":`atualizado há ${-daysTo(ymd(new Date(h.valAt)))} dias`):"";
+    return`<button type="button" class="hold" data-edithold="${h.id}" style="--hc:${c}" aria-label="Editar ${esc(h.name)}"><span class="hemo">${hEmo(h.type)}</span>
+      <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hm">${esc(meta)}</span></span>
+      <span class="hv">${eur(+h.val||0)}${at?`<span class="hm" style="display:block;font-weight:400">${at}</span>`:""}${d!=null&&d<=30?`<span style="display:block">${dueTag(h.end,30)}</span>`:""}</span></button>`}).join("")
+    +(editHold==="new"?holdForm(null):"")||`<div class="empty">Junta aqui o que tens poupado: conta poupança, depósitos, certificados de aforro, PPR…</div>`;
+  if(!L.length&&editHold==="new")el.innerHTML=holdForm(null);
+  document.getElementById("addHold").hidden=editHold==="new"}
+document.getElementById("addHold").addEventListener("click",()=>{editHold="new";renderHolds();setTimeout(()=>{const f=document.querySelector('[data-holdform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}},30)});
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.edithold){editHold=t.dataset.edithold;renderHolds()}
+  else if(t.dataset.cancelhold){editHold="";renderHolds()}
+  else if(t.dataset.delhold){const h=holds().find(x=>x.id===t.dataset.delhold);if(h&&confirm(`Apagar "${h.name}"?`)){editHold="";delBill(h.id);renderSavs();toast("Apagado")}}});
+document.addEventListener("submit",e=>{const id=e.target.dataset.holdform;if(!id)return;e.preventDefault();const f=e.target;
+  const num=x=>{x=String(x).trim();return x===""?null:parseFloat(x.replace(",","."))};
+  const old=id==="new"?null:holds().find(x=>x.id===id);
+  const h={...(old||{}),id:old?old.id:uid(),kind:"hold",name:f.n.value.trim(),type:f.t.value,val:num(f.v.value)||0};
+  if(!old||old.val!==h.val)h.valAt=Date.now();
+  for(const [k,v] of [["who",f.w.value||null],["rate",num(f.r.value)],["end",f.e.value||null],["color",f.c.value||null]])if(v==null)delete h[k];else h[k]=v;
+  editHold="";putBill(h);renderSavs();toast("Guardado")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -3012,6 +3063,7 @@ const CARF=[["seguro","Seguro"],["inspecao","Inspeção"],["iuc","IUC"],["revisa
 function deadlines(){const L=[];
   bills.filter(b=>b.kind==="car").forEach(c=>CARF.forEach(([f,n])=>{if(c[f])L.push({date:c[f],t:`${c.name}: ${n}`,m:"Carro",go:"carro",alert:7,past:"Passou"})}));
   bills.filter(b=>b.kind==="doc"&&b.date).forEach(d=>L.push({date:d.date,t:`${d.type} (${d.who})`,m:"Documento termina",go:"docs",alert:30,past:"Caducou"}));
+  bills.filter(b=>b.kind==="hold"&&b.end).forEach(h=>L.push({date:h.end,t:`${h.type}: ${h.name}`,m:"Poupança vence",go:"poupancas",alert:30,past:"Venceu"}));
   bills.filter(b=>b.kind==="card"&&b.exp).forEach(c=>L.push({date:cardEnd(c),t:`Cartão ${c.name}${c.who?` (${c.who})`:""}`,m:"Cartão termina",go:"cartoes",alert:30,past:"Terminou"}));
   return L}
 const fmtN=v=>String(Math.round(+v||0)).replace(/\B(?=(\d{3})+(?!\d))/g,".");
@@ -3648,7 +3700,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v79";
+const APPV="casa-v80";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
