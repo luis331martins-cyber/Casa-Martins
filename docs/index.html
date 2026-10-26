@@ -2562,7 +2562,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-goloan]");
 const cards=()=>bills.filter(b=>b.kind==="card");
 let editCard="";
 const CSTYLES=[
-  ["wzflex","WiZink Flex","linear-gradient(135deg,#ff3d97 0,#c4006b 55%,#6e0040 100%)","#fff",/wizink.*flex|flex.*wizink/],
+  ["wzflex","WiZink Flex","linear-gradient(135deg,#3d8bfd 0,#1557c0 55%,#0b2f6e 100%)","#fff",/wizink.*flex|flex.*wizink/],
   ["wzbenfica","WiZink Benfica","linear-gradient(135deg,#ff2a2a 0,#d1000f 50%,#6d0008 100%)","#fff",/benfica|slb/],
   ["cgdgold","CGD Gold","linear-gradient(135deg,#fbe7a6 0,#e0b552 40%,#b8862b 75%,#7c5a17 100%)","#3a2800",/(cgd|caixa).*gold|gold.*(cgd|caixa)/],
   ["abgold","ActivoBank Gold","linear-gradient(135deg,#f6ebc8 0,#dcbb6e 40%,#b08a3a 66%,#7dd3fc 66.5%,#a5e2ff 100%)","#2a2000",/activo ?bank.*gold|gold.*activo/],
@@ -2574,7 +2574,11 @@ const CSTYLES=[
   ["azul","Azul","linear-gradient(135deg,#4f86d9,#1f3f8a)","#fff",null],
   ["verde","Verde","linear-gradient(135deg,#5fd08a,#1f7a48)","#fff",null],
   ["roxo","Roxo","linear-gradient(135deg,#b27cf2,#5b2bb0)","#fff",null]];
-function cardStyle(c){const n=noAcc(c.name||"");return CSTYLES.find(x=>x[0]===c.style)||CSTYLES.find(x=>x[4]&&x[4].test(n))||CSTYLES.find(x=>x[0]==="preto")}
+const HEX=/^#[0-9a-f]{6}$/i;
+const photoStyle=pc=>{const L=String(pc||"").split(",");if(L.length!==3||!L.every(h=>HEX.test(h)))return null;
+  const lum=h=>{const n=parseInt(h.slice(1),16);return(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/255};
+  return["foto","📷 Do cartão",`linear-gradient(135deg,${L[0]} 0,${L[1]} 50%,${L[2]} 100%)`,lum(L[1])>.62?"#1c1c1e":"#fff",null]};
+function cardStyle(c){const n=noAcc(c.name||"");if(c.style==="foto"){const ps=photoStyle(c.pc);if(ps)return ps}return CSTYLES.find(x=>x[0]===c.style)||CSTYLES.find(x=>x[4]&&x[4].test(n))||CSTYLES.find(x=>x[0]==="preto")}
 const cardEnd=c=>{const [y,m]=String(c.exp).split("-").map(Number);return ymd(new Date(y,m,0))};
 const cardFree=c=>Math.max(0,(+c.limit||0)-(+c.used||0));
 const isCredit=c=>c.type!=="debito";
@@ -2584,17 +2588,46 @@ function cardFace(c){const st=cardStyle(c), ex=c.exp?c.exp.slice(5,7)+"/"+c.exp.
     <div class="chip"></div>
     <div class="cnum">•••• •••• •••• ${c.last4?esc(c.last4):"••••"}</div>
     <div class="cbot"><span><b>Titular</b>${esc(c.who||"—")}</span><span style="text-align:right"><b>Válido até</b>${ex||"—"}</span></div></button>`}
+/* Compras no cartão: c.buys [{id,v,d,n}] (pagamentos com v negativo); o "usado" acompanha */
+let cardBuy="";
+const buysOf=(c,mk)=>(c.buys||[]).filter(x=>!mk||x.d.slice(0,7)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1));
+function cardBuys(c){const mk=ymOf(new Date()), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
+  const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n).map(x=>x.n))].slice(0,6);
+  const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
+      <input name="d" type="date" value="${ymd(new Date())}">
+      <input name="n" placeholder="Onde (ex.: Continente)" style="grid-column:1/-1" autocapitalize="words">
+      ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
+      <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
+      <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
+    :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)&&c.limit?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
+  const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${esc(x.n||(x.v<0?"Pagamento":"Compra"))}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
+  return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${new Date().toLocaleDateString("pt-PT",{month:"long"})}</span><span>${eur(tot)}</span></div>${rows}
+    ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
+let cardAll="";
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=ymOf(new Date());
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round((+c.used||0)/c.limit*100));
     L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${new Date().toLocaleDateString("pt-PT",{month:"long"})}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
   if(isCredit(c)&&c.limit)L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
-  return L.length?`<div class="cinfo">${L.join("")}</div>`:`<div style="height:14px"></div>`}
+  L.push(cardBuys(c));
+  return`<div class="cinfo">${L.join("")}</div>`}
+/* Cores tiradas de uma foto do cartão: só ficam 3 cores (canto de cima, meio e canto de baixo); a foto não é guardada nem enviada */
+function cardColors(file){return new Promise((ok,ko)=>{const url=URL.createObjectURL(file), img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);const W=96,H=60,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");
+    /* fica com o centro da foto (o cartão costuma ocupar quase tudo) */
+    const sw=img.width*.84, sh=img.height*.84;g.drawImage(img,img.width*.08,img.height*.08,sw,sh,0,0,W,H);
+    const d=g.getImageData(0,0,W,H).data, B=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=(x/W+y/H)/2, k=t<.36?0:t<.64?1:2, i=(y*W+x)*4;B[k][0]+=d[i];B[k][1]+=d[i+1];B[k][2]+=d[i+2];B[k][3]++}
+    ok(B.map(([r,gg,b,n])=>"#"+[r,gg,b].map(v=>Math.round(v/Math.max(1,n)).toString(16).padStart(2,"0")).join("")))};
+  img.onerror=()=>{URL.revokeObjectURL(url);ko(new Error("img"))};img.src=url})}
 function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
   return`<form class="bill-edit" data-cardform="${c?c.id:"new"}" autocomplete="off">
     <label class="f wide">Nome do cartão<input name="n" required value="${c?esc(c.name):""}" placeholder="ex.: WiZink Flex" autocapitalize="words"></label>
-    <div class="f wide">Aspeto<div class="styles">${CSTYLES.map(x=>`<button type="button" data-cstyle="${x[0]}" style="--cbg:${x[2]};--cfg:${x[3]}" aria-pressed="${x[0]===(c&&c.style||st)}">${esc(x[1])}</button>`).join("")}</div><input type="hidden" name="st" value="${c&&c.style?esc(c.style):""}"></div>
+    <div class="f wide">Aspeto<div class="styles">${[...(c&&photoStyle(c.pc)?[photoStyle(c.pc)]:[]),...CSTYLES].map(x=>`<button type="button" data-cstyle="${x[0]}" style="--cbg:${x[2]};--cfg:${x[3]}" aria-pressed="${x[0]===(c&&c.style||st)}">${esc(x[1])}</button>`).join("")}</div><input type="hidden" name="st" value="${c&&c.style?esc(c.style):""}"><input type="hidden" name="pc" value="${c&&c.pc?esc(c.pc):""}">
+      <label class="btn ghost" style="display:block;width:100%;box-sizing:border-box;margin-top:10px;text-align:center;cursor:pointer;font-size:16px;text-transform:none;letter-spacing:0">📷 Copiar as cores de uma foto do cartão<input type="file" accept="image/*" data-cardphoto="1" hidden></label>
+      <span class="note" style="display:block;margin:6px 0 0;text-transform:none;letter-spacing:0">Tira a foto ao cartão de frente, a ocupar o ecrã todo. A foto não é guardada: a app só fica com as cores.</span></div>
     <label class="f">Tipo<select name="t"><option value="credito"${!c||isCredit(c)?" selected":""}>Crédito</option><option value="debito"${c&&!isCredit(c)?" selected":""}>Débito (MB)</option></select></label>
     <label class="f">Titular<select name="w"><option value="">—</option>${PEOPLE.map(p=>`<option${c&&c.who===p?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
     <label class="f">Últimos 4 dígitos<input name="l4" inputmode="numeric" pattern="\\d{4}" maxlength="4" value="${c?v(c.last4):""}" placeholder="opcional"></label>
@@ -2623,13 +2656,36 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;const v=prompt(`Quanto já usaste do ${c.name}? (€)`,c.used!=null?String(c.used).replace(".",","):"");if(v===null)return;
     const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;putBill({...c,used:n,usedAt:Date.now()});renderCards();toast(`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`)}
   else if(t.dataset.gocard){e.preventDefault();e.stopPropagation();show("cartoes");setTimeout(()=>{const c=document.querySelector(`[data-editcard="${t.dataset.gocard}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)}
-  else if(t.dataset.gocontas){show("despesas")}},true);
+  else if(t.dataset.gocontas){show("despesas")}
+  else if(t.dataset.cardbuyopen){cardBuy=t.dataset.cardbuyopen;renderCards();const i=document.querySelector(`[data-cardbuy="${cardBuy}"] [name=v]`);if(i)i.focus()}
+  else if(t.dataset.cardbuycancel){cardBuy="";renderCards()}
+  else if(t.dataset.cardall){cardAll=t.dataset.cardall;renderCards()}
+  else if(t.dataset.buyplace){const f=t.closest("form");if(f)f.n.value=t.dataset.buyplace}
+  else if(t.dataset.cardpay){const c=cards().find(x=>x.id===t.dataset.cardpay);if(!c)return;const b=c.bill&&bills.find(x=>x.id===c.bill);
+    const v=prompt(`Quanto pagaste do ${c.name}? (€)`,b?String(Math.round(monthAmt(b,ymOf(new Date()))*100)/100).replace(".",","):"");if(v===null)return;
+    const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));if(!n||n<=0)return;cardMove(c,-n,ymd(new Date()),"Pagamento da fatura")}
+  else if(t.dataset.delbuy){const [cid,bid]=t.dataset.delbuy.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.buys||[]).find(y=>y.id===bid);if(!x)return;
+    if(!confirm(`Apagar "${x.n||(x.v<0?"Pagamento":"Compra")}" de ${eur(Math.abs(x.v))}?`))return;
+    const used=c.used!=null?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid),...(used!=null?{used,usedAt:Date.now()}:{})});renderCards();toast("Apagado")}},true);
+function cardMove(c,v,d,n){const buys=[...(c.buys||[]),{id:uid(),v:Math.round(v*100)/100,d,...(n?{n}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
+  const used=Math.max(0,Math.round(((+c.used||0)+v)*100)/100);cardBuy="";putBill({...c,buys,used,usedAt:Date.now()});renderCards();
+  toast(v>0?`${c.name}: +${eur(v)}${c.limit?` · livre ${eur(Math.max(0,c.limit-used))}`:""}`:`${c.name}: pagamento de ${eur(-v)}`)}
+document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardbuy;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
+  const v=parseFloat(String(f.v.value).replace(",","."));if(!v||v<=0)return;const op=e.submitter&&e.submitter.value==="-1"?-1:1;
+  cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""))});
+document.addEventListener("change",async e=>{const t=e.target;if(!t.dataset||!t.dataset.cardphoto)return;const file=t.files&&t.files[0];t.value="";if(!file)return;const f=t.closest("form");
+  let L;try{L=await cardColors(file)}catch(err){toast("Não foi possível abrir essa foto.");return}
+  const ps=photoStyle(L.join(","));if(!ps)return;f.pc.value=L.join(",");f.st.value="foto";
+  const box=f.querySelector(".styles");let sw=box.querySelector('[data-cstyle="foto"]');
+  if(!sw){sw=document.createElement("button");sw.type="button";sw.dataset.cstyle="foto";sw.textContent=ps[1];box.prepend(sw)}
+  sw.style.setProperty("--cbg",ps[2]);sw.style.setProperty("--cfg",ps[3]);box.querySelectorAll("[data-cstyle]").forEach(b=>b.setAttribute("aria-pressed",b===sw));toast("Cores copiadas do cartão")});
 document.addEventListener("submit",e=>{const id=e.target.dataset.cardform;if(!id)return;e.preventDefault();const f=e.target;
   const num=x=>{x=String(x).trim();return x===""?null:parseFloat(x.replace(",","."))};
   const l4=f.l4.value.replace(/\D/g,"");if(l4&&l4.length!==4){toast("Só os últimos 4 dígitos");return}
   const old=id==="new"?null:cards().find(x=>x.id===id);
   const c={...(old||{}),id:old?old.id:uid(),kind:"card",name:f.n.value.trim(),type:f.t.value};
-  for(const [k,v] of [["style",f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
+  const pc=f.pc.value&&photoStyle(f.pc.value)?f.pc.value:null;if(pc)c.pc=pc;else delete c.pc;
+  for(const [k,v] of [["style",f.st.value==="foto"&&!pc?null:f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
   if(!c.bill)c.nolink=true;else delete c.nolink;
   if(c.used!=null&&(!old||old.used!==c.used))c.usedAt=Date.now();
   editCard="";putBill(c);renderCards();toast("Cartão guardado")});
@@ -3566,7 +3622,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v76";
+const APPV="casa-v77";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
