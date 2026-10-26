@@ -1072,14 +1072,15 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-creditos" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Créditos</span><span></span></nav>
     <h1 class="large">Créditos</h1>
-    <div class="totals two" id="loanTot" hidden>
+    <div class="totals" id="loanTot" hidden>
       <div class="tot"><div class="k">Por mês</div><div class="v" id="vLoanMonth"></div></div>
-      <div class="tot"><div class="k">Falta pagar</div><div class="v" id="vLoanLeft"></div></div>
+      <div class="tot"><div class="k">Em dívida</div><div class="v" id="vLoanDebt"></div></div>
+      <div class="tot"><div class="k">Juros a pagar</div><div class="v" id="vLoanInt"></div></div>
     </div>
     <div id="loanList"></div>
     <button class="btn ghost" type="button" id="addLoan">+ Juntar crédito</button>
     <div id="loanNew"></div>
-    <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam (a do mês atual já conta como paga). “Falta pagar” é a soma das prestações que faltam (com juros).</p>
+    <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam (a do mês atual já conta como paga). <b>Em dívida</b> é o capital que ainda deves (o valor que a app do banco mostra); <b>juros que ainda vais pagar</b> são as prestações que faltam menos esse capital. Para estas contas, escreve o montante pedido.</p>
   </section>
 
   <section id="tab-cartoes" class="group" style="gap:12px" hidden>
@@ -2541,6 +2542,13 @@ const mLong=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).to
 function loanState(l){const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
   let paid=mIdx(ymOf(d))-mIdx(l.first)+1;paid=Math.max(0,Math.min(n,paid));
   const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
+/* Capital em dívida (o que o banco mostra) e juros que faltam, pelo método francês (prestação constante):
+   a taxa mensal tira-se do montante pedido, do nº de prestações e da prestação; o capital em dívida é o que falta amortizar depois das prestações pagas */
+function loanAmort(l,s){const P=+l.amount||0, pay=+l.pay||0, n=s.n;if(!P||!pay)return null;
+  if(n*pay<=P+0.01)return{bad:true};
+  let lo=1e-9,hi=0.1;for(let i=0;i<200;i++){const r=(lo+hi)/2, p=P*r/(1-Math.pow(1+r,-n));if(p<pay)lo=r;else hi=r}
+  const r=(lo+hi)/2, g=Math.pow(1+r,s.paid), debt=Math.max(0,P*g-pay*(g-1)/r), left=s.left*pay;
+  return{rate:(Math.pow(1+r,12)-1)*100, debt, intLeft:Math.max(0,left-debt), intTotal:n*pay-P}}
 /* Sugere a linha das Contas com nome parecido (ex.: crédito "Crédito carro" e conta "Carro") */
 const normN=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/cr[eé]dito|prestac[aã]o|emprestimo/g,"").replace(/[^a-z0-9]+/g," ").trim();
 function sameName(a,b){a=normN(a);b=normN(b);return!!a&&!!b&&(a===b||(Math.min(a.length,b.length)>=3&&(a.includes(b)||b.includes(a))))}
@@ -2563,15 +2571,21 @@ function renderLoans(){const el=document.getElementById("loanList");if(!el)retur
   const act=L.filter(x=>!x.s.done);
   document.getElementById("loanTot").hidden=!act.length;
   document.getElementById("vLoanMonth").textContent=eur(act.reduce((t,x)=>t+(+x.l.pay||0),0));
-  document.getElementById("vLoanLeft").textContent=eur(act.reduce((t,x)=>t+x.s.leftAmt,0));
+  const am=act.map(x=>({x,a:loanAmort(x.l,x.s)}));
+  document.getElementById("vLoanDebt").textContent=eur(am.reduce((t,y)=>t+(y.a&&!y.a.bad?y.a.debt:y.x.s.leftAmt),0));
+  document.getElementById("vLoanInt").textContent=eur(am.reduce((t,y)=>t+(y.a&&!y.a.bad?y.a.intLeft:0),0));
   el.innerHTML=L.map(({l,s})=>{if(l.id===editLoan)return loanForm(l);
     const c=s.done?"":bankColor(l), pct=Math.round(s.paid/s.n*100);
     return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""} aria-label="Editar ${esc(l.name)}">
       <div class="top"><span class="name">${esc(l.name)}</span><span class="amt">${eur(+l.pay||0)}<span style="font-size:13px;font-weight:500">/mês</span></span></div>
       <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last)+(l.bill&&bills.some(b=>b.id===l.bill)?" · já podes apagar a linha nas Contas":""):`Dia ${l.day} · termina em ${mLong(l.last)}${l.bill&&bills.some(b=>b.id===l.bill)?" · nas Contas":""}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
       <div class="lbar"><span style="width:${pct}%"></span></div>
-      <div class="row"><span>${s.paid} de ${s.n} pagas (${pct}%)</span><span>${s.done?"":`Faltam ${s.left} · ${eur(s.leftAmt)}`}</span></div>
-      ${l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:""}
+      <div class="row"><span>${s.paid} de ${s.n} pagas (${pct}%)</span><span>${s.done?"":`Faltam ${s.left} prestações · ${eur(s.leftAmt)}`}</span></div>
+      ${(()=>{const a=s.done?null:loanAmort(l,s);if(!a)return l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:"";
+        if(a.bad)return`<div class="row" style="margin-top:4px;font-weight:600"><span>⚠️ ${s.n} × ${eur(+l.pay)} = ${eur(s.n*(+l.pay))} é menos do que o montante pedido (${eur(+l.amount)}). Confirma a prestação, o montante e as datas.</span></div>`;
+        return`<div class="row" style="margin-top:6px;font-size:15px"><span><b>Em dívida ao banco</b></span><b>${eur(a.debt)}</b></div>
+          <div class="row"><span>Juros que ainda vais pagar</span><span>${eur(a.intLeft)}</span></div>
+          <div class="row" style="margin-top:2px;opacity:.8"><span>Pedido ${eur(+l.amount)} · juros no total ${eur(a.intTotal)}</span><span>custo ~${a.rate.toFixed(2).replace(".",",")}%/ano</span></div>`})()}
     </button>`}).join("")+(editLoan==="new"?loanForm(null):"")||`<div class="empty">Ainda não há créditos.<br>Toca em “Juntar crédito”.</div>`;
   if(!L.length&&editLoan==="new")el.innerHTML=loanForm(null);
   document.getElementById("addLoan").hidden=editLoan==="new"}
@@ -3748,7 +3762,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v84";
+const APPV="casa-v85";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
