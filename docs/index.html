@@ -183,8 +183,9 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
 #joinCode,#authCode{text-transform:uppercase;letter-spacing:.06em}
-#today{margin:0;font-size:15px;font-weight:600;color:var(--fg);opacity:.85}
-#clock{font-family:var(--display);font-weight:700;font-size:44px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
+#today{margin:0;font-size:16px;font-weight:600;color:var(--fg);letter-spacing:-.01em;white-space:nowrap}
+#today .wdred{color:#ff3b30;text-transform:uppercase;font-size:13px;font-weight:700;letter-spacing:.04em;margin-right:4px}
+#clock{font-family:-apple-system,"SF Pro Display",system-ui,var(--display);font-weight:600;font-size:52px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
 /* Início compacto: data e engrenagem em cima; "Olá" e o relógio na mesma linha */
 header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px}
 header.hdr #today{grid-column:1}header.hdr .gear{grid-column:2;justify-self:end}
@@ -230,12 +231,18 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 /* Chat da casa: botão no canto inferior direito do Início */
 .fabs{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:row;align-items:flex-end;gap:12px}
 #tab-inicio{padding-bottom:150px}
-.calfab{position:relative;width:58px;height:58px;border-radius:50%;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
-.calfab .cal-wd{font-size:10px;font-weight:700}.calfab .cal-d{font-size:24px;font-weight:600;line-height:1}
+.calfab{position:relative;width:58px;height:58px;border-radius:14px;background:linear-gradient(180deg,#fff,#f2f2f7);color:#1c1c1e;box-shadow:0 6px 18px rgba(0,0,0,.22),0 0 0 .5px rgba(0,0,0,.08);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.calfab .cal-wd{font-size:10px;font-weight:600;color:#ff3b30;margin-top:-2px}.calfab .cal-d{font-family:-apple-system,system-ui,sans-serif;font-size:30px;font-weight:300;line-height:1;letter-spacing:-.03em}
 .calfab .nbadge{top:-2px;right:-2px}
-.chatfab{position:relative;width:58px;height:58px;border-radius:50%;
-  background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0}
-.chatfab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chatfab{position:relative;width:58px;height:58px;border-radius:14px;
+  background:linear-gradient(180deg,#5cf777,#0bbd2a);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0}
+.chatfab svg{width:36px;height:36px;fill:#fff;stroke:none}
+.chatfab::before,.calfab::before,.iosgear::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+/* Definições: como a app Definições do iPhone (cinzento com a roda dentada) */
+#tab-inicio .iosgear{position:relative;width:40px;height:40px;border-radius:10px;padding:0;display:grid;place-items:center;background:linear-gradient(180deg,#a2a2a8,#6c6c72);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+#tab-inicio .iosgear img{position:relative;width:32px;height:32px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+#tab-inicio .iosgear .eapg{display:none;position:relative;font-size:27px;line-height:1}
+:root[data-icons="apple"] #tab-inicio .iosgear img{display:none}:root[data-icons="apple"] #tab-inicio .iosgear .eapg{display:block}
 .chatfab b{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#ff3b30;color:#fff;font-size:13px;line-height:22px;font-weight:700}
 #msgs{display:flex;flex-direction:column;gap:4px;padding-bottom:84px}
 .cm{max-width:78%;padding:8px 12px;border-radius:18px;font-size:16px;line-height:1.3;overflow-wrap:anywhere;white-space:pre-wrap;background:var(--surface);color:var(--fg);align-self:flex-start}
@@ -853,7 +860,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-inicio" class="group" style="gap:22px">
     <header class="top hdr">
       <p id="today"></p>
-      <button class="nav-m gear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <button class="gear iosgear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><img src="icons/3d/gear.webp" alt="" draggable="false"><span class="eapg" aria-hidden="true">⚙️</span></button>
       <h1 id="hello">A nossa casa</h1>
       <div id="clock" aria-label="Hora"></div>
       <p class="sub" id="sub"></p>
@@ -1374,7 +1381,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 
 <div class="fabs" id="fabs" hidden>
 <button class="calfab" type="button" data-go="calendario" aria-label="Calendário"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></button>
-<button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.8-.8L3 20.5l1.4-4.3A8 8 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/></svg><b id="chatBadge" hidden></b></button>
+<button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c5 0 9 3.3 9 7.5s-4 7.5-9 7.5c-1 0-2-.1-2.9-.4-1.3 1-3 1.7-4.9 1.9.8-.8 1.4-1.8 1.6-2.9C3.9 15.8 3 13.6 3 11.1c0-4.2 4-7.5 9-7.5z"/></svg><b id="chatBadge" hidden></b></button>
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
@@ -3625,7 +3632,8 @@ document.getElementById("msgs").addEventListener("click",e=>{const im=e.target.c
   const m=e.target.closest("[data-delmsg]");if(m&&confirm("Apagar esta mensagem?"))delBill(m.dataset.delmsg)});
 /* Relógio no Início (atualiza também a data à meia-noite) */
 function tick(){const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-  let t=d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});t=t[0].toUpperCase()+t.slice(1);if(document.getElementById("today").textContent!==t)document.getElementById("today").textContent=t}
+  const wd=d.toLocaleDateString("pt-PT",{weekday:"long"}), dm=d.toLocaleDateString("pt-PT",{day:"numeric",month:"long"}), el=document.getElementById("today");
+  if(el.dataset.k!==wd+dm){el.dataset.k=wd+dm;el.innerHTML=`<span class="wdred">${esc(wd)}</span> ${esc(dm)}`}}
 tick();setInterval(tick,5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
 
 /* ---------- Jogo de blocos (estilo Block Blast) ----------
@@ -3762,7 +3770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v86";
+const APPV="casa-v87";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
