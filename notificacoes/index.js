@@ -196,8 +196,49 @@ async function morning(code, now) {
   await send(code, {title: resumo ? resumo.title : "Bom dia! 🏠", body: corpo.join("\n"), go: (outras[0] || resumo).go, tag: "bom-dia"});
 }
 
+/* ---------- cartões: pagamentos e compras automáticos ----------
+   card.auto = [{id, n, v, day, t: "pag"|"compra", bill?: true, since: "AAAA-MM"}].
+   No dia (hora de Lisboa) junta o movimento às compras do cartão e acerta o "usado".
+   O id do movimento é fixo (auto-<id>-<mês>), por isso nunca entra duas vezes. Vê este mês e o anterior (se falhou algum dia). */
+async function cardAuto(code, now) {
+  const col = db.collection(`households/${code}/bills`);
+  const all = (await col.get()).docs.map((x) => ({...x.data(), id: x.id}));
+  const pad = (n) => String(n).padStart(2, "0");
+  const prevK = now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${pad(now.m - 1)}`, curK = `${now.y}-${pad(now.m)}`;
+  for (const c of all.filter((b) => b.kind === "card" && Array.isArray(b.auto) && b.auto.length)) {
+    await db.runTransaction(async (tx) => {
+      const ref = col.doc(c.id), snap = await tx.get(ref);
+      if (!snap.exists) return;
+      const card = snap.data(), buys = Array.isArray(card.buys) ? [...card.buys] : [];
+      let used = +card.used || 0, novos = 0;
+      for (const a of card.auto || []) {
+        for (const mk of [prevK, curK]) {
+          if (a.since && mk < a.since) continue;
+          const [y, m] = mk.split("-").map(Number), last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+          const linha = a.bill && card.bill ? all.find((b) => b.id === card.bill) : null;
+          const day = Math.min(+(linha ? linha.day : a.day) || 1, last);
+          if (mk === curK && now.d < day) continue;
+          const id = `auto-${a.id}-${mk}`;
+          if (buys.some((x) => x.id === id)) continue;
+          const v = Math.round((linha ? monthAmt(linha, mk) : +a.v || 0) * 100) / 100;
+          if (!v) continue;
+          const mov = a.t === "compra" ? v : -v;
+          buys.push({id, v: mov, d: `${mk}-${pad(day)}`, n: a.n || (a.t === "compra" ? "Compra automática" : "Pagamento automático"), auto: true});
+          used = Math.max(0, Math.round((used + mov) * 100) / 100);
+          novos++;
+        }
+      }
+      if (!novos) return;
+      buys.sort((x, y) => String(x.d).localeCompare(String(y.d)));
+      tx.update(ref, {buys: buys.slice(-80), used, usedAt: Date.now()});
+      console.log(`  cartão: ${novos} movimento(s) automático(s)`);
+    });
+  }
+}
+
 /* ---------- uma casa ---------- */
 async function house(code, now) {
+  try { await cardAuto(code, now); } catch (e) { console.error("Cartões automáticos:", e.message); }
   const ref = db.doc(`households/${code}/sent/estado`);
   const snap = await ref.get();
   const first = !snap.exists;
