@@ -1163,6 +1163,26 @@ function addItem(name,cat,exp,qty,unit,shop){
   const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
   items.push(it);render();put(it);toast(name+" adicionado");
 }
+/* Produtos habituais da casa: juntados uma vez (marca "habituais-v1" na casa). Ids fixos "hab-…" e nomes já existentes
+   são saltados, por isso os dois telemóveis nunca os duplicam. Ficam como "Tenho". */
+const HABITUAIS=[
+  ["Bifes de frango","Carne","Mercado da Carne"],["Bifes de peru","Carne","Mercado da Carne"],["Frango","Carne","Mercado da Carne"],["Espetadas tropicais","Carne","Mercado da Carne"],
+  ["Espetadas de porco preto","Carne","Mercado da Carne"],["Espetadas de frango e peru","Carne","Mercado da Carne"],["Costeletas","Carne","Mercado da Carne"],
+  ["Hambúrgueres de frango","Carne","Continente"],["Hambúrgueres de vaca","Carne","Continente"],["Panados de frango","Carne","Continente"],["Nuggets","Carne","Continente"],
+  ["Bacalhau","Peixe","Continente"],["Hambúrgueres de salmão","Peixe","Lidl"],["Lombos de pescada","Peixe","Continente"],
+  ["Leite","Frigorífico"],["Ovos","Frigorífico"],["Manteiga","Frigorífico"],["Queijo","Frigorífico"],["Fiambre","Frigorífico"],["Iogurtes","Frigorífico"],
+  ["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Óleo","Despensa"],["Açúcar","Despensa"],["Sal","Despensa"],["Farinha","Despensa"],
+  ["Café","Despensa"],["Cereais","Despensa"],["Atum","Despensa"],["Feijão","Despensa"],["Grão","Despensa"],["Polpa de tomate","Despensa"],["Batatas","Despensa"],
+  ["Cebolas","Despensa"],["Alhos","Despensa"],["Fruta","Outros"],["Água","Outros"],
+  ["Ervilhas","Congelados"],["Douradinhos","Congelados"],
+  ["Detergente da loiça","Limpeza"],["Detergente da roupa","Limpeza"],["Lixívia","Limpeza"],["Sacos do lixo","Limpeza"],["Rolo de cozinha","Limpeza"],
+  ["Papel higiénico","Higiene"],["Gel de banho","Higiene"],["Champô","Higiene"],["Pasta de dentes","Higiene"]];
+var liveItems=false, liveBills=false;
+function seedHabituais(){if(!store||!liveItems||!liveBills||bills.some(b=>b.id==="habituais-v1"))return;
+  const have=new Set(items.map(i=>noAcc(i.name))), slug=t=>noAcc(t).replace(/[^a-z0-9]+/g,"-");let n=0;
+  for(const [name,cat,shop] of HABITUAIS){if(have.has(noAcc(name))||items.some(i=>i.id==="hab-"+slug(name)))continue;
+    const it={id:"hab-"+slug(name),name,cat,exp:"",lvl:2,added:Date.now(),...(shop?{shop}:{})};upsert(it);put(it);n++}
+  putBill({id:"habituais-v1",kind:"setting",name:"Produtos habituais juntados"});if(n){render();toast(`${n} produtos habituais juntados`)}}
 const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",doses:"dose"};
 const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
@@ -1847,9 +1867,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();if(!snap.metadata.fromCache)liveItems=true;safe("Despensa",render);safe("Habituais",seedHabituais)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();if(!snap.metadata.fromCache)liveBills=true;safe("Contas",renderBills);safe("Habituais",seedHabituais)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
