@@ -156,6 +156,12 @@ form.join input{text-transform:uppercase;letter-spacing:.06em}
 header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .gear{flex:none;display:grid;place-items:center;padding:0}
 .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bname{background:transparent;color:inherit;text-align:left;padding:0;min-width:0;border-radius:6px}
+.bill-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:10px 12px}
+.bill-edit .wide{grid-column:1/-1}
+details.import summary{color:var(--accent);font-weight:600;cursor:pointer;padding:4px 0}
+details.import[open]{display:flex;flex-direction:column;gap:8px}
+textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;box-sizing:border-box;resize:vertical}
 .msg{margin:0;color:var(--bad);font-size:.88rem}
 @media (prefers-reduced-motion:no-preference){.item,.check{transition:background .15s}}
 </style>
@@ -312,6 +318,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
     </div>
     <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
     <div id="bills" class="group"></div>
+    <button class="back" type="button" id="payAll" style="align-self:flex-start" hidden></button>
     <form class="addbill" id="billForm" autocomplete="off">
       <label class="f wide">Conta<input id="bName" placeholder="ex.: Luz" required></label>
       <label class="f">Valor (€)<input id="bAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="45,00" required></label>
@@ -322,7 +329,13 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
       <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
       <div class="chips" id="billChips"></div>
     </div>
-    <p class="note" style="margin:0">Cada conta repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar.</p>
+    <details class="import" id="billImport">
+      <summary>Colar uma lista de contas</summary>
+      <p class="note" style="margin:0">Uma conta por linha: nome; valor; dia. O dia é opcional e as contas que já existem são ignoradas.</p>
+      <textarea id="bImport" rows="8" placeholder="Luz; 45,00; 8&#10;Água; 20,00" aria-label="Lista de contas"></textarea>
+      <button class="btn" type="button" id="bImportBtn">Adicionar contas</button>
+    </details>
+    <p class="note" style="margin:0">Cada conta repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar. Toca no nome de uma conta para mudar o valor ou o dia.</p>
   </section>
 </div>
 
@@ -442,7 +455,7 @@ route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
 
 /* ---------- despesas mensais ---------- */
-let bills=[];
+let bills=[]; let editBill="";
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
 const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
 const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
@@ -478,12 +491,21 @@ function renderBills(){
     let when=b.day?`Dia ${b.day}`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.day===today?"Vence hoje":"Vence dia "+b.day}</span>`; }
     if(p) when="Paga";
+    if(b.id===editBill)return `<form class="bill-edit" data-editform="${b.id}" autocomplete="off">
+      <label class="f wide">Conta<input name="n" value="${esc(b.name)}" required></label>
+      <label class="f">Valor (€)<input name="a" type="number" min="0" step="0.01" inputmode="decimal" value="${+b.amount||0}" required></label>
+      <label class="f">Dia<input name="d" type="number" min="0" max="31" inputmode="numeric" value="${b.day||""}" placeholder="Sem dia"></label>
+      <button class="btn" type="submit">Guardar</button>
+      <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
+    </form>`;
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
-      <div style="min-width:0"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></div>
+      <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></button>
       <div class="amt">${eur(+b.amount||0)}</div>
       <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
     </div>`}).join(""):`<div class="empty">Ainda não há contas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
+  const unpaid=list.filter(b=>!(b.paid&&b.paid[k])).length, pa=document.getElementById("payAll");
+  pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>b.name.toLowerCase()));
   document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as contas habituais.</span>`;
 }
@@ -498,6 +520,36 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t)return;
   if(t.dataset.bq){const n=document.getElementById("bName");n.value=t.dataset.bq;document.getElementById("bAmt").focus()}
   else if(t.dataset.delbill)delBill(t.dataset.delbill);
+  else if(t.dataset.editbill){editBill=t.dataset.editbill;renderBills();const f=document.querySelector(`[data-editform="${editBill}"] [name=a]`);if(f)f.focus()}
+  else if(t.dataset.canceledit){editBill="";renderBills()}
+});
+document.getElementById("payAll").addEventListener("click",()=>{
+  const k=mKey(), todo=bills.filter(b=>!(b.paid&&b.paid[k]));
+  const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long"});
+  if(!todo.length||!confirm(`Marcar ${todo.length} conta${todo.length===1?"":"s"} como paga${todo.length===1?"":"s"} em ${label}?`))return;
+  todo.forEach(b=>putBill({...b,paid:{...(b.paid||{}),[k]:true}}));toast("Marcadas como pagas");
+});
+/* Editar uma conta (nome, valor, dia) */
+document.addEventListener("submit",e=>{
+  const id=e.target.dataset.editform;if(!id)return;e.preventDefault();
+  const b=bills.find(x=>x.id===id);if(!b)return;
+  const name=e.target.n.value.trim(), amount=parseFloat(e.target.a.value), day=parseInt(e.target.d.value)||0;
+  if(!name||isNaN(amount))return;
+  if(bills.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  editBill="";putBill({...b,name,amount,day:Math.min(Math.max(day,0),31)});toast("Guardado");
+});
+/* Colar uma lista: "nome; valor; dia" por linha (também aceita colunas separadas por tabulação) */
+const money=s=>{const m=String(s||"").match(/\d[\d.\s]*(,\d+)?/);if(!m)return 0;let v=m[0].replace(/\s/g,"");v=m[1]?v.replace(/\./g,"").replace(",","."):v;return parseFloat(v)||0};
+document.getElementById("bImportBtn").addEventListener("click",()=>{
+  const ta=document.getElementById("bImport");let n=0,dup=0;
+  for(const line of ta.value.split("\n")){
+    const f=line.split(/;|\t/).map(x=>x.trim());const name=f[0];if(!name)continue;
+    if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){dup++;continue}
+    const day=parseInt((String(f[2]||"").match(/\d+/)||[0])[0])||0;
+    putBill({id:uid(),name,amount:money(f[1]),day:Math.min(Math.max(day,0),31),paid:{}});n++;
+  }
+  ta.value="";document.getElementById("billImport").open=false;
+  toast(`${n} conta${n===1?"":"s"} adicionada${n===1?"":"s"}`+(dup?` · ${dup} já existia${dup===1?"":"m"}`:""));
 });
 document.addEventListener("change",e=>{
   const id=e.target.dataset.pay; if(!id)return;
