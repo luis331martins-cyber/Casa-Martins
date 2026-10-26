@@ -1,6 +1,6 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v59";
+const VERSION="casa-v60";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
   "icons/casam.svg","icons/casam-180.png","icons/casam-192.png","icons/casam-512.png"];
 const SDK=["app","auth","firestore","messaging"].map(n=>`https://www.gstatic.com/firebasejs/12.19.0/firebase-${n}.js`);
@@ -24,6 +24,8 @@ self.addEventListener("activate",e=>{
 self.addEventListener("fetch",e=>{
   const r=e.request, u=new URL(r.url);
   if(r.method!=="GET")return;
+  /* "?v=hora": pedido para ver se há versão nova; vai sempre à rede, sem cópia guardada */
+  if(u.origin===location.origin&&u.searchParams.has("v")&&r.mode!=="navigate")return;
   /* Página: rede primeiro (para apanhar atualizações), cópia guardada se não houver rede */
   if(r.mode==="navigate"){
     e.respondWith(fetch(r).then(res=>{const copy=res.clone();caches.open(VERSION).then(c=>c.put("index.html",copy));return res})

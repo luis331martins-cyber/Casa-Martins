@@ -761,6 +761,10 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       </div>
       <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
+    <div class="item">
+      <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
+      <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
+    </div>
     <div id="accBox" class="group" hidden>
       <div class="item">
         <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
@@ -1117,6 +1121,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 <button class="calfab" type="button" data-go="calendario" aria-label="Calendário"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></button>
 <button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.8-.8L3 20.5l1.4-4.3A8 8 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/></svg><b id="chatBadge" hidden></b></button>
 </div>
+<button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div class="toast" id="toast" hidden></div>
 <datalist id="shopList"></datalist>
 
@@ -2887,6 +2892,24 @@ if("serviceWorker" in navigator){
   /* Toque numa notificação com a app já aberta */
   navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go)route("#"+e.data.go)});
 }
+/* ---------- versão nova ----------
+   O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
+const APPV="casa-v60";
+document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
+if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
+let updChecked=0;
+async function checkUpdate(force){if(!navigator.onLine||(!force&&Date.now()-updChecked<120000))return null;updChecked=Date.now();
+  try{const t=await(await fetch("sw.js?v="+Date.now(),{cache:"no-store"})).text();const v=(t.match(/VERSION="([^"]+)"/)||[])[1];
+    const nova=v&&v!==APPV;document.getElementById("updBar").hidden=!nova;return nova}catch(e){return null}}
+async function doUpdate(){toast("A atualizar…");
+  try{const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update().catch(()=>{});
+    for(const k of await caches.keys())await caches.delete(k)}catch(e){}
+  location.replace(location.pathname+"?v="+Date.now()+location.hash)}
+document.getElementById("updBar").addEventListener("click",doUpdate);
+document.getElementById("updBtn").addEventListener("click",async()=>{const n=await checkUpdate(true);
+  if(n===false){if(confirm("Já tens a versão mais recente. Recarregar mesmo assim?"))doUpdate()}else doUpdate()});
+setTimeout(()=>checkUpdate(true),2500);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate()});
 /* A app pode ficar aberta em segundo plano de um dia para o outro: recarrega para as datas ficarem certas */
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ymd(new Date())!==ymd(now))location.reload()});
 </script>
