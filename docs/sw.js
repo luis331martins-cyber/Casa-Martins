@@ -1,6 +1,6 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v16";
+const VERSION="casa-v17";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
   "icons/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
 const SDK=["app","auth","firestore","messaging"].map(n=>`https://www.gstatic.com/firebasejs/12.19.0/firebase-${n}.js`);

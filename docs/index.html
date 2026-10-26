@@ -301,6 +301,20 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 .item.has-edit{display:block}
 .chip:hover,.chip:focus{background:var(--accent-soft);color:var(--accent)}
 .chip:active{opacity:.6}
+.i-food{background:linear-gradient(160deg,#b27cf2,#7a45d6)}
+#meals{gap:0}
+.meal{background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.meal .bname{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;width:100%}
+.meal .meta{font-size:15px;color:var(--muted);margin-top:2px}
+.meal .go{color:#c4c4c6;font-size:1.2rem}
+.ings{display:flex;flex-wrap:wrap;gap:6px}
+.ing{font-size:14px;padding:5px 10px;border-radius:999px;background:var(--good-soft);color:var(--good)}
+.ing.no{background:var(--fill);color:var(--muted)}
+.steps{margin:0;padding-left:20px;font-size:15px;display:flex;flex-direction:column;gap:4px}
+:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit,.meal){border:0!important;position:relative;padding:11px 16px;box-sizing:border-box}
+#meals>.meal:first-child{border-top-left-radius:12px;border-top-right-radius:12px}
+#meals>.meal:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+#meals>.meal:not(:last-child)::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line)}
 
 </style>
 <script src="firebase-config.js"></script>
@@ -346,6 +360,7 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
         <button class="app" data-go="despensa"><span class="ico i-desp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7 6h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/><path d="M6 11h12M6 16h12" class="cut"/></svg><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Despensa</span></button>
         <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
         <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
+      <button class="app" data-go="comer"><span class="ico i-food"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10M17 21V3c-2.4 1.5-3.3 4.4-3.3 7.4 0 1.8 1.1 2.9 3.3 2.9"/></svg></span><span class="lbl">O que comer</span></button>
       </div>
       <h3>Contas e agenda</h3>
       <div class="apps">
@@ -447,6 +462,16 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
     </div>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
+  </section>
+
+  <section id="tab-comer" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">O que comer</span><span></span></nav>
+    <h1 class="large">O que comer</h1>
+    <p class="note" style="margin:0">Ideias com o que tens em casa (marcado “Tenho” ou “Pouco”). Aparecem primeiro os pratos que usam produtos a terminar o prazo.</p>
+    <div class="seg" role="group" aria-label="Tipo de refeição" style="align-self:flex-start">
+      <button type="button" data-meal="refeicao" aria-pressed="true">Almoço e jantar</button><button type="button" data-meal="lanche" aria-pressed="false">Lanches e doces</button>
+    </div>
+    <div id="meals" class="group"></div>
   </section>
 
   <section id="tab-lista" class="group" hidden>
@@ -628,6 +653,7 @@ function render(){
   document.getElementById("meatChips").innerHTML=MQUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
   const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
   const mb=document.getElementById("meatBadge");mb.hidden=!mExp.length;mb.textContent=mExp.length;
+  if(typeof renderMeals==="function")renderMeals();
 
   /* Compras separadas pela loja onde se compra; o que não tem loja fica no fim */
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
@@ -674,13 +700,102 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["setup","inicio","definicoes","despensa","carne","lista","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
+function show(tab){["setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
+
+
+/* ---------- O que comer: sugestões com o que há em casa ----------
+   Cada ingrediente reconhece-se por palavras no nome do produto (sem acentos). */
+const ING={
+  ovos:["Ovos",["ovo"],"Frigorífico"], batata:["Batatas",["batata"],"Despensa"], cebola:["Cebolas",["cebola"],"Despensa"],
+  alho:["Alho",["alho"],"Despensa"], tomate:["Tomate",["tomate","polpa"],"Despensa"], arroz:["Arroz",["arroz"],"Despensa"],
+  massa:["Massa",["massa","esparguete","fusilli","penne","macarr","talharim","lacinho"],"Despensa"],
+  bacalhau:["Bacalhau",["bacalhau"],"Peixe"], salmao:["Salmão",["salmao"],"Peixe"], pescada:["Pescada",["pescada","maruca","perca"],"Peixe"],
+  peixe:["Peixe fresco",["dourada","robalo","sardinha","carapau","peixe"],"Peixe"], atum:["Atum em lata",["atum"],"Despensa"],
+  camarao:["Camarão",["camarao","gamba"],"Peixe"], frango:["Frango",["frango","galinha","peru"],"Carne"],
+  picada:["Carne picada",["picada"],"Carne"], bife:["Bifes",["bife"],"Carne"], porco:["Carne de porco",["costeleta","porco","entrecosto","lombo"],"Carne"],
+  chourico:["Chouriço",["chouri"],"Frigorífico"], fiambre:["Fiambre",["fiambre","presunto"],"Carne"], salsichas:["Salsichas",["salsicha"],"Frigorífico"],
+  queijo:["Queijo",["queijo"],"Frigorífico"], natas:["Natas",["natas"],"Frigorífico"], leite:["Leite",["leite"],"Frigorífico"],
+  manteiga:["Manteiga",["manteiga"],"Frigorífico"], iogurte:["Iogurtes",["iogurte"],"Frigorífico"], pao:["Pão",["pao"],"Despensa"],
+  farinha:["Farinha",["farinha"],"Despensa"], acucar:["Açúcar",["acucar"],"Despensa"], cogumelos:["Cogumelos",["cogumelo"],"Frigorífico"],
+  couve:["Couve",["couve","grelos","espinafre"],"Frigorífico"], cenoura:["Cenouras",["cenoura"],"Frigorífico"],
+  legumes:["Legumes",["brocolo","courgete","courgette","feijao verde","legume","abobora","ervilha"],"Frigorífico"],
+  grao:["Grão",["grao","feijao frade","feijao-frade"],"Despensa"], feijao:["Feijão",["feijao"],"Despensa"],
+  fruta:["Fruta",["fruta","banana","maca","pera","laranja","morango","kiwi"],"Outros"], cereais:["Cereais",["cereais","aveia","granola"],"Despensa"],
+  limao:["Limão",["limao"],"Outros"], milho:["Milho",["milho"],"Despensa"]
+};
+const RECIPES=[
+  ["Bacalhau à Brás","refeicao",["bacalhau","ovos","batata","cebola"],[],["Desfia o bacalhau já demolhado.","Aloura a cebola em azeite, junta o bacalhau e a batata palha.","Junta os ovos batidos e mexe em lume brando até ficar cremoso."]],
+  ["Bacalhau com natas","refeicao",["bacalhau","natas","batata","cebola"],["alho"],["Frita ou coze a batata aos cubos.","Refoga a cebola e o alho, junta o bacalhau desfiado.","Mistura com a batata e as natas e leva ao forno 20 min a 200 °C."]],
+  ["Frango assado com batatas","refeicao",["frango","batata"],["alho","cebola","limao"],["Tempera o frango com sal, alho e limão.","Põe num tabuleiro com as batatas e a cebola.","Forno a 200 °C cerca de 1 hora, regando de vez em quando."]],
+  ["Arroz de frango","refeicao",["frango","arroz","cebola"],["tomate","chourico"],["Aloura o frango aos pedaços com a cebola.","Junta o tomate e o chouriço.","Junta o arroz e o dobro de água a ferver; 15 min em lume brando."]],
+  ["Esparguete à bolonhesa","refeicao",["massa","picada","tomate","cebola"],["alho","cenoura"],["Refoga a cebola, o alho e a cenoura picados.","Junta a carne picada até alourar e depois o tomate; 20 min em lume brando.","Coze a massa e serve com o molho."]],
+  ["Massa com atum","refeicao",["massa","atum"],["ovos","milho","cebola"],["Coze a massa.","Mistura com o atum escorrido, ovo cozido e milho.","Tempera com azeite; também se come fria."]],
+  ["Salada de grão com atum","refeicao",["grao","atum","ovos"],["cebola","tomate"],["Escorre o grão e o atum.","Junta ovo cozido, cebola e tomate picados.","Tempera com azeite, vinagre e salsa."]],
+  ["Omelete","refeicao",["ovos"],["fiambre","queijo","cogumelos"],["Bate os ovos com uma pitada de sal.","Junta fiambre, queijo ou cogumelos.","Cozinha em frigideira untada, dobra ao meio e serve."]],
+  ["Bitoque","refeicao",["bife","ovos","batata"],["arroz","alho"],["Tempera os bifes com sal e alho e grelha-os.","Frita as batatas e um ovo por pessoa.","Serve o bife com o ovo por cima, batatas e arroz."]],
+  ["Costeletas com arroz","refeicao",["porco","arroz"],["alho","tomate"],["Tempera as costeletas com sal e alho.","Grelha ou frita.","Serve com arroz branco e salada de tomate."]],
+  ["Salmão no forno com legumes","refeicao",["salmao","legumes"],["batata","limao"],["Põe o salmão e os legumes num tabuleiro.","Tempera com azeite, sal e limão.","Forno a 200 °C durante 20 a 25 min."]],
+  ["Pescada cozida com todos","refeicao",["pescada","batata","ovos"],["cenoura","couve"],["Coze as batatas, a cenoura e a couve.","Junta a pescada e os ovos nos últimos 10 min.","Rega com azeite e alho."]],
+  ["Peixe grelhado com batata cozida","refeicao",["peixe","batata"],["legumes","limao"],["Tempera o peixe com sal grosso.","Grelha-o e coze as batatas.","Serve com legumes e um fio de azeite."]],
+  ["Arroz de camarão","refeicao",["camarao","arroz","tomate","cebola"],["alho"],["Refoga a cebola, o alho e o tomate.","Junta o arroz e água a ferver.","Junta o camarão nos últimos 5 min; serve malandrinho."]],
+  ["Caldo verde","refeicao",["batata","couve","cebola"],["chourico"],["Coze as batatas e a cebola e passa com a varinha.","Junta a couve cortada fina; 5 min.","Serve com rodelas de chouriço e um fio de azeite."]],
+  ["Sopa de legumes","refeicao",["batata","cenoura","cebola"],["legumes","couve"],["Coze os legumes em água com sal.","Passa com a varinha.","Junta azeite no fim."]],
+  ["Hambúrgueres caseiros","refeicao",["picada","pao"],["queijo","tomate","cebola"],["Tempera a carne picada e faz bolas achatadas.","Grelha 3 a 4 min de cada lado.","Serve no pão com queijo, tomate e cebola."]],
+  ["Frango com natas e cogumelos","refeicao",["frango","natas","cogumelos"],["arroz","cebola"],["Aloura o frango aos cubos com a cebola.","Junta os cogumelos e depois as natas.","Deixa apurar 5 min e serve com arroz."]],
+  ["Massa com salsichas","refeicao",["massa","salsichas"],["tomate","queijo"],["Coze a massa.","Aloura as salsichas às rodelas, junta o tomate.","Mistura com a massa e queijo ralado."]],
+  ["Arroz de atum","refeicao",["arroz","atum","cebola"],["tomate"],["Refoga a cebola e o tomate.","Junta o arroz e água a ferver.","Junta o atum no fim."]],
+  ["Feijoada","refeicao",["feijao","chourico","porco"],["cenoura","couve","cebola"],["Aloura a carne e o chouriço com a cebola.","Junta a cenoura, a couve e o feijão cozido.","Deixa apurar 20 min e serve com arroz."]],
+  ["Esparguete com camarão","refeicao",["massa","camarao"],["alho","natas"],["Coze a massa.","Salteia o camarão em azeite e alho.","Junta as natas (opcional) e mistura com a massa."]],
+  ["Empadão de carne","refeicao",["picada","batata","cebola"],["leite","manteiga","queijo"],["Faz puré com as batatas, leite e manteiga.","Refoga a carne picada com cebola.","Camadas de puré, carne e puré; queijo por cima e forno 20 min."]],
+  ["Tosta mista","lanche",["pao","fiambre","queijo"],["manteiga"],["Põe fiambre e queijo entre duas fatias de pão.","Barra por fora com manteiga.","Torra na tostadeira ou frigideira."]],
+  ["Panquecas","lanche",["farinha","ovos","leite"],["acucar","manteiga","fruta"],["Mistura a farinha, os ovos e o leite.","Cozinha conchas de massa em frigideira untada.","Serve com fruta ou açúcar."]],
+  ["Arroz doce","lanche",["arroz","leite","acucar"],["limao"],["Coze o arroz em água com casca de limão.","Junta o leite aos poucos e depois o açúcar.","Serve com canela por cima."]],
+  ["Iogurte com fruta","lanche",["iogurte","fruta"],["cereais"],["Corta a fruta.","Junta ao iogurte.","Cereais por cima, se houver."]],
+  ["Torradas","lanche",["pao","manteiga"],[],["Torra o pão.","Barra com manteiga."]],
+  ["Taça de cereais","lanche",["cereais","leite"],["fruta"],["Cereais com leite e fruta às rodelas."]],
+  ["Ovos mexidos com torrada","lanche",["ovos","pao"],["fiambre","manteiga"],["Mexe os ovos em lume brando com manteiga.","Junta fiambre picado.","Serve sobre pão torrado."]],
+  ["Salada de fruta","lanche",["fruta"],["iogurte"],["Corta a fruta aos cubos.","Mistura e serve fresca."]]
+];
+let mealType="refeicao", openMeal="";
+const norm=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+/* Produto da casa que serve para um ingrediente (só os marcados "Tenho" ou "Pouco") */
+const findIng=(key,all)=>items.find(i=>(all||i.lvl>0)&&ING[key][1].some(k=>norm(i.name).includes(k)));
+function mealList(){
+  return RECIPES.filter(r=>r[1]===mealType).map(([name,type,req,opt,steps])=>{
+    const miss=req.filter(k=>!findIng(k)), use=[...req,...opt].map(k=>findIng(k)).filter(Boolean);
+    const soon=[...new Set(use)].filter(i=>{const d=daysLeft(i.exp);return d!==null&&d<=3});
+    return{name,req,opt,steps,miss,soon,have:req.length-miss.length};
+  }).filter(r=>r.have>0&&r.miss.length<=2).sort((a,b)=>a.miss.length-b.miss.length||b.soon.length-a.soon.length||a.name.localeCompare(b.name,"pt"));
+}
+function renderMeals(){
+  const el=document.getElementById("meals");if(!el)return;
+  document.querySelectorAll("[data-meal]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.meal===mealType));
+  const L=mealList();
+  el.innerHTML=L.length?L.map(r=>{const open=openMeal===r.name;
+    const status=r.miss.length?`Falta: ${r.miss.map(k=>ING[k][0].toLowerCase()).join(", ")}`:`<span class="ok" style="color:var(--good);font-weight:600">Tens tudo</span>`;
+    const soon=r.soon.length?`<div class="meta" style="color:var(--warn)">Usa já: ${r.soon.map(i=>{const d=daysLeft(i.exp);return esc(i.name)+(d<0?" (fora do prazo)":d===0?" (termina hoje)":d===1?" (termina amanhã)":` (${d} dias)`)}).join(", ")}</div>`:"";
+    return `<div class="meal">
+      <button type="button" class="bname" data-openmeal="${esc(r.name)}" aria-expanded="${open}"><span style="min-width:0"><div class="name">${esc(r.name)}</div><div class="meta">${status}</div>${soon}</span><span class="go">${open?"⌄":"›"}</span></button>
+      ${open?`<div class="ings">${[...r.req,...r.opt].map(k=>{const ok=!!findIng(k);return `<span class="ing${ok?"":" no"}">${ok?"✓":"✗"} ${ING[k][0]}${r.opt.includes(k)?" (opcional)":""}</span>`}).join("")}</div>
+      <ol class="steps">${r.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+      ${r.miss.length?`<button class="btn ghost" type="button" data-buymeal="${esc(r.name)}">Pôr o que falta nas compras (${r.miss.length})</button>`:""}`:""}
+    </div>`}).join(""):`<div class="empty">Ainda não há ideias com o que tens em casa.<br>Junta produtos na Despensa e em Carne e Peixe (ovos, arroz, massa, frango…).</div>`;
+}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.meal){mealType=t.dataset.meal;openMeal="";renderMeals()}
+  else if(t.dataset.openmeal){openMeal=openMeal===t.dataset.openmeal?"":t.dataset.openmeal;renderMeals()}
+  else if(t.dataset.buymeal){const r=mealList().find(x=>x.name===t.dataset.buymeal);if(!r)return;
+    /* O que já existe (acabado) fica como está; o que não existe é criado como "Acabou" para ir para as compras */
+    r.miss.forEach(k=>{const ex=findIng(k,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}
+      else{const [n,,c]=ING[k];const it={id:uid(),name:n,cat:c,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
+    render();toast(`${r.miss.length} ingrediente${r.miss.length===1?"":"s"} nas compras`)}
+});
 
 /* ---------- despesas mensais ---------- */
 let bills=[]; let editBill="";
