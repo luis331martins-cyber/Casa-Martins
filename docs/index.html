@@ -498,6 +498,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .due{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--fill);color:var(--muted);white-space:nowrap}
 .due.warn{background:#fff1d6;color:#9a5b00}.due.bad{background:#ffe1df;color:#c4271b}.due.ok{background:#dcf5e3;color:#1d7a3a}
 .bump{font-size:13px;color:var(--accent);background:transparent;padding:0;font-weight:600}
+.carlogo{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);display:grid;place-items:center;margin-right:12px}
+.carlogo img{width:26px;height:26px;object-fit:contain}
+.carlogo.none{background:linear-gradient(160deg,#7d7aff,#3634a3)}
 .plate{display:flex;width:max-content;align-items:stretch;border:1.5px solid #222;border-radius:5px;overflow:hidden;font:700 13px/1 ui-monospace,Menlo,monospace;background:#fff;color:#111;margin-top:4px}
 .plate i{background:#1a47b8;color:#fff;font:700 8px/1 var(--body);font-style:normal;padding:3px 3px;display:flex;align-items:flex-end}
 .plate span{padding:4px 7px;letter-spacing:.06em}
@@ -2467,7 +2470,7 @@ function parseDocs(txt){let who="";const L=[];
   return L}
 let docShow=false;
 const RECS={
-  car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome","text",1,"ex.: Carro da Bianca"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
+  car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome (com a marca, ex.: Mercedes CLA)","text",1,"ex.: Mercedes CLA"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revisao","Revisão: data","date"],["revKm","Revisão: aos km","number",0,"opcional"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
@@ -2499,10 +2502,19 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
       events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
   editRec[k]="";putBill(x);F.render();toast("Guardado")});
+/* Logótipo da marca (Simple Icons, carregado da internet): pela marca escrita no nome do carro */
+const CARBRANDS=[[/mercedes|benz/,"mercedes"],[/\bbmw\b/,"bmw"],[/\baudi\b/,"audi"],[/volkswagen|\bvw\b/,"volkswagen"],[/renault/,"renault"],[/peugeot/,"peugeot"],[/citroen/,"citroen"],
+  [/toyota/,"toyota"],[/honda/,"honda"],[/nissan/,"nissan"],[/\bford\b/,"ford"],[/\bfiat\b/,"fiat"],[/\bopel\b/,"opel"],[/\bseat\b/,"seat"],[/skoda/,"skoda"],[/\bkia\b/,"kia"],
+  [/hyundai/,"hyundai"],[/mazda/,"mazda"],[/volvo/,"volvo"],[/tesla/,"tesla"],[/dacia/,"dacia"],[/mitsubishi/,"mitsubishi"],[/suzuki/,"suzuki"],[/porsche/,"porsche"],[/\bmini\b/,"mini"],
+  [/\bjeep\b/,"jeep"],[/\bsmart\b/,"smart"],[/land ?rover|range rover/,"landrover"],[/jaguar/,"jaguar"],[/alfa ?romeo/,"alfaromeo"],[/ferrari/,"ferrari"],[/subaru/,"subaru"],
+  [/\bds\s?\d|ds automobiles/,"dsautomobiles"],[/chevrolet/,"chevrolet"],[/\bmg\b/,"mg"],[/polestar/,"polestar"]];
+function carLogo(c){const n=noAcc(`${c.name||""} ${c.brand||""}`), b=CARBRANDS.find(([re])=>re.test(n));
+  return b?`<span class="carlogo"><img src="https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/${b[1]}.svg" alt="${b[1]}" onerror="this.parentNode.className='carlogo none';this.remove()"></span>`
+    :`<span class="carlogo none"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5v-4l1.8-4.6A2 2 0 0 1 8.2 6.5h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4M3.5 12.5h17v4.5h-17zM7 19.5v-2.5M17 19.5v-2.5"/></svg></span>`}
 function renderCars(){const el=document.getElementById("carList");if(!el)return;const L=recsOf("car").sort((a,b)=>a.name.localeCompare(b.name,"pt"));
   const row=(c,f,label,extra)=>{if(!c[f])return"";const d=daysTo(c[f]);
     return`<div class="rrow"><span class="rl">${label}</span><span class="rm">${fmtD(c[f])}${extra?" · "+extra:""}</span><span class="rs">${dueTag(c[f],30)}${d<=30?`<button type="button" class="bump" data-carbump="${c.id}|${f}">Renovado ›</button>`:""}</span></div>`};
-  el.innerHTML=L.map(c=>c.id===editRec.car?recFormFor("car",c):`<div class="rcard"><button type="button" class="rhead" data-recedit="car|${c.id}"><span><b>${esc(c.name)}</b>${c.plate?`<span class="plate"><i>P</i><span>${esc(c.plate.toUpperCase())}</span></span>`:""}</span><span class="edit">Editar</span></button>
+  el.innerHTML=L.map(c=>c.id===editRec.car?recFormFor("car",c):`<div class="rcard"><button type="button" class="rhead" data-recedit="car|${c.id}"><span style="display:flex;align-items:center;min-width:0">${carLogo(c)}<span style="min-width:0"><b>${esc(c.name)}</b>${c.plate?`<span class="plate"><i>P</i><span>${esc(c.plate.toUpperCase())}</span></span>`:""}</span></span><span class="edit">Editar</span></button>
     ${c.km!=null?`<div class="rrow"><span class="rl">${fmtN(c.km)} km</span><span class="rm">Atualizado ${c.kmAt?(daysTo(ymd(new Date(c.kmAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.kmAt)))} dias`):""}</span></div>`:""}
     ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${row(c,"revisao","Revisão",c.revKm?`ou aos ${fmtN(c.revKm)} km`:"")}
     ${!c.revisao&&c.revKm?`<div class="rrow"><span class="rl">Revisão</span><span class="rm">aos ${fmtN(c.revKm)} km</span><span class="rs">${c.km!=null?`<span class="due ${c.revKm-c.km<=1000?"warn":"ok"}">Faltam ${fmtN(Math.max(0,c.revKm-c.km))} km</span>`:""}</span></div>`:""}
