@@ -127,7 +127,7 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .tot .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.tot .v{font-family:var(--display);font-weight:800;font-size:clamp(.95rem,4.3vw,1.25rem);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tot .v{font-family:var(--display);font-weight:800;font-size:clamp(.9rem,3.9vw,1.25rem);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tot{padding:10px}
 .tot.paid .v{color:var(--accent)}.tot.due .v{color:var(--bad)}
 .bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
@@ -481,8 +481,8 @@ const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da c
 const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
 const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
 const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
-const eur=v=>v.toLocaleString("pt-PT",{style:"currency",currency:"EUR"});
-const eur0=v=>Math.round(v).toLocaleString("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0,minimumFractionDigits:0});
+/* 3.589,57 € — ponto nos milhares e vírgula nos cêntimos (o formato do sistema não separa números de 4 algarismos) */
+const eur=v=>{v=Math.round((+v||0)*100)/100;const [i,d]=Math.abs(v).toFixed(2).split(".");return(v<0?"−":"")+i.replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+d+"\u00a0€"};
 async function putBill(b){
   const i=bills.findIndex(x=>x.id===b.id); if(i>=0)bills[i]=b; else bills.push(b); renderBills();
   if(store){try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
@@ -498,11 +498,14 @@ function renderBills(){
   const byDay=(a,b)=>(a.day||99)-(b.day||99)||a.name.localeCompare(b.name,"pt");
   const list=contas().sort(byDay), inc=bills.filter(isInc).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
   const tot=list.reduce((s,b)=>s+(+b.amount||0),0), tin=inc.reduce((s,b)=>s+(+b.amount||0),0);
-  document.getElementById("vIn").textContent=inc.length?eur0(tin):"—";
-  document.getElementById("vLeft").textContent=inc.length?eur0(tin-tot):"—";
+  document.getElementById("vIn").textContent=inc.length?eur(tin):"—";
+  document.getElementById("vLeft").textContent=inc.length?eur(tin-tot):"—";
   document.getElementById("totLeft").className="tot"+(inc.length?(tin-tot<0?" neg":" paid"):"");
   const paid=list.filter(b=>b.paid&&b.paid[k]).reduce((s,b)=>s+(+b.amount||0),0);
-  document.getElementById("vTot").textContent=eur0(tot);
+  document.getElementById("vTot").textContent=eur(tot);
+  /* Se um valor não couber na caixa, encolhe o texto até caber */
+  requestAnimationFrame(()=>document.querySelectorAll(".tot .v").forEach(v=>{v.style.fontSize="";const w=v.parentElement.clientWidth-20;
+    for(let f=parseFloat(getComputedStyle(v).fontSize);v.scrollWidth>w&&f>10;f-=.5)v.style.fontSize=f+"px"}));
   document.getElementById("vPaid").textContent=eur(paid);
   document.getElementById("vDue").textContent=eur(tot-paid);
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";

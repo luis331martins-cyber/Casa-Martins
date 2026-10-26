@@ -27,7 +27,12 @@ const addDays = (ds, n) => {
   const d = new Date(ds + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
 };
 const daysBetween = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
-const eur = (v) => (+v || 0).toLocaleString("pt-PT", {style: "currency", currency: "EUR"});
+/* 3.589,57 € — ponto nos milhares e vírgula nos cêntimos, como na app */
+const eur = (v) => {
+  v = Math.round((+v || 0) * 100) / 100;
+  const [i, d] = Math.abs(v).toFixed(2).split(".");
+  return (v < 0 ? "−" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "," + d + "\u00a0€";
+};
 const longDate = (ds) => new Date(ds + "T12:00:00Z").toLocaleDateString("pt-PT", {weekday: "long", day: "numeric", month: "long", timeZone: "UTC"});
 const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
 
