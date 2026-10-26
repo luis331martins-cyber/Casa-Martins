@@ -315,6 +315,9 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
 .bill-edit input,.bill-edit select,.budget input,form.item input{background:var(--fill)}
 .bill-edit label.tick{background:transparent;padding:6px 0}
 .bill-edit{gap:10px}
+.bill-edit{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.bill-edit .f{min-width:0}
+.bill-edit input,.bill-edit select{min-width:0;width:100%;box-sizing:border-box}
 .bill,.bill.inc{grid-template-columns:auto 1fr auto}
 .budget .head{grid-template-columns:auto 1fr auto}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
@@ -423,6 +426,20 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 
 .i-food{background:linear-gradient(160deg,#b27cf2,#7a45d6)}
 .i-med{background:linear-gradient(160deg,#5ad1c4,#1f9a8f)}
+.i-loan{background:linear-gradient(160deg,#8e8e93,#48484a)}
+/* Créditos: cartão com a cor do banco e barra do que já está pago */
+#loanList{display:flex;flex-direction:column;gap:10px}
+.loan{display:block;width:100%;text-align:left;border-radius:14px;padding:16px;color:#fff;font:inherit;background:linear-gradient(135deg,var(--bk,#636366) 0,color-mix(in srgb,var(--bk,#636366) 70%,#000) 100%);box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.loan.lightbk{color:#163300}
+.loan .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.loan .name{font-weight:700;font-size:17px;min-width:0;overflow-wrap:anywhere}
+.loan .amt{font-weight:700;font-size:19px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.loan .meta{font-size:13px;opacity:.85;margin-top:2px}
+.loan .lbar{height:8px;border-radius:4px;background:rgba(255,255,255,.28);overflow:hidden;margin:12px 0 6px}
+.loan .lbar span{display:block;height:100%;background:#fff;border-radius:4px}
+.loan.lightbk .lbar{background:rgba(22,51,0,.18)}.loan.lightbk .lbar span{background:#163300}
+.loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
+.loan.done{--bk:#8e8e93}
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 #medToday,#medList,#videoList{gap:0}
@@ -553,6 +570,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <div class="apps">
         <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
         <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
+        <button class="app" data-go="creditos"><span class="ico i-loan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M9.7 10v8M14.3 10v8M19 10v8M3 20.5h18"/></svg></span><span class="lbl">Créditos</span></button>
         <button class="app" data-go="meds"><span class="ico i-med"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
       </div>
       <h3>Lazer</h3>
@@ -702,6 +720,19 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     </div>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
+  </section>
+
+  <section id="tab-creditos" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Créditos</span><span></span></nav>
+    <h1 class="large">Créditos</h1>
+    <div class="totals two" id="loanTot" hidden>
+      <div class="tot"><div class="k">Por mês</div><div class="v" id="vLoanMonth"></div></div>
+      <div class="tot"><div class="k">Falta pagar</div><div class="v" id="vLoanLeft"></div></div>
+    </div>
+    <div id="loanList"></div>
+    <button class="btn ghost" type="button" id="addLoan">+ Juntar crédito</button>
+    <div id="loanNew"></div>
+    <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam. “Falta pagar” é a soma das prestações que faltam (com juros).</p>
   </section>
 
   <section id="tab-meds" class="group" style="gap:16px" hidden>
@@ -1017,11 +1048,11 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
-  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1328,7 +1359,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1845,6 +1876,59 @@ document.getElementById("videoForm").addEventListener("submit",async e=>{e.preve
     if(r.ok){const j=await r.json();if(j&&j.title)name=String(j.title).slice(0,120)}}catch(err){}
   const v=saveVideo({yt,name});inp.value="";playVideo(v.id);toast("Vídeo guardado");
 });
+
+/* ---------- Créditos pessoais ----------
+   Na coleção "bills" com kind:"loan": {name, pay (prestação), day, first "AAAA-MM", last "AAAA-MM", amount (montante pedido), taeg, color} */
+var editLoan="";
+const loans=()=>bills.filter(b=>b.kind==="loan");
+const mIdx=k=>{const [y,m]=String(k||"").split("-").map(Number);return y*12+m-1};
+const mLong=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"})};
+/* Prestações pagas até hoje: meses desde a primeira, contando a deste mês só depois do dia do débito */
+function loanState(l){const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
+  let paid=mIdx(ymOf(d))-mIdx(l.first)+(d.getDate()>=(+l.day||1)?1:0);paid=Math.max(0,Math.min(n,paid));
+  const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
+function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data-loanform="${l?l.id:"new"}" autocomplete="off">
+    <label class="f wide">Nome<input name="n" required value="${l?esc(l.name):""}" placeholder="ex.: Crédito do carro" autocapitalize="sentences"></label>
+    <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&l.color===c?" selected":""}>${n}</option>`).join("")}</select></label>
+    <label class="f">Prestação (€)<input name="p" type="number" step="0.01" min="0" inputmode="decimal" required value="${l?v(l.pay):""}" placeholder="250,00"></label>
+    <label class="f">Dia do débito<input name="d" type="number" min="1" max="31" inputmode="numeric" required value="${l?v(l.day):""}" placeholder="5"></label>
+    <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
+    <label class="f">Última prestação<input name="b" type="month" required value="${l?v(l.last):""}"></label>
+    <label class="f">Montante pedido (€)<input name="m" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.amount):""}" placeholder="opcional"></label>
+    <label class="f">TAEG (%)<input name="t" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.taeg):""}" placeholder="opcional"></label>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cancelloan="1">Cancelar</button>
+    ${l?`<button class="btn danger wide" type="button" data-delloan="${l.id}">Apagar ${esc(l.name)}</button>`:""}
+  </form>`}
+function renderLoans(){const el=document.getElementById("loanList");if(!el)return;
+  const L=loans().map(l=>({l,s:loanState(l)})).sort((a,b)=>a.s.done-b.s.done||a.l.last.localeCompare(b.l.last));
+  const act=L.filter(x=>!x.s.done);
+  document.getElementById("loanTot").hidden=!act.length;
+  document.getElementById("vLoanMonth").textContent=eur(act.reduce((t,x)=>t+(+x.l.pay||0),0));
+  document.getElementById("vLoanLeft").textContent=eur(act.reduce((t,x)=>t+x.s.leftAmt,0));
+  el.innerHTML=L.map(({l,s})=>{if(l.id===editLoan)return loanForm(l);
+    const c=s.done?"":bankColor(l), pct=Math.round(s.paid/s.n*100);
+    return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}"`:""} aria-label="Editar ${esc(l.name)}">
+      <div class="top"><span class="name">${esc(l.name)}</span><span class="amt">${eur(+l.pay||0)}<span style="font-size:13px;font-weight:500">/mês</span></span></div>
+      <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last):`Dia ${l.day} · termina em ${mLong(l.last)}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
+      <div class="lbar"><span style="width:${pct}%"></span></div>
+      <div class="row"><span>${s.paid} de ${s.n} pagas (${pct}%)</span><span>${s.done?"":`Faltam ${s.left} · ${eur(s.leftAmt)}`}</span></div>
+      ${l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:""}
+    </button>`}).join("")+(editLoan==="new"?loanForm(null):"")||`<div class="empty">Ainda não há créditos.<br>Toca em “Juntar crédito”.</div>`;
+  if(!L.length&&editLoan==="new")el.innerHTML=loanForm(null);
+  document.getElementById("addLoan").hidden=editLoan==="new"}
+document.getElementById("addLoan").addEventListener("click",()=>{editLoan="new";renderLoans()});
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.editloan){editLoan=t.dataset.editloan;renderLoans()}
+  else if(t.dataset.cancelloan){editLoan="";renderLoans()}
+  else if(t.dataset.delloan){const l=loans().find(x=>x.id===t.dataset.delloan);if(l&&confirm(`Apagar o crédito "${l.name}"?`)){editLoan="";delBill(l.id);renderLoans();toast("Crédito apagado")}}});
+document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id)return;e.preventDefault();const f=e.target;
+  const num=x=>x===""?null:parseFloat(x), first=f.a.value, last=f.b.value;
+  if(mIdx(last)<mIdx(first)){toast("A última prestação tem de ser depois da primeira.");return}
+  const old=id==="new"?null:loans().find(x=>x.id===id);
+  const l={...(old||{}),id:old?old.id:uid(),kind:"loan",name:f.n.value.trim(),pay:num(f.p.value)||0,day:Math.min(31,Math.max(1,parseInt(f.d.value)||1)),first,last};
+  for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null]])if(v==null)delete l[k];else l[k]=v;
+  editLoan="";putBill(l);renderLoans();toast("Crédito guardado")});
 
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
