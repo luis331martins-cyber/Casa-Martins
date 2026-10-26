@@ -192,8 +192,8 @@ header.hdr #hello{grid-column:1;font-size:30px;margin:0}header.hdr #clock{grid-c
 header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 #tab-inicio{gap:12px!important}
 #tab-inicio>.group{gap:6px!important}
-#tab-inicio .apps{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 4px}
-#tab-inicio .ico{width:54px;height:54px;border-radius:13px}#tab-inicio .ico svg{width:29px;height:29px}
+#tab-inicio .apps{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 4px}
+#tab-inicio .ico{width:66px;height:66px;border-radius:15px}#tab-inicio .ico svg{width:34px;height:34px}
 #tab-inicio .app .lbl{font-size:11px;font-weight:500;max-width:100%;line-height:1.15;overflow-wrap:anywhere;hyphens:auto}
 #tab-inicio .app{gap:5px;min-width:0}
 #tab-inicio h3{margin:0}
@@ -205,10 +205,10 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 #tab-inicio .ico.ios svg.sf{position:relative;width:32px;height:32px;fill:#fff;stroke:none;filter:drop-shadow(0 1px 1.2px rgba(0,0,0,.18))}
 #tab-inicio .ico.ios.i-health svg.sf{filter:drop-shadow(0 1px 1.5px rgba(255,31,75,.35))}
 /* Ícones com objetos 3D (Fluent Emoji da Microsoft, licença MIT), guardados na app */
-#tab-inicio .ico.ios img.e3d{position:relative;width:80%;height:80%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.22));-webkit-user-drag:none;user-select:none;pointer-events:none}
+#tab-inicio .ico.ios img.e3d{position:relative;width:84%;height:84%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.22));-webkit-user-drag:none;user-select:none;pointer-events:none}
 #tab-inicio .ico.ios .eap{display:none;position:relative;width:100%;height:100%;place-items:center}
 :root[data-icons="apple"] #tab-inicio .ico.ios .eap{display:grid}:root[data-icons="apple"] #tab-inicio .ico.ios img.e3d{display:none}
-#tab-inicio .ico.ios .eap b{font-size:34px;line-height:1;font-weight:400;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+#tab-inicio .ico.ios .eap b{font-size:42px;line-height:1;font-weight:400;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
 #tab-inicio .ico.ios .eap.two b{transform:translate(-5px,-4px)}#tab-inicio .ico.ios .eap i{position:absolute;right:5px;bottom:4px;font-size:22px;font-style:normal;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 /* Animados: os ícones sem animação própria flutuam, balançam ou andam, cada um ao seu ritmo */
 @keyframes icoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
@@ -228,7 +228,7 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .app:active .ico.ios img.e3d{transform:scale(1.06) rotate(-4deg);transition:transform .15s}
 
 /* Chat da casa: botão no canto inferior direito do Início */
-.fabs{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;gap:14px}
+.fabs{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:row;align-items:flex-end;gap:12px}
 #tab-inicio{padding-bottom:150px}
 .calfab{position:relative;width:58px;height:58px;border-radius:50%;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
 .calfab .cal-wd{font-size:10px;font-weight:700}.calfab .cal-d{font-size:24px;font-weight:600;line-height:1}
@@ -3762,7 +3762,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v85";
+const APPV="casa-v86";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
