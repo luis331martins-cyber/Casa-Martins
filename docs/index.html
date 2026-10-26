@@ -463,6 +463,25 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 .i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
+.i-chart{background:linear-gradient(160deg,#5ac8fa,#007aff)}
+/* Gráfico de gastos */
+.viz{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s0:#a3a29b;--grid:rgba(0,0,0,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .viz{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s0:#77766f;--grid:rgba(255,255,255,.1)}}
+:root[data-theme="dark"] .viz{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s0:#77766f;--grid:rgba(255,255,255,.1)}
+.vcard{background:var(--surface);border-radius:16px;padding:14px 12px 10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.vchart svg{display:block;width:100%;height:auto;overflow:visible}
+.vchart .bar{cursor:pointer}
+.vchart text{font:12px var(--body);fill:var(--muted)}
+.vchart .sel text.m{fill:var(--fg);font-weight:700}
+.vleg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 4px 0;font-size:13px;color:var(--muted)}
+.vleg span{display:inline-flex;align-items:center;gap:6px}.vleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.vrow2{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 16px;position:relative}
+.vrow2+.vrow2::before{content:"";position:absolute;left:38px;right:0;top:0;height:.5px;background:var(--line)}
+.vrow2 i{width:10px;height:10px;border-radius:3px}
+.vrow2 .n{font-weight:500;min-width:0;overflow-wrap:anywhere}.vrow2 .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.vrow2 .track{grid-column:2/4;height:6px;border-radius:3px;background:var(--fill);overflow:hidden}.vrow2 .track span{display:block;height:100%;border-radius:3px}
+.vrow2 .d{grid-column:2/4;font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.up{color:#c4271b}.down{color:#1d7a3a}
 .i-health{background:linear-gradient(160deg,#ff8787,#e03131)}
 .i-car{background:linear-gradient(160deg,#7d7aff,#3634a3)}
 .i-doc{background:linear-gradient(160deg,#9be15d,#3f8f1f)}
@@ -655,6 +674,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <div class="apps">
         <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
         <button class="app" data-go="creditos"><span class="ico i-loan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M9.7 10v8M14.3 10v8M19 10v8M3 20.5h18"/></svg></span><span class="lbl">Créditos</span></button>
+        <button class="app" data-go="graficos"><span class="ico i-chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9M3 20.5h18"/></svg></span><span class="lbl">Gráficos</span></button>
         <button class="app" data-go="meds"><span class="ico i-med"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
         <button class="app" data-go="saude"><span class="ico i-health"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/><path d="M6.5 12.5h3l1.3-2.3 2 4.3 1.4-2h3.3" style="stroke:#e03131;stroke-width:1.6"/></svg></span><span class="lbl">Saúde</span></button>
         <button class="app" data-go="carro"><span class="ico i-car"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 16.5v-4l1.8-4.6A2 2 0 0 1 8.2 6.5h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4M3.5 12.5h17v4.5h-17zM7 19.5v-2.5M17 19.5v-2.5"/><circle cx="7.3" cy="14.7" r=".9" style="fill:#fff;stroke:none"/><circle cx="16.7" cy="14.7" r=".9" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Carro</span></button>
@@ -808,6 +828,16 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     </div>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
+  </section>
+
+  <section id="tab-graficos" class="group viz" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Gráficos</span><span></span></nav>
+    <h1 class="large">Gastos</h1>
+    <div class="seg" role="group" aria-label="Período" id="vRange" style="align-self:flex-start"><button type="button" data-vrange="6">6 meses</button><button type="button" data-vrange="12">12 meses</button></div>
+    <div class="totals" id="vTiles"></div>
+    <div class="vcard"><div class="vchart" id="vChart"></div><div class="vleg" id="vLeg"></div></div>
+    <div class="group" style="gap:8px"><h2 id="vMonthT"></h2><div class="rcard" id="vList"></div></div>
+    <p class="note" style="margin:0">Contas: o valor de cada conta nesse mês (incluindo as prestações dos créditos). Supermercado, restauração e outros gastos do mês: o que registaste como gasto. Toca numa barra para ver esse mês.</p>
   </section>
 
   <section id="tab-creditos" class="group" style="gap:16px" hidden>
@@ -1227,12 +1257,12 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#graficos":"graficos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1541,7 +1571,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2333,6 +2363,56 @@ document.querySelector(".spad").addEventListener("pointerdown",e=>{const b=e.tar
   ["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>on=false))})();
 document.addEventListener("keydown",e=>{if(document.getElementById("tab-snake").hidden)return;const k={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"}[e.key];if(k){e.preventDefault();sTurn(k)}});
 document.addEventListener("visibilitychange",()=>{if(document.hidden)sPause()});
+
+/* ---------- Gráfico de gastos ----------
+   Por mês: contas (valor do mês) + cada gasto do mês (o que foi registado). Até 4 gastos com cor própria; o resto junta-se em "Outros". */
+let vRange=6, vSel="";
+const MESL=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const mOff=(k,n)=>{const [y,m]=k.split("-").map(Number);const d=new Date(y,m-1+n,1);return ymOf(d)};
+const mShort=k=>MES[+k.slice(5)-1], mFull=k=>MESL[+k.slice(5)-1]+" de "+k.slice(0,4);
+function chartData(){const end=ymOf(new Date())<START?START:ymOf(new Date());
+  const months=[];for(let i=vRange-1;i>=0;i--){const k=mOff(end,-i);if(k>=START)months.push(k)}
+  const buds=contas().filter(isBud), tot={};
+  buds.forEach(b=>tot[b.id]=months.reduce((t,k)=>t+spentOf(b,k),0));
+  const top=buds.filter(b=>tot[b.id]>0||months.length===1).sort((a,b)=>tot[b.id]-tot[a.id]).slice(0,4), rest=buds.filter(b=>!top.includes(b));
+  const cats=[{id:"contas",name:"Contas",col:"var(--s1)",val:k=>fixas().reduce((t,b)=>t+monthAmt(b,k),0),items:k=>fixas().map(b=>({n:b.name,v:monthAmt(b,k)}))},
+    ...top.map((b,i)=>({id:b.id,name:b.name,col:`var(--s${i+2})`,val:k=>spentOf(b,k),items:k=>spends(b,k).map(x=>({n:x.n||fmtD(x.d)||b.name,v:+x.v||0}))})),
+    ...(rest.length?[{id:"outros",name:"Outros gastos",col:"var(--s0)",val:k=>rest.reduce((t,b)=>t+spentOf(b,k),0),items:k=>rest.map(b=>({n:b.name,v:spentOf(b,k)}))}]:[])];
+  return{months,cats,inc:k=>bills.filter(isInc).reduce((t,b)=>t+monthAmt(b,k),0)}}
+function renderChart(){const el=document.getElementById("vChart");if(!el)return;
+  document.querySelectorAll("[data-vrange]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.vrange===vRange));
+  const {months,cats,inc}=chartData();if(!months.includes(vSel))vSel=months[months.length-1];
+  const tot=k=>cats.reduce((t,c)=>t+c.val(k),0), max=Math.max(1,...months.map(tot));
+  /* escala "redonda" para as linhas de grelha */
+  const step=[50,100,200,250,500,1000,2000,2500,5000].find(s=>max/s<=4)||Math.ceil(max/4000)*1000, top=Math.ceil(max/step)*step;
+  const W=360,H=200,L=44,B=22,T=8, cw=(W-L)/Math.max(months.length,1), bw=Math.min(34,cw*.62);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gastos por mês">`;
+  for(let v=0;v<=top;v+=step){const y=T+(H-B-T)*(1-v/top);svg+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--grid)" stroke-width="1"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v>=1000?(v/1000).toString().replace(".",",")+" mil":v}</text>`}
+  months.forEach((k,i)=>{const bx=L+cw*i+(cw-bw)/2;let y=H-B;const sel=k===vSel;
+    svg+=`<g class="bar${sel?" sel":""}" data-vmonth="${k}"><rect x="${L+cw*i}" y="${T}" width="${cw}" height="${H-T}" fill="${sel?"var(--fill)":"transparent"}" rx="8"/>`;
+    const segs=cats.map(c=>({c,v:c.val(k)})).filter(x=>x.v>0);
+    segs.forEach((x,j)=>{const h=(H-B-T)*x.v/top;y-=h;const last=j===segs.length-1;
+      svg+=`<rect x="${bx}" y="${y}" width="${bw}" height="${Math.max(0,h-(j?2:0))}" fill="${x.c.col}" rx="${last?4:0}"><title>${esc(x.c.name)}: ${eur(x.v)}</title></rect>`;
+      if(last&&h>4)svg+=`<rect x="${bx}" y="${y+4}" width="${bw}" height="${Math.max(0,h-4-(j?2:0))}" fill="${x.c.col}"/>`});
+    svg+=`<text class="m" x="${L+cw*i+cw/2}" y="${H-6}" text-anchor="middle">${mShort(k)}</text></g>`});
+  el.innerHTML=svg+"</svg>";
+  document.getElementById("vLeg").innerHTML=cats.length>1?cats.map(c=>`<span><i style="background:${c.col}"></i>${esc(c.name)}</span>`).join(""):"";
+  /* Resumo do mês escolhido e comparação com o anterior */
+  const k=vSel, prev=mOff(k,-1), t=tot(k), tp=prev>=START?tot(prev):null, avg=months.reduce((a,m)=>a+tot(m),0)/months.length, ent=inc(k);
+  const pct=tp?Math.round((t-tp)/tp*100):null;
+  document.getElementById("vTiles").innerHTML=`<div class="tot"><div class="k">Gasto em ${mShort(k)}</div><div class="v">${eur(t)}</div></div>
+    <div class="tot"><div class="k">vs ${tp!=null?mShort(prev):"mês anterior"}</div><div class="v ${pct>0?"up":pct<0?"down":""}">${pct==null?"—":(pct>0?"▲ ":pct<0?"▼ ":"")+Math.abs(pct)+"%"}</div></div>
+    <div class="tot"><div class="k">Média/mês</div><div class="v">${eur(avg)}</div></div>`;
+  document.getElementById("vMonthT").textContent=mFull(k)[0].toUpperCase()+mFull(k).slice(1)+(ent?` · entrou ${eur(ent)}, sobrou ${eur(ent-t)}`:"");
+  const rows=cats.map(c=>({c,v:c.val(k),p:tp!=null?c.val(prev):null})).filter(x=>x.v>0||x.p>0).sort((a,b)=>b.v-a.v);
+  document.getElementById("vList").innerHTML=rows.length?rows.map(({c,v,p})=>{const d=p!=null?v-p:null;
+    const top3=c.items(k).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${esc(x.n)} ${eur(x.v)}`).join(" · ");
+    return`<div class="vrow2"><i style="background:${c.col}"></i><span class="n">${esc(c.name)}</span><span class="v">${eur(v)}</span>
+      <div class="track"><span style="width:${t?Math.round(v/t*100):0}%;background:${c.col}"></span></div>
+      <div class="d"><span>${t?Math.round(v/t*100):0}% do total${top3?" · "+top3:""}</span>${d?`<span class="${d>0?"up":"down"}">${d>0?"+":"−"}${eur(Math.abs(d))}</span>`:""}</div></div>`}).join("")
+    :`<div class="rempty">Ainda não há gastos registados em ${mFull(k)}. O gráfico enche-se à medida que juntas contas e gastos.</div>`}
+document.getElementById("vRange").addEventListener("click",e=>{const b=e.target.closest("[data-vrange]");if(b){vRange=+b.dataset.vrange;renderChart()}});
+document.getElementById("vChart").addEventListener("click",e=>{const g=e.target.closest("[data-vmonth]");if(g){vSel=g.dataset.vmonth;renderChart()}});
 
 /* ---------- Prazos: carro e documentos ---------- */
 const CARF=[["seguro","Seguro"],["inspecao","Inspeção"],["iuc","IUC"],["revisao","Revisão"]];

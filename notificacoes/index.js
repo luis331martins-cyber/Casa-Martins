@@ -112,6 +112,22 @@ async function morning(code, now) {
       body: val.map((x) => `${x.i.name} — ${txt(x.d)}`).join("\n"), go: soCarne ? "carne" : "despensa", tag: "validades"});
   }
 
+  /* Prazos do carro (30, 7 e 1 dia antes e no dia) e validade dos documentos (90, 30, 7 dias antes e no dia).
+     Depois de passar, lembra uma vez por semana durante um mês. */
+  const prazos = [];
+  const CAR = [["seguro", "Seguro"], ["inspecao", "Inspeção"], ["iuc", "IUC"], ["revisao", "Revisão"]];
+  for (const b of bills) {
+    if (b.kind === "car") for (const [f, n] of CAR) if (b[f]) prazos.push({date: b[f], t: `${b.name}: ${n}`, at: [30, 7, 1, 0], go: "carro"});
+    if (b.kind === "doc" && b.date) prazos.push({date: b.date, t: `${b.type} (${b.who})`, at: [90, 30, 7, 0], go: "docs"});
+  }
+  const avisar = prazos.map((x) => ({...x, d: daysBetween(now.date, x.date)}))
+      .filter((x) => x.at.includes(x.d) || (x.d < 0 && x.d >= -28 && -x.d % 7 === 0)).sort((a, b) => a.d - b.d);
+  if (avisar.length) {
+    const txt = (d) => d < 0 ? `passou há ${-d} dias` : d === 0 ? "termina hoje" : d === 1 ? "termina amanhã" : `faltam ${d} dias`;
+    await send(code, {title: avisar.length === 1 ? "Prazo a terminar" : `${avisar.length} prazos a terminar`,
+      body: avisar.map((x) => `${x.t} — ${txt(x.d)}`).join("\n"), go: avisar[0].go, tag: "prazos"});
+  }
+
   /* Resumo do dia: marcações de hoje e amanhã e lista de compras. */
   const byTime = (a, b) => (a.time || "99").localeCompare(b.time || "99");
   const tom = addDays(now.date, 1);
