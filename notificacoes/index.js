@@ -84,7 +84,7 @@ async function morning(code, now) {
   const contas = [];
   /* A app começa a contar em novembro de 2026: antes disso não há contas para avisar */
   if (mk >= START) for (const b of bills) {
-    if (b.kind === "income" || b.kind === "budget" || !b.day) continue;
+    if (b.kind || !b.day) continue; // só contas fixas (receitas, gastos do mês, contas bancárias e pratos têm kind)
     const p = b.paid && b.paid[mk];
     if (p != null && p !== false) continue;
     const dd = b.dd && p !== false;

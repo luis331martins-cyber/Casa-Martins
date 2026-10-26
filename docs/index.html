@@ -221,7 +221,9 @@ h2{font-weight:700;font-size:22px;letter-spacing:.01em}
 h1.large{margin-top:2px}
 .back{color:var(--accent);font-weight:400;font-size:17px}
 /* Listas agrupadas: linhas brancas juntas, separadas por uma linha fina */
-#pantry,#meat,#shop,#bills,#incomes,#budgets,#alerts,#dayList,#houseShared{gap:0}
+#pantry,#meat,#shop,#bills,#incomes,#budgets,#alerts,#dayList,#houseShared,#accounts{gap:0}
+.totals.two{grid-template-columns:1fr 1fr}
+.bill.acc{grid-template-columns:1fr auto}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit){border:0!important;border-radius:0;position:relative;padding:11px 16px;min-height:44px;box-sizing:border-box}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit) + *){border-top-left-radius:12px;border-top-right-radius:12px}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit):not(:has(+ :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit))){border-bottom-left-radius:12px;border-bottom-right-radius:12px}
@@ -310,6 +312,7 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 .ings{display:flex;flex-wrap:wrap;gap:6px}
 .ing{font-size:14px;padding:5px 10px;border-radius:999px;background:var(--good-soft);color:var(--good)}
 .ing.no{background:var(--fill);color:var(--muted)}
+.tag{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 6px;vertical-align:2px}
 .steps{margin:0;padding-left:20px;font-size:15px;display:flex;flex-direction:column;gap:4px}
 :is(.item,.bill,.check,.alert,.ev-row,.budget,.bill-edit,.meal){border:0!important;position:relative;padding:11px 16px;box-sizing:border-box}
 #meals>.meal:first-child{border-top-left-radius:12px;border-top-right-radius:12px}
@@ -472,6 +475,8 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
       <button type="button" data-meal="refeicao" aria-pressed="true">Almoço e jantar</button><button type="button" data-meal="lanche" aria-pressed="false">Lanches e doces</button>
     </div>
     <div id="meals" class="group"></div>
+    <button class="btn ghost" type="button" id="addRecipe">+ Juntar um prato nosso</button>
+    <div id="recipeNew"></div>
   </section>
 
   <section id="tab-lista" class="group" hidden>
@@ -488,6 +493,10 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
       <button class="nav-m" id="mPrev" aria-label="Mês anterior">‹</button>
       <h2 id="mLabel"></h2>
       <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
+    </div>
+    <div class="totals two">
+      <button class="tot" type="button" data-scroll="accSec"><div class="k">Saldo hoje</div><div class="v" id="vBal"></div></button>
+      <div class="tot" id="fcBox"><div class="k" id="fcLabel">Fim do mês</div><div class="v" id="vFc"></div></div>
     </div>
     <div class="totals">
       <button class="tot paid" type="button" data-scroll="incSec"><div class="k">Entra</div><div class="v" id="vIn"></div></button>
@@ -523,6 +532,12 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
     </div>
 
     <div class="group" style="gap:8px">
+      <div id="accSec" class="group" style="gap:8px">
+        <h2 style="margin-top:8px">Saldo das contas</h2>
+        <p class="note" style="margin:0">Escreve o saldo quando vires o banco. A app calcula quanto deve ficar no fim do mês: saldo + receitas por receber − contas por pagar − o que ainda há para gastar nos gastos do mês.</p>
+        <div id="accounts" class="group"></div>
+        <button class="back" type="button" id="addAcc" style="align-self:flex-start">+ Juntar conta bancária</button>
+      </div>
       <h2 style="margin-top:8px">Adicionar</h2>
       <form class="addbill" id="billForm" autocomplete="off">
         <label class="f wide">Tipo<select id="bType">
@@ -762,45 +777,88 @@ const RECIPES=[
   ["Ovos mexidos com torrada","lanche",["ovos","pao"],["fiambre","manteiga"],["Mexe os ovos em lume brando com manteiga.","Junta fiambre picado.","Serve sobre pão torrado."]],
   ["Salada de fruta","lanche",["fruta"],["iogurte"],["Corta a fruta aos cubos.","Mistura e serve fresca."]]
 ];
-let mealType="refeicao", openMeal="";
+let mealType="refeicao", openMeal="", editRecipe="";
 const norm=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
-/* Produto da casa que serve para um ingrediente (só os marcados "Tenho" ou "Pouco") */
-const findIng=(key,all)=>items.find(i=>(all||i.lvl>0)&&ING[key][1].some(k=>norm(i.name).includes(k)));
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+/* Ingrediente: nome a mostrar, categoria para as compras e palavras que o reconhecem no nome dos produtos */
+const ingOf=key=>({label:ING[key][0],cat:ING[key][2],kws:ING[key][1]});
+/* Ingrediente escrito à mão num prato nosso: usa a lista conhecida quando possível (ex.: "carne picada") */
+const ingFree=str=>{const n=norm(str).trim(), key=Object.keys(ING).find(k=>ING[k][1].some(w=>n.includes(w)));
+  return{label:cap(str.trim()),cat:key?ING[key][2]:"Despensa",kws:[n,...(key?ING[key][1]:[])],rev:n}};
+/* Produto da casa que serve para um ingrediente (só os marcados "Tenho" ou "Pouco", a não ser com all) */
+const findIngr=(g,all)=>items.find(i=>{if(!(all||i.lvl>0))return false;const n=norm(i.name);
+  return g.kws.some(k=>n.includes(k))||(g.rev&&n.length>=3&&g.rev.includes(n))});
+const findIng=(key,all)=>findIngr(ingOf(key),all);
+const myRecipes=()=>bills.filter(b=>b.kind==="recipe");
 function mealList(){
-  return RECIPES.filter(r=>r[1]===mealType).map(([name,type,req,opt,steps])=>{
-    const miss=req.filter(k=>!findIng(k)), use=[...req,...opt].map(k=>findIng(k)).filter(Boolean);
+  const base=RECIPES.map(([name,type,req,opt,steps])=>({name,type,req:req.map(ingOf),opt:opt.map(ingOf),steps}));
+  const ours=myRecipes().map(r=>({name:r.name,type:r.type||"refeicao",req:(r.ing||[]).map(ingFree),opt:[],steps:r.steps||[],id:r.id}));
+  return [...ours,...base].filter(r=>r.type===mealType).map(r=>{
+    const miss=r.req.filter(g=>!findIngr(g)), use=[...r.req,...r.opt].map(g=>findIngr(g)).filter(Boolean);
     const soon=[...new Set(use)].filter(i=>{const d=daysLeft(i.exp);return d!==null&&d<=3});
-    return{name,req,opt,steps,miss,soon,have:req.length-miss.length};
-  }).filter(r=>r.have>0&&r.miss.length<=2).sort((a,b)=>a.miss.length-b.miss.length||b.soon.length-a.soon.length||a.name.localeCompare(b.name,"pt"));
+    return{...r,miss,soon,have:r.req.length-miss.length};
+  /* Os pratos nossos aparecem sempre; os outros só se faltarem no máximo 2 coisas */
+  }).filter(r=>r.id||(r.have>0&&r.miss.length<=2)).sort((a,b)=>a.miss.length-b.miss.length||b.soon.length-a.soon.length||!!b.id-!!a.id||a.name.localeCompare(b.name,"pt"));
 }
+function recipeForm(r){const id=r?r.id:"new";return `<form class="bill-edit" data-recipeform="${id}" autocomplete="off">
+    <label class="f wide">Prato<input name="n" required value="${r?esc(r.name):""}" placeholder="ex.: Arroz de pato" autocapitalize="sentences"></label>
+    <label class="f wide">Tipo<select name="t"><option value="refeicao"${r&&r.type==="lanche"?"":" selected"}>Almoço e jantar</option><option value="lanche"${r&&r.type==="lanche"?" selected":""}>Lanches e doces</option></select></label>
+    <label class="f wide">Ingredientes (separados por vírgulas)<textarea name="i" rows="3" required placeholder="pato, arroz, chouriço, cebola">${r?esc((r.ing||[]).join(", ")):""}</textarea></label>
+    <label class="f wide">Como se faz (opcional, um passo por linha)<textarea name="p" rows="4" placeholder="Coze o pato…">${r?esc((r.steps||[]).join("\n")):""}</textarea></label>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cancelrecipe="1">Cancelar</button>
+    ${r?`<button class="btn danger wide" type="button" data-delrecipe="${r.id}">Apagar ${esc(r.name)}</button>`:""}
+  </form>`}
 function renderMeals(){
   const el=document.getElementById("meals");if(!el)return;
   document.querySelectorAll("[data-meal]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.meal===mealType));
+  document.getElementById("recipeNew").innerHTML=editRecipe==="new"?recipeForm(null):"";
+  document.getElementById("addRecipe").hidden=editRecipe==="new";
   const L=mealList();
-  el.innerHTML=L.length?L.map(r=>{const open=openMeal===r.name;
-    const status=r.miss.length?`Falta: ${r.miss.map(k=>ING[k][0].toLowerCase()).join(", ")}`:`<span class="ok" style="color:var(--good);font-weight:600">Tens tudo</span>`;
+  el.innerHTML=L.length?L.map(r=>{
+    if(r.id&&editRecipe===r.id)return recipeForm(myRecipes().find(x=>x.id===r.id));
+    const key=r.id||r.name, open=openMeal===key;
+    const status=r.miss.length?`Falta: ${r.miss.map(g=>g.label.toLowerCase()).join(", ")}`:`<span class="ok" style="color:var(--good);font-weight:600">Tens tudo</span>`;
     const soon=r.soon.length?`<div class="meta" style="color:var(--warn)">Usa já: ${r.soon.map(i=>{const d=daysLeft(i.exp);return esc(i.name)+(d<0?" (fora do prazo)":d===0?" (termina hoje)":d===1?" (termina amanhã)":` (${d} dias)`)}).join(", ")}</div>`:"";
     return `<div class="meal">
-      <button type="button" class="bname" data-openmeal="${esc(r.name)}" aria-expanded="${open}"><span style="min-width:0"><div class="name">${esc(r.name)}</div><div class="meta">${status}</div>${soon}</span><span class="go">${open?"⌄":"›"}</span></button>
-      ${open?`<div class="ings">${[...r.req,...r.opt].map(k=>{const ok=!!findIng(k);return `<span class="ing${ok?"":" no"}">${ok?"✓":"✗"} ${ING[k][0]}${r.opt.includes(k)?" (opcional)":""}</span>`}).join("")}</div>
-      <ol class="steps">${r.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
-      ${r.miss.length?`<button class="btn ghost" type="button" data-buymeal="${esc(r.name)}">Pôr o que falta nas compras (${r.miss.length})</button>`:""}`:""}
+      <button type="button" class="bname" data-openmeal="${esc(key)}" aria-expanded="${open}"><span style="min-width:0"><div class="name">${esc(r.name)}${r.id?` <span class="tag">Nosso</span>`:""}</div><div class="meta">${status}</div>${soon}</span><span class="go">${open?"⌄":"›"}</span></button>
+      ${open?`<div class="ings">${[...r.req.map(g=>[g,0]),...r.opt.map(g=>[g,1])].map(([g,o])=>{const ok=!!findIngr(g);return `<span class="ing${ok?"":" no"}">${ok?"✓":"✗"} ${esc(g.label)}${o?" (opcional)":""}</span>`}).join("")}</div>
+      ${r.steps.length?`<ol class="steps">${r.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
+      ${r.miss.length?`<button class="btn ghost" type="button" data-buymeal="${esc(key)}">Pôr o que falta nas compras (${r.miss.length})</button>`:""}
+      ${r.id?`<button class="back" type="button" data-editrecipe="${r.id}" style="align-self:flex-start">Editar ${esc(r.name)}</button>`:""}`:""}
     </div>`}).join(""):`<div class="empty">Ainda não há ideias com o que tens em casa.<br>Junta produtos na Despensa e em Carne e Peixe (ovos, arroz, massa, frango…).</div>`;
 }
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.dataset.meal){mealType=t.dataset.meal;openMeal="";renderMeals()}
   else if(t.dataset.openmeal){openMeal=openMeal===t.dataset.openmeal?"":t.dataset.openmeal;renderMeals()}
-  else if(t.dataset.buymeal){const r=mealList().find(x=>x.name===t.dataset.buymeal);if(!r)return;
+  else if(t.id==="addRecipe"){editRecipe="new";renderMeals();const f=document.querySelector("[data-recipeform=new] [name=n]");if(f)f.focus()}
+  else if(t.dataset.editrecipe){editRecipe=t.dataset.editrecipe;renderMeals()}
+  else if(t.dataset.cancelrecipe){editRecipe="";renderMeals()}
+  else if(t.dataset.delrecipe){const r=myRecipes().find(x=>x.id===t.dataset.delrecipe);if(r&&confirm(`Apagar o prato "${r.name}"?`)){editRecipe="";delBill(r.id);renderMeals();toast(r.name+" apagado")}}
+  else if(t.dataset.buymeal){const r=mealList().find(x=>(x.id||x.name)===t.dataset.buymeal);if(!r)return;
     /* O que já existe (acabado) fica como está; o que não existe é criado como "Acabou" para ir para as compras */
-    r.miss.forEach(k=>{const ex=findIng(k,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}
-      else{const [n,,c]=ING[k];const it={id:uid(),name:n,cat:c,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
+    r.miss.forEach(g=>{const ex=findIngr(g,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}
+      else{const it={id:uid(),name:g.label,cat:g.cat,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
     render();toast(`${r.miss.length} ingrediente${r.miss.length===1?"":"s"} nas compras`)}
+});
+/* Guardar um prato nosso (fica na coleção "bills" com kind:"recipe", partilhado pela casa) */
+document.addEventListener("submit",e=>{
+  const id=e.target.dataset.recipeform;if(!id)return;e.preventDefault();
+  const f=e.target, name=f.n.value.trim(), ing=f.i.value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!name||!ing.length)return;
+  const steps=f.p.value.split("\n").map(x=>x.trim()).filter(Boolean);
+  const old=id==="new"?null:myRecipes().find(x=>x.id===id);
+  const r={...(old||{}),id:old?old.id:uid(),kind:"recipe",name,type:f.t.value,ing,steps};
+  editRecipe="";mealType=r.type;openMeal=r.id;putBill(r);renderMeals();toast(old?"Prato guardado":name+" juntado aos nossos pratos");
 });
 
 /* ---------- despesas mensais ---------- */
 let bills=[]; let editBill="";
 /* Receitas ficam na mesma coleção "bills", com kind:"income" */
-const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>!isInc(b));
+/* Na mesma coleção também ficam as contas bancárias (kind:"account") e os pratos nossos (kind:"recipe") */
+const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>!b.kind||b.kind==="budget");
+const accounts=()=>bills.filter(b=>b.kind==="account"), moneyDocs=()=>bills.filter(b=>!b.kind||b.kind==="income"||b.kind==="budget");
+let editAcc="";
 /* Gastos do mês (kind:"budget"): orçamento mensal com vários gastos em spent["AAAA-MM"]=[{v,d,n}] */
 const isBud=b=>b.kind==="budget", fixas=()=>contas().filter(b=>!isBud(b));
 const spends=(b,k)=>(b.spent&&b.spent[k])||[];
@@ -937,13 +995,39 @@ function renderBills(){
   const unpaid=list.filter(b=>!isPaid(b,k)).length, pa=document.getElementById("payAll");
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>b.name.toLowerCase()));
+  /* Saldo das contas e previsão para o fim do mês (só para o mês atual, ou novembro de 2026 antes de começar) */
+  const accs=accounts().sort((a,b)=>a.name.localeCompare(b.name,"pt")), bal=accs.reduce((s,a)=>s+(+a.bal||0),0);
+  const fk=ymOf(now)<START?START:ymOf(now);
+  document.getElementById("vBal").textContent=accs.length?eur(bal):"—";
+  document.getElementById("vBal").style.color=bal<0?"var(--bad)":"";
+  const fcBox=document.getElementById("fcBox");fcBox.hidden=!accs.length||k!==fk;
+  if(!fcBox.hidden){
+    const recv=inc.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0), pay=list.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0);
+    const budLeft=buds.reduce((s,b)=>s+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), fc=bal+recv-pay-budLeft;
+    document.getElementById("fcLabel").textContent="Fim de "+mName+" (previsto)";
+    const v=document.getElementById("vFc");v.textContent=eur(fc);v.style.color=fc<0?"var(--bad)":"var(--good)";
+  }
+  const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
+  const accForm=a=>`<form class="bill-edit" data-accform="${a?a.id:"new"}" autocomplete="off">
+      <label class="f wide">Conta<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: CGD" autocapitalize="words"></label>
+      <label class="f wide">Saldo atual (€)<input name="b" type="number" step="0.01" inputmode="decimal" required value="${a?Math.round((+a.bal||0)*100)/100:""}" placeholder="1.250,00"></label>
+      <button class="btn" type="submit">Guardar</button>
+      <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
+      ${a?`<button class="btn danger wide" type="button" data-delacc="${a.id}">Apagar ${esc(a.name)}</button>`:""}
+    </form>`;
+  document.getElementById("accounts").innerHTML=accs.map(a=>a.id===editAcc?accForm(a):`<div class="bill acc">
+      <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(a.name)}</div><div class="meta"${a.at&&Date.now()-a.at>7*864e5?' style="color:var(--warn)"':""}>Atualizado ${ago(a.at)}${a.by?" por "+esc(a.by):""}</div></button>
+      <div class="amt"${(+a.bal||0)<0?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
+    </div>`).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
+  document.getElementById("addAcc").hidden=editAcc==="new";
+  if(typeof renderMeals==="function")renderMeals();
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
 document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefault();
   const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
   if(!name||isNaN(amount))return;
-  if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  if(moneyDocs().some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
   const type=document.getElementById("bType").value, d=Math.min(Math.max(day,0),31);
   putBill(type==="budget"?{id:uid(),name,amount,day:0,kind:"budget",spent:{}}:type==="income"?{id:uid(),name,amount,day:d,kind:"income",paid:{}}:{id:uid(),name,amount,day:d,paid:{}});
   ["bName","bAmt","bDay"].forEach(i=>document.getElementById(i).value="");toast(name+" adicionada");
@@ -971,6 +1055,19 @@ document.addEventListener("click",e=>{
   else if(t.dataset.delspend){const [id,i]=t.dataset.delspend.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
     const L=[...spends(b,k)], x=L[+i];if(!x||!confirm(`Apagar o gasto de ${eur(+x.v||0)}${x.n?" ("+x.n+")":""}?`))return;
     L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});toast("Gasto apagado")}
+});
+/* Contas bancárias: juntar, atualizar o saldo, apagar */
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.id==="addAcc"){editAcc="new";renderBills();const f=document.querySelector("[data-accform=new] [name=n]");if(f)f.focus()}
+  else if(t.dataset.editacc){editAcc=t.dataset.editacc;renderBills();const f=document.querySelector(`[data-accform="${editAcc}"] [name=b]`);if(f){f.focus();f.select()}}
+  else if(t.dataset.cancelacc){editAcc="";renderBills()}
+  else if(t.dataset.delacc){const a=accounts().find(x=>x.id===t.dataset.delacc);if(a&&confirm(`Apagar a conta "${a.name}"?`)){editAcc="";delBill(a.id);toast(a.name+" apagada")}}
+});
+document.addEventListener("submit",e=>{
+  const id=e.target.dataset.accform;if(!id)return;e.preventDefault();
+  const name=e.target.n.value.trim(), bal=parseFloat(e.target.b.value);if(!name||isNaN(bal))return;
+  const old=id==="new"?null:accounts().find(x=>x.id===id);
+  editAcc="";putBill({...(old||{}),id:old?old.id:uid(),kind:"account",name,bal,at:Date.now(),...(myName()?{by:myName()}:{})});toast("Saldo guardado");
 });
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
@@ -1001,7 +1098,7 @@ document.addEventListener("submit",e=>{
   const b=bills.find(x=>x.id===id);if(!b)return;
   const name=e.target.n.value.trim(), v=parseFloat(e.target.v.value), day=parseInt(e.target.d.value)||0, k=mKey();
   if(!name||isNaN(v))return;
-  if(bills.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  if(moneyDocs().some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
   const nb={...b,name,day:Math.min(Math.max(day,0),31)};
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
@@ -1025,7 +1122,7 @@ document.getElementById("bImportBtn").addEventListener("click",()=>{
     const f=line.split(/;|\t/).map(x=>x.trim());const name=f[0];if(!name)continue;
     if(/^receitas?:?$/i.test(name)&&!f.slice(1).some(Boolean)){inc=true;continue}
     if(/^(contas|despesas|gastos)( mensais)?:?$/i.test(name)&&!f.slice(1).some(Boolean)){inc=false;continue}
-    if(bills.some(b=>b.name.toLowerCase()===name.toLowerCase())){dup++;continue}
+    if(moneyDocs().some(b=>b.name.toLowerCase()===name.toLowerCase())){dup++;continue}
     const day=parseInt((String(f[2]||"").match(/\d+/)||[0])[0])||0;
     const b={id:uid(),name,amount:money(f[1]),day:Math.min(Math.max(day,0),31)};
     putBill(inc?{...b,kind:"income"}:{...b,paid:{}});n++;
