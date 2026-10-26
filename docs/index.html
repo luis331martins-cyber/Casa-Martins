@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Despensa de Casa</title>
-<meta name="description" content="Despensa, carne e peixe, lista de compras, despesas mensais e agenda da casa, partilhadas entre o casal.">
+<meta name="description" content="Despensa, carne e peixe, lista de compras, contas mensais e agenda da casa, partilhadas entre o casal.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -167,7 +167,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
   <section id="tab-setup" class="group" style="gap:20px" hidden>
     <header>
       <h1>A nossa casa</h1>
-      <p class="sub">Para partilhar a despensa, as compras, as despesas e a agenda, escreve o mesmo código da casa em cada telemóvel. Só é preciso fazer isto uma vez.</p>
+      <p class="sub">Para partilhar a despensa, as compras, as contas e a agenda, escreve o mesmo código da casa em cada telemóvel. Só é preciso fazer isto uma vez.</p>
     </header>
     <form class="join" id="joinForm" autocomplete="off">
       <label class="f">Código da casa<input id="joinCode" placeholder="ex.: CASA-7K4Q-9XPA" autocapitalize="characters" autocorrect="off" spellcheck="false" required></label>
@@ -187,7 +187,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
       <div style="min-width:0">
         <p class="sub" id="today" style="margin:0 0 2px;text-transform:capitalize"></p>
         <h1 id="hello">A nossa casa</h1>
-        <p class="sub" id="sub">Despensa, compras, despesas e agenda.</p>
+        <p class="sub" id="sub">Despensa, compras, contas e agenda.</p>
       </div>
       <button class="nav-m gear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </header>
@@ -195,12 +195,18 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
       <h2>Alertas</h2>
       <div id="alerts" class="group"></div>
     </div>
-    <div class="apps">
-      <button class="app" data-go="despensa"><span class="ico i-desp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7 6h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/><path d="M6 11h12M6 16h12" class="cut"/></svg><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Despensa</span></button>
-      <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
-      <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
-      <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Despesas</span></button>
-      <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
+    <div class="group" style="gap:10px">
+      <h3>Comida</h3>
+      <div class="apps">
+        <button class="app" data-go="despensa"><span class="ico i-desp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7 6h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"/><path d="M6 11h12M6 16h12" class="cut"/></svg><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Despensa</span></button>
+        <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
+        <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
+      </div>
+      <h3>Contas e agenda</h3>
+      <div class="apps">
+        <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
+        <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
+      </div>
     </div>
   </section>
 
@@ -293,7 +299,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
   </section>
 
   <section id="tab-despesas" class="group" style="gap:14px" hidden>
-    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Despesas</h1></div>
+    <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Contas</h1></div>
     <div class="month">
       <button class="nav-m" id="mPrev" aria-label="Mês anterior">‹</button>
       <h2 id="mLabel"></h2>
@@ -307,7 +313,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
     <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
     <div id="bills" class="group"></div>
     <form class="addbill" id="billForm" autocomplete="off">
-      <label class="f wide">Despesa<input id="bName" placeholder="ex.: Luz" required></label>
+      <label class="f wide">Conta<input id="bName" placeholder="ex.: Luz" required></label>
       <label class="f">Valor (€)<input id="bAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="45,00" required></label>
       <label class="f">Dia<input id="bDay" type="number" min="1" max="31" inputmode="numeric" placeholder="8"></label>
       <button class="btn wide" type="submit">Adicionar</button>
@@ -316,7 +322,7 @@ header.top{display:flex;align-items:flex-start;justify-content:space-between;gap
       <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
       <div class="chips" id="billChips"></div>
     </div>
-    <p class="note" style="margin:0">Cada despesa repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar.</p>
+    <p class="note" style="margin:0">Cada conta repete-se todos os meses. Marca-a quando estiver paga; o mês seguinte começa por pagar.</p>
   </section>
 </div>
 
@@ -430,7 +436,7 @@ document.addEventListener("change",e=>{
 function show(tab){["setup","inicio","definicoes","despensa","carne","lista","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#calendario":"calendario"};
+const ROUTES={"#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -477,9 +483,9 @@ function renderBills(){
       <div style="min-width:0"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></div>
       <div class="amt">${eur(+b.amount||0)}</div>
       <button class="x" data-delbill="${b.id}" aria-label="Apagar ${esc(b.name)}">×</button>
-    </div>`}).join(""):`<div class="empty">Ainda não há despesas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
+    </div>`}).join(""):`<div class="empty">Ainda não há contas.<br>Adiciona a renda, a luz ou a água abaixo.</div>`;
   const have=new Set(bills.map(b=>b.name.toLowerCase()));
-  document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as despesas habituais.</span>`;
+  document.getElementById("billChips").innerHTML=BQUICK.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as contas habituais.</span>`;
 }
 document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefault();
   const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
@@ -580,7 +586,7 @@ document.getElementById("cNext").onclick=()=>{calM++;if(calM>11){calM=0;calY++}r
 /* ---------- casa partilhada (Firebase) ---------- */
 const ls={get(k){try{return localStorage.getItem(k)||""}catch(e){return""}},set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
 const hasFb=!!(window.FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey);
-const SUB="Despensa, compras, despesas e agenda.", SUB_LOCAL=SUB+" Guardado neste aparelho.";
+const SUB="Despensa, compras, contas e agenda.", SUB_LOCAL=SUB+" Guardado neste aparelho.";
 const normCode=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const fmtCode=c=>c.match(/.{1,4}/g).join("-");
 let fb=null, houseCode=ls.get("casa-codigo"), meId="", pushOk=null;

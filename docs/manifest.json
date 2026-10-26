@@ -2,7 +2,7 @@
   "id": "./",
   "name": "A nossa casa",
   "short_name": "Casa",
-  "description": "Despensa, carne e peixe, lista de compras, despesas mensais e agenda da casa.",
+  "description": "Despensa, carne e peixe, lista de compras, contas mensais e agenda da casa.",
   "lang": "pt-PT",
   "dir": "ltr",
   "start_url": "./",

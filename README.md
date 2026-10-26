@@ -1,6 +1,6 @@
 # A nossa casa
 
-App para gerir a casa a dois: despensa, carne e peixe, lista de compras, despesas mensais, calendário e alertas.
+App para gerir a casa a dois: despensa, carne e peixe, lista de compras, contas mensais, calendário e alertas.
 Os dados ficam no Firebase Firestore e aparecem logo nos dois telemóveis. A app instala-se no ecrã principal do iPhone,
 funciona sem rede e envia notificações.
 
@@ -135,7 +135,7 @@ O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em
 | Até ~15 min depois de alguém marcar algo | **Nova marcação** no outro telemóvel (quem marcou não recebe) |
 
 Se não houver nada para dizer, a notificação desse tipo não é enviada.
-Tocar numa notificação abre a app no separador certo (Despesas, Despensa, Calendário ou Compras).
+Tocar numa notificação abre a app no separador certo (Contas, Despensa, Calendário ou Compras).
 
 ### Limites do GitHub Actions
 
