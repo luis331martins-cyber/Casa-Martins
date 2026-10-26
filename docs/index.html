@@ -2482,7 +2482,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
     if(x.ev)delEv(x.ev);editRec[k]="";delBill(id);RECS[k].render();toast("Apagado")}
   else if(b.dataset.carbump){const [id,f]=b.dataset.carbump.split("|"), c=bills.find(y=>y.id===id);if(!c||!c[f])return;
     const n=f==="inspecao"&&c.inspecaoAnos?+c.inspecaoAnos:1;let d=c[f];while(daysTo(d)<=60)d=addYears(d,n);putBill({...c,[f]:d});renderCars();toast("Próximo: "+fmtD(d))}});
-document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!ref)return;e.preventDefault();const [k,id]=ref.split("|"), f=e.target, F=RECS[k];
+document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!ref)return;e.preventDefault();
+  if(ref.startsWith("car|")&&pdfLearn){learnPremio(pdfLearn.ins,pdfLearn.ctx);pdfLearn=null}const [k,id]=ref.split("|"), f=e.target, F=RECS[k];
   const old=id==="new"?null:bills.find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:k};
   for(const [n,,t] of F.fields){const el=f[n];if(!el)continue;let v=t==="check"?el.checked:el.value.trim();if(t==="number")v=v===""?null:parseFloat(v.replace(",","."));
     if(v===""||v===null||(typeof v==="number"&&isNaN(v)))delete x[n];else x[n]=v}
@@ -2566,7 +2567,7 @@ function parseCarPdf(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(n
   const latest=(a,b)=>D.map(x=>x.ds).filter(x=>x>=a&&x<=b).sort().pop()||null;
   if(out.kind==="seguro"){out.seguro=after(/(valid[oa] ate|data de (?:fim|termo|vencimento)|vencimento|termo do contrato|renovacao|periodo de seguro|periodo de validade|ate\s*:)/,60,true)||latest(addYears(today,-1),addYears(today,2));
     if(out.seguro&&out.seguro<today)out.seguro=addYears(out.seguro,1);
-    const pv=premio(t);if(pv){out.seguroVal=pv.v;out.valAlt=pv.alt;if(pv.note)out.valNote=pv.note}}
+    const pv=premio(t);if(pv){out.seguroVal=pv.v;out.valAlt=pv.alt;out.ins=pv.ins;out.valCtx=pv.ctx;out.valLearned=pv.learned;if(pv.note)out.valNote=pv.note}}
   if(out.kind==="inspecao"){out.inspecao=after(/(proxima inspec\w*|data limite|apresentar(?:-se)? ate|valid[oa] ate)/);
     if(!out.inspecao){const d=after(/(data (?:da|de) inspec\w*|inspec\w* realizada)/)||D.map(x=>x.ds).filter(x=>x<=today).sort().pop();if(d)out.inspecao=addYears(d,1)}}
   if(out.kind==="iuc"){out.iuc=after(/(data limite(?: de pagamento)?|pagamento ate|prazo de pagamento)/)||latest(addYears(today,-1),addYears(today,1));
@@ -2576,7 +2577,13 @@ function parseCarPdf(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(n
   return out}
 /* Valor do seguro: junta todos os valores em euros do PDF e dá pontos a cada um conforme as palavras à volta.
    Prémio total/anual/a pagar sobe; capital, franquia, limite e coberturas descem (não são o que se paga). */
-function premio(t){const C=[];
+const INSURERS=["fidelidade","ageas","allianz","tranquilidade","generali","liberty","zurich","ok teleseguros","teleseguros","logo","mapfre","lusitania","caravela","victoria","axa","una","real vida","cosec","hiscox","prevoir","acp"];
+const insurerOf=t=>INSURERS.find(n=>new RegExp(`\\b${n}\\b`).test(t))||"";
+/* O que a app aprendeu: para cada seguradora, as palavras que vêm antes do valor certo (guardado na casa, kind:"pdfrule") */
+const pdfRules=()=>(bills.find(b=>b.id==="pdf-aprendido")||{}).rules||{};
+function learnPremio(ins,ctx){if(!ctx)return;const old=bills.find(b=>b.id==="pdf-aprendido")||{id:"pdf-aprendido",kind:"pdfrule",name:"Leitura de PDFs",rules:{}};
+  const rules={...(old.rules||{}),[ins||"geral"]:ctx};putBill({...old,rules})}
+function premio(t){const C=[];const ins=insurerOf(t), R=pdfRules(), learned=R[ins||"geral"]||(ins?"":R.geral)||"";
   const re=/(?:€|eur)\s*(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+[.,]\d{2})(?![\d.,]\d)|(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+[.,]\d{2})(?![\d.,]?\d)\s*(?:€|eur\b|euros?)?/g;
   for(const m of t.matchAll(re)){const raw=m[1]||m[2];const v=numPT(raw.includes(",")?raw:raw.replace(".",","));if(!(v>=15&&v<=6000))continue;
     const before=t.slice(Math.max(0,m.index-90),m.index), aft=t.slice(m.index+m[0].length,m.index+m[0].length+25), euro=/€|eur/.test(m[0]);
@@ -2586,14 +2593,22 @@ function premio(t){const C=[];
     near(/capita(?:l|is)|franquia|limite|indemniza|responsabilidade civil|ate ao valor|por sinistro|por lesado|valor (?:do veiculo|venal|seguro)|danos proprios|desvaloriza/,-10);
     near(/encargos|selo|inem|fga|fat|taxa|imposto/,-3);
     let fr="";const fm=(before.slice(-60)+" "+aft).match(/\b(mensal|trimestral|semestral)\b/);if(fm){fr=fm[1];sc-=1}
-    C.push({v,sc,fr,i:m.index})}
+    /* "contexto": as últimas palavras antes do valor (ex.: "premio total anual"), para mostrar e para aprender */
+    const words=x=>x.replace(/[^a-z ]+/g," ").trim().split(/\s+/).filter(w=>w.length>1);
+    const line=words(before.split("\n").pop()), ctx=(line.length?line:words(before)).slice(-4).join(" ");
+    if(learned&&ctx&&(ctx.endsWith(learned)||learned.endsWith(ctx)))sc+=30;
+    C.push({v,sc,fr,i:m.index,ctx})}
   if(!C.length)return null;
   C.sort((a,b)=>b.sc-a.sc||b.v-a.v);const best=C[0];let v=best.v, note="";
   if(best.fr){const k={mensal:12,trimestral:4,semestral:2}[best.fr];note=`prémio ${best.fr} de ${eur(v)} × ${k}`;v=Math.round(v*k*100)/100}
-  const alt=[...new Set(C.filter(c=>c.sc>=0).map(c=>c.v))].filter(x=>x!==best.v).slice(0,5);
-  return{v,alt,note}}
+  const seen=new Set([best.v]), alt=C.filter(c=>c.sc>=0&&!seen.has(c.v)&&seen.add(c.v)).slice(0,6).map(c=>({v:c.v,ctx:c.ctx,fr:c.fr}));
+  return{v,alt,note,ins,ctx:best.ctx,learned:!!learned&&best.sc>=30}}
 const CARLBL={seguro:"Seguro: renovação",seguroVal:"Seguro: valor",inspecao:"Inspeção",iuc:"IUC",revisao:"Revisão: data",revKm:"Revisão: aos km",km:"Quilómetros",plate:"Matrícula"};
-document.addEventListener("click",e=>{const b=e.target.closest("[data-setval]");if(!b)return;const f=b.closest("form");if(f&&f.seguroVal){f.seguroVal.value=b.dataset.setval;toast("Valor: "+eur(+b.dataset.setval))}});
+var pdfIns="", pdfLearn=null;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-setval]");if(!b)return;const f=b.closest("form");if(!f||!f.seguroVal)return;
+  const k={mensal:12,trimestral:4,semestral:2}[b.dataset.fr]||1, v=Math.round(+b.dataset.setval*k*100)/100;f.seguroVal.value=v;
+  b.parentNode.querySelectorAll("[data-setval]").forEach(x=>x.style.outline="");b.style.outline="2px solid #34c759";
+  pdfLearn={ins:pdfIns,ctx:b.dataset.ctx};toast(`Valor: ${eur(v)}${k>1?` (${b.dataset.fr} × ${k})`:""} · a app aprende ao guardar`)});
 document.getElementById("carPdf").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;
   const msg=document.getElementById("carPdfMsg");const say=(t,ok)=>{msg.hidden=!t;msg.textContent=t||"";msg.style.color=ok?"var(--fg)":""};
   say("A ler o PDF…",true);let txt="";
@@ -2606,13 +2621,14 @@ document.getElementById("carPdf").addEventListener("change",async e=>{const file
   let car=f.plate&&cars.find(c=>norm(c.plate)===norm(f.plate));
   if(!car&&cars.length===1)car=cars[0];
   if(!car&&cars.length>1)car=cars.find(c=>confirm(`Este PDF é do carro "${c.name}"?`));
+  pdfIns=f.ins||"";pdfLearn=null;
   if(car&&car.km!=null&&f.km!=null&&f.km<=car.km){delete f.km;keys.splice(keys.indexOf("km"),1)}/* não volta a km mais antigos */
   editRec.car=car?car.id:"new";renderCars();
   const form=document.querySelector(`[data-recform="car|${editRec.car}"]`);if(!form)return;
   const set=(k,v)=>{const el=form[k];if(!el||v==null)return;el.value=v;el.closest("label").style.outline="2px solid #34c759";el.closest("label").style.borderRadius="10px"};
   keys.forEach(k=>set(k,f[k]));if(f.plate&&(!car||!car.plate))set("plate",f.plate);if(!car&&!form.name.value)form.name.value="Carro";
   const nomes={seguro:"apólice de seguro",inspecao:"ficha de inspeção",iuc:"IUC",revisao:"revisão"};
-  if(f.valAlt&&f.valAlt.length||f.valNote)form.querySelector('[name=seguroVal]').closest("label").insertAdjacentHTML("afterend",`<div class="chips wide" style="align-items:center"><span class="note" style="margin:0">${f.valNote?"Valor anual = "+esc(f.valNote)+". ":""}${f.valAlt.length?"Não é este? Outros valores no PDF:":""}</span>${f.valAlt.map(v=>`<button type="button" class="chip" data-setval="${v}">${eur(v)}</button>`).join("")}</div>`);
+  if(f.valAlt&&f.valAlt.length||f.valNote)form.querySelector('[name=seguroVal]').closest("label").insertAdjacentHTML("afterend",`<div class="chips wide" style="align-items:center"><span class="note" style="margin:0">${f.valLearned?"✓ Escolhido como da última vez"+(f.ins?" ("+esc(f.ins)+")":"")+". ":""}${f.valNote?"Valor anual = "+esc(f.valNote)+". ":""}${f.valCtx?"Junto a “"+esc(f.valCtx)+"”. ":""}${f.valAlt.length?"Não é este? Toca no certo e a app aprende para a próxima:":""}</span>${f.valAlt.map(a=>`<button type="button" class="chip" data-setval="${a.v}" data-ctx="${esc(a.ctx)}" data-fr="${a.fr||""}" style="text-align:left">${eur(a.v)}${a.ctx?`<small style="display:block;font-size:11px;opacity:.8">${esc(a.ctx)}</small>`:""}</button>`).join("")}</div>`);
   form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>`);
   say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})});
 
