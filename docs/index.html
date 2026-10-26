@@ -179,6 +179,7 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
       <h1>A nossa casa</h1>
       <p class="sub">Para partilhar a despensa, as compras, as contas e a agenda, escreve o mesmo código da casa em cada telemóvel. Só é preciso fazer isto uma vez.</p>
     </header>
+    <label class="f">O teu nome<input id="setupName" placeholder="ex.: Bianca" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
     <form class="join" id="joinForm" autocomplete="off">
       <label class="f">Código da casa<input id="joinCode" placeholder="ex.: CASA-7K4Q-9XPA" autocapitalize="characters" autocorrect="off" spellcheck="false" required></label>
       <button class="btn" type="submit" id="joinBtn">Entrar</button>
@@ -222,6 +223,10 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid
 
   <section id="tab-definicoes" class="group" style="gap:16px" hidden>
     <div class="appbar"><button class="back" data-go="inicio">‹ Início</button><h1>Esta casa</h1></div>
+    <form class="item" id="nameForm" autocomplete="off" style="align-items:end">
+      <label class="f" style="min-width:0">O teu nome neste telemóvel<input id="myName" placeholder="ex.: Luís" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
+      <button class="btn" type="submit">Guardar</button>
+    </form>
     <div id="houseShared" class="group" hidden>
       <div class="item">
         <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
@@ -609,7 +614,15 @@ document.getElementById("cHead").innerHTML=WD.map(d=>`<span>${d}</span>`).join("
 document.getElementById("today").textContent=now.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
 document.getElementById("icoWd").textContent=now.toLocaleDateString("pt-PT",{weekday:"long"}).split("-")[0];
 document.getElementById("icoD").textContent=now.getDate();
-const h=now.getHours();document.getElementById("hello").textContent=h<6?"Boa noite":h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
+/* Saudação: "Olá, <nome>" se este telemóvel tiver nome, senão bom dia/boa tarde/boa noite */
+function myName(){try{return localStorage.getItem("casa-nome")||""}catch(e){return""}}
+function setMyName(n){n=String(n||"").trim().slice(0,30);if(!n)return;try{localStorage.setItem("casa-nome",n)}catch(e){}hello()}
+function hello(){const n=myName(), h=now.getHours();
+  document.getElementById("hello").textContent=n?`Olá, ${n}`:h<6?"Boa noite":h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
+  document.getElementById("myName").value=n}
+hello();
+document.getElementById("nameForm").addEventListener("submit",e=>{e.preventDefault();
+  const n=document.getElementById("myName").value.trim();if(!n)return;setMyName(n);toast("Olá, "+myName()+"!");show("inicio")});
 function billsOn(dateStr){const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
   return contas().filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
 function dayInfo(ds){return{ev:events.filter(e=>e.date===ds),bl:billsOn(ds),ex:items.filter(i=>i.exp===ds)}}
@@ -710,6 +723,7 @@ function setup(msg){
 }
 function busy(on){["joinBtn","newHouse"].forEach(id=>document.getElementById(id).disabled=on)}
 async function enter(c,how,tab){
+  setMyName(document.getElementById("setupName").value);
   houseCode=c;ls.set("casa-codigo",c);ls.set("casa-local","");busy(false);
   document.getElementById("joinCode").value="";show(tab||"inicio");
   await startShared();toast(how);
@@ -747,7 +761,7 @@ document.getElementById("newHouse").addEventListener("click",async()=>{
   try{const c=await(await loadFb()).create({items,bills,events});enter(c,"Casa criada. Partilha o código.","definicoes")}
   catch(err){busy(false);setup("Não foi possível criar a casa. Verifica a internet e tenta outra vez.")}
 });
-document.getElementById("useLocal").addEventListener("click",()=>{ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});
+document.getElementById("useLocal").addEventListener("click",()=>{setMyName(document.getElementById("setupName").value);ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});
 document.getElementById("shareCode").addEventListener("click",async()=>{
   const c=fmtCode(houseCode), text=`Código da nossa casa: ${c}\nAbre ${location.origin+location.pathname} no iPhone, adiciona ao ecrã principal e escreve o código.`;
   if(navigator.share){try{await navigator.share({text});return}catch(e){if(e&&e.name==="AbortError")return}}
