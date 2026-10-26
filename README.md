@@ -22,7 +22,10 @@ firestore.rules           ← regras de segurança do Firestore
 
 ## Contas e código da casa
 
-- Cada pessoa entra com **e-mail e palavra-passe** (Firebase Authentication). Há "Esqueci-me da palavra-passe".
+- Cada pessoa entra com **nome de utilizador e PIN de 6 números**. Por trás é uma conta de e-mail do
+  Firebase Authentication com um endereço interno (`<utilizador>@casa-martins.invalid`, que não recebe e-mails).
+- Esqueceu-se do PIN: no Firebase, **Authentication → Utilizadores**, apaga-se esse utilizador e cria-se a conta
+  outra vez com o mesmo nome; a seguir escreve-se o código da casa (os dados não se perdem).
 - Na primeira vez, cria-se a casa ou escreve-se o **código da casa**; o código fica guardado na conta
   (`users/{uid}`), por isso noutro telemóvel basta entrar com a conta.
 - Sessões anónimas de versões anteriores passam a conta sem perder nada (o utilizador mantém-se).
