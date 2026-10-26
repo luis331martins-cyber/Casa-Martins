@@ -206,3 +206,7 @@ Os dados continuam no Firebase para quem tem o código.
 `firebase.json` e `.firebaserc` permitem publicar as regras pela linha de comandos
 (`firebase deploy --only firestore:rules`) e testar com os emuladores (`firebase emulators:start`).
 Com `self.FIREBASE_EMULATORS = true` em `docs/firebase-config.js`, a app liga-se aos emuladores locais.
+
+## Créditos das imagens
+
+Os ícones 3D do Início (`docs/icons/3d/`) são do [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) da Microsoft (licença MIT), copiados do pacote `@lobehub/fluent-emoji-3d@1.1.0`.
