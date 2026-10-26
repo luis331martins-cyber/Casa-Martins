@@ -380,13 +380,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .dose .t{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px}
 .dose.done .t,.dose.done .name{color:var(--muted)}
 .dose.late .t{color:var(--bad)}
-#medToday>.dose:first-child,#videoList>.vrow:first-child{border-top-left-radius:12px;border-top-right-radius:12px}
-#medToday>.dose:last-child,#videoList>.vrow:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
-#medToday>.dose:not(:last-child)::after,#videoList>.vrow:not(:last-child)::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line)}
+#medToday>.dose:first-child,#videoList>.vrow:first-child,#ytResults>.vrow:first-child{border-top-left-radius:12px;border-top-right-radius:12px}
+#medToday>.dose:last-child,#videoList>.vrow:last-child,#ytResults>.vrow:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+#medToday>.dose:not(:last-child)::after,#videoList>.vrow:not(:last-child)::after,#ytResults>.vrow:not(:last-child)::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line)}
 .vrow{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;background:var(--surface);padding:10px 16px;position:relative;width:100%;text-align:left;color:var(--fg);font:inherit;border-radius:0}
 .vrow img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:var(--fill)}
 .vrow .name{font-size:15px;font-weight:500;overflow-wrap:anywhere}
 .vrow.cur{background:var(--accent-soft)}
+#ytResults{display:flex;flex-direction:column}
+.vrow .ch{display:block;font-size:13px;color:var(--muted);margin-top:2px}
 #player{display:flex;flex-direction:column;gap:8px}
 #player .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
 #player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -661,12 +663,14 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Vídeos</span><span></span></nav>
     <h1 class="large">Vídeos</h1>
     <div id="player" hidden></div>
-    <form class="add" id="videoForm" autocomplete="off">
-      <input id="videoUrl" placeholder="Cola aqui o link do YouTube" aria-label="Link do YouTube" inputmode="url" autocapitalize="off" autocorrect="off" required>
-      <button class="btn" type="submit">Juntar</button>
+    <form class="add" id="videoForm" autocomplete="off" role="search">
+      <input id="videoUrl" type="search" enterkeyhint="search" placeholder="Procurar no YouTube" aria-label="Procurar no YouTube ou colar um link" autocapitalize="off" autocorrect="off" required>
+      <button class="btn" type="submit">Procurar</button>
     </form>
+    <div id="ytBox" class="group" style="gap:8px" hidden><div style="display:flex;justify-content:space-between;align-items:baseline"><h2 id="ytTitle">Resultados</h2><button class="back" type="button" id="ytClose">Fechar</button></div><div id="ytResults"></div></div>
+    <h2 id="videoListTitle" hidden>Guardados</h2>
     <div id="videoList" class="group"></div>
-    <p class="note" style="margin:0">No YouTube, toca em <b>Partilhar → Copiar ligação</b> e cola aqui. Os vídeos ficam guardados para os dois e abrem dentro da app.</p>
+    <p class="note" style="margin:0" id="videoNote">Escreve o que queres ver e toca em <b>Procurar</b>. Também podes colar um link do YouTube. Toca em <b>Guardar</b> para o vídeo ficar na lista dos dois.</p>
   </section>
 
   <section id="tab-jogo" class="group" style="gap:14px" hidden>
@@ -1704,33 +1708,60 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.medform;if(!id)
 var curVideo="";
 function videos(){return bills.filter(b=>b.kind==="video").sort((a,b)=>(b.added||0)-(a.added||0))}
 function ytId(u){u=String(u||"").trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/)||u.match(/^([\w-]{11})$/);return m?m[1]:""}
-function playVideo(id){const v=videos().find(x=>x.id===id);const p=document.getElementById("player");if(!v){stopVideo();return}
-  curVideo=id;p.hidden=false;
-  p.innerHTML=`<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/${v.yt}?playsinline=1&rel=0&modestbranding=1" title="${esc(v.name)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+/* Toca um vídeo guardado (id) ou um resultado da pesquisa ({yt,name,ch}) dentro da app */
+var curYt=null;
+function playVideo(id){const v=videos().find(x=>x.id===id);if(!v){stopVideo();return}playYt(v)}
+function playYt(v){const p=document.getElementById("player");
+  const saved=videos().find(x=>x.yt===v.yt);curVideo=saved?saved.id:"tmp";curYt=v;p.hidden=false;
+  p.innerHTML=`<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/${v.yt}?playsinline=1&rel=0&modestbranding=1&autoplay=1" title="${esc(v.name)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
     <div class="name" style="font-weight:600">${esc(v.name)}</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap"><a class="back" href="https://www.youtube.com/watch?v=${v.yt}" target="_blank" rel="noopener">Abrir no YouTube</a>
-    <button class="back" type="button" data-closevideo="1">Fechar</button><button class="back" type="button" data-delvideo="${v.id}" style="color:var(--bad)">Apagar</button></div>`;
-  renderVideos();window.scrollTo({top:0,behavior:"smooth"})}
-function stopVideo(){if(!curVideo)return;curVideo="";const p=document.getElementById("player");if(p){p.innerHTML="";p.hidden=true}renderVideos()}
+    <div style="display:flex;gap:16px;flex-wrap:wrap">${saved?"":`<button class="back" type="button" data-savevideo="1" style="font-weight:600">Guardar</button>`}<a class="back" href="https://www.youtube.com/watch?v=${v.yt}" target="_blank" rel="noopener">Abrir no YouTube</a>
+    <button class="back" type="button" data-closevideo="1">Fechar</button>${saved?`<button class="back" type="button" data-delvideo="${saved.id}" style="color:var(--bad)">Apagar</button>`:""}</div>`;
+  renderVideos();renderYt();window.scrollTo({top:0,behavior:"smooth"})}
+function stopVideo(){if(!curVideo)return;curVideo="";curYt=null;const p=document.getElementById("player");if(p){p.innerHTML="";p.hidden=true}renderVideos();renderYt()}
+function saveVideo(v){const ex=videos().find(x=>x.yt===v.yt);if(ex)return ex;
+  const n={id:uid(),kind:"video",name:String(v.name||"Vídeo do YouTube").slice(0,120),yt:v.yt,added:Date.now(),...(myName()?{by:myName()}:{})};putBill(n);return n}
 function renderVideos(){const el=document.getElementById("videoList");if(!el)return;const L=videos();
-  if(curVideo&&!L.some(v=>v.id===curVideo))stopVideo();
-  el.innerHTML=L.length?L.map(v=>`<button type="button" class="vrow${v.id===curVideo?" cur":""}" data-video="${v.id}"><img src="https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg" alt="" loading="lazy"><span style="min-width:0"><span class="name" style="display:block">${esc(v.name)}</span>${v.by?`<span class="note">Juntado por ${esc(v.by)}</span>`:""}</span></button>`).join("")
-    :`<div class="empty">Ainda não há vídeos.<br>Cola em cima o link de um vídeo do YouTube.</div>`}
+  if(curVideo&&curVideo!=="tmp"&&!L.some(v=>v.id===curVideo))stopVideo();
+  document.getElementById("videoListTitle").hidden=!L.length||document.getElementById("ytBox").hidden;
+  el.innerHTML=L.length?L.map(v=>`<button type="button" class="vrow${v.id===curVideo?" cur":""}" data-video="${v.id}"><img src="https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg" alt="" loading="lazy"><span style="min-width:0"><span class="name" style="display:block">${esc(v.name)}</span>${v.by?`<span class="note">Guardado por ${esc(v.by)}</span>`:""}</span></button>`).join("")
+    :!document.getElementById("ytBox").hidden?"":`<div class="empty">Ainda não há vídeos guardados.<br>Procura em cima o que queres ver.</div>`}
+/* Pesquisa: com a chave do YouTube (YOUTUBE_KEY em firebase-config.js) os resultados aparecem na app;
+   sem chave, abre a pesquisa no YouTube. Cada pesquisa gasta 100 de 10 000 unidades diárias grátis. */
+var ytRes=[], ytCache={};
+function renderYt(){const box=document.getElementById("ytBox");if(!box)return;
+  document.getElementById("ytResults").innerHTML=ytRes.map((v,i)=>`<button type="button" class="vrow${curYt&&curYt.yt===v.yt?" cur":""}" data-ytres="${i}"><img src="https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg" alt="" loading="lazy"><span style="min-width:0"><span class="name" style="display:block">${esc(v.name)}</span><span class="ch">${esc(v.ch)}</span></span></button>`).join("")}
+const unhtml=t=>{const d=document.createElement("textarea");d.innerHTML=t;return d.value};
+async function ytSearch(q){
+  const key=window.YOUTUBE_KEY;
+  if(!key){window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(q),"_blank","noopener");return}
+  const box=document.getElementById("ytBox");box.hidden=false;document.getElementById("ytTitle").textContent="A procurar…";
+  try{let L=ytCache[q.toLowerCase()];
+    if(!L){if(!navigator.onLine)throw new Error("offline");
+      const r=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=15&regionCode=PT&relevanceLanguage=pt&q=${encodeURIComponent(q)}&key=${key}`);
+      const j=await r.json();if(!r.ok)throw Object.assign(new Error("yt"),{reason:j&&j.error&&j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason});
+      L=(j.items||[]).filter(x=>x.id&&x.id.videoId).map(x=>({yt:x.id.videoId,name:unhtml(x.snippet.title),ch:unhtml(x.snippet.channelTitle||"")}));ytCache[q.toLowerCase()]=L}
+    ytRes=L;document.getElementById("ytTitle").textContent=L.length?"Resultados":"Sem resultados";renderYt();renderVideos()}
+  catch(e){ytRes=[];renderYt();document.getElementById("ytTitle").textContent=e.message==="offline"?"Sem ligação à internet":e.reason==="quotaExceeded"?"Hoje já se fizeram muitas pesquisas. Amanhã volta a dar.":"Não foi possível procurar. Tenta outra vez."}
+}
+document.getElementById("ytClose").addEventListener("click",()=>{ytRes=[];document.getElementById("ytBox").hidden=true;renderVideos()});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.dataset.video)playVideo(t.dataset.video);
+  else if(t.dataset.ytres)playYt(ytRes[+t.dataset.ytres]);
+  else if(t.dataset.savevideo){if(curYt){saveVideo(curYt);playYt(curYt);toast("Vídeo guardado")}}
   else if(t.dataset.closevideo)stopVideo();
   else if(t.dataset.delvideo){const v=videos().find(x=>x.id===t.dataset.delvideo);if(v&&confirm(`Apagar "${v.name}"?`)){stopVideo();delBill(v.id);renderVideos();toast("Vídeo apagado")}}
 });
 document.getElementById("videoForm").addEventListener("submit",async e=>{e.preventDefault();
-  const inp=document.getElementById("videoUrl"), yt=ytId(inp.value);
-  if(!yt){toast("Esse link não parece ser de um vídeo do YouTube.");return}
+  const inp=document.getElementById("videoUrl"), q=inp.value.trim(), yt=ytId(q);inp.blur();
+  if(!yt||!/youtu/i.test(q)){if(q)ytSearch(q);return}
+  /* Link colado: guarda logo e toca */
   const ex=videos().find(v=>v.yt===yt);if(ex){inp.value="";playVideo(ex.id);return}
   let name="Vídeo do YouTube";
   try{const ctl=new AbortController();setTimeout(()=>ctl.abort(),4000);
     const r=await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent("https://www.youtube.com/watch?v="+yt)}`,{signal:ctl.signal});
     if(r.ok){const j=await r.json();if(j&&j.title)name=String(j.title).slice(0,120)}}catch(err){}
-  const v={id:uid(),kind:"video",name,yt,added:Date.now(),...(myName()?{by:myName()}:{})};
-  inp.value="";putBill(v);playVideo(v.id);toast("Vídeo juntado");
+  const v=saveVideo({yt,name});inp.value="";playVideo(v.id);toast("Vídeo guardado");
 });
 
 /* ---------- Jogo de blocos (estilo Block Blast) ----------
