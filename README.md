@@ -25,6 +25,7 @@ firestore.rules           ← regras de segurança do Firestore
 - Cada pessoa entra com **nome de utilizador e PIN de 6 números**. Por trás é uma conta de e-mail do
   Firebase Authentication com um endereço interno (`<utilizador>@casa-martins.invalid`, que não recebe e-mails).
 - **Mudar o PIN:** ⚙️ → Conta → **Mudar PIN**.
+- **Face ID:** ⚙️ → Conta → **Face ID** (em cada telemóvel). Usa uma chave do próprio iPhone (WebAuthn) para pedir o Face ID ao abrir a app ou ao voltar depois de 3 minutos; "Entrar com o PIN" termina a sessão para entrar de novo.
 - **Esqueceu-se do PIN:** no GitHub, **Actions → Repor PIN → Run workflow**, escreve o nome de utilizador e toca em
   **Run workflow**. É gerado um PIN temporário que chega **por notificação** aos telemóveis da casa (só a quem tem as
   notificações ativas). O PIN nunca aparece nos registos do Actions, que são públicos. Depois entra-se com ele e muda-se na ⚙️.

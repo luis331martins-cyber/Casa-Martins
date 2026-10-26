@@ -212,10 +212,24 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 :root[data-icons="ios"] #tab-inicio .ico.ios{background:linear-gradient(180deg,var(--v1),var(--v2))}
 :root[data-icons="ios"] #tab-inicio .ico.ios::before{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%);box-shadow:inset 0 .5px 0 rgba(255,255,255,.35)}
 :root[data-icons="ios"] #tab-inicio .ico.ios svg.sf{filter:drop-shadow(0 .5px .5px rgba(0,0,0,.15))}
+#tab-inicio .ico.ios svg.sf>circle{fill:inherit}#tab-inicio .ico.ios svg.sf .tail{stroke:#fff}
+@media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf .tail{stroke:color-mix(in srgb,var(--v1) 70%,#fff)}}
+:root[data-icons="ios"][data-theme="dark"] #tab-inicio .ico.ios svg.sf .tail{stroke:color-mix(in srgb,var(--v1) 70%,#fff)}
+/* Modo escuro: como os ícones escuros do iOS 18 (fundo preto, símbolo com a cor da app) */
+@media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios{background:linear-gradient(180deg,#2c2c2e,#121214)!important;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.12)}
+:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf{fill:color-mix(in srgb,var(--v1) 70%,#fff)}}
+:root[data-icons="ios"][data-theme="dark"] #tab-inicio .ico.ios{background:linear-gradient(180deg,#2c2c2e,#121214)!important;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.12)}
+:root[data-icons="ios"][data-theme="dark"] #tab-inicio .ico.ios svg.sf{fill:color-mix(in srgb,var(--v1) 70%,#fff)}
 :root[data-icons="ios"] #tab-inicio .ico.ios svg.sf{display:block;width:40px;height:40px}
 :root[data-icons="ios"] #tab-inicio .ico.ios img.e3d{display:none}
 .app:active .ico.ios img.e3d{transform:scale(1.06) rotate(-4deg);transition:transform .15s}
 
+/* Bloqueio com Face ID */
+.biolock{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:var(--wall,var(--bg));background-color:var(--bg);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px)}
+.biolock .biobox{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:24px}
+.biolock svg{width:72px;height:72px;fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.biolock h2{margin:4px 0 0;font-size:24px;text-transform:none;letter-spacing:0;color:var(--fg)}.biolock p{margin:0;color:var(--muted)}
+.biolock .btn{min-width:220px}
 /* Chat da casa: botão no canto inferior direito do Início */
 .fabs{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:row;align-items:flex-end;gap:12px}
 #tab-inicio{padding-bottom:150px}
@@ -873,7 +887,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <button class="app" data-go="despesas"><span class="ico i-bill ios" style="--g1:#c6e6ff;--g2:#4aa3ff;--v1:#2463c4;--v2:#133d82"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mEur" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M15.9 8.3a4.8 4.8 0 1 0 0 7.4M6.9 10.8h6.6M6.9 13.2h6.6" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/></mask></defs><circle mask="url(#mEur)" cx="12" cy="12" r="9.6"/></svg><img class="e3d" src="icons/3d/despesas.webp" alt="" draggable="false"><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
         <button class="app" data-go="creditos"><span class="ico i-loan ios" style="--g1:#efe0cc;--g2:#c49a6c;--v1:#9a714a;--v2:#5f4128"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mBank" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="12" cy="6.3" r="1.1" fill="#000"/></mask></defs><path mask="url(#mBank)" d="M12 2.3 2.8 7.1v1.7h18.4V7.1z"/><rect x="3.4" y="9.6" width="17.2" height="1.3" rx=".3"/><rect x="4.9" y="11.6" width="2" height="6" rx=".4"/><rect x="8.97" y="11.6" width="2" height="6" rx=".4"/><rect x="13.03" y="11.6" width="2" height="6" rx=".4"/><rect x="17.1" y="11.6" width="2" height="6" rx=".4"/><rect x="3.4" y="18.2" width="17.2" height="1.4" rx=".3"/><rect x="2.4" y="20.1" width="19.2" height="1.6" rx=".4"/></svg><img class="e3d" src="icons/3d/creditos.webp" alt="" draggable="false"></span><span class="lbl">Créditos</span></button>
         <button class="app" data-go="cartoes"><span class="ico i-card ios" style="--g1:#d9d7ff;--g2:#7f78ff;--v1:#454a9e;--v2:#2a2d6b"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mCard" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="2" y="8.2" width="20" height="2.6" fill="#000"/><rect x="5" y="14.2" width="5.4" height="1.6" rx=".8" fill="#000"/><rect x="11.6" y="14.2" width="2.8" height="1.6" rx=".8" fill="#000"/></mask></defs><rect mask="url(#mCard)" x="2" y="5" width="20" height="14" rx="2.6"/></svg><img class="e3d" src="icons/3d/cartoes.webp" alt="" draggable="false"></span><span class="lbl">Cartões</span></button>
-        <button class="app" data-go="poupancas"><span class="ico i-save ios" style="--g1:#ffd6e6;--g2:#ff7aa8;--v1:#b8466f;--v2:#7e2547"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPig" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="16.9" cy="11.2" r=".95" fill="#000"/><path d="M9.6 8.8h3.8" stroke="#000" stroke-width="1.3" stroke-linecap="round"/></mask></defs><circle cx="11.6" cy="3.6" r="2"/><path mask="url(#mPig)" d="M18.8 9.4c.5-.9 1.3-1.5 2.2-1.7l-.3 2.6c.3.4.6.9.8 1.4h.9v3.1h-1.2c-.5 1-1.3 1.8-2.3 2.4v2.2a.8.8 0 0 1-.8.8h-1.7a.8.8 0 0 1-.8-.8v-1c-.8.2-1.6.3-2.5.3s-1.8-.1-2.6-.3v1a.8.8 0 0 1-.8.8H7.1a.8.8 0 0 1-.8-.8v-2.3c-1.6-1.1-2.5-2.6-2.5-4.4 0-3.6 3.7-6 8.3-6 2.8 0 5.2.9 6.7 2.7z"/><path d="M4 11.4c-1.2 0-1.9-.7-1.9-1.7" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg><img class="e3d" src="icons/3d/poupancas.webp" alt="" draggable="false"></span><span class="lbl">Poupanças</span></button>
+        <button class="app" data-go="poupancas"><span class="ico i-save ios" style="--g1:#ffd6e6;--g2:#ff7aa8;--v1:#b8466f;--v2:#7e2547"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPig" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="16.9" cy="11.2" r=".95" fill="#000"/><path d="M9.6 8.8h3.8" stroke="#000" stroke-width="1.3" stroke-linecap="round"/></mask></defs><circle cx="11.6" cy="3.6" r="2"/><path mask="url(#mPig)" d="M18.8 9.4c.5-.9 1.3-1.5 2.2-1.7l-.3 2.6c.3.4.6.9.8 1.4h.9v3.1h-1.2c-.5 1-1.3 1.8-2.3 2.4v2.2a.8.8 0 0 1-.8.8h-1.7a.8.8 0 0 1-.8-.8v-1c-.8.2-1.6.3-2.5.3s-1.8-.1-2.6-.3v1a.8.8 0 0 1-.8.8H7.1a.8.8 0 0 1-.8-.8v-2.3c-1.6-1.1-2.5-2.6-2.5-4.4 0-3.6 3.7-6 8.3-6 2.8 0 5.2.9 6.7 2.7z"/><path class="tail" d="M4 11.4c-1.2 0-1.9-.7-1.9-1.7" fill="none" stroke-width="1.4" stroke-linecap="round"/></svg><img class="e3d" src="icons/3d/poupancas.webp" alt="" draggable="false"></span><span class="lbl">Poupanças</span></button>
         <button class="app" data-go="docs"><span class="ico i-doc ios" style="--g1:#c9f4f7;--g2:#36c3d6;--v1:#1d8592;--v2:#105a64"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mDoc" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="8.3" cy="10.4" r="2.2" fill="#000"/><path d="M4.7 16.3c.6-1.9 2-2.9 3.6-2.9s3 1 3.6 2.9z" fill="#000"/><rect x="13.5" y="9.2" width="5.6" height="1.6" rx=".8" fill="#000"/><rect x="13.5" y="12.6" width="4" height="1.6" rx=".8" fill="#000"/></mask></defs><rect mask="url(#mDoc)" x="2" y="4.5" width="20" height="15" rx="2.6"/></svg><img class="e3d" src="icons/3d/docs.webp" alt="" draggable="false"></span><span class="lbl">Documentos</span></button>
       </div>
       <h3>Família e lazer</h3>
@@ -970,6 +984,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
         <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
       </div>
+      <div class="item" id="bioItem" hidden><div style="min-width:0"><div class="name">Face ID</div><div class="meta">Pede o Face ID (ou Touch ID) ao abrir a app neste telemóvel</div></div><label class="tick" style="margin:0"><input type="checkbox" class="switch" id="bioSw" aria-label="Bloquear com Face ID"></label></div>
       <div class="item"><div style="min-width:0"><div class="name">PIN</div><div class="meta">Muda o teu PIN de 6 números</div></div><button class="btn ghost" type="button" id="pinBtn">Mudar PIN</button></div>
       <form class="bill-edit" id="pinForm" hidden autocomplete="off">
         <label class="f wide">PIN atual<input name="o" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="current-password" required></label>
@@ -1368,6 +1383,11 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   </section>
 </div>
 
+<div id="bioLock" class="biolock" hidden role="dialog" aria-label="App bloqueada">
+  <div class="biobox"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16M8.5 8.5v1.5M15.5 8.5v1.5M12 8.5v4.5h-1M9 16c1.7 1.3 4.3 1.3 6 0"/></svg>
+    <h2>A nossa casa</h2><p id="bioMsg">Usa o Face ID para abrir</p>
+    <button class="btn" type="button" id="bioGo">Desbloquear</button>
+    <button class="back" type="button" id="bioPin">Entrar com o PIN</button></div></div>
 <div class="fabs" id="fabs" hidden>
 <button class="calfab" type="button" data-go="calendario" aria-label="Calendário"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></button>
 <button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c5 0 9 3.3 9 7.5s-4 7.5-9 7.5c-1 0-2-.1-2.9-.4-1.3 1-3 1.7-4.9 1.9.8-.8 1.4-1.8 1.6-2.9C3.9 15.8 3 13.6 3 11.1c0-4.2 4-7.5 9-7.5z"/></svg><b id="chatBadge" hidden></b></button>
@@ -3692,6 +3712,34 @@ document.addEventListener("pointerup",gDrop);document.addEventListener("pointerc
 document.getElementById("gNew").addEventListener("click",()=>{if(G&&G.score&&!G.over&&!confirm("Começar um jogo novo? Perdes os pontos deste."))return;gNew()});
 document.getElementById("gAgain").addEventListener("click",()=>gNew());
 
+/* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
+   Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
+   É um cadeado do ecrã: a sessão continua a ser a da conta com PIN, e "Entrar com o PIN" termina a sessão para entrar de novo. */
+const BIO_KEY="casa-bio", b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),
+  unb64u=t=>Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((t.length+3)%4)),c=>c.charCodeAt(0)), rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+const bioId=()=>{try{return localStorage.getItem(BIO_KEY)||""}catch(e){return""}};
+let bioHiddenAt=0, bioBusy=false;
+async function bioAvailable(){try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}
+function bioShow(){if(!bioId())return;document.getElementById("bioLock").hidden=false;document.getElementById("bioMsg").textContent="Usa o Face ID para abrir"}
+async function bioUnlock(){if(bioBusy)return;bioBusy=true;
+  try{await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:"public-key",id:unb64u(bioId()),transports:["internal"]}],userVerification:"required",timeout:60000}});
+    document.getElementById("bioLock").hidden=true}
+  catch(e){document.getElementById("bioMsg").textContent="Não foi possível confirmar. Toca em Desbloquear para tentar outra vez."}
+  finally{bioBusy=false}}
+async function bioEnable(){
+  try{const c=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:"A nossa casa",id:location.hostname},
+      user:{id:rnd(16),name:myName()||"casa",displayName:myName()||"A nossa casa"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
+    localStorage.setItem(BIO_KEY,b64u(c.rawId));toast("Face ID ligado neste telemóvel");return true}
+  catch(e){toast("Não foi possível ligar o Face ID");return false}}
+document.getElementById("bioSw").addEventListener("change",async e=>{const sw=e.target;
+  if(sw.checked){sw.checked=await bioEnable()}else{try{localStorage.removeItem(BIO_KEY)}catch(err){}toast("Face ID desligado")}});
+document.getElementById("bioGo").addEventListener("click",bioUnlock);
+document.getElementById("bioPin").addEventListener("click",async()=>{try{localStorage.removeItem(BIO_KEY)}catch(e){}document.getElementById("bioLock").hidden=true;
+  document.getElementById("bioSw").checked=false;if(fb&&fb.logout){try{await fb.logout()}catch(e){}}location.reload()});
+document.addEventListener("visibilitychange",()=>{if(!bioId())return;if(document.hidden)bioHiddenAt=Date.now();else if(bioHiddenAt&&Date.now()-bioHiddenAt>180000){bioShow();bioUnlock()}});
+bioAvailable().then(ok=>{document.getElementById("bioItem").hidden=!ok;document.getElementById("bioSw").checked=!!bioId()});
+if(bioId()){bioShow();bioUnlock()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
 safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
@@ -3752,7 +3800,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v91";
+const APPV="casa-v92";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
