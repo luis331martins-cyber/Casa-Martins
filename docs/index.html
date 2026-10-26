@@ -578,7 +578,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <button class="nav-m gear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </header>
     <button type="button" class="agenda" id="agenda" data-go="calendario" aria-label="Agenda: abrir o calendário"></button>
-    <div class="group" style="gap:8px">
+    <div class="group" style="gap:8px" id="alertSec">
       <h2>Alertas</h2>
       <div id="alerts" class="group"></div>
     </div>
@@ -1581,16 +1581,14 @@ function renderCal(){
 function renderAlerts(){
   const todayS=ymd(now), tm=new Date(now); tm.setDate(tm.getDate()+1); const tomS=ymd(tm);
   const A=[];
-  const evs=events.filter(e=>evOn(e,todayS)||e.date===tomS).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
-  evs.forEach(e=>{const on=evOn(e,todayS), day=on?todayS:tomS;A.push({o:on?1:3,cls:"",dot:"ev",go:"calendario",day,name:e.title,
-    meta:(on?"Hoje":"Amanhã")+(e.time&&e.date===day?" às "+e.time:"")+(evSpan(e)?" · "+evSpan(e,day):"")})});
+  /* As marcações aparecem no cartão Agenda; os alertas são só o que precisa de ação agora */
   const mk=todayS.slice(0,7), last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), td=now.getDate();
   if(mk>=START)contas().filter(isBud).forEach(b=>{const sp=spentOf(b,mk), lim=monthAmt(b,mk);
     if(lim&&sp>lim)A.push({o:2,cls:"warn",dot:"bad",go:"despesas",name:`${b.name}: acima do orçamento`,meta:`Gasto ${eur(sp)} de ${eur(lim)}`});});
   if(mk>=START)fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
     const v=eur(monthAmt(b,mk));
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
-    else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto dia "+d:d===td?"Vence hoje":"Vence dia "+d} · ${v}`});});
+    else if(d===td)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto hoje":"Vence hoje"} · ${v}`});});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
@@ -1601,6 +1599,7 @@ function renderAlerts(){
   const toBuy=items.filter(i=>i.lvl<2).length;
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
+  document.getElementById("alertSec").hidden=!A.length;
   document.getElementById("alerts").innerHTML=A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
   const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
