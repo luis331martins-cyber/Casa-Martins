@@ -2,7 +2,7 @@
 <html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Despensa de Casa</title>
 <meta name="description" content="Despensa, carne e peixe, lista de compras, contas mensais e agenda da casa, partilhadas entre o casal.">
 <link rel="manifest" href="manifest.json">
@@ -18,6 +18,9 @@
 /* Base: margens das zonas seguras do iPhone (notch e barra inferior) */
 :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
+/* Sem zoom: nada de duplo toque a aumentar e campos com 16px (o iPhone aumenta os campos com letra mais pequena) */
+html,body{touch-action:manipulation}
+input,select,textarea{font-size:max(16px,1em)!important}
 body{margin:0}
 img{max-width:100%}
 [hidden]:not([hidden=until-found i]){display:none!important}
@@ -1117,6 +1120,8 @@ function showFatal(msg){try{let el=document.getElementById("fatal");
     el.addEventListener("click",()=>el.remove());document.body.appendChild(el);el.textContent="A app encontrou um erro. Tira uma captura deste aviso e envia-a. (Toca para fechar.)\n"}
   el.textContent+="\n• "+String(msg).slice(0,400)}catch(e){}}
 /* "Script error." sem ficheiro vem de scripts de fora (ex.: o browser dentro de outra app), não da nossa: ignora */
+/* iPhone: impede o zoom com dois dedos (o duplo toque já fica desligado pelo touch-action) */
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 addEventListener("error",e=>{if(/^Script error\.?$/i.test(e.message||"")&&!e.filename)return;showFatal((e.message||"Erro")+(e.lineno?` (linha ${e.lineno}:${e.colno})`:""))});
 addEventListener("unhandledrejection",e=>{const r=e.reason;showFatal(r&&(r.code?r.code+": ":"")+(r&&r.message||r))});
 /* Corre uma parte da app sem deixar que um erro nela impeça o resto de abrir */
