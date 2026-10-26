@@ -442,6 +442,13 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loan.done{--bk:#8e8e93}
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
+.i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
+/* Snake */
+#sCanvas{display:block;width:100%;max-width:420px;aspect-ratio:1;margin:0 auto;border-radius:16px;background:#1c2b22;touch-action:none}
+.spad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:8px;justify-content:center;user-select:none;-webkit-user-select:none}
+.spad button{border-radius:14px;background:var(--surface);color:var(--fg);font-size:24px;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.12);touch-action:manipulation}
+.spad button:active{background:var(--fill)}
+.spad [data-dir=up]{grid-column:2}.spad [data-dir=left]{grid-column:1;grid-row:2}.spad [data-dir=down]{grid-column:2;grid-row:2}.spad [data-dir=right]{grid-column:3;grid-row:2}
 #medToday,#medList,#videoList{gap:0}
 .dose{display:grid;grid-template-columns:auto auto 1fr;gap:12px;align-items:center;background:var(--surface);padding:11px 16px;position:relative}
 .dose .t{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px}
@@ -577,6 +584,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <div class="apps">
         <button class="app" data-go="videos"><span class="ico i-vid"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="4"/><path d="M10.5 9.5v5l4.2-2.5z" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Vídeos</span></button>
         <button class="app" data-go="jogo"><span class="ico i-game"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/></svg></span><span class="lbl">Blocos</span></button>
+        <button class="app" data-go="snake"><span class="ico i-snake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7" style="fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round"/><circle cx="18.5" cy="6" r="2" style="fill:#ff5a5a;stroke:none"/></svg></span><span class="lbl">Snake</span></button>
       </div>
     </div>
   </section>
@@ -784,6 +792,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <div id="tray" class="tray"></div>
     <p class="note" style="margin:0;text-align:center">Arrasta as peças para o tabuleiro. Completa linhas ou colunas para as limpar.</p>
     <div id="gOver" class="gover" hidden><div class="gover-box"><h2>Fim do jogo</h2><p id="gOverTxt"></p><button class="btn" type="button" id="gAgain">Jogar outra vez</button></div></div>
+  </section>
+
+  <section id="tab-snake" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Snake</span><span></span></nav>
+    <h1 class="large">Snake</h1>
+    <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="sScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="sBest">0</div><div class="note" id="sBestBy"></div></div><button class="btn ghost" type="button" id="sNew">Novo jogo</button></div>
+    <canvas id="sCanvas" width="540" height="540" aria-label="Jogo da cobra"></canvas>
+    <div class="spad"><button type="button" data-dir="up" aria-label="Cima">▲</button><button type="button" data-dir="left" aria-label="Esquerda">◀</button><button type="button" data-dir="down" aria-label="Baixo">▼</button><button type="button" data-dir="right" aria-label="Direita">▶</button></div>
+    <p class="note" style="margin:0;text-align:center">Desliza o dedo no tabuleiro ou usa as setas. Come as maçãs e não batas na cauda nem nas paredes.</p>
   </section>
 
   <section id="tab-comer" class="group" style="gap:16px" hidden>
@@ -1048,11 +1065,11 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
-  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogo","snake","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1359,7 +1376,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Snake",sRenderBest)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1929,6 +1946,56 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id
   const l={...(old||{}),id:old?old.id:uid(),kind:"loan",name:f.n.value.trim(),pay:num(f.p.value)||0,day:Math.min(31,Math.max(1,parseInt(f.d.value)||1)),first,last};
   for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null]])if(v==null)delete l[k];else l[k]=v;
   editLoan="";putBill(l);renderLoans();toast("Crédito guardado")});
+
+/* ---------- Snake ----------
+   Grelha 18×18; acelera à medida que come. O recorde é partilhado (kind:"game", id "snake-recorde"). */
+const SN=18;let S=null, sTimer=0, sQueue=[];
+const sDirs={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+function sShared(){return bills.find(b=>b.id==="snake-recorde")}
+function sBest(){let l=0;try{l=+localStorage.getItem("casa-snake-best")||0}catch(e){}const x=sShared();return{best:Math.max(l,x?+x.best||0:0),by:x&&(+x.best||0)>=l?x.by:""}}
+function sRenderBest(){const el=document.getElementById("sBest");if(!el)return;const b=sBest();el.textContent=b.best;document.getElementById("sBestBy").textContent=b.by?"de "+b.by:""}
+function sFood(){const free=[];for(let x=0;x<SN;x++)for(let y=0;y<SN;y++)if(!S.body.some(p=>p[0]===x&&p[1]===y))free.push([x,y]);return free[Math.floor(Math.random()*free.length)]}
+function sNew(){S={body:[[8,9],[7,9],[6,9]],dir:"right",score:0,state:"ready"};S.food=sFood();sQueue=[];clearTimeout(sTimer);sDraw()}
+function sSpeed(){return Math.max(70,160-S.score*4)}
+function sStep(){if(!S||S.state!=="play")return;
+  const nd=sQueue.shift();if(nd)S.dir=nd;
+  const [dx,dy]=sDirs[S.dir], h=S.body[0], n=[h[0]+dx,h[1]+dy];
+  const eat=n[0]===S.food[0]&&n[1]===S.food[1], body=eat?S.body:S.body.slice(0,-1);
+  if(n[0]<0||n[1]<0||n[0]>=SN||n[1]>=SN||body.some(p=>p[0]===n[0]&&p[1]===n[1]))return sEnd();
+  S.body=[n,...body];if(eat){S.score++;S.food=sFood();if(navigator.vibrate)navigator.vibrate(15)}
+  sDraw();sTimer=setTimeout(sStep,sSpeed())}
+function sEnd(){S.state="over";const b=sBest(), rec=S.score>b.best&&S.score>0;
+  if(rec){try{localStorage.setItem("casa-snake-best",S.score)}catch(e){}
+    const x=sShared();putBill({...(x||{}),id:"snake-recorde",kind:"game",name:"Recorde do Snake",best:S.score,...(myName()?{by:myName()}:{})})}
+  S.msg=`${S.score} pontos`+(rec?" · Novo recorde! 🎉":"");sDraw();sRenderBest()}
+function sTurn(d){if(!S)return;if(S.state!=="play"){if(S.state==="over")sNew();S.state="play";S.msg="";sQueue=[d==="left"&&S.dir==="right"?"right":d];clearTimeout(sTimer);sTimer=setTimeout(sStep,sSpeed());return}
+  const last=sQueue.length?sQueue[sQueue.length-1]:S.dir, [lx,ly]=sDirs[last], [dx,dy]=sDirs[d];
+  if(lx===-dx&&ly===-dy||last===d||sQueue.length>2)return;sQueue.push(d)}
+function sDraw(){const cv=document.getElementById("sCanvas");if(!cv||!S)return;const g=cv.getContext("2d"), c=cv.width/SN;
+  g.fillStyle="#1c2b22";g.fillRect(0,0,cv.width,cv.height);
+  g.fillStyle="#22352a";for(let x=0;x<SN;x++)for(let y=0;y<SN;y++)if((x+y)%2)g.fillRect(x*c,y*c,c,c);
+  g.fillStyle="#ff5a5a";g.beginPath();g.arc((S.food[0]+.5)*c,(S.food[1]+.5)*c,c*.38,0,7);g.fill();
+  g.fillStyle="#6bd16b";g.fillRect((S.food[0]+.48)*c,(S.food[1]+.02)*c,c*.08,c*.22);
+  S.body.forEach((p,i)=>{const t=i/Math.max(1,S.body.length-1);g.fillStyle=`hsl(${130-t*20},${70-t*15}%,${58-t*18}%)`;
+    const m=c*.06;g.beginPath();if(g.roundRect)g.roundRect(p[0]*c+m,p[1]*c+m,c-2*m,c-2*m,c*.28);else g.rect(p[0]*c+m,p[1]*c+m,c-2*m,c-2*m);g.fill()});
+  const h=S.body[0],[dx,dy]=sDirs[S.dir];g.fillStyle="#102015";
+  for(const k of[-1,1]){const ex=(h[0]+.5+dx*.18+(dy?k*.2:0))*c, ey=(h[1]+.5+dy*.18+(dx?k*.2:0))*c;g.beginPath();g.arc(ex,ey,c*.08,0,7);g.fill()}
+  document.getElementById("sScore").textContent=S.score;
+  if(S.state!=="play"){g.fillStyle="rgba(0,0,0,.45)";g.fillRect(0,0,cv.width,cv.height);g.fillStyle="#fff";g.textAlign="center";
+    g.font="700 40px -apple-system,system-ui,sans-serif";g.fillText(S.state==="over"?"Fim do jogo":S.state==="pause"?"Em pausa":"Snake",cv.width/2,cv.height/2-14);
+    g.font="500 24px -apple-system,system-ui,sans-serif";g.fillText(S.msg||(S.state==="over"?"":"Desliza ou toca numa seta para começar"),cv.width/2,cv.height/2+26);
+    if(S.state==="over")g.fillText("Toca numa seta para jogar outra vez",cv.width/2,cv.height/2+62)}}
+function sOpen(){if(!S)sNew();sRenderBest();sDraw()}
+function sPause(){if(S&&S.state==="play"){clearTimeout(sTimer);S.state="pause";S.msg="Toca numa seta para continuar";sDraw()}}
+document.getElementById("sNew").addEventListener("click",()=>{sNew();sRenderBest()});
+document.querySelector(".spad").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-dir]");if(b){e.preventDefault();sTurn(b.dataset.dir)}});
+(()=>{const cv=document.getElementById("sCanvas");let x0=0,y0=0,on=false;
+  cv.addEventListener("pointerdown",e=>{x0=e.clientX;y0=e.clientY;on=true});
+  cv.addEventListener("pointermove",e=>{if(!on)return;const dx=e.clientX-x0,dy=e.clientY-y0;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+    sTurn(Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up"));x0=e.clientX;y0=e.clientY});
+  ["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>on=false))})();
+document.addEventListener("keydown",e=>{if(document.getElementById("tab-snake").hidden)return;const k={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"}[e.key];if(k){e.preventDefault();sTurn(k)}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)sPause()});
 
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
