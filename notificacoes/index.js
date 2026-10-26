@@ -133,7 +133,7 @@ async function house(code, now) {
   const ref = db.doc(`households/${code}/sent/estado`);
   const snap = await ref.get();
   const first = !snap.exists;
-  const st = {resumo: "", vistos: [], lembrados: [], ...(snap.exists ? snap.data() : {})};
+  const st = {resumo: "", vistos: [], lembrados: [], meds: [], ...(snap.exists ? snap.data() : {})};
 
   /* Só as marcações de hoje em diante: as que contam para lembretes e para "nova marcação". */
   const evSnap = await db.collection(`households/${code}/events`).where("date", ">=", now.date).get();
@@ -172,6 +172,25 @@ async function house(code, now) {
       go: "calendario", tag: "ev-" + e.id}));
   }
 
+  /* Medicamentos: à hora de cada toma (até 45 min depois, por causa dos atrasos do GitHub), se ainda não foi marcada */
+  const medSnap = await db.collection(`households/${code}/bills`).where("kind", "==", "med").get();
+  const medsSent = new Set((st.meds || []).filter((k) => k.split("|")[1] === now.date));
+  for (const d of medSnap.docs) {
+    const m = d.data();
+    if ((m.start && m.start > now.date) || (m.end && m.end < now.date)) continue;
+    for (const t of m.times || []) {
+      if (!/^\d{2}:\d{2}$/.test(t)) continue;
+      const [hh, mm] = t.split(":").map(Number);
+      const late = now.min - (hh * 60 + mm);
+      const key = `${d.id}|${now.date}|${t}`;
+      if (late < 0 || late > 45 || medsSent.has(key)) continue;
+      if (((m.taken || {})[now.date] || []).includes(t)) continue;
+      medsSent.add(key);
+      jobs.push(() => send(code, {title: `💊 ${m.who ? m.who + ": " : ""}${m.name}`,
+        body: `Toma das ${t}${m.dose ? " · " + m.dose : ""}${m.notes ? " · " + m.notes : ""}`, go: "medicamentos", tag: "med-" + key}));
+    }
+  }
+
   /* Resumo diário: a partir das 9h, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
   let resumo = st.resumo;
   if (resumo !== now.date && now.min >= 9 * 60 && now.min < 21 * 60) {
@@ -179,7 +198,7 @@ async function house(code, now) {
     jobs.push(() => morning(code, now));
   }
 
-  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], at: new Date()});
+  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], at: new Date()});
   for (const job of jobs) await job();
 }
 

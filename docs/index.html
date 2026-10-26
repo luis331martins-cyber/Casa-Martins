@@ -372,6 +372,44 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 @media (prefers-color-scheme: dark){.wall[data-wall="jardim"] i{background:radial-gradient(at 12% 8%,#123326 0,transparent 55%),radial-gradient(at 92% 18%,#10243a 0,transparent 50%),radial-gradient(at 70% 92%,#1c2c12 0,transparent 55%),#050807}.wall[data-wall="manha"] i{background:radial-gradient(at 10% 10%,#3d2017 0,transparent 55%),radial-gradient(at 90% 25%,#3a1a2e 0,transparent 50%),radial-gradient(at 50% 95%,#231d40 0,transparent 60%),#0a0709}.wall[data-wall="oceano"] i{background:radial-gradient(at 15% 10%,#0b2a40 0,transparent 55%),radial-gradient(at 85% 30%,#0a3330 0,transparent 50%),radial-gradient(at 40% 95%,#151d40 0,transparent 60%),#05080b}.wall[data-wall="sol"] i{background:radial-gradient(at 10% 8%,#40240f 0,transparent 55%),radial-gradient(at 90% 30%,#3e1520 0,transparent 50%),radial-gradient(at 50% 95%,#372b0b 0,transparent 60%),#0a0705}.wall[data-wall="classico"] i{background:#000}}
 
 .i-food{background:linear-gradient(160deg,#b27cf2,#7a45d6)}
+.i-med{background:linear-gradient(160deg,#5ad1c4,#1f9a8f)}
+.i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
+.i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
+#medToday,#medList,#videoList{gap:0}
+.dose{display:grid;grid-template-columns:auto auto 1fr;gap:12px;align-items:center;background:var(--surface);padding:11px 16px;position:relative}
+.dose .t{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px}
+.dose.done .t,.dose.done .name{color:var(--muted)}
+.dose.late .t{color:var(--bad)}
+#medToday>.dose:first-child,#videoList>.vrow:first-child{border-top-left-radius:12px;border-top-right-radius:12px}
+#medToday>.dose:last-child,#videoList>.vrow:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+#medToday>.dose:not(:last-child)::after,#videoList>.vrow:not(:last-child)::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line)}
+.vrow{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;background:var(--surface);padding:10px 16px;position:relative;width:100%;text-align:left;color:var(--fg);font:inherit;border-radius:0}
+.vrow img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:var(--fill)}
+.vrow .name{font-size:15px;font-weight:500;overflow-wrap:anywhere}
+.vrow.cur{background:var(--accent-soft)}
+#player{display:flex;flex-direction:column;gap:8px}
+#player .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+#player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.gamebar{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center}
+.gamebar .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.gamebar .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.board{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;background:var(--surface);border-radius:14px;padding:6px;touch-action:none;user-select:none;-webkit-user-select:none}
+.cell{aspect-ratio:1;border-radius:5px;background:var(--fill)}
+.cell.on{box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.35)}
+.cell.ghost{opacity:.45}
+.cell.bad{background:var(--bad-soft)!important}
+.cell.clear{animation:clr .3s ease-out}
+@keyframes clr{to{transform:scale(.2);opacity:0}}
+.tray{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-height:110px;align-items:center;justify-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.piece{display:grid;gap:2px;touch-action:none;cursor:grab;padding:8px}
+.piece.used{visibility:hidden}
+.piece.nofit{opacity:.35}
+.piece i,.drag i{display:block;border-radius:4px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.35)}
+.piece i.e,.drag i.e{background:transparent!important;box-shadow:none}
+.drag{position:fixed;z-index:20;display:grid;gap:3px;pointer-events:none;opacity:.9}
+.times{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gover{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.35);display:grid;place-items:center;padding:20px}
+.gover-box{background:var(--surface);border-radius:16px;padding:20px;text-align:center;display:flex;flex-direction:column;gap:12px;min-width:240px}
 #meals{gap:0}
 .meal{background:var(--surface);display:flex;flex-direction:column;gap:8px}
 .meal .bname{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;width:100%}
@@ -455,10 +493,16 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
         <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
       <button class="app" data-go="comer"><span class="ico i-food"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10M17 21V3c-2.4 1.5-3.3 4.4-3.3 7.4 0 1.8 1.1 2.9 3.3 2.9"/></svg></span><span class="lbl">O que comer</span></button>
       </div>
-      <h3>Contas e agenda</h3>
+      <h3>Casa e família</h3>
       <div class="apps">
         <button class="app" data-go="despesas"><span class="ico i-bill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4 10.5h9M4 13.5h9"/></svg><span class="nbadge" id="billBadge" hidden></span></span><span class="lbl">Contas</span></button>
         <button class="app" data-go="calendario"><span class="ico i-cal"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></span><span class="lbl">Calendário</span></button>
+        <button class="app" data-go="meds"><span class="ico i-med"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
+      </div>
+      <h3>Lazer</h3>
+      <div class="apps">
+        <button class="app" data-go="videos"><span class="ico i-vid"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="4"/><path d="M10.5 9.5v5l4.2-2.5z" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Vídeos</span></button>
+        <button class="app" data-go="jogo"><span class="ico i-game"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/></svg></span><span class="lbl">Blocos</span></button>
       </div>
     </div>
   </section>
@@ -591,6 +635,45 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     </div>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
+  </section>
+
+  <section id="tab-meds" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Medicamentos</span><span></span></nav>
+    <h1 class="large">Medicamentos</h1>
+    <div class="seg" role="group" aria-label="Pessoa" id="medWho" style="align-self:flex-start"></div>
+    <div class="group" style="gap:8px">
+      <h2 id="medTodayTitle">Hoje</h2>
+      <div id="medToday" class="group"></div>
+    </div>
+    <div class="group" style="gap:8px">
+      <h2>Medicamentos</h2>
+      <div id="medList" class="group"></div>
+      <button class="btn ghost" type="button" id="addMed">+ Juntar medicamento</button>
+      <div id="medNew"></div>
+    </div>
+    <p class="note" style="margin:0">Marca cada toma quando for tomada. Se puseres o stock, a app desconta uma dose em cada toma e avisa quando estiver a acabar. As notificações chegam à hora de cada toma (pode haver uns minutos de atraso).</p>
+  </section>
+
+  <section id="tab-videos" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Vídeos</span><span></span></nav>
+    <h1 class="large">Vídeos</h1>
+    <div id="player" hidden></div>
+    <form class="add" id="videoForm" autocomplete="off">
+      <input id="videoUrl" placeholder="Cola aqui o link do YouTube" aria-label="Link do YouTube" inputmode="url" autocapitalize="off" autocorrect="off" required>
+      <button class="btn" type="submit">Juntar</button>
+    </form>
+    <div id="videoList" class="group"></div>
+    <p class="note" style="margin:0">No YouTube, toca em <b>Partilhar → Copiar ligação</b> e cola aqui. Os vídeos ficam guardados para os dois e abrem dentro da app.</p>
+  </section>
+
+  <section id="tab-jogo" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Blocos</span><span></span></nav>
+    <h1 class="large">Blocos</h1>
+    <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="gScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="gBest">0</div><div class="note" id="gBestBy"></div></div><button class="btn ghost" type="button" id="gNew">Novo jogo</button></div>
+    <div id="board" class="board" aria-label="Tabuleiro"></div>
+    <div id="tray" class="tray"></div>
+    <p class="note" style="margin:0;text-align:center">Arrasta as peças para o tabuleiro. Completa linhas ou colunas para as limpar.</p>
+    <div id="gOver" class="gover" hidden><div class="gover-box"><h2>Fim do jogo</h2><p id="gOverTxt"></p><button class="btn" type="button" id="gAgain">Jogar outra vez</button></div></div>
   </section>
 
   <section id="tab-comer" class="group" style="gap:16px" hidden>
@@ -854,10 +937,11 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals)}
+function show(tab){["login","setup","inicio","definicoes","despensa","carne","lista","comer","meds","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="videos")safe("Vídeos",renderVideos)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -964,6 +1048,7 @@ function renderMeals(){
       ${open?`<div class="ings">${[...r.req.map(g=>[g,0]),...r.opt.map(g=>[g,1])].map(([g,o])=>{const ok=!!findIngr(g);return `<span class="ing${ok?"":" no"}">${ok?"✓":"✗"} ${esc(g.label)}${o?" (opcional)":""}</span>`}).join("")}</div>
       ${r.steps.length?`<ol class="steps">${r.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
       ${r.miss.length?`<button class="btn ghost" type="button" data-buymeal="${esc(key)}">Pôr o que falta nas compras (${r.miss.length})</button>`:""}
+      <a class="back" style="align-self:flex-start" href="https://www.youtube.com/results?search_query=${encodeURIComponent("receita "+r.name)}" target="_blank" rel="noopener">▶ Ver receita no YouTube</a>
       ${r.id?`<button class="back" type="button" data-editrecipe="${r.id}" style="align-self:flex-start">Editar ${esc(r.name)}</button>`:""}`:""}
     </div>`}).join(""):`<div class="empty">Ainda não há ideias com o que tens em casa.<br>Junta produtos na Despensa e em Carne e Peixe (ovos, arroz, massa, frango…).</div>`;
 }
@@ -1162,6 +1247,7 @@ function renderBills(){
     </div>`).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1343,6 +1429,11 @@ function renderAlerts(){
     else if(d-td<=3)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto dia "+d:d===td?"Vence hoje":"Vence dia "+d} · ${v}`});});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
+  /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
+  let medLate=0;if(typeof dosesToday==="function"){const nm=minsNow();
+    dosesToday("").forEach(({m,t,done})=>{if(!done&&tMin(t)<nm){medLate++;A.push({o:1,cls:"warn",dot:"bad",go:"meds",name:`${m.who}: ${m.name}`,meta:`Toma das ${t} por tomar${m.dose?" · "+m.dose:""}`})}});
+    meds().filter(m=>m.stock!=null&&m.stock<=5&&medActive(m,todayS)).forEach(m=>A.push({o:3,cls:"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`Restam ${m.stock} dose${m.stock===1?"":"s"} (${m.who})`}))}
+  const mdb=document.getElementById("medBadge");if(mdb){mdb.hidden=!medLate;mdb.textContent=medLate}
   const toBuy=items.filter(i=>i.lvl<2).length;
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
@@ -1519,6 +1610,177 @@ document.getElementById("leaveHouse").addEventListener("click",async()=>{
   ["casa-codigo","casa-push",local.key,billLocal.key,evLocal.key].forEach(k=>ls.set(k,""));
   location.reload();
 });
+
+
+/* ---------- Medicamentos (Luís, Bianca e Maria) ----------
+   Na coleção "bills" com kind:"med": {name, who, dose, times:["08:00"], start, end, stock, notes, taken:{"AAAA-MM-DD":["08:00"]}} */
+var PEOPLE=["Luís","Bianca","Maria"], medWho="", editMed="";
+function meds(){return bills.filter(b=>b.kind==="med")}
+function medActive(m,d){return(!m.start||m.start<=d)&&(!m.end||m.end>=d)}
+function minsNow(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+function tMin(t){const [h,m]=String(t||"0:0").split(":").map(Number);return h*60+(m||0)}
+function dosesToday(who){const d=ymd(now), L=[];
+  meds().filter(m=>medActive(m,d)&&(!who||m.who===who)).forEach(m=>(m.times||[]).forEach(t=>L.push({m,t,done:((m.taken||{})[d]||[]).includes(t)})));
+  return L.sort((a,b)=>a.t.localeCompare(b.t)||String(a.m.who).localeCompare(String(b.m.who),"pt"))}
+function medForm(m){const id=m?m.id:"new", times=m?(m.times||[]):["08:00"];return `<form class="bill-edit" data-medform="${id}" autocomplete="off">
+    <label class="f wide">Para quem<input name="w" required value="${esc(m?m.who:(medWho||""))}" placeholder="ex.: Maria" autocapitalize="words"></label>
+    <div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-medwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+    <label class="f wide">Medicamento<input name="n" required value="${m?esc(m.name):""}" placeholder="ex.: Ben-u-ron" autocapitalize="sentences"></label>
+    <label class="f wide">Dose<input name="d" value="${m?esc(m.dose||""):""}" placeholder="ex.: 1 comprimido, 5 ml"></label>
+    <label class="f wide">Horários<span class="times">${[0,1,2,3].map(i=>`<input type="time" name="t${i}" value="${times[i]||""}" aria-label="Horário ${i+1}">`).join("")}</span></label>
+    <label class="f">Início<input type="date" name="s" value="${m?(m.start||""):ymd(now)}"></label>
+    <label class="f">Fim (opcional)<input type="date" name="e" value="${m?(m.end||""):""}"></label>
+    <label class="f wide">Stock: doses que restam (opcional)<input type="number" name="k" min="0" step="1" inputmode="numeric" value="${m&&m.stock!=null?m.stock:""}" placeholder="ex.: 20"></label>
+    <label class="f wide">Notas<input name="o" value="${m?esc(m.notes||""):""}" placeholder="ex.: depois do pequeno-almoço"></label>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cancelmed="1">Cancelar</button>
+    ${m?`<button class="btn danger wide" type="button" data-delmed="${m.id}">Apagar ${esc(m.name)}</button>`:""}
+  </form>`}
+function renderMeds(){
+  const box=document.getElementById("medToday");if(!box)return;
+  const whos=[...new Set([...PEOPLE,...meds().map(m=>m.who).filter(Boolean)])];
+  document.getElementById("medWho").innerHTML=[["","Todos"],...whos.map(w=>[w,w])].map(([v,l])=>`<button type="button" data-medfilter="${esc(v)}" aria-pressed="${medWho===v}">${esc(l)}</button>`).join("");
+  const nm=minsNow(), L=dosesToday(medWho);
+  document.getElementById("medTodayTitle").textContent="Hoje"+(medWho?" · "+medWho:"");
+  box.innerHTML=L.length?L.map(({m,t,done})=>{const late=!done&&tMin(t)<nm;return `<label class="dose${done?" done":""}${late?" late":""}">
+      <input type="checkbox" data-take="${m.id}|${t}" ${done?"checked":""} aria-label="${esc(m.name)} às ${t} tomado">
+      <span class="t">${t}</span>
+      <span style="min-width:0"><span class="name" style="display:block">${esc(m.who)} · ${esc(m.name)}</span><span class="meta" style="font-size:15px;color:${late?"var(--bad)":"var(--muted)"}">${esc(m.dose||"")}${done?(m.dose?" · ":"")+"Tomado":late?(m.dose?" · ":"")+"Por tomar":""}</span></span>
+    </label>`}).join(""):`<div class="empty">Nada para tomar hoje${medWho?" ("+esc(medWho)+")":""}.</div>`;
+  const list=meds().filter(m=>!medWho||m.who===medWho).sort((a,b)=>String(a.who).localeCompare(String(b.who),"pt")||a.name.localeCompare(b.name,"pt"));
+  const fmtD=d=>new Date(d+"T00:00").toLocaleDateString("pt-PT",{day:"numeric",month:"short"});
+  document.getElementById("medList").innerHTML=list.length?list.map(m=>{if(m.id===editMed)return medForm(m);
+    const d=ymd(now), st=!medActive(m,d)?(m.start>d?"começa a "+fmtD(m.start):"terminou"):m.end?"até "+fmtD(m.end):"contínuo";
+    const low=m.stock!=null&&m.stock<=5;
+    return `<div class="item"><button type="button" class="bname" data-editmed="${m.id}" aria-label="Editar ${esc(m.name)}"><div class="name">${esc(m.name)} <span class="tag">${esc(m.who)}</span></div>
+      <div class="meta">${[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${m.stock}</span>`:""}${m.notes?"<br>"+esc(m.notes):""}</div></button></div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
+  document.getElementById("medNew").innerHTML=editMed==="new"?medForm(null):"";
+  document.getElementById("addMed").hidden=editMed==="new";
+}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.medfilter!==undefined){medWho=t.dataset.medfilter;renderMeds()}
+  else if(t.id==="addMed"){editMed="new";renderMeds();const f=document.querySelector("[data-medform=new] [name=n]");if(f)f.focus()}
+  else if(t.dataset.editmed){editMed=t.dataset.editmed;renderMeds()}
+  else if(t.dataset.cancelmed){editMed="";renderMeds()}
+  else if(t.dataset.medwho){const f=t.closest("form");if(f)f.w.value=t.dataset.medwho}
+  else if(t.dataset.delmed){const m=meds().find(x=>x.id===t.dataset.delmed);if(m&&confirm(`Apagar "${m.name}" (${m.who})?`)){editMed="";delBill(m.id);renderMeds();toast(m.name+" apagado")}}
+});
+document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.dataset.take;if(!v)return;
+  const [id,t]=v.split("|"), m=meds().find(x=>x.id===id);if(!m)return;
+  const d=ymd(now), taken={};Object.entries(m.taken||{}).forEach(([k,a])=>{if(k>=ymd(new Date(Date.now()-30*864e5)))taken[k]=a});
+  const day=new Set(taken[d]||[]), was=day.has(t);if(e.target.checked)day.add(t);else day.delete(t);taken[d]=[...day];
+  const nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,m.stock+(e.target.checked?-1:1));
+  putBill(nm);renderMeds();if(e.target.checked)toast(`${m.who}: ${m.name} tomado`);
+});
+document.addEventListener("submit",e=>{const id=e.target.dataset.medform;if(!id)return;e.preventDefault();
+  const f=e.target, times=[0,1,2,3].map(i=>f["t"+i].value).filter(Boolean).sort();
+  if(!f.n.value.trim()||!f.w.value.trim())return;if(!times.length){toast("Escreve pelo menos um horário.");return}
+  const old=id==="new"?null:meds().find(x=>x.id===id), k=f.k.value===""?null:Math.max(0,parseInt(f.k.value)||0);
+  const m={...(old||{}),id:old?old.id:uid(),kind:"med",name:f.n.value.trim(),who:f.w.value.trim(),dose:f.d.value.trim(),times:[...new Set(times)],start:f.s.value||ymd(now),end:f.e.value||"",notes:f.o.value.trim(),taken:old&&old.taken||{}};
+  if(k===null)delete m.stock;else m.stock=k;
+  editMed="";putBill(m);renderMeds();toast(old?"Guardado":m.name+" juntado");
+});
+
+/* ---------- Vídeos do YouTube (abrem dentro da app) ----------
+   Na coleção "bills" com kind:"video": {name, yt (id do vídeo), added, by} */
+var curVideo="";
+function videos(){return bills.filter(b=>b.kind==="video").sort((a,b)=>(b.added||0)-(a.added||0))}
+function ytId(u){u=String(u||"").trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/)||u.match(/^([\w-]{11})$/);return m?m[1]:""}
+function playVideo(id){const v=videos().find(x=>x.id===id);const p=document.getElementById("player");if(!v){stopVideo();return}
+  curVideo=id;p.hidden=false;
+  p.innerHTML=`<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/${v.yt}?playsinline=1&rel=0&modestbranding=1" title="${esc(v.name)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+    <div class="name" style="font-weight:600">${esc(v.name)}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap"><a class="back" href="https://www.youtube.com/watch?v=${v.yt}" target="_blank" rel="noopener">Abrir no YouTube</a>
+    <button class="back" type="button" data-closevideo="1">Fechar</button><button class="back" type="button" data-delvideo="${v.id}" style="color:var(--bad)">Apagar</button></div>`;
+  renderVideos();window.scrollTo({top:0,behavior:"smooth"})}
+function stopVideo(){if(!curVideo)return;curVideo="";const p=document.getElementById("player");if(p){p.innerHTML="";p.hidden=true}renderVideos()}
+function renderVideos(){const el=document.getElementById("videoList");if(!el)return;const L=videos();
+  if(curVideo&&!L.some(v=>v.id===curVideo))stopVideo();
+  el.innerHTML=L.length?L.map(v=>`<button type="button" class="vrow${v.id===curVideo?" cur":""}" data-video="${v.id}"><img src="https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg" alt="" loading="lazy"><span style="min-width:0"><span class="name" style="display:block">${esc(v.name)}</span>${v.by?`<span class="note">Juntado por ${esc(v.by)}</span>`:""}</span></button>`).join("")
+    :`<div class="empty">Ainda não há vídeos.<br>Cola em cima o link de um vídeo do YouTube.</div>`}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.video)playVideo(t.dataset.video);
+  else if(t.dataset.closevideo)stopVideo();
+  else if(t.dataset.delvideo){const v=videos().find(x=>x.id===t.dataset.delvideo);if(v&&confirm(`Apagar "${v.name}"?`)){stopVideo();delBill(v.id);renderVideos();toast("Vídeo apagado")}}
+});
+document.getElementById("videoForm").addEventListener("submit",async e=>{e.preventDefault();
+  const inp=document.getElementById("videoUrl"), yt=ytId(inp.value);
+  if(!yt){toast("Esse link não parece ser de um vídeo do YouTube.");return}
+  const ex=videos().find(v=>v.yt===yt);if(ex){inp.value="";playVideo(ex.id);return}
+  let name="Vídeo do YouTube";
+  try{const ctl=new AbortController();setTimeout(()=>ctl.abort(),4000);
+    const r=await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent("https://www.youtube.com/watch?v="+yt)}`,{signal:ctl.signal});
+    if(r.ok){const j=await r.json();if(j&&j.title)name=String(j.title).slice(0,120)}}catch(err){}
+  const v={id:uid(),kind:"video",name,yt,added:Date.now(),...(myName()?{by:myName()}:{})};
+  inp.value="";putBill(v);playVideo(v.id);toast("Vídeo juntado");
+});
+
+/* ---------- Jogo de blocos (estilo Block Blast) ----------
+   Grelha 8×8; arrastam-se 3 peças de cada vez; linhas e colunas completas desaparecem.
+   O jogo fica guardado no telemóvel; o recorde é partilhado (kind:"game", id "jogo-recorde"). */
+var SHAPES=[[[1]],[[1,1]],[[1],[1]],[[1,1,1]],[[1],[1],[1]],[[1,1,1,1]],[[1],[1],[1],[1]],[[1,1,1,1,1]],[[1],[1],[1],[1],[1]],
+  [[1,1],[1,1]],[[1,1,1],[1,1,1],[1,1,1]],[[1,0],[1,1]],[[0,1],[1,1]],[[1,1],[1,0]],[[1,1],[0,1]],
+  [[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,1],[0,1,0]],[[0,1,0],[1,1,1]],
+  [[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],[[1,0,0],[1,0,0],[1,1,1]],[[1,1,1],[0,0,1],[0,0,1]]];
+var GCOL=["#ff6b6b","#ffa94d","#fcc419","#51cf66","#20c997","#339af0","#5c7cfa","#cc5de8","#f06595"];
+var G=null, gDrag=null;
+function gLoad(){try{G=JSON.parse(localStorage.getItem("casa-jogo")||"null")}catch(e){G=null}if(!G||!Array.isArray(G.b)||G.b.length!==64)gNew(true)}
+function gSave(){try{localStorage.setItem("casa-jogo",JSON.stringify(G))}catch(e){}}
+function gNew(quiet){G={b:Array(64).fill(""),score:0,tray:[],over:false};gDeal();gSave();if(!quiet)gRender()}
+function gDeal(){G.tray=[0,1,2].map(()=>({s:SHAPES[Math.floor(Math.random()*SHAPES.length)],c:GCOL[Math.floor(Math.random()*GCOL.length)],used:false}))}
+function gFits(sh,r,c){for(let i=0;i<sh.length;i++)for(let j=0;j<sh[0].length;j++)if(sh[i][j]){const R=r+i,C=c+j;if(R<0||C<0||R>7||C>7||G.b[R*8+C])return false}return true}
+function gCan(sh){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(gFits(sh,r,c))return true;return false}
+function gShared(){return bills.find(b=>b.id==="jogo-recorde")}
+function gBest(){let l=0;try{l=+localStorage.getItem("casa-jogo-best")||0}catch(e){}const s=gShared();return{best:Math.max(l,s?+s.best||0:0),by:s&&(+s.best||0)>=l?s.by:""}}
+function gRenderBest(){const el=document.getElementById("gBest");if(!el)return;const b=gBest();el.textContent=b.best;document.getElementById("gBestBy").textContent=b.by?"de "+b.by:""}
+function gRender(){
+  const bd=document.getElementById("board");if(!bd||!G)return;
+  if(bd.children.length!==64)bd.innerHTML=Array.from({length:64},()=>'<div class="cell"></div>').join("");
+  G.b.forEach((v,i)=>{const c=bd.children[i];c.className="cell"+(v?" on":"");c.style.background=v||""});
+  document.getElementById("gScore").textContent=G.score;gRenderBest();
+  document.getElementById("tray").innerHTML=G.tray.map((p,k)=>`<div class="piece${p.used?" used":""}${!p.used&&!gCan(p.s)?" nofit":""}" data-k="${k}" style="grid-template-columns:repeat(${p.s[0].length},18px)">${p.s.flat().map(v=>`<i class="${v?"":"e"}" style="width:18px;height:18px;background:${p.c}"></i>`).join("")}</div>`).join("");
+  document.getElementById("gOver").hidden=!G.over;
+}
+function gOpen(){if(!G)gLoad();gRender()}
+function gPlace(k,r,c){const p=G.tray[k];let n=0;
+  p.s.forEach((row,i)=>row.forEach((v,j)=>{if(v){G.b[(r+i)*8+c+j]=p.c;n++}}));p.used=true;
+  const full=new Set();let lines=0;
+  for(let i=0;i<8;i++){let row=true,col=true;for(let j=0;j<8;j++){if(!G.b[i*8+j])row=false;if(!G.b[j*8+i])col=false}
+    if(row){lines++;for(let j=0;j<8;j++)full.add(i*8+j)}if(col){lines++;for(let j=0;j<8;j++)full.add(j*8+i)}}
+  G.score+=n+lines*lines*10;
+  if(G.tray.every(t=>t.used))gDeal();
+  const bd=document.getElementById("board");
+  gRender();
+  if(full.size){full.forEach(i=>bd.children[i].classList.add("clear"));setTimeout(()=>{full.forEach(i=>G.b[i]="");gEnd();gRender()},280);if(lines>1)toast(`Combo ×${lines}! +${lines*lines*10}`)}
+  else gEnd();
+  gSave();
+}
+function gEnd(){G.over=!G.tray.some(t=>!t.used&&gCan(t.s));gSave();if(!G.over)return;
+  const b=gBest(), rec=G.score>b.best;
+  if(rec){try{localStorage.setItem("casa-jogo-best",G.score)}catch(e){}
+    const s=gShared();putBill({...(s||{}),id:"jogo-recorde",kind:"game",name:"Recorde do jogo de blocos",best:G.score,...(myName()?{by:myName()}:{})})}
+  document.getElementById("gOverTxt").textContent=`Fizeste ${G.score} pontos.`+(rec?" Novo recorde! 🎉":` O recorde é ${b.best}${b.by?" ("+b.by+")":""}.`);
+  gRender()}
+/* Arrastar: a peça segue o dedo um pouco acima dele, para se ver onde fica */
+function gCell(){const c=document.getElementById("board").children[0].getBoundingClientRect();return c.width+3}
+function gGhost(r,c,ok){const bd=document.getElementById("board");[...bd.children].forEach((el,i)=>{el.classList.remove("ghost","bad");if(!G.b[i])el.style.background=""});
+  if(r==null)return;const p=G.tray[gDrag.k];
+  p.s.forEach((row,i)=>row.forEach((v,j)=>{const R=r+i,C=c+j;if(v&&R>=0&&C>=0&&R<8&&C<8&&!G.b[R*8+C]){const el=bd.children[R*8+C];el.classList.add(ok?"ghost":"bad");if(ok)el.style.background=p.c}}))}
+function gPos(x,y){const d=gDrag, bd=document.getElementById("board").getBoundingClientRect(), cs=gCell();
+  const left=x-d.w/2, top=y-d.h-60;d.el.style.left=left+"px";d.el.style.top=top+"px";
+  const c=Math.round((left-bd.left-6)/cs), r=Math.round((top-bd.top-6)/cs), p=G.tray[d.k];
+  const inside=r>-2&&c>-2&&r<8&&c<8;d.r=r;d.c=c;d.ok=inside&&gFits(p.s,r,c);gGhost(inside?r:null,c,d.ok)}
+document.addEventListener("pointerdown",e=>{const pc=e.target.closest(".piece");if(!pc||!G||G.over)return;const k=+pc.dataset.k, p=G.tray[k];if(p.used)return;
+  e.preventDefault();const cs=gCell(), cell=cs-3, w=p.s[0].length*cs-3, h=p.s.length*cs-3;
+  const el=document.createElement("div");el.className="drag";el.style.gridTemplateColumns=`repeat(${p.s[0].length},${cell}px)`;
+  el.innerHTML=p.s.flat().map(v=>`<i class="${v?"":"e"}" style="width:${cell}px;height:${cell}px;background:${p.c}"></i>`).join("");
+  document.body.appendChild(el);pc.classList.add("used");gDrag={k,el,w,h,pc};gPos(e.clientX,e.clientY)});
+document.addEventListener("pointermove",e=>{if(!gDrag)return;e.preventDefault();gPos(e.clientX,e.clientY)},{passive:false});
+function gDrop(){if(!gDrag)return;const d=gDrag;gDrag=null;d.el.remove();gGhost(null);
+  if(d.ok)gPlace(d.k,d.r,d.c);else d.pc.classList.remove("used")}
+document.addEventListener("pointerup",gDrop);document.addEventListener("pointercancel",gDrop);
+document.getElementById("gNew").addEventListener("click",()=>{if(G&&G.score&&!G.over&&!confirm("Começar um jogo novo? Perdes os pontos deste."))return;gNew()});
+document.getElementById("gAgain").addEventListener("click",()=>gNew());
 
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
