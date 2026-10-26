@@ -857,9 +857,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carro</span><span></span></nav>
     <h1 class="large">Carro</h1>
     <div id="carList" class="rlist"></div>
+    <label class="btn ghost" role="button" id="carPdfBtn" style="text-align:center">📄 Importar PDF (seguro, inspeção, IUC, revisão)<input type="file" id="carPdf" accept="application/pdf,.pdf" hidden></label>
+    <p class="msg" id="carPdfMsg" hidden></p>
     <button class="btn ghost" type="button" id="addCar">+ Juntar carro</button>
     <div id="carNew"></div>
-    <p class="note" style="margin:0">Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
+    <p class="note" style="margin:0">Importar PDF: escolhe a apólice do seguro, a ficha de inspeção, o comprovativo do IUC ou a fatura da revisão. A app lê as datas, o valor, a matrícula e os km, preenche o carro e só tens de confirmar e tocar em Guardar. Funciona com PDFs com texto (não com fotografias digitalizadas). Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
   </section>
 
   <section id="tab-docs" class="group" style="gap:16px" hidden>
@@ -2533,6 +2535,66 @@ function renderHealth(){const el=document.getElementById("hNext");if(!el)return;
   document.getElementById("hDocs").innerHTML=(D.length?`<div class="rcard">${D.sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(d=>d.id===editRec.doctor?recFormFor("doctor",d):`<div class="rrow"><button type="button" data-recedit="doctor|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name)}</span><span class="rm" style="display:block">${[d.spec,d.who,d.place].filter(Boolean).map(esc).join(" · ")}</span></button><span class="rs">${d.phone?`<a class="tel" href="tel:${esc(d.phone.replace(/[^\d+]/g,""))}">📞 Ligar</a>`:""}</span></div>`).join("")}</div>`:"")+(editRec.doctor==="new"?recFormFor("doctor",null):"")||`<div class="rcard"><div class="rempty">Junta os médicos e clínicas para ligares com um toque.</div></div>`;
   document.getElementById("addHealth").hidden=editRec.health==="new";document.getElementById("addDoctor").hidden=editRec.doctor==="new"}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hwho]");if(b){hWho=b.dataset.hwho;renderHealth()}});
+
+/* ---------- Carro: ler um PDF (pdf.js) e preencher os prazos ---------- */
+const PDFJS="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadPdfJs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  return new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src=PDFJS+"pdf.min.js";
+    sc.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+"pdf.worker.min.js";ok(window.pdfjsLib)};sc.onerror=()=>ko(new Error("pdfjs"));document.head.appendChild(sc)})}
+async function pdfText(file){const lib=await loadPdfJs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;let t="";
+  for(let i=1;i<=Math.min(doc.numPages,12);i++){const c=await(await doc.getPage(i)).getTextContent();t+=c.items.map(x=>x.str+(x.hasEOL?"\n":" ")).join("")+"\n"}return t}
+const MESN=["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+/* Todas as datas do texto, com a posição: 31/12/2026, 31-12-2026, 2026-12-31, 31 de dezembro de 2026 */
+function findDates(t){const L=[];const add=(i,y,m,d)=>{y=+y;if(y<100)y+=2000;m=+m;d=+d;if(m<1||m>12||d<1||d>31||y<2000||y>2100)return;L.push({i,ds:`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`})};
+  for(const m of t.matchAll(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})\b/g))add(m.index,m[3],m[2],m[1]);
+  for(const m of t.matchAll(/\b(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})\b/g))add(m.index,m[1],m[2],m[3]);
+  for(const m of t.matchAll(new RegExp(`\\b(\\d{1,2})\\s+(?:de\\s+)?(${MESN.join("|")})\\s+(?:de\\s+)?(\\d{4})`,"g")))add(m.index,m[3],MESN.indexOf(m[2])+1,m[1]);
+  return L.sort((a,b)=>a.i-b.i)}
+const numPT=v=>parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}(\D|$))/g,"").replace(",","."));
+/* Lê o texto e devolve o que encontrou. Procura a data logo a seguir às palavras certas; se não houver, usa uma regra simples por tipo. */
+function parseCarPdf(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(new Date()), D=findDates(t), out={found:[]};
+  /* data a seguir às palavras; last=true fica com a mais tardia (ex.: "período de 15/11/2025 a 14/11/2026") */
+  const after=(re,max=160,last)=>{const m=t.match(re);if(!m)return null;const W=D.filter(x=>x.i>=m.index&&x.i<=m.index+m[0].length+max);
+    if(!W.length)return null;return last?W.map(x=>x.ds).sort().pop():W[0].ds};
+  const score=re=>(t.match(re)||[]).length;
+  const kind=[["seguro",score(/apolice|seguro|tomador|premio|franquia|carta verde|seguradora/g)],["inspecao",score(/inspec|\bipo\b|centro de inspec|deficienc/g)],
+    ["iuc",score(/imposto unico de circulacao|\biuc\b/g)*3],["revisao",score(/revisao|manutencao|ordem de reparacao|oficina|mudanca de oleo/g)]].sort((a,b)=>b[1]-a[1]);
+  out.kind=kind[0][1]?kind[0][0]:"";
+  const pl=raw.toUpperCase().match(/\b([A-Z0-9]{2})[-‐–\s]([A-Z0-9]{2})[-‐–\s]([A-Z0-9]{2})\b/g);
+  const plate=(pl||[]).map(x=>x.replace(/[\s‐–]/g,"-")).find(x=>/[A-Z]/.test(x)&&/\d/.test(x));if(plate)out.plate=plate;
+  const kmM=t.match(/(?:quilometr\w*|kms?|conta-?quilometros)\s*(?:atuais|registad\w*)?\s*[:\-]?\s*(\d{1,3}(?:[.\s]\d{3})+|\d{4,7})\b/);if(kmM)out.km=numPT(kmM[1]);
+  const latest=(a,b)=>D.map(x=>x.ds).filter(x=>x>=a&&x<=b).sort().pop()||null;
+  if(out.kind==="seguro"){out.seguro=after(/(valid[oa] ate|data de (?:fim|termo|vencimento)|vencimento|termo do contrato|renovacao|periodo de seguro|periodo de validade|ate\s*:)/,60,true)||latest(addYears(today,-1),addYears(today,2));
+    if(out.seguro&&out.seguro<today)out.seguro=addYears(out.seguro,1);
+    const v=t.match(/(?:premio (?:total|anual|comercial)?|total a pagar|valor total|montante)\D{0,40}?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+[.,]\d{2})/);if(v)out.seguroVal=numPT(v[1])}
+  if(out.kind==="inspecao"){out.inspecao=after(/(proxima inspec\w*|data limite|apresentar(?:-se)? ate|valid[oa] ate)/);
+    if(!out.inspecao){const d=after(/(data (?:da|de) inspec\w*|inspec\w* realizada)/)||D.map(x=>x.ds).filter(x=>x<=today).sort().pop();if(d)out.inspecao=addYears(d,1)}}
+  if(out.kind==="iuc"){out.iuc=after(/(data limite(?: de pagamento)?|pagamento ate|prazo de pagamento)/)||latest(addYears(today,-1),addYears(today,1));
+    if(out.iuc&&out.iuc<today)out.iuc=addYears(out.iuc,1)}
+  if(out.kind==="revisao"){out.revisao=after(/proxima (?:revisao|manutencao)/,80);
+    const pm=t.match(/proxima (?:revisao|manutencao)/);if(pm){const rk=t.slice(pm.index,pm.index+120).match(/(\d{1,3}(?:[.\s]\d{3})+|\d{4,7})\s*(?:km|quilometros)/);if(rk)out.revKm=numPT(rk[1])}}
+  return out}
+const CARLBL={seguro:"Seguro: renovação",seguroVal:"Seguro: valor",inspecao:"Inspeção",iuc:"IUC",revisao:"Revisão: data",revKm:"Revisão: aos km",km:"Quilómetros",plate:"Matrícula"};
+document.getElementById("carPdf").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;
+  const msg=document.getElementById("carPdfMsg");const say=(t,ok)=>{msg.hidden=!t;msg.textContent=t||"";msg.style.color=ok?"var(--fg)":""};
+  say("A ler o PDF…",true);let txt="";
+  try{txt=await pdfText(file)}catch(err){say(err.message==="pdfjs"?"Não foi possível abrir o leitor de PDF. Verifica a internet e tenta outra vez.":"Não consegui abrir este PDF.");return}
+  if(txt.replace(/\s/g,"").length<30){say("Este PDF não tem texto (deve ser uma fotografia digitalizada). Escreve as datas à mão em Editar.");return}
+  const f=parseCarPdf(txt), keys=Object.keys(CARLBL).filter(k=>f[k]!=null&&k!=="plate");
+  if(!f.kind&&!keys.length){say("Não encontrei datas de seguro, inspeção, IUC ou revisão neste PDF.");return}
+  /* Que carro: pela matrícula, ou o único, ou pergunta */
+  const cars=recsOf("car"), norm=x=>String(x||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  let car=f.plate&&cars.find(c=>norm(c.plate)===norm(f.plate));
+  if(!car&&cars.length===1)car=cars[0];
+  if(!car&&cars.length>1)car=cars.find(c=>confirm(`Este PDF é do carro "${c.name}"?`));
+  if(car&&car.km!=null&&f.km!=null&&f.km<=car.km){delete f.km;keys.splice(keys.indexOf("km"),1)}/* não volta a km mais antigos */
+  editRec.car=car?car.id:"new";renderCars();
+  const form=document.querySelector(`[data-recform="car|${editRec.car}"]`);if(!form)return;
+  const set=(k,v)=>{const el=form[k];if(!el||v==null)return;el.value=v;el.closest("label").style.outline="2px solid #34c759";el.closest("label").style.borderRadius="10px"};
+  keys.forEach(k=>set(k,f[k]));if(f.plate&&(!car||!car.plate))set("plate",f.plate);if(!car&&!form.name.value)form.name.value="Carro";
+  const nomes={seguro:"apólice de seguro",inspecao:"ficha de inspeção",iuc:"IUC",revisao:"revisão"};
+  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>`);
+  say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})});
 
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
