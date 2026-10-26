@@ -657,6 +657,14 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .piece i.e,.drag i.e{background:transparent!important;box-shadow:none}
 .drag{position:fixed;z-index:20;display:grid;gap:3px;pointer-events:none;opacity:.9}
 .times{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* Toma faseada: o editor de fases só aparece com a opção ligada (e esconde os horários simples) */
+form[data-medform] .phases{display:none;flex-direction:column;gap:8px}
+form[data-medform]:has([name=ph]:checked) .phases{display:flex}
+form[data-medform]:has([name=ph]:checked) .nophase{display:none}
+.phase{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 8px;align-items:end;background:var(--fill);border-radius:12px;padding:10px;counter-increment:fase}
+.phases{counter-reset:fase}.phase>b::after{content:" " counter(fase)}
+.phase label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}.phase input{min-width:0;width:100%;box-sizing:border-box}
+.phase .times{grid-column:1/-1}
 .gover{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.35);display:grid;place-items:center;padding:20px}
 .gover-box{background:var(--surface);border-radius:16px;padding:20px;text-align:center;display:flex;flex-direction:column;gap:12px;min-width:240px}
 #meals{gap:0}
@@ -2157,14 +2165,22 @@ document.getElementById("leaveHouse").addEventListener("click",async()=>{
    Na coleção "bills" com kind:"med": {name, who, dose, times:["08:00"], start, end, stock, notes, taken:{"AAAA-MM-DD":["08:00"]}} */
 var PEOPLE=["Luís","Bianca","Maria"], medWho="", editMed="";
 function meds(){return bills.filter(b=>b.kind==="med")}
-function medActive(m,d){return(!m.start||m.start<=d)&&(!m.end||m.end>=d)}
+/* Plano de um dia: horários e quantidade por toma. Com fases ({days,per,times}), a fase é a do dia;
+   uma última fase com 0 dias continua sempre. Sem plano nesse dia (fases acabadas) devolve null. */
+function medPlan(m,ds){if(!Array.isArray(m.phases)||!m.phases.length)return{times:m.times||[],per:+m.per||1};
+  const i=m.start?dDiff(m.start,ds):0;if(i<0)return null;let acc=0;
+  for(let k=0;k<m.phases.length;k++){const ph=m.phases[k], d=+ph.days||0;
+    if(d===0||i<acc+d){const end=d?addDays2(m.start,acc+d-1):"";return{times:ph.times||[],per:+ph.per||1,idx:k,n:m.phases.length,until:end}}acc+=d}
+  return null}
+const addDays2=(ds,n)=>{const d=new Date(ds+"T12:00");d.setDate(d.getDate()+n);return ymd(d)};
+function medActive(m,d){return(!m.start||m.start<=d)&&(!m.end||m.end>=d)&&!!medPlan(m,d)}
 function minsNow(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function tMin(t){const [h,m]=String(t||"0:0").split(":").map(Number);return h*60+(m||0)}
 function dosesToday(who){const d=ymd(now), L=[];
-  meds().filter(m=>medActive(m,d)&&(!who||m.who===who)).forEach(m=>(m.times||[]).forEach(t=>L.push({m,t,done:((m.taken||{})[d]||[]).includes(t)})));
+  meds().filter(m=>medActive(m,d)&&(!who||m.who===who)).forEach(m=>{const P=medPlan(m,d);(P.times||[]).forEach(t=>L.push({m,t,per:P.per,done:((m.taken||{})[d]||[]).includes(t)}))});
   return L.sort((a,b)=>a.t.localeCompare(b.t)||String(a.m.who).localeCompare(String(b.m.who),"pt"))}
 /* Stock: comprimidos que restam ÷ (tomas por dia × por toma) = dias que ainda dá */
-function medDays(m){if(m.stock==null)return null;const perDay=(m.times||[]).length*(+m.per||1);return perDay?Math.floor(m.stock/perDay):null}
+function medDays(m){if(m.stock==null)return null;const P=medPlan(m,ymd(new Date()))||{times:m.times||[],per:+m.per||1}, perDay=(P.times||[]).length*(+P.per||1);return perDay?Math.floor(m.stock/perDay):null}
 function medLow(m){if(m.stock==null)return false;const d=medDays(m);return d!=null?d<=(m.warnDays||7):m.stock<=5}
 /* Quando está a acabar, põe nas Compras (loja "Farmácia"); id fixo "med-…" para os dois telemóveis não o porem duas vezes */
 function medShopSync(){meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=>i.id===id), low=medLow(m)&&medActive(m,ymd(now));
@@ -2173,16 +2189,24 @@ function medShopSync(){meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=
 function medBought(id){const m=meds().find(x=>x.id===id);if(!m)return;const nm={...m,stock:Math.round(((+m.stock||0)+(+m.box||0))*100)/100};
   putBill(nm);if(items.some(i=>i.id==="med-"+id))remove("med-"+id);renderMeds();toast(`${m.name}: +${m.box} · restam ${String(nm.stock).replace(".",",")}`)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-medbuy]");if(b)medBought(b.dataset.medbuy)});
+function phaseRow(ph,i){return`<div class="phase"><b>Fase</b><label>Dias<input type="number" min="0" step="1" inputmode="numeric" data-pk="days" value="${ph.days??""}"></label>
+  <label>Por toma<input type="number" min="0.25" step="0.25" inputmode="decimal" data-pk="per" value="${ph.per??1}"></label>
+  <span class="times">${[0,1,2,3].map(j=>`<input type="time" data-pk="t${j}" value="${(ph.times||[])[j]||""}" aria-label="Horário ${j+1}">`).join("")}</span></div>`}
 function medForm(m){const id=m?m.id:"new", times=m?(m.times||[]):["08:00"];return `<form class="bill-edit" data-medform="${id}" autocomplete="off">
     <label class="f wide">Para quem<input name="w" required value="${esc(m?m.who:(medWho||""))}" placeholder="ex.: Maria" autocapitalize="words"></label>
     <div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-medwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+    <label class="btn ghost wide" role="button" style="text-align:center">📷 Fotografar a caixa (lê o nome, a dose e quantos traz)<input type="file" accept="image/*" capture="environment" data-medphoto="${id}" hidden></label>
     <label class="f wide">Medicamento<input name="n" required value="${m?esc(m.name):""}" placeholder="ex.: Ben-u-ron" autocapitalize="sentences"></label>
     <label class="f wide">Dose<input name="d" value="${m?esc(m.dose||""):""}" placeholder="ex.: 1 comprimido, 5 ml"></label>
-    <label class="f wide">Horários<span class="times">${[0,1,2,3].map(i=>`<input type="time" name="t${i}" value="${times[i]||""}" aria-label="Horário ${i+1}">`).join("")}</span></label>
+    <label class="tick wide"><input type="checkbox" class="switch" name="ph" ${m&&m.phases&&m.phases.length?"checked":""}> Toma faseada (a quantidade ou os horários mudam ao longo dos dias)</label>
+    <label class="f wide nophase">Horários<span class="times">${[0,1,2,3].map(i=>`<input type="time" name="t${i}" value="${times[i]||""}" aria-label="Horário ${i+1}">`).join("")}</span></label>
+    <div class="wide phases">${(m&&m.phases&&m.phases.length?m.phases:[{days:3,per:m&&m.per||1,times:times.length?times:["08:00"]},{days:0,per:m&&m.per||1,times:times.length?times:["08:00"]}]).map(phaseRow).join("")}
+      <div style="display:flex;gap:8px"><button type="button" class="btn ghost" data-phadd="1">+ Fase</button><button type="button" class="btn ghost" data-phdel="1">− Fase</button></div>
+      <p class="note" style="margin:0">As fases começam no dia de início, uma a seguir à outra. Na última fase, 0 dias = continua sempre.</p></div>
     <label class="f">Início<input type="date" name="s" value="${m?(m.start||""):ymd(now)}"></label>
     <label class="f">Fim (opcional)<input type="date" name="e" value="${m?(m.end||""):""}"></label>
     <label class="f">Comprimidos por caixa<input type="number" name="bx" min="1" step="1" inputmode="numeric" value="${m&&m.box?m.box:""}" placeholder="ex.: 30"></label>
-    <label class="f">Por toma<input type="number" name="pt" min="0.25" step="0.25" inputmode="decimal" value="${m&&m.per?m.per:1}" placeholder="1"></label>
+    <label class="f nophase">Por toma<input type="number" name="pt" min="0.25" step="0.25" inputmode="decimal" value="${m&&m.per?m.per:1}" placeholder="1"></label>
     <label class="f wide">Tenho em casa (comprimidos que restam)<input type="number" name="k" min="0" step="any" inputmode="decimal" value="${m&&m.stock!=null?m.stock:""}" placeholder="ex.: 30"></label>
     <label class="f wide">Avisar para comprar quando der para<select name="wd">${[3,5,7,10,14].map(d=>`<option value="${d}"${(m&&m.warnDays||7)===d?" selected":""}>${d} dias</option>`).join("")}</select></label>
     <label class="f wide">Notas<input name="o" value="${m?esc(m.notes||""):""}" placeholder="ex.: depois do pequeno-almoço"></label>
@@ -2196,10 +2220,10 @@ function renderMeds(){
   document.getElementById("medWho").innerHTML=[["","Todos"],...whos.map(w=>[w,w])].map(([v,l])=>`<button type="button" data-medfilter="${esc(v)}" aria-pressed="${medWho===v}">${esc(l)}</button>`).join("");
   const nm=minsNow(), L=dosesToday(medWho);
   document.getElementById("medTodayTitle").textContent="Hoje"+(medWho?" · "+medWho:"");
-  box.innerHTML=L.length?L.map(({m,t,done})=>{const late=!done&&tMin(t)<nm;return `<label class="dose${done?" done":""}${late?" late":""}">
+  box.innerHTML=L.length?L.map(({m,t,per,done})=>{const late=!done&&tMin(t)<nm;return `<label class="dose${done?" done":""}${late?" late":""}">
       <input type="checkbox" data-take="${m.id}|${t}" ${done?"checked":""} aria-label="${esc(m.name)} às ${t} tomado">
       <span class="t">${t}</span>
-      <span style="min-width:0"><span class="name" style="display:block">${esc(m.who)} · ${esc(m.name)}</span><span class="meta" style="font-size:15px;color:${late?"var(--bad)":"var(--muted)"}">${esc(m.dose||"")}${done?(m.dose?" · ":"")+"Tomado":late?(m.dose?" · ":"")+"Por tomar":""}</span></span>
+      <span style="min-width:0"><span class="name" style="display:block">${esc(m.who)} · ${esc(m.name)}</span><span class="meta" style="font-size:15px;color:${late?"var(--bad)":"var(--muted)"}">${esc(m.phases&&m.phases.length?String(per).replace(".",",")+" por toma":m.dose||"")}${done?((m.dose||m.phases)?" · ":"")+"Tomado":late?((m.dose||m.phases)?" · ":"")+"Por tomar":""}</span></span>
     </label>`}).join(""):`<div class="empty">Nada para tomar hoje${medWho?" ("+esc(medWho)+")":""}.</div>`;
   const list=meds().filter(m=>!medWho||m.who===medWho).sort((a,b)=>String(a.who).localeCompare(String(b.who),"pt")||a.name.localeCompare(b.name,"pt"));
   const fmtD=d=>new Date(d+"T00:00").toLocaleDateString("pt-PT",{day:"numeric",month:"short"});
@@ -2207,7 +2231,7 @@ function renderMeds(){
     const d=ymd(now), st=!medActive(m,d)?(m.start>d?"começa a "+fmtD(m.start):"terminou"):m.end?"até "+fmtD(m.end):"contínuo";
     const dl=medDays(m), low=medLow(m);
     return `<div class="item" style="flex-wrap:wrap"><button type="button" class="bname" data-editmed="${m.id}" aria-label="Editar ${esc(m.name)}"><div class="name">${esc(m.name)} <span class="tag">${esc(m.who)}</span></div>
-      <div class="meta">${[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${String(m.stock).replace(".",",")}${dl!=null?` (dá para ${dl} dia${dl===1?"":"s"})`:""}</span>`:""}${low?" · nas Compras":""}${m.notes?"<br>"+esc(m.notes):""}</div></button>
+      <div class="meta">${(()=>{const P=medPlan(m,ymd(now));return m.phases&&m.phases.length?esc([m.dose,P?`Fase ${P.idx+1} de ${P.n}: ${String(P.per).replace(".",",")} às ${P.times.join(", ")}${P.until?" até "+fmtD(P.until):""}`:"fases terminadas"].filter(Boolean).join(" · ")):[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")})()}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${String(m.stock).replace(".",",")}${dl!=null?` (dá para ${dl} dia${dl===1?"":"s"})`:""}</span>`:""}${low?" · nas Compras":""}${m.notes?"<br>"+esc(m.notes):""}</div></button>
       ${m.box?`<button type="button" class="bump" data-medbuy="${m.id}" style="margin-left:auto;white-space:nowrap">+ Comprei 1 caixa (${m.box})</button>`:""}</div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
   document.getElementById("medNew").innerHTML=editMed==="new"?medForm(null):"";
   document.getElementById("addMed").hidden=editMed==="new";
@@ -2224,16 +2248,21 @@ document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.datase
   const [id,t]=v.split("|"), m=meds().find(x=>x.id===id);if(!m)return;
   const d=ymd(now), taken={};Object.entries(m.taken||{}).forEach(([k,a])=>{if(k>=ymd(new Date(Date.now()-30*864e5)))taken[k]=a});
   const day=new Set(taken[d]||[]), was=day.has(t);if(e.target.checked)day.add(t);else day.delete(t);taken[d]=[...day];
-  const nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,Math.round((m.stock+(e.target.checked?-1:1)*(+m.per||1))*100)/100);
+  const P=medPlan(m,d)||{per:+m.per||1}, nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,Math.round((m.stock+(e.target.checked?-1:1)*(+P.per||1))*100)/100);
   putBill(nm);renderMeds();medShopSync();const dl=medDays(nm);
   if(e.target.checked)toast(dl!=null&&dl<=(nm.warnDays||7)?`${m.name}: só dá para ${dl} dia${dl===1?"":"s"} · está nas Compras`:`${m.who}: ${m.name} tomado`);
 });
 document.addEventListener("submit",e=>{const id=e.target.dataset.medform;if(!id)return;e.preventDefault();
-  const f=e.target, times=[0,1,2,3].map(i=>f["t"+i].value).filter(Boolean).sort();
+  const f=e.target, faseada=f.ph&&f.ph.checked;
+  const phases=faseada?[...f.querySelectorAll(".phase")].map(row=>{const g=k=>row.querySelector(`[data-pk="${k}"]`).value;
+    return{days:Math.max(0,parseInt(g("days"))||0),per:parseFloat(String(g("per")).replace(",","."))||1,times:[0,1,2,3].map(j=>g("t"+j)).filter(Boolean).sort()}}).filter(p=>p.times.length):[];
+  if(faseada&&!phases.length){toast("Cada fase precisa de pelo menos um horário.");return}
+  const times=faseada?[...new Set(phases.flatMap(p=>p.times))].sort():[0,1,2,3].map(i=>f["t"+i].value).filter(Boolean).sort();
   if(!f.n.value.trim()||!f.w.value.trim())return;if(!times.length){toast("Escreve pelo menos um horário.");return}
   const old=id==="new"?null:meds().find(x=>x.id===id), k=f.k.value===""?null:Math.max(0,parseFloat(String(f.k.value).replace(",","."))||0);
   const m={...(old||{}),id:old?old.id:uid(),kind:"med",name:f.n.value.trim(),who:f.w.value.trim(),dose:f.d.value.trim(),times:[...new Set(times)],start:f.s.value||ymd(now),end:f.e.value||"",notes:f.o.value.trim(),taken:old&&old.taken||{}};
   if(k===null)delete m.stock;else m.stock=k;
+  if(faseada){m.phases=phases;const tot=phases.reduce((a,p)=>a+p.days,0);if(phases[phases.length-1].days>0&&!f.e.value)m.end=addDays2(m.start,tot-1)}else delete m.phases;
   const bx=parseInt(f.bx.value)||0, pt=parseFloat(String(f.pt.value).replace(",","."))||1;if(bx)m.box=bx;else delete m.box;m.per=pt;m.warnDays=+f.wd.value||7;
   editMed="";putBill(m);renderMeds();toast(old?"Guardado":m.name+" juntado");
 });
@@ -2864,6 +2893,14 @@ function loadTess(){if(window.Tesseract)return Promise.resolve();return new Prom
 async function ocrImage(src){await loadTess();
   if(!tessWorker)tessWorker=await Tesseract.createWorker("por",1,{workerPath:TESS+"tesseract.js@6.0.1/dist/worker.min.js",corePath:TESS+"tesseract.js-core@6.0.0",langPath:TESS+"@tesseract.js-data/por@1.0.0/4.0.0_best_int"});
   const {data}=await tessWorker.recognize(src);return data.text||""}
+/* Caixas de medicamentos: o nome comercial é muito grande e o OCR perde-o no tamanho normal;
+   lê também a imagem a metade do tamanho e junta as linhas (as das letras grandes primeiro) */
+async function ocrBig(src){const img=new Image();img.src=src;await img.decode();
+  const at=async k=>{const c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return ocrImage(c.toDataURL("image/png"))};
+  const small=(await at(.33))+"\n"+(await at(.5)), full=await ocrImage(src);
+  /* das leituras pequenas só ficam palavras limpas (1 ou 2, só letras): é onde aparece o nome comercial */
+  const brand=small.split(/\n/).map(l=>l.trim()).filter(l=>/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\-]{3,}( [A-Za-zÀ-ÿ\-]{2,})?$/.test(l));
+  const seen=new Set(), L=[];for(const l of [...brand,...full.split(/\n/)]){const k=noAcc(l).replace(/[^a-z0-9]/g,"");if(!k||seen.has(k))continue;seen.add(k);L.push(l)}return L.join("\n")}
 /* Documentos: número e validade a partir da fotografia (Cartão de Cidadão, passaporte, carta…) */
 function parseDocText(raw,type){const t=noAcc(raw), up=raw.toUpperCase(), today=ymd(new Date()), out={};
   /* datas com espaços (como no CC: "15 11 2031") também contam */
@@ -3029,6 +3066,31 @@ document.getElementById("fvShare").addEventListener("click",async()=>{if(!fvCur)
 document.getElementById("fvDel").addEventListener("click",async()=>{if(!fvCur||!confirm(`Apagar o anexo "${fvCur.f.name}"?`))return;const rec=bills.find(x=>x.id===fvCur.rec);
   try{await fb.delFile(houseCode,fvCur.f.id)}catch(err){}if(rec){putBill({...rec,files:(rec.files||[]).filter(x=>x.id!==fvCur.f.id)});RECS[rec.kind]&&RECS[rec.kind].render()}
   document.getElementById("fileView").hidden=true;document.getElementById("fvBody").innerHTML="";toast("Anexo apagado")});
+
+/* Fases: juntar e tirar */
+document.addEventListener("click",e=>{const a=e.target.closest("[data-phadd],[data-phdel]");if(!a)return;const box=a.closest(".phases"), rows=box.querySelectorAll(".phase");
+  if(a.dataset.phadd){if(rows.length>=6)return;const last=rows[rows.length-1], d=document.createElement("div");d.innerHTML=phaseRow({days:0,per:last?last.querySelector('[data-pk="per"]').value:1,times:last?[0,1,2,3].map(j=>last.querySelector(`[data-pk="t${j}"]`).value).filter(Boolean):["08:00"]});
+    if(last&&last.querySelector('[data-pk="days"]').value==="0")last.querySelector('[data-pk="days"]').value=3;last?last.after(d.firstChild):box.prepend(d.firstChild)}
+  else if(rows.length>1)rows[rows.length-1].remove()});
+/* Fotografia da caixa: lê o nome, a dosagem (mg) e quantos comprimidos traz */
+function parseMedBox(raw){const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean), t=noAcc(raw), out={names:[]};
+  const q=t.match(/(\d{1,3})\s*(comprimidos?|capsulas?|caps\.?|comp\.?|saquetas?|ampolas?|unidades?|pastilhas?|drageias?)\b/);if(q)out.box=+q[1];
+  const mg=raw.match(/(\d+(?:[.,]\d+)?)\s*(mg|g|ml|mcg|µg|ui)\b/i);if(mg)out.strength=`${mg[1].replace(".",",")} ${mg[2].toLowerCase()}`;
+  const bad=/comprimid|capsul|saqueta|ampola|\bmg\b|\bml\b|via oral|uso |lote|validade|\bval\b|\bexp|cada |cont[eé]m|medicamento|farmac|laborat|indica|conservar|crian|adult|sujeito|receita|bula|\bpvp\b|\d{4,}/i;
+  for(const l of lines){const w=l.replace(/[^A-Za-zÀ-ÿ0-9 \-+]/g,"").trim();if(w.length<3||!/[A-Za-zÀ-ÿ]{3}/.test(w)||bad.test(w))continue;
+    const nm=w.split(/\s+/).slice(0,3).join(" ");if(!out.names.some(x=>noAcc(x)===noAcc(nm)))out.names.push(nm);if(out.names.length>=4)break}
+  return out}
+document.addEventListener("change",async e=>{const inp=e.target.closest&&e.target.closest("[data-medphoto]");if(!inp)return;const file=inp.files&&inp.files[0];inp.value="";if(!file)return;
+  const form=inp.closest("form");toast("A ler a caixa… (da primeira vez demora mais)");let txt="";
+  try{txt=await ocrBig(await shrinkDoc(file))}catch(err){toast("Não foi possível ler a fotografia. Verifica a internet.");return}
+  const g=parseMedBox(txt);if(!g.names.length&&!g.box&&!g.strength){toast("Não consegui ler a caixa. Tenta com mais luz e a caixa direita.");return}
+  const set=(el,v)=>{if(!el||v==null||v==="")return;el.value=v;const l=el.closest("label");if(l){l.style.outline="2px solid #34c759";l.style.borderRadius="10px"}};
+  if(g.names[0]&&!form.n.value)set(form.n,g.names[0]+(g.strength?" "+g.strength:""));
+  if(g.box)set(form.bx,g.box);if(g.box&&!form.k.value)set(form.k,g.box);
+  form.querySelectorAll(".medocr").forEach(x=>x.remove());
+  form.n.closest("label").insertAdjacentHTML("afterend",`<div class="chips wide medocr" style="align-items:center"><span class="note" style="margin:0">📷 Li na caixa${g.box?` · ${g.box} por caixa`:""}${g.strength?` · ${esc(g.strength)}`:""}. O nome é outro? Toca no certo:</span>${g.names.map(n=>`<button type="button" class="chip" data-medname="${esc(n+(g.strength?" "+g.strength:""))}">${esc(n)}</button>`).join("")}</div>`);
+  toast("Caixa lida: confirma o que está a verde")});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-medname]");if(!b)return;const f=b.closest("form");if(f)f.n.value=b.dataset.medname});
 
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
@@ -3199,7 +3261,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v67";
+const APPV="casa-v68";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

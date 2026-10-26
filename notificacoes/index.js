@@ -156,7 +156,11 @@ async function morning(code, now) {
   /* Medicamentos a acabar: comprimidos que restam ÷ (tomas por dia × por toma) */
   for (const m of bills.filter((b) => b.kind === "med" && b.stock != null)) {
     if ((m.start && m.start > now.date) || (m.end && m.end < now.date)) continue;
-    const perDay = (m.times || []).length * (+m.per || 1);
+    const fases = Array.isArray(m.phases) && m.phases.length;
+    const hoje = fases ? (() => { const i = m.start ? daysBetween(m.start, now.date) : 0; let acc = 0;
+      for (const ph of m.phases) { const d = +ph.days || 0; if (d === 0 || i < acc + d) return ph; acc += d; } return null; })() : m;
+    if (!hoje) continue;
+    const perDay = (hoje.times || []).length * (+hoje.per || 1);
     const dias = perDay ? Math.floor(m.stock / perDay) : null;
     if (dias !== null && dias <= (m.warnDays || 7)) linhas.push(`💊 Comprar ${m.name} (${m.who}) — dá para ${dias} dia${dias === 1 ? "" : "s"}`);
   }
@@ -214,13 +218,28 @@ async function house(code, now) {
       go: "calendario", tag: "ev-" + e.id}));
   }
 
+  /* Toma faseada: horários e quantidade da fase do dia (igual à app); última fase com 0 dias continua sempre */
+  const plano = (m, ds) => {
+    if (!Array.isArray(m.phases) || !m.phases.length) return {times: m.times || [], per: +m.per || 1};
+    const i = m.start ? daysBetween(m.start, ds) : 0;
+    if (i < 0) return null;
+    let acc = 0;
+    for (const ph of m.phases) {
+      const d = +ph.days || 0;
+      if (d === 0 || i < acc + d) return {times: ph.times || [], per: +ph.per || 1};
+      acc += d;
+    }
+    return null;
+  };
   /* Medicamentos: à hora de cada toma (até 45 min depois, por causa dos atrasos do GitHub), se ainda não foi marcada */
   const medSnap = await db.collection(`households/${code}/bills`).where("kind", "==", "med").get();
   const medsSent = new Set((st.meds || []).filter((k) => k.split("|")[1] === now.date));
   for (const d of medSnap.docs) {
     const m = d.data();
     if ((m.start && m.start > now.date) || (m.end && m.end < now.date)) continue;
-    for (const t of m.times || []) {
+    const P = plano(m, now.date);
+    if (!P) continue;
+    for (const t of P.times) {
       if (!/^\d{2}:\d{2}$/.test(t)) continue;
       const [hh, mm] = t.split(":").map(Number);
       const late = now.min - (hh * 60 + mm);
@@ -229,7 +248,7 @@ async function house(code, now) {
       if (((m.taken || {})[now.date] || []).includes(t)) continue;
       medsSent.add(key);
       jobs.push(() => send(code, {title: `💊 ${m.who ? m.who + ": " : ""}${m.name}`,
-        body: `Toma das ${t}${m.dose ? " · " + m.dose : ""}${m.notes ? " · " + m.notes : ""}`, go: "medicamentos", tag: "med-" + key}));
+        body: `Toma das ${t}${m.phases && m.phases.length ? " · " + String(P.per).replace(".", ",") + " por toma" : m.dose ? " · " + m.dose : ""}${m.notes ? " · " + m.notes : ""}`, go: "medicamentos", tag: "med-" + key}));
     }
   }
 
