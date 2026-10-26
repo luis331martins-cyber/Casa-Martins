@@ -865,10 +865,17 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
   <section id="tab-docs" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Documentos</span><span></span></nav>
     <h1 class="large">Documentos</h1>
+    <div class="seg" role="group" aria-label="Números" id="docShowSeg" style="align-self:flex-start"><button type="button" data-docshow="0">Escondidos</button><button type="button" data-docshow="1">Mostrar números</button></div>
     <div id="docList" class="rlist"></div>
     <button class="btn ghost" type="button" id="addDoc">+ Juntar documento</button>
     <div id="docNew"></div>
-    <p class="note" style="margin:0">Só a validade: não é preciso guardar números de documentos. Recebes uma notificação 90, 30 e 7 dias antes de terminar.</p>
+    <button class="btn ghost" type="button" id="docPasteBtn">Colar lista de números</button>
+    <form id="docPaste" class="bill-edit" hidden>
+      <label class="f wide">Cola a lista<textarea id="docPasteTxt" rows="8" style="font:inherit;font-size:15px;border-radius:10px;border:0;background:var(--fill);padding:10px;color:var(--fg)" placeholder="Luís&#10;- NIF: 123 456 789&#10;- N.Utente: 123456789&#10;Bianca&#10;- NIF: …"></textarea></label>
+      <p class="note wide" id="docPasteMsg" style="margin:0">Uma linha com o nome da pessoa e depois uma linha por número (“NIF: …”). Se já existir, o número é atualizado.</p>
+      <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" id="docPasteCancel">Cancelar</button>
+    </form>
+    <p class="note" style="margin:0">Os números ficam só na vossa casa no Firebase e aparecem escondidos: toca em “Mostrar números” para os ver. Recebes uma notificação 90, 30 e 7 dias antes de um documento com validade terminar.</p>
   </section>
 
   <section id="tab-saude" class="group" style="gap:16px" hidden>
@@ -2431,7 +2438,7 @@ function dueTag(ds,warn){const d=daysTo(ds);if(d===null)return"";
 const addYears=(ds,n)=>{const d=new Date(ds+"T12:00");d.setFullYear(d.getFullYear()+n);return ymd(d)};
 /* Formulário simples a partir de uma lista de campos [nome, rótulo, tipo, largo?, sugestão] */
 function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recform="${kind}|${rec?rec.id:"new"}" autocomplete="off">
-  ${fields.map(([n,l,t,w,ph,opts])=>t==="select"?`<label class="f${w?" wide":""}">${l}<select name="${n}">${opts.map(o=>`<option${rec&&rec[n]===o?" selected":""}>${esc(o)}</option>`).join("")}</select></label>`
+  ${fields.map(([n,l,t,w,ph,opts])=>t==="select"?`<label class="f${w?" wide":""}">${l}<select name="${n}">${(rec&&rec[n]&&!opts.includes(rec[n])?[rec[n],...opts]:opts).map(o=>`<option${rec&&rec[n]===o?" selected":""}>${esc(o)}</option>`).join("")}</select></label>`
     :t==="check"?`<label class="f wide" style="flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--fg)"><input type="checkbox" name="${n}" style="width:22px;height:22px"${rec?(rec[n]?" checked":""):" checked"}>${l}</label>`
     :`<label class="f${w?" wide":""}">${l}<input name="${n}" type="${t||"text"}"${t==="number"?' step="any" inputmode="decimal"':""}${t==="tel"?' inputmode="tel"':""} value="${rec&&rec[n]!=null?esc(rec[n]):""}" placeholder="${esc(ph||"")}"${n==="name"||n==="who"&&w?" required":""}></label>`).join("")}
   ${extra||""}
@@ -2441,10 +2448,26 @@ function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recf
 const whoChips=(cur)=>`<div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-setwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setwho]");if(!b)return;const f=b.closest("form");if(f&&f.who)f.who.value=b.dataset.setwho});
 var editRec={car:"",doc:"",health:"",doctor:""};
+/* Documentos e números: tipos conhecidos (pela ordem em que aparecem) e nomes usados na lista colada */
+const DOC_TYPES=["Cartão de Cidadão","NIF","Segurança Social (NISS)","Nº de utente (SNS)","Seguro Medicare","Seguro AdvanceCare","Nº de utente SAMS","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Chave Móvel Digital","Sócio do Benfica","Autorização de residência","Outro"];
+const DOC_ALIAS=[[/^c\.?\s?c\.?$|cart[aã]o de cidad/i,"Cartão de Cidadão"],[/^nif$|contribuinte/i,"NIF"],[/niss|seguran[cç]a social/i,"Segurança Social (NISS)"],[/sams/i,"Nº de utente SAMS"],
+  [/utente/i,"Nº de utente (SNS)"],[/medicare|m[eé]dis/i,"Seguro Medicare"],[/advance ?care/i,"Seguro AdvanceCare"],[/^cmd$|chave m[oó]vel/i,"Chave Móvel Digital"],[/benfica/i,"Sócio do Benfica"],
+  [/passaporte/i,"Passaporte"],[/carta de condu/i,"Carta de condução"],[/europeu/i,"Cartão Europeu de Seguro de Doença"]];
+const docType=l=>{l=String(l).trim();const a=DOC_ALIAS.find(([re])=>re.test(l));return a?a[1]:l};
+const noAcc=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const docWho=w=>{w=String(w).trim();return PEOPLE.find(p=>noAcc(p)===noAcc(w.split(/\s+/)[0])||noAcc(p)===noAcc(w))||w};
+/* Lê a lista colada: uma linha com o nome da pessoa e depois linhas "Rótulo: número" */
+function parseDocs(txt){let who="";const L=[];
+  for(let line of String(txt).split(/\r?\n/)){line=line.replace(/^\s*[-*•]\s*(\[[ xX]?\]\s*)?/,"").trim();if(!line)continue;
+    const m=line.match(/^([^:]+):\s*(.*)$/);
+    if(!m){who=docWho(line.replace(/:$/,""));continue}
+    if(!who||!m[2].trim())continue;L.push({who,type:docType(m[1]),num:m[2].trim()})}
+  return L}
+let docShow=false;
 const RECS={
   car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome","text",1,"ex.: Carro da Bianca"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revisao","Revisão: data","date"],["revKm","Revisão: aos km","number",0,"opcional"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
-  doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",["Cartão de Cidadão","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Seguro de saúde","Autorização de residência","Outro"]],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
+  doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
 const recsOf=k=>bills.filter(b=>b.kind===k);
@@ -2478,10 +2501,25 @@ function renderCars(){const el=document.getElementById("carList");if(!el)return;
   document.getElementById("addCar").hidden=editRec.car==="new"}
 function renderDocs(){const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
   const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
-  el.innerHTML=whos.map(w=>`<div class="rcard"><div class="rhead" style="cursor:default"><b>${esc(w)}</b></div>${L.filter(d=>d.who===w).sort((a,b)=>(a.date||"9").localeCompare(b.date||"9")).map(d=>d.id===editRec.doc?recFormFor("doc",d):
-    `<button type="button" class="rrow" data-recedit="doc|${d.id}" style="width:100%;background:transparent;color:var(--fg);font:inherit;text-align:left"><span class="rl">${esc(d.type)}</span><span class="rm">${d.date?"Válido até "+fmtD(d.date):"Sem validade"}${d.notes?" · "+esc(d.notes):""}</span><span class="rs">${dueTag(d.date,90)}</span></button>`).join("")}</div>`).join("")
+  document.querySelectorAll("[data-docshow]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.docshow==="1")===docShow));
+  const ord=t=>{const i=DOC_TYPES.indexOf(t);return i<0?DOC_TYPES.length-1:i};
+  const mask=n=>docShow?esc(n):"•••• "+esc(String(n).replace(/\s/g,"").slice(-3));
+  el.innerHTML=whos.map(w=>`<div class="rcard"><div class="rhead" style="cursor:default"><b>${esc(w)}</b></div>${L.filter(d=>d.who===w).sort((a,b)=>ord(a.type)-ord(b.type)||a.type.localeCompare(b.type,"pt")).map(d=>d.id===editRec.doc?recFormFor("doc",d):
+    `<div class="rrow"><button type="button" data-recedit="doc|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.type)}</span><span class="rm" style="display:block">${[d.num?`<span style="font-variant-numeric:tabular-nums;color:var(--fg)">${mask(d.num)}</span>`:"",d.date?"Válido até "+fmtD(d.date):"",d.notes?esc(d.notes):""].filter(Boolean).join(" · ")}</span></button>
+      <span class="rs">${d.num?`<button type="button" class="bump" data-copydoc="${d.id}">Copiar</button>`:""}${dueTag(d.date,90)}</span></div>`).join("")}</div>`).join("")
     +(editRec.doc==="new"?recFormFor("doc",null):"")||`<div class="rcard"><div class="rempty">Ainda não há documentos. Junta o Cartão de Cidadão, passaportes e cartas de condução para seres avisado antes de terminarem.</div></div>`;
   document.getElementById("addDoc").hidden=editRec.doc==="new"}
+document.getElementById("docShowSeg").addEventListener("click",e=>{const b=e.target.closest("[data-docshow]");if(b){docShow=b.dataset.docshow==="1";renderDocs()}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copydoc]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copydoc);if(!d)return;
+  (navigator.clipboard?navigator.clipboard.writeText(d.num):Promise.reject()).then(()=>toast(d.type+" copiado")).catch(()=>{prompt("Copia o número:",d.num)})});
+document.getElementById("docPasteBtn").addEventListener("click",()=>{document.getElementById("docPaste").hidden=false;document.getElementById("docPasteBtn").hidden=true;document.getElementById("docPasteTxt").focus()});
+document.getElementById("docPasteCancel").addEventListener("click",()=>{document.getElementById("docPaste").hidden=true;document.getElementById("docPasteBtn").hidden=false;document.getElementById("docPasteTxt").value=""});
+document.getElementById("docPaste").addEventListener("submit",e=>{e.preventDefault();const L=parseDocs(document.getElementById("docPasteTxt").value);
+  if(!L.length){document.getElementById("docPasteMsg").textContent="Não encontrei números. Confirma que há uma linha com o nome e depois linhas “NIF: …”.";return}
+  let n=0,u=0;for(const x of L){const old=recsOf("doc").find(d=>d.who===x.who&&d.type===x.type);
+    if(old){if(old.num!==x.num){putBill({...old,num:x.num});u++}}else{putBill({id:uid(),kind:"doc",who:x.who,type:x.type,num:x.num,name:`${x.type} (${x.who})`});n++}}
+  document.getElementById("docPasteTxt").value="";document.getElementById("docPaste").hidden=true;document.getElementById("docPasteBtn").hidden=false;
+  renderDocs();toast(`${n} juntado${n===1?"":"s"}${u?`, ${u} atualizado${u===1?"":"s"}`:""}`)});
 let hWho="";
 function renderHealth(){const el=document.getElementById("hNext");if(!el)return;const today=ymd(new Date());
   const H=recsOf("health").filter(h=>!hWho||h.who===hWho), D=recsOf("doctor").filter(d=>!hWho||!d.who||d.who===hWho);
