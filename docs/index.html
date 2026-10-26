@@ -2483,7 +2483,13 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
   else if(b.dataset.carbump){const [id,f]=b.dataset.carbump.split("|"), c=bills.find(y=>y.id===id);if(!c||!c[f])return;
     const n=f==="inspecao"&&c.inspecaoAnos?+c.inspecaoAnos:1;let d=c[f];while(daysTo(d)<=60)d=addYears(d,n);putBill({...c,[f]:d});renderCars();toast("Próximo: "+fmtD(d))}});
 document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!ref)return;e.preventDefault();
-  if(ref.startsWith("car|")&&pdfLearn){learnPremio(pdfLearn.ins,pdfLearn.ctx);pdfLearn=null}const [k,id]=ref.split("|"), f=e.target, F=RECS[k];
+  if(ref.startsWith("car|")&&pdfAll){
+    /* Valor escrito à mão: procura no PDF o valor que, × 1, 2, 4 ou 12, dá esse total, e aprende essa regra */
+    const typed=parseFloat(String(e.target.seguroVal&&e.target.seguroVal.value||"").replace(",","."));
+    if(typed&&pdfProp!=null&&Math.abs(typed-pdfProp)>0.5){let hit=null;
+      for(const k of [1,2,4,12])for(const c of pdfAll)if(!hit&&Math.abs(c.v*k-typed)/typed<=0.03)hit={ctx:c.ctx,k};
+      pdfLearn=hit?{ins:pdfIns,...hit}:null;if(hit)toast(`Aprendido: ${hit.k>1?"valor × "+hit.k+" ":""}junto a “${hit.ctx}”`)}
+    if(pdfLearn)learnPremio(pdfLearn.ins,pdfLearn.ctx,pdfLearn.k);pdfLearn=null;pdfAll=null}const [k,id]=ref.split("|"), f=e.target, F=RECS[k];
   const old=id==="new"?null:bills.find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:k};
   for(const [n,,t] of F.fields){const el=f[n];if(!el)continue;let v=t==="check"?el.checked:el.value.trim();if(t==="number")v=v===""?null:parseFloat(v.replace(",","."));
     if(v===""||v===null||(typeof v==="number"&&isNaN(v)))delete x[n];else x[n]=v}
@@ -2567,7 +2573,7 @@ function parseCarPdf(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(n
   const latest=(a,b)=>D.map(x=>x.ds).filter(x=>x>=a&&x<=b).sort().pop()||null;
   if(out.kind==="seguro"){out.seguro=after(/(valid[oa] ate|data de (?:fim|termo|vencimento)|vencimento|termo do contrato|renovacao|periodo de seguro|periodo de validade|ate\s*:)/,60,true)||latest(addYears(today,-1),addYears(today,2));
     if(out.seguro&&out.seguro<today)out.seguro=addYears(out.seguro,1);
-    const pv=premio(t);if(pv){out.seguroVal=pv.v;out.valAlt=pv.alt;out.ins=pv.ins;out.valCtx=pv.ctx;out.valLearned=pv.learned;if(pv.note)out.valNote=pv.note}}
+    const pv=premio(t);if(pv){out.seguroVal=pv.v;out.valAlt=pv.alt;out.ins=pv.ins;out.valCtx=pv.ctx;out.valLearned=pv.learned;out.valAll=pv.all;if(pv.note)out.valNote=pv.note}}
   if(out.kind==="inspecao"){out.inspecao=after(/(proxima inspec\w*|data limite|apresentar(?:-se)? ate|valid[oa] ate)/);
     if(!out.inspecao){const d=after(/(data (?:da|de) inspec\w*|inspec\w* realizada)/)||D.map(x=>x.ds).filter(x=>x<=today).sort().pop();if(d)out.inspecao=addYears(d,1)}}
   if(out.kind==="iuc"){out.iuc=after(/(data limite(?: de pagamento)?|pagamento ate|prazo de pagamento)/)||latest(addYears(today,-1),addYears(today,1));
@@ -2581,9 +2587,16 @@ const INSURERS=["fidelidade","ageas","allianz","tranquilidade","generali","liber
 const insurerOf=t=>INSURERS.find(n=>new RegExp(`\\b${n}\\b`).test(t))||"";
 /* O que a app aprendeu: para cada seguradora, as palavras que vêm antes do valor certo (guardado na casa, kind:"pdfrule") */
 const pdfRules=()=>(bills.find(b=>b.id==="pdf-aprendido")||{}).rules||{};
-function learnPremio(ins,ctx){if(!ctx)return;const old=bills.find(b=>b.id==="pdf-aprendido")||{id:"pdf-aprendido",kind:"pdfrule",name:"Leitura de PDFs",rules:{}};
-  const rules={...(old.rules||{}),[ins||"geral"]:ctx};putBill({...old,rules})}
-function premio(t){const C=[];const ins=insurerOf(t), R=pdfRules(), learned=R[ins||"geral"]||(ins?"":R.geral)||"";
+function learnPremio(ins,ctx,k){if(!ctx)return;const old=bills.find(b=>b.id==="pdf-aprendido")||{id:"pdf-aprendido",kind:"pdfrule",name:"Leitura de PDFs",rules:{}};
+  const rules={...(old.rules||{}),[ins||"geral"]:{ctx,k:k||1}};putBill({...old,rules})}
+const FRK={mensal:12,trimestral:4,semestral:2,anual:1};
+/* Forma de pagamento do documento: escrita ("fracionamento semestral") ou pelo período do recibo (6 meses = semestral) */
+function docFreq(t){const m=t.match(/(?:fra(?:c)?cionamento|periodicidade|forma de pagamento|modalidade de pagamento|pagamento|prestacao)\W{0,25}(mensal|trimestral|semestral|anual)/);if(m)return m[1];
+  const D=findDates(t);for(let i=0;i+1<D.length;i++){if(D[i+1].i-D[i].i>45)continue;const a=new Date(D[i].ds+"T12:00"),b=new Date(D[i+1].ds+"T12:00");
+    const mo=Math.round((b-a)/(864e5*30.44));if(mo===1)return"mensal";if(mo===3)return"trimestral";if(mo===6)return"semestral";if(mo===12)return"anual"}
+  const w=t.match(/\b(mensal|trimestral|semestral)\b/);return w?w[1]:""}
+function premio(t){const C=[];const ins=insurerOf(t), R=pdfRules(), rule=R[ins||"geral"]||(ins?null:R.geral)||null;
+  const learned=rule?(typeof rule==="string"?rule:rule.ctx):"", learnedK=rule&&typeof rule==="object"?+rule.k||1:0, dFr=docFreq(t);
   const re=/(?:€|eur)\s*(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+[.,]\d{2})(?![\d.,]\d)|(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+[.,]\d{2})(?![\d.,]?\d)\s*(?:€|eur\b|euros?)?/g;
   for(const m of t.matchAll(re)){const raw=m[1]||m[2];const v=numPT(raw.includes(",")?raw:raw.replace(".",","));if(!(v>=15&&v<=6000))continue;
     const before=t.slice(Math.max(0,m.index-90),m.index), aft=t.slice(m.index+m[0].length,m.index+m[0].length+25), euro=/€|eur/.test(m[0]);
@@ -2599,16 +2612,19 @@ function premio(t){const C=[];const ins=insurerOf(t), R=pdfRules(), learned=R[in
     if(learned&&ctx&&(ctx.endsWith(learned)||learned.endsWith(ctx)))sc+=30;
     C.push({v,sc,fr,i:m.index,ctx})}
   if(!C.length)return null;
-  C.sort((a,b)=>b.sc-a.sc||b.v-a.v);const best=C[0];let v=best.v, note="";
-  if(best.fr){const k={mensal:12,trimestral:4,semestral:2}[best.fr];note=`prémio ${best.fr} de ${eur(v)} × ${k}`;v=Math.round(v*k*100)/100}
-  const seen=new Set([best.v]), alt=C.filter(c=>c.sc>=0&&!seen.has(c.v)&&seen.add(c.v)).slice(0,6).map(c=>({v:c.v,ctx:c.ctx,fr:c.fr}));
-  return{v,alt,note,ins,ctx:best.ctx,learned:!!learned&&best.sc>=30}}
+  /* Valor por pagamento → valor anual: o que a app aprendeu, a palavra junto ao valor, ou a forma de pagamento do documento */
+  const frOf=c=>c.fr||(dFr&&dFr!=="anual"&&!/anual/.test(c.ctx)?dFr:"");
+  C.sort((a,b)=>b.sc-a.sc||b.v-a.v);const best=C[0], isLearned=!!learned&&best.sc>=30;let v=best.v, note="";
+  const fr=isLearned&&learnedK?(Object.keys(FRK).find(x=>FRK[x]===learnedK)||""):frOf(best), k=isLearned&&learnedK?learnedK:FRK[fr]||1;
+  if(k>1){note=`${eur(v)} × ${k}${fr?" (pagamento "+fr+")":""}`;v=Math.round(v*k*100)/100}
+  const seen=new Set([best.v]), alt=C.filter(c=>c.sc>=0&&!seen.has(c.v)&&seen.add(c.v)).slice(0,6).map(c=>({v:c.v,ctx:c.ctx,fr:frOf(c)}));
+  return{v,alt,note,ins,ctx:best.ctx,learned:isLearned,all:C.map(c=>({v:c.v,ctx:c.ctx}))}}
 const CARLBL={seguro:"Seguro: renovação",seguroVal:"Seguro: valor",inspecao:"Inspeção",iuc:"IUC",revisao:"Revisão: data",revKm:"Revisão: aos km",km:"Quilómetros",plate:"Matrícula"};
-var pdfIns="", pdfLearn=null;
+var pdfIns="", pdfLearn=null, pdfAll=null, pdfProp=null;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setval]");if(!b)return;const f=b.closest("form");if(!f||!f.seguroVal)return;
-  const k={mensal:12,trimestral:4,semestral:2}[b.dataset.fr]||1, v=Math.round(+b.dataset.setval*k*100)/100;f.seguroVal.value=v;
+  const k=FRK[b.dataset.fr]||1, v=Math.round(+b.dataset.setval*k*100)/100;f.seguroVal.value=v;pdfProp=v;
   b.parentNode.querySelectorAll("[data-setval]").forEach(x=>x.style.outline="");b.style.outline="2px solid #34c759";
-  pdfLearn={ins:pdfIns,ctx:b.dataset.ctx};toast(`Valor: ${eur(v)}${k>1?` (${b.dataset.fr} × ${k})`:""} · a app aprende ao guardar`)});
+  pdfLearn={ins:pdfIns,ctx:b.dataset.ctx,k};toast(`Valor: ${eur(v)}${k>1?` (${b.dataset.fr} × ${k})`:""} · a app aprende ao guardar`)});
 document.getElementById("carPdf").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;
   const msg=document.getElementById("carPdfMsg");const say=(t,ok)=>{msg.hidden=!t;msg.textContent=t||"";msg.style.color=ok?"var(--fg)":""};
   say("A ler o PDF…",true);let txt="";
@@ -2621,7 +2637,7 @@ document.getElementById("carPdf").addEventListener("change",async e=>{const file
   let car=f.plate&&cars.find(c=>norm(c.plate)===norm(f.plate));
   if(!car&&cars.length===1)car=cars[0];
   if(!car&&cars.length>1)car=cars.find(c=>confirm(`Este PDF é do carro "${c.name}"?`));
-  pdfIns=f.ins||"";pdfLearn=null;
+  pdfIns=f.ins||"";pdfLearn=null;pdfAll=f.valAll||null;pdfProp=f.seguroVal!=null?f.seguroVal:null;
   if(car&&car.km!=null&&f.km!=null&&f.km<=car.km){delete f.km;keys.splice(keys.indexOf("km"),1)}/* não volta a km mais antigos */
   editRec.car=car?car.id:"new";renderCars();
   const form=document.querySelector(`[data-recform="car|${editRec.car}"]`);if(!form)return;
