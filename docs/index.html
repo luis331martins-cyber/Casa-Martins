@@ -1960,8 +1960,8 @@ function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data
     <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
     <label class="f">Última prestação<input name="b" type="month" required value="${l?v(l.last):""}"></label>
     <label class="f">Montante pedido (€)<input name="m" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.amount):""}" placeholder="opcional"></label>
-    <label class="f wide">Linha nas Contas<select name="l"><option value="">Não ligar</option><option value="new"${!l?" selected":""}>Criar uma linha nova nas Contas</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${l&&(l.bill===b.id||!l.bill&&sameName(l.name,b.name))?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
     <label class="f">TAEG (%)<input name="t" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.taeg):""}" placeholder="opcional"></label>
+    <label class="f wide">Linha nas Contas<select name="l"><option value="">Não ligar</option><option value="new"${!l?" selected":""}>Criar uma linha nova nas Contas</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${l&&(l.bill===b.id||!l.bill&&sameName(l.name,b.name))?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cancelloan="1">Cancelar</button>
     ${l?`<button class="btn danger wide" type="button" data-delloan="${l.id}">Apagar ${esc(l.name)}</button>`:""}
