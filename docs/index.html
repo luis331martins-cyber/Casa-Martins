@@ -303,6 +303,32 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 .item.has-edit{display:block}
 .chip:hover,.chip:focus{background:var(--accent-soft);color:var(--accent)}
 .chip:active{opacity:.6}
+/* Fundo da app (escolhe-se na ⚙️; fica guardado em cada telemóvel) */
+html{background:var(--bg)}
+body{background:transparent}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--wall,var(--bg))}
+:root[data-wall="jardim"]{--wall:radial-gradient(at 12% 8%,#cdeedd 0,transparent 55%),radial-gradient(at 92% 18%,#d6e6fb 0,transparent 50%),radial-gradient(at 70% 92%,#e3f3d2 0,transparent 55%),#edf3ef}
+:root[data-wall="manha"]{--wall:radial-gradient(at 10% 10%,#ffdcc8 0,transparent 55%),radial-gradient(at 90% 25%,#f8d3e8 0,transparent 50%),radial-gradient(at 50% 95%,#e2dcfb 0,transparent 60%),#f7f1f4}
+:root[data-wall="oceano"]{--wall:radial-gradient(at 15% 10%,#cfe6fb 0,transparent 55%),radial-gradient(at 85% 30%,#cdf1ec 0,transparent 50%),radial-gradient(at 40% 95%,#dbe2fb 0,transparent 60%),#eef3f8}
+:root[data-wall="sol"]{--wall:radial-gradient(at 10% 8%,#ffd9b8 0,transparent 55%),radial-gradient(at 90% 30%,#ffcdd5 0,transparent 50%),radial-gradient(at 50% 95%,#ffefc2 0,transparent 60%),#f9f2ea}
+:root[data-wall="classico"]{--wall:#f2f2f7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-wall="jardim"]{--wall:radial-gradient(at 12% 8%,#123326 0,transparent 55%),radial-gradient(at 92% 18%,#10243a 0,transparent 50%),radial-gradient(at 70% 92%,#1c2c12 0,transparent 55%),#050807}:root:not([data-theme="light"])[data-wall="manha"]{--wall:radial-gradient(at 10% 10%,#3d2017 0,transparent 55%),radial-gradient(at 90% 25%,#3a1a2e 0,transparent 50%),radial-gradient(at 50% 95%,#231d40 0,transparent 60%),#0a0709}:root:not([data-theme="light"])[data-wall="oceano"]{--wall:radial-gradient(at 15% 10%,#0b2a40 0,transparent 55%),radial-gradient(at 85% 30%,#0a3330 0,transparent 50%),radial-gradient(at 40% 95%,#151d40 0,transparent 60%),#05080b}:root:not([data-theme="light"])[data-wall="sol"]{--wall:radial-gradient(at 10% 8%,#40240f 0,transparent 55%),radial-gradient(at 90% 30%,#3e1520 0,transparent 50%),radial-gradient(at 50% 95%,#372b0b 0,transparent 60%),#0a0705}:root:not([data-theme="light"])[data-wall="classico"]{--wall:#000}}
+:root[data-theme="dark"][data-wall="jardim"]{--wall:radial-gradient(at 12% 8%,#123326 0,transparent 55%),radial-gradient(at 92% 18%,#10243a 0,transparent 50%),radial-gradient(at 70% 92%,#1c2c12 0,transparent 55%),#050807}
+:root[data-theme="dark"][data-wall="manha"]{--wall:radial-gradient(at 10% 10%,#3d2017 0,transparent 55%),radial-gradient(at 90% 25%,#3a1a2e 0,transparent 50%),radial-gradient(at 50% 95%,#231d40 0,transparent 60%),#0a0709}
+:root[data-theme="dark"][data-wall="oceano"]{--wall:radial-gradient(at 15% 10%,#0b2a40 0,transparent 55%),radial-gradient(at 85% 30%,#0a3330 0,transparent 50%),radial-gradient(at 40% 95%,#151d40 0,transparent 60%),#05080b}
+:root[data-theme="dark"][data-wall="sol"]{--wall:radial-gradient(at 10% 8%,#40240f 0,transparent 55%),radial-gradient(at 90% 30%,#3e1520 0,transparent 50%),radial-gradient(at 50% 95%,#372b0b 0,transparent 60%),#0a0705}
+:root[data-theme="dark"][data-wall="classico"]{--wall:#000}
+.walls{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.wall{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent;color:var(--fg);font-size:12px;padding:0}
+.wall i{display:block;width:100%;aspect-ratio:3/4;border-radius:12px;border:.5px solid var(--line)}
+.wall[aria-pressed="true"] i{outline:3px solid var(--accent);outline-offset:2px}
+.wall[data-wall="jardim"] i{background:radial-gradient(at 12% 8%,#cdeedd 0,transparent 55%),radial-gradient(at 92% 18%,#d6e6fb 0,transparent 50%),radial-gradient(at 70% 92%,#e3f3d2 0,transparent 55%),#edf3ef}
+.wall[data-wall="manha"] i{background:radial-gradient(at 10% 10%,#ffdcc8 0,transparent 55%),radial-gradient(at 90% 25%,#f8d3e8 0,transparent 50%),radial-gradient(at 50% 95%,#e2dcfb 0,transparent 60%),#f7f1f4}
+.wall[data-wall="oceano"] i{background:radial-gradient(at 15% 10%,#cfe6fb 0,transparent 55%),radial-gradient(at 85% 30%,#cdf1ec 0,transparent 50%),radial-gradient(at 40% 95%,#dbe2fb 0,transparent 60%),#eef3f8}
+.wall[data-wall="sol"] i{background:radial-gradient(at 10% 8%,#ffd9b8 0,transparent 55%),radial-gradient(at 90% 30%,#ffcdd5 0,transparent 50%),radial-gradient(at 50% 95%,#ffefc2 0,transparent 60%),#f9f2ea}
+.wall[data-wall="classico"] i{background:#f2f2f7}
+@media (prefers-color-scheme: dark){.wall[data-wall="jardim"] i{background:radial-gradient(at 12% 8%,#123326 0,transparent 55%),radial-gradient(at 92% 18%,#10243a 0,transparent 50%),radial-gradient(at 70% 92%,#1c2c12 0,transparent 55%),#050807}.wall[data-wall="manha"] i{background:radial-gradient(at 10% 10%,#3d2017 0,transparent 55%),radial-gradient(at 90% 25%,#3a1a2e 0,transparent 50%),radial-gradient(at 50% 95%,#231d40 0,transparent 60%),#0a0709}.wall[data-wall="oceano"] i{background:radial-gradient(at 15% 10%,#0b2a40 0,transparent 55%),radial-gradient(at 85% 30%,#0a3330 0,transparent 50%),radial-gradient(at 40% 95%,#151d40 0,transparent 60%),#05080b}.wall[data-wall="sol"] i{background:radial-gradient(at 10% 8%,#40240f 0,transparent 55%),radial-gradient(at 90% 30%,#3e1520 0,transparent 50%),radial-gradient(at 50% 95%,#372b0b 0,transparent 60%),#0a0705}.wall[data-wall="classico"] i{background:#000}}
+
 .i-food{background:linear-gradient(160deg,#b27cf2,#7a45d6)}
 #meals{gap:0}
 .meal{background:var(--surface);display:flex;flex-direction:column;gap:8px}
@@ -320,6 +346,7 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 #meals>.meal:not(:last-child)::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:1px;transform:scaleY(.5);transform-origin:bottom;background:var(--line)}
 
 </style>
+<script>try{document.documentElement.dataset.wall=localStorage.getItem("casa-fundo")||"jardim"}catch(e){document.documentElement.dataset.wall="jardim"}</script>
 <script src="firebase-config.js"></script>
 </head>
 <body>
@@ -376,10 +403,20 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
   <section id="tab-definicoes" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Esta casa</span><span></span></nav>
     <h1 class="large">Esta casa</h1>
-    <form class="item" id="nameForm" autocomplete="off" style="align-items:end">
+    <div><form class="item" id="nameForm" autocomplete="off" style="align-items:end">
       <label class="f" style="min-width:0">O teu nome neste telemóvel<input id="myName" placeholder="ex.: Luís" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
       <button class="btn" type="submit">Guardar</button>
-    </form>
+    </form></div>
+    <div><div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:10px">
+      <div class="name">Fundo da app</div>
+      <div class="walls" role="group" aria-label="Fundo da app">
+        <button type="button" class="wall" data-wall="jardim"><i></i>Jardim</button>
+        <button type="button" class="wall" data-wall="manha"><i></i>Manhã</button>
+        <button type="button" class="wall" data-wall="oceano"><i></i>Oceano</button>
+        <button type="button" class="wall" data-wall="sol"><i></i>Pôr do sol</button>
+        <button type="button" class="wall" data-wall="classico"><i></i>Clássico</button>
+      </div>
+    </div></div>
     <div id="houseShared" class="group" hidden>
       <div class="item">
         <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
@@ -727,7 +764,7 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0)}
+function show(tab){["setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
 const ROUTES={"#comer":"comer","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
@@ -908,6 +945,9 @@ async function delBill(id){
   bills=bills.filter(b=>b.id!==id); renderBills();
   if(store){try{await store.collection("bills").doc(id).delete()}catch(e){toast("Não foi possível apagar.")}} else billLocal.save();
 }
+/* Encolhe o valor das caixas de resumo se não couber (só quando o ecrã Contas está à vista: escondido mede 0) */
+function fitTotals(){document.querySelectorAll(".tot .v").forEach(v=>{const box=v.parentElement;if(!box.clientWidth)return;v.style.fontSize="";const w=box.clientWidth-20;
+  for(let f=parseFloat(getComputedStyle(v).fontSize);v.scrollWidth>w&&f>10;f-=.5)v.style.fontSize=f+"px"})}
 function renderBills(){
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
@@ -929,8 +969,7 @@ function renderBills(){
   const paid=all.reduce((s,b)=>s+doneOf(b,k),0);
   document.getElementById("vTot").textContent=eur(tot);
   /* Se um valor não couber na caixa, encolhe o texto até caber */
-  requestAnimationFrame(()=>document.querySelectorAll(".tot .v").forEach(v=>{v.style.fontSize="";const w=v.parentElement.clientWidth-20;
-    for(let f=parseFloat(getComputedStyle(v).fontSize);v.scrollWidth>w&&f>10;f-=.5)v.style.fontSize=f+"px"}));
+  requestAnimationFrame(fitTotals);
   document.getElementById("vPaid").textContent=eur(paid);
   document.getElementById("vDue").textContent=eur(tot-paid);
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
@@ -1343,6 +1382,12 @@ if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(houseCode)startShared().catch(()=>{document.getElementById("sub").textContent=SUB_LOCAL});
 else if(ls.get("casa-local")){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else setup();
+
+/* Fundo da app: cada telemóvel escolhe o seu */
+function markWall(){const w=document.documentElement.dataset.wall;document.querySelectorAll(".wall").forEach(b=>b.setAttribute("aria-pressed",b.dataset.wall===w))}
+markWall();
+document.addEventListener("click",e=>{const t=e.target.closest(".wall");if(!t)return;
+  document.documentElement.dataset.wall=t.dataset.wall;try{localStorage.setItem("casa-fundo",t.dataset.wall)}catch(err){}markWall()});
 
 /* Barra de navegação: mostra o título pequeno e a linha quando a página desce, como no iPhone */
 addEventListener("scroll",()=>document.querySelectorAll(".navbar").forEach(n=>n.classList.toggle("scrolled",scrollY>36)),{passive:true});
