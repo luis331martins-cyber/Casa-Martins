@@ -292,6 +292,15 @@ label.f input,label.f select{margin-left:-4px;width:calc(100% + 4px)}
 button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;font:inherit;font-size:15px;padding:8px 0 2px;border-radius:0}
 .spend b{font-weight:600}
 .shops{font-size:13px;color:var(--muted)}
+.qty{display:grid;grid-template-columns:1fr auto;gap:6px}
+.qty select{width:auto;padding-right:8px}
+.item .bname .name{font-weight:400}
+.stepper{display:grid;grid-template-columns:44px 1fr 44px;gap:6px}
+.stepper button{background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;border-radius:10px;padding:0}
+.stepper input{text-align:center}
+.item.has-edit{display:block}
+.chip:hover,.chip:focus{background:var(--accent-soft);color:var(--accent)}
+.chip:active{opacity:.6}
 
 </style>
 <script src="firebase-config.js"></script>
@@ -408,6 +417,8 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
           </select>
         </label>
         <label class="f">Validade (opcional)<input type="date" id="newExp"></label>
+        <label class="f">Quantidade<span class="qty"><input id="newQty" type="number" min="0" step="any" inputmode="decimal" placeholder="1"><select id="newUnit" aria-label="Unidade"><option value="un">un.</option><option value="pacotes">pacotes</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="latas">latas</option><option value="garrafas">garrafas</option><option value="caixas">caixas</option><option value="doses">doses</option></select></span></label>
+        <label class="f">Onde se compra<input id="newShop" list="shopList" placeholder="ex.: Continente" autocapitalize="words"></label>
       </div>
     </form>
     <div>
@@ -426,6 +437,8 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
       <div class="more">
         <label class="f">Tipo<select id="mCat"><option>Carne</option><option>Peixe</option></select></label>
         <label class="f">Validade<input type="date" id="mExp"></label>
+        <label class="f">Quantidade<span class="qty"><input id="mQty" type="number" min="0" step="any" inputmode="decimal" placeholder="1"><select id="mUnit" aria-label="Unidade"><option value="un">un.</option><option value="pacotes">pacotes</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="latas">latas</option><option value="garrafas">garrafas</option><option value="caixas">caixas</option><option value="doses">doses</option></select></span></label>
+        <label class="f">Onde se compra<input id="mShop" list="shopList" placeholder="ex.: Talho" autocapitalize="words"></label>
       </div>
     </form>
     <div>
@@ -439,7 +452,7 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
   <section id="tab-lista" class="group" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
-    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”. Ao marcar como comprado, volta a “tenho”.</p>
+    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”, separado pela loja onde se compra. Ao marcar como comprado, volta a “tenho”.</p>
     <div id="shop" class="group"></div>
   </section>
 
@@ -513,6 +526,7 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 </div>
 
 <div class="toast" id="toast" hidden></div>
+<datalist id="shopList"></datalist>
 
 <script>
 const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Fruta","Outros"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
@@ -541,13 +555,20 @@ async function remove(id){
 function upsert(it){const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);if(store)render()}
 
 /* ---------- ações ---------- */
-function addItem(name,cat,exp){
+/* Quantidade (qty + unit) e onde se compra (shop) são opcionais */
+function addItem(name,cat,exp,qty,unit,shop){
   name=name.trim(); if(!name)return;
   const ex=items.find(i=>i.name.toLowerCase()===name.toLowerCase());
   if(ex){toast(ex.name+" já está na lista");return}
-  const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now()};
+  const q=parseFloat(String(qty??"").replace(",","."));shop=String(shop||"").trim();
+  const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
   items.push(it);render();put(it);toast(name+" adicionado");
 }
+const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",doses:"dose"};
+const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
+const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
+const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
+let editItem="";
 function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};upsert(n);render();put(n)}
 
 /* ---------- datas ---------- */
@@ -574,14 +595,27 @@ function render(){
   const have=new Set(items.map(i=>i.name.toLowerCase()));
   document.getElementById("chips").innerHTML=QUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os básicos na lista.</span>`;
 
-  const row=i=>{const e=expText(i.exp);return `
+  document.getElementById("shopList").innerHTML=shopsUsed().map(n=>`<option value="${esc(n)}">`).join("");
+  const unitOpts=u=>[["un","un."],["pacotes","pacotes"],["kg","kg"],["g","g"],["L","L"],["ml","ml"],["latas","latas"],["garrafas","garrafas"],["caixas","caixas"],["doses","doses"]].map(([v,l])=>`<option value="${v}"${(u||"un")===v?" selected":""}>${l}</option>`).join("");
+  const itemForm=i=>`<form class="bill-edit" data-itemform="${i.id}" autocomplete="off">
+      <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
+      <label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
+      <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>
+      <label class="f">${MEAT.includes(i.cat)?"Tipo":"Categoria"}<select name="c">${(MEAT.includes(i.cat)?MEAT:CATS).map(c=>`<option${c===i.cat?" selected":""}>${c}</option>`).join("")}</select></label>
+      <label class="f wide">Validade<input name="e" type="date" value="${i.exp||""}"></label>
+      <label class="f wide">Onde se compra<input name="s" list="shopList" value="${esc(i.shop||"")}" placeholder="ex.: Continente" autocapitalize="words"></label>
+      <div class="chips wide">${shopsUsed().slice(0,8).map(n=>`<button type="button" class="chip" data-shop="${esc(n)}">${esc(n)}</button>`).join("")}</div>
+      <button class="btn" type="submit">Guardar</button>
+      <button class="btn ghost" type="button" data-cancelitem="1">Cancelar</button>
+      <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>
+    </form>`;
+  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[qtyText(i),i.shop?esc(i.shop):"",e].filter(Boolean).join(" · ");return `
       <div class="item">
-        <div style="min-width:0"><div class="name">${esc(i.name)}</div>${e?`<div class="meta">${e}</div>`:""}</div>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div>${m?`<div class="meta">${m}</div>`:""}</button>
         <div class="row-actions">
           <div class="lvl" role="group" aria-label="Quantidade de ${esc(i.name)}">
             ${LV.map(([t,c],k)=>`<button class="${c}" data-id="${i.id}" data-l="${k}" aria-pressed="${i.lvl===k}">${t}</button>`).join("")}
           </div>
-          <button class="x" data-del="${i.id}" aria-label="Apagar ${esc(i.name)}">×</button>
         </div>
       </div>`};
   const groups=cats=>cats.map(cat=>{const list=sorted.filter(i=>i.cat===cat);return list.length?`<h3>${cat}</h3>`+list.map(row).join(""):""}).join("");
@@ -595,24 +629,45 @@ function render(){
   const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
   const mb=document.getElementById("meatBadge");mb.hidden=!mExp.length;mb.textContent=mExp.length;
 
-  shop.innerHTML=toBuy.length?toBuy.map(i=>`
+  /* Compras separadas pela loja onde se compra; o que não tem loja fica no fim */
+  const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
+  const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
+  shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
     <label class="check"><input type="checkbox" data-buy="${i.id}">
-      <div><div class="name">${esc(i.name)}</div><div class="meta" style="font-size:.82rem;color:var(--muted)">${i.lvl===0?"Acabou":"Está a acabar"} · ${i.cat}</div></div>
-    </label>`).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
+      <div><div class="name">${esc(i.name)}</div><div class="meta" style="font-size:15px;color:var(--muted)">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div></div>
+    </label>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
 }
 
 /* ---------- eventos ---------- */
 document.getElementById("meatForm").addEventListener("submit",e=>{e.preventDefault();
-  addItem(document.getElementById("mName").value,document.getElementById("mCat").value,document.getElementById("mExp").value);
-  document.getElementById("mName").value="";document.getElementById("mExp").value=""});
+  addItem(document.getElementById("mName").value,document.getElementById("mCat").value,document.getElementById("mExp").value,document.getElementById("mQty").value,document.getElementById("mUnit").value,document.getElementById("mShop").value);
+  ["mName","mExp","mQty","mShop"].forEach(i=>document.getElementById(i).value="")});
 document.getElementById("addForm").addEventListener("submit",e=>{e.preventDefault();
-  addItem(document.getElementById("newName").value,document.getElementById("newCat").value,document.getElementById("newExp").value);
-  document.getElementById("newName").value="";document.getElementById("newExp").value=""});
+  addItem(document.getElementById("newName").value,document.getElementById("newCat").value,document.getElementById("newExp").value,document.getElementById("newQty").value,document.getElementById("newUnit").value,document.getElementById("newShop").value);
+  ["newName","newExp","newQty","newShop"].forEach(i=>document.getElementById(i).value="")});
 document.addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
   if(t.dataset.n)addItem(t.dataset.n,t.dataset.c,"");
   else if(t.dataset.l!==undefined)setLevel(t.dataset.id,+t.dataset.l);
   else if(t.dataset.del)remove(t.dataset.del);
+  else if(t.dataset.edititem){editItem=t.dataset.edititem;render()}
+  else if(t.dataset.cancelitem){editItem="";render()}
+  else if(t.dataset.shop){const f=t.closest("form");if(f)f.s.value=t.dataset.shop}
+  else if(t.dataset.step){const f=t.closest("form"), q=f.q, u=f.u.value, st=u==="kg"||u==="L"?.5:u==="g"||u==="ml"?100:1;
+    q.value=Math.max(0,Math.round(((parseFloat(q.value)||0)+st*(+t.dataset.step))*100)/100)}
+  else if(t.dataset.delitem){const it=items.find(x=>x.id===t.dataset.delitem);if(it&&confirm(`Apagar "${it.name}"?`)){editItem="";remove(it.id);toast(it.name+" apagado")}}
+});
+/* Guardar um produto editado. Quantidade 0 passa a "Acabou"; voltar a ter quantidade tira-o de "Acabou". */
+document.addEventListener("submit",e=>{
+  const id=e.target.dataset.itemform;if(!id)return;e.preventDefault();
+  const it=items.find(x=>x.id===id);if(!it)return;
+  const f=e.target, name=f.n.value.trim();if(!name)return;
+  if(items.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  const q=parseFloat(String(f.q.value).replace(",",".")), shop=f.s.value.trim();
+  const n={...it,name,cat:f.c.value,exp:f.e.value||""};delete n.qty;delete n.unit;delete n.shop;
+  if(!isNaN(q)){n.qty=q;n.unit=f.u.value;if(q===0)n.lvl=0;else if(it.lvl===0)n.lvl=2}
+  if(shop)n.shop=shop;
+  editItem="";upsert(n);render();put(n);toast("Guardado");
 });
 document.addEventListener("change",e=>{
   const id=e.target.dataset.buy;if(!id)return;
