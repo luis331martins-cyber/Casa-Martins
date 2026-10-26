@@ -4,6 +4,7 @@
    - Resumo às 9h (hora de Lisboa), uma vez por dia: contas a pagar, validades a terminar e marcações/compras.
    - Lembrete cerca de 1 hora antes das marcações com hora.
    - "Nova marcação" quando alguém marca algo (avisa os outros telemóveis, não quem marcou).
+   - Mensagens do chat da casa (avisa os outros telemóveis, não quem escreveu).
    O que já foi enviado fica em households/{código}/sent/estado (só o servidor lá chega). */
 const {initializeApp, cert} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
@@ -134,6 +135,8 @@ async function house(code, now) {
   const snap = await ref.get();
   const first = !snap.exists;
   const st = {resumo: "", vistos: [], lembrados: [], meds: [], ...(snap.exists ? snap.data() : {})};
+  /* Mensagens já avisadas (ids das últimas 48 h; o relógio de cada telemóvel pode estar um pouco adiantado ou atrasado) */
+  const msgPrimeira = !Array.isArray(st.msgs);
 
   /* Só as marcações de hoje em diante: as que contam para lembretes e para "nova marcação". */
   const evSnap = await db.collection(`households/${code}/events`).where("date", ">=", now.date).get();
@@ -191,6 +194,20 @@ async function house(code, now) {
     }
   }
 
+  /* Mensagens novas do chat: uma notificação por mensagem, para os outros telemóveis */
+  const msgSnap = await db.collection(`households/${code}/bills`).where("kind", "==", "msg").get();
+  const recentes = msgSnap.docs.map((d) => ({...d.data(), id: d.id}))
+    .filter((m) => typeof m.at === "number" && m.at > Date.now() - 2 * 864e5).sort((a, b) => a.at - b.at);
+  const msgVistas = new Set((st.msgs || []).filter((id) => recentes.some((m) => m.id === id)));
+  for (const m of recentes) {
+    if (msgVistas.has(m.id)) continue;
+    msgVistas.add(m.id);
+    if (msgPrimeira) continue;
+    const text = String(m.text || "");
+    jobs.push(() => send(code, {title: m.name ? `💬 ${m.name}` : "💬 Nova mensagem", body: text.length > 180 ? text.slice(0, 178) + "…" : text,
+      go: "chat", tag: "msg-" + m.id}, m.uid));
+  }
+
   /* Resumo diário: a partir das 9h, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
   let resumo = st.resumo;
   if (resumo !== now.date && now.min >= 9 * 60 && now.min < 21 * 60) {
@@ -198,7 +215,7 @@ async function house(code, now) {
     jobs.push(() => morning(code, now));
   }
 
-  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], at: new Date()});
+  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], msgs: [...msgVistas], at: new Date()});
   for (const job of jobs) await job();
 }
 

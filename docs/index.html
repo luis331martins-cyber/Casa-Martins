@@ -172,6 +172,25 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
 #joinCode,#authCode{text-transform:uppercase;letter-spacing:.06em}
+#today{margin:0;font-size:15px;font-weight:600;color:var(--fg);opacity:.85}
+#clock{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0 8px;color:var(--fg)}
+/* Chat da casa: botão no canto inferior direito do Início */
+.chatfab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;width:58px;height:58px;border-radius:50%;
+  background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0}
+.chatfab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chatfab b{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#ff3b30;color:#fff;font-size:13px;line-height:22px;font-weight:700}
+#msgs{display:flex;flex-direction:column;gap:4px;padding-bottom:84px}
+.cm{max-width:78%;padding:8px 12px;border-radius:18px;font-size:16px;line-height:1.3;overflow-wrap:anywhere;white-space:pre-wrap;background:var(--surface);color:var(--fg);align-self:flex-start}
+.cm.me{align-self:flex-end;background:#0a84ff;color:#fff}
+.msg-who{font-size:12px;color:var(--muted);margin:8px 12px 0}
+.msg-who.me{align-self:flex-end}
+.msg-day{align-self:center;font-size:12px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+.cm time{display:block;font-size:11px;opacity:.7;margin-top:2px;text-align:right}
+.chatbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:8px;align-items:flex-end;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:var(--surface);border-top:.5px solid var(--line)}
+.chatbar textarea{flex:1;resize:none;min-height:38px;max-height:120px;border-radius:19px;padding:8px 14px;font:inherit;font-size:16px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.chatbar button{width:38px;height:38px;border-radius:50%;padding:0;display:grid;place-items:center;background:#0a84ff;color:#fff;flex:none}
+.chatbar button svg{width:20px;height:20px;fill:currentColor}
 header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .gear{flex:none;display:grid;place-items:center;padding:0}
 .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -499,7 +518,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
   <section id="tab-inicio" class="group" style="gap:22px">
     <header class="top">
       <div style="min-width:0">
-        <p class="sub" id="today" style="margin:0 0 2px;text-transform:capitalize"></p>
+        <p id="today"></p>
+        <div id="clock" aria-label="Hora"></div>
         <h1 id="hello">A nossa casa</h1>
         <p class="sub" id="sub">Despensa, compras, contas e agenda.</p>
       </div>
@@ -703,6 +723,16 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <p class="note" style="margin:0" id="videoNote">Escreve o que queres ver e toca em <b>Procurar</b>. Também podes colar um link do YouTube. Toca em <b>Guardar</b> para o vídeo ficar na lista dos dois.</p>
   </section>
 
+  <section id="tab-chat" class="group" style="gap:12px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Mensagens</span><span></span></nav>
+    <h1 class="large">Mensagens</h1>
+    <div id="msgs" aria-live="polite"></div>
+    <form class="chatbar" id="chatForm" autocomplete="off">
+      <textarea id="chatText" rows="1" placeholder="Mensagem" aria-label="Mensagem" maxlength="1000" enterkeyhint="send"></textarea>
+      <button type="submit" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 10.5l1.4 1.4L11 7.3V20h2V7.3l4.6 4.6 1.4-1.4z"/></svg></button>
+    </form>
+  </section>
+
   <section id="tab-jogo" class="group" style="gap:14px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Blocos</span><span></span></nav>
     <h1 class="large">Blocos</h1>
@@ -811,6 +841,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
   </section>
 </div>
 
+<button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.8-.8L3 20.5l1.4-4.3A8 8 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/></svg><b id="chatBadge" hidden></b></button>
 <div class="toast" id="toast" hidden></div>
 <datalist id="shopList"></datalist>
 
@@ -974,11 +1005,11 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","definicoes","despensa","carne","lista","comer","meds","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
-  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="videos")safe("Vídeos",renderVideos)},0)}
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","videos","jogo","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1284,7 +1315,7 @@ function renderBills(){
     </div>`).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1607,7 +1638,7 @@ async function enter(c,how,tab){
   document.getElementById("joinCode").value="";show(tab||"inicio");
   await startShared();toast(how);
 }
-function renderHouse(){
+function renderHouse(){if(typeof chatFabState==="function")chatFabState();
   document.getElementById("gear").hidden=!hasFb;if(!hasFb)return;
   document.getElementById("houseShared").hidden=!houseCode;
   document.getElementById("houseLocal").hidden=!!houseCode;
@@ -1793,6 +1824,41 @@ document.getElementById("videoForm").addEventListener("submit",async e=>{e.preve
     if(r.ok){const j=await r.json();if(j&&j.title)name=String(j.title).slice(0,120)}}catch(err){}
   const v=saveVideo({yt,name});inp.value="";playVideo(v.id);toast("Vídeo guardado");
 });
+
+/* ---------- Mensagens entre os dois ----------
+   Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
+var chatOn=false;
+const chatMsgs=()=>bills.filter(b=>b.kind==="msg").sort((a,b)=>(a.at||0)-(b.at||0)).slice(-300);
+const isMine=m=>meId?m.uid===meId:m.name===myName();
+function chatRead(){try{return+localStorage.getItem("casa-chat-lido")||0}catch(e){return 0}}
+function chatMarkRead(){const L=chatMsgs();const t=L.length?L[L.length-1].at||0:0;try{localStorage.setItem("casa-chat-lido",Math.max(t,chatRead()))}catch(e){}}
+function chatFabState(){const fab=document.getElementById("chatFab");
+  fab.hidden=!houseCode||document.getElementById("tab-inicio").hidden;
+  const n=chatOn?0:chatMsgs().filter(m=>!isMine(m)&&(m.at||0)>chatRead()).length, b=document.getElementById("chatBadge");
+  b.hidden=!n;b.textContent=n>9?"9+":n;fab.setAttribute("aria-label",n?`Mensagens, ${n} por ler`:"Mensagens")}
+function chatOpened(){chatOn=!document.getElementById("tab-chat").hidden;if(chatOn){chatMarkRead();renderChat();window.scrollTo(0,document.body.scrollHeight)}chatFabState()}
+function renderChat(){const el=document.getElementById("msgs");if(!el)return;const L=chatMsgs();
+  if(chatOn)chatMarkRead();
+  const atBottom=window.innerHeight+window.scrollY>=document.body.scrollHeight-80;
+  let html="",lastDay="",lastWho="";
+  for(const m of L){const d=new Date(m.at||0), day=ymd(d), mine=isMine(m);
+    if(day!==lastDay){html+=`<div class="msg-day">${day===ymd(new Date())?"Hoje":d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"})}</div>`;lastDay=day;lastWho=""}
+    const who=mine?"me":m.uid||m.name;
+    if(who!==lastWho&&!mine&&m.name)html+=`<div class="msg-who">${esc(m.name)}</div>`;lastWho=who;
+    html+=`<div class="cm${mine?" me":""}"${mine?` data-delmsg="${m.id}" role="button" tabindex="0"`:""}>${esc(m.text)}<time>${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})}</time></div>`}
+  el.innerHTML=html||`<div class="empty">Ainda não há mensagens.<br>Escreve em baixo para mandar uma à tua casa.</div>`;
+  if(chatOn&&atBottom)window.scrollTo(0,document.body.scrollHeight);
+  chatFabState()}
+document.getElementById("chatForm").addEventListener("submit",e=>{e.preventDefault();const t=document.getElementById("chatText"), text=t.value.trim();if(!text)return;
+  putBill({id:uid(),kind:"msg",text:text.slice(0,1000),uid:meId||"",name:myName()||"",at:Date.now()});t.value="";t.style.height="";
+  renderChat();window.scrollTo(0,document.body.scrollHeight)});
+document.getElementById("chatText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();document.getElementById("chatForm").requestSubmit()}});
+document.getElementById("chatText").addEventListener("input",e=>{const t=e.target;t.style.height="";t.style.height=Math.min(120,t.scrollHeight)+"px"});
+document.getElementById("msgs").addEventListener("click",e=>{const m=e.target.closest("[data-delmsg]");if(m&&confirm("Apagar esta mensagem?"))delBill(m.dataset.delmsg)});
+/* Relógio no Início (atualiza também a data à meia-noite) */
+function tick(){const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
+  let t=d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});t=t[0].toUpperCase()+t.slice(1);if(document.getElementById("today").textContent!==t)document.getElementById("today").textContent=t}
+tick();setInterval(tick,5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
 
 /* ---------- Jogo de blocos (estilo Block Blast) ----------
    Grelha 8×8; arrastam-se 3 peças de cada vez; linhas e colunas completas desaparecem.
