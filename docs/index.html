@@ -463,12 +463,48 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 .i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
+.i-games{background:linear-gradient(160deg,#ff9f0a,#ff375f)}
+/* Jogos: lista de jogos */
+.gamegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gcard{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--surface);border-radius:16px;padding:14px;text-align:left;color:var(--fg);font:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.gcard .ico{width:52px;height:52px;border-radius:12px;display:grid;place-items:center}
+.gcard .ico svg{width:30px;height:30px}
+.gcard b{font-size:17px}.gcard small{color:var(--muted);font-size:13px;margin-top:-6px}
+.i-2048{background:linear-gradient(160deg,#ffcc4d,#f59f00);color:#fff;font:800 17px/1 var(--display)}
+.i-sudoku{background:linear-gradient(160deg,#a78bfa,#6d28d9)}
+.i-galo{background:linear-gradient(160deg,#64d2ff,#0a84ff)}
+.i-memo{background:linear-gradient(160deg,#ff8fab,#e0457b)}
+/* 2048 */
+.b2048{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#bbada0;border-radius:14px;padding:8px;touch-action:none;user-select:none;-webkit-user-select:none;max-width:420px;width:100%;margin:0 auto;box-sizing:border-box}
+.b2048 div{aspect-ratio:1;border-radius:8px;background:rgba(238,228,218,.35);display:grid;place-items:center;font:800 28px/1 var(--display);color:#776e65}
+.b2048 .v2{background:#eee4da}.b2048 .v4{background:#ede0c8}.b2048 .v8{background:#f2b179;color:#fff}.b2048 .v16{background:#f59563;color:#fff}.b2048 .v32{background:#f67c5f;color:#fff}.b2048 .v64{background:#f65e3b;color:#fff}
+.b2048 .v128,.b2048 .v256,.b2048 .v512{background:#edcf72;color:#fff;font-size:24px}.b2048 .v1024,.b2048 .v2048,.b2048 .vbig{background:#edc22e;color:#fff;font-size:20px}
+/* Sudoku */
+.sudo{display:grid;grid-template-columns:repeat(9,1fr);background:var(--fg);gap:1px;border:2px solid var(--fg);border-radius:8px;overflow:hidden;max-width:440px;width:100%;margin:0 auto;box-sizing:border-box}
+.sudo button{aspect-ratio:1;background:var(--surface);color:#0a84ff;font:600 20px/1 var(--body);padding:0;border-radius:0}
+.sudo button.g{color:var(--fg);font-weight:700}.sudo button.sel{background:#cfe3ff}.sudo button.same{background:#e8f1ff}.sudo button.bad{color:#ff3b30;background:#ffe5e5}
+.sudo button.c3{margin-right:1px}.sudo button.r3{margin-bottom:1px}
+.sudo button.c3{box-shadow:1px 0 0 var(--fg)}.sudo button.r3{box-shadow:0 1px 0 var(--fg)}.sudo button.c3.r3{box-shadow:1px 0 0 var(--fg),0 1px 0 var(--fg),1px 1px 0 var(--fg)}
+.npad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:440px;width:100%;margin:0 auto}
+.npad button{background:var(--surface);color:var(--fg);font:600 22px/1 var(--body);padding:12px 0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.npad button.done{opacity:.3}
+/* Galo */
+.galo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:340px;width:100%;margin:0 auto}
+.galo button{aspect-ratio:1;background:var(--surface);border-radius:16px;font:800 56px/1 var(--display);color:var(--fg);padding:0;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.galo button.gx{color:#0a84ff}.galo button.go{color:#ff375f}.galo button.win{background:#d9f7e1}
+/* Memória */
+.memo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:420px;width:100%;margin:0 auto;perspective:800px}
+.memo button{aspect-ratio:1;border-radius:14px;padding:0;font-size:38px;line-height:1;background:linear-gradient(160deg,#ff8fab,#e0457b);color:transparent;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:transform .25s,background .25s}
+.memo button.up,.memo button.ok{background:var(--surface);color:initial;transform:rotateY(180deg)}
+.memo button.up span,.memo button.ok span{display:inline-block;transform:rotateY(180deg)}
+.memo button.ok{opacity:.55}
+
 /* Snake */
 #sCanvas{display:block;width:100%;max-width:420px;aspect-ratio:1;margin:0 auto;border-radius:16px;background:#1c2b22;touch-action:none}
 .spad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:8px;justify-content:center;user-select:none;-webkit-user-select:none}
 .spad button{border-radius:14px;background:var(--surface);color:var(--fg);font-size:24px;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.12);touch-action:manipulation}
 .spad button:active{background:var(--fill)}
-.spad [data-dir=up]{grid-column:2}.spad [data-dir=left]{grid-column:1;grid-row:2}.spad [data-dir=down]{grid-column:2;grid-row:2}.spad [data-dir=right]{grid-column:3;grid-row:2}
+.spad [data-dir=up],.spad [data-tdir=up]{grid-column:2}.spad [data-dir=left],.spad [data-tdir=left]{grid-column:1;grid-row:2}.spad [data-dir=down],.spad [data-tdir=down]{grid-column:2;grid-row:2}.spad [data-dir=right],.spad [data-tdir=right]{grid-column:3;grid-row:2}
 #medToday,#medList,#videoList{gap:0}
 .dose{display:grid;grid-template-columns:auto auto 1fr;gap:12px;align-items:center;background:var(--surface);padding:11px 16px;position:relative}
 .dose .t{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px}
@@ -603,8 +639,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <h3>Lazer</h3>
       <div class="apps">
         <button class="app" data-go="videos"><span class="ico i-vid"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="4"/><path d="M10.5 9.5v5l4.2-2.5z" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Vídeos</span></button>
-        <button class="app" data-go="jogo"><span class="ico i-game"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/></svg></span><span class="lbl">Blocos</span></button>
-        <button class="app" data-go="snake"><span class="ico i-snake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7" style="fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round"/><circle cx="18.5" cy="6" r="2" style="fill:#ff5a5a;stroke:none"/></svg></span><span class="lbl">Snake</span></button>
+        <button class="app" data-go="jogos"><span class="ico i-games"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r="1" style="fill:#fff;stroke:none"/><circle cx="17.5" cy="13.5" r="1" style="fill:#fff;stroke:none"/></svg></span><span class="lbl">Jogos</span></button>
       </div>
     </div>
   </section>
@@ -805,8 +840,58 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     </form>
   </section>
 
+  <section id="tab-jogos" class="group" style="gap:16px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Jogos</span><span></span></nav>
+    <h1 class="large">Jogos</h1>
+    <div class="gamegrid">
+      <button type="button" class="gcard" data-go="jogo"><span class="ico i-game"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" style="fill:rgba(255,255,255,.35)"/></svg></span><b>Blocos</b><small id="recBlocos"></small></button>
+      <button type="button" class="gcard" data-go="snake"><span class="ico i-snake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7" style="fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round"/><circle cx="18.5" cy="6" r="2" style="fill:#ff5a5a;stroke:none"/></svg></span><b>Snake</b><small id="recSnake"></small></button>
+      <button type="button" class="gcard" data-go="g2048"><span class="ico i-2048">2048</span><b>2048</b><small id="rec2048"></small></button>
+      <button type="button" class="gcard" data-go="sudoku"><span class="ico i-sudoku"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" style="fill:none;stroke:#fff;stroke-width:2"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17" style="stroke:#fff;stroke-width:1.4"/></svg></span><b>Sudoku</b><small id="recSudoku"></small></button>
+      <button type="button" class="gcard" data-go="galo"><span class="ico i-galo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l5 5M10 5l-5 5" style="stroke:#fff;stroke-width:2.4;stroke-linecap:round;fill:none"/><circle cx="16.5" cy="16.5" r="3.2" style="fill:none;stroke:#fff;stroke-width:2.4"/><path d="M12 3v18M3 12h18" style="stroke:rgba(255,255,255,.45);stroke-width:1.4"/></svg></span><b>Jogo do galo</b><small id="recGalo"></small></button>
+      <button type="button" class="gcard" data-go="memoria"><span class="ico i-memo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="2" style="fill:#fff;stroke:none"/><rect x="13" y="5" width="8" height="14" rx="2" style="fill:rgba(255,255,255,.4);stroke:none"/><circle cx="7" cy="12" r="2" style="fill:#e0457b;stroke:none"/></svg></span><b>Memória</b><small id="recMemo"></small></button>
+    </div>
+  </section>
+
+  <section id="tab-g2048" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">2048</span><span></span></nav>
+    <h1 class="large">2048</h1>
+    <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="tScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="tBest">0</div><div class="note" id="tBestBy"></div></div><button class="btn ghost" type="button" id="tNew">Novo jogo</button></div>
+    <div class="b2048" id="tBoard" aria-label="Tabuleiro do 2048"></div>
+    <div class="spad" id="tPad"><button type="button" data-tdir="up" aria-label="Cima">▲</button><button type="button" data-tdir="left" aria-label="Esquerda">◀</button><button type="button" data-tdir="down" aria-label="Baixo">▼</button><button type="button" data-tdir="right" aria-label="Direita">▶</button></div>
+    <p class="note" style="margin:0;text-align:center">Desliza no tabuleiro. Dois números iguais juntam-se num só. Chega ao 2048!</p>
+  </section>
+
+  <section id="tab-sudoku" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Sudoku</span><span></span></nav>
+    <h1 class="large">Sudoku</h1>
+    <div class="seg" role="group" aria-label="Dificuldade" id="kLevel" style="display:grid;grid-template-columns:1fr 1fr 1fr"><button type="button" data-klevel="facil">Fácil</button><button type="button" data-klevel="medio">Médio</button><button type="button" data-klevel="dificil">Difícil</button></div>
+    <div class="gamebar"><div><div class="k">Tempo</div><div class="v" id="kTime">0:00</div></div><div><div class="k">Recorde</div><div class="v" id="kBest">—</div><div class="note" id="kBestBy"></div></div><button class="btn ghost" type="button" id="kNew">Novo jogo</button></div>
+    <div class="sudo" id="kBoard" aria-label="Tabuleiro do Sudoku"></div>
+    <div class="npad" id="kPad"></div>
+    <p class="note" style="margin:0;text-align:center" id="kMsg">Toca numa casa e depois num número. Cada linha, coluna e quadrado tem os números de 1 a 9.</p>
+  </section>
+
+  <section id="tab-galo" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Jogo do galo</span><span></span></nav>
+    <h1 class="large">Jogo do galo</h1>
+    <div class="seg" role="group" aria-label="Modo" style="display:grid;grid-template-columns:1fr 1fr"><button type="button" data-xmode="cpu">Contra o telemóvel</button><button type="button" data-xmode="2p">2 pessoas</button></div>
+    <div class="gamebar"><div><div class="k" id="xLblX">Tu (✕)</div><div class="v" id="xWinX">0</div></div><div><div class="k" id="xLblO">Telemóvel (◯)</div><div class="v" id="xWinO">0</div></div><button class="btn ghost" type="button" id="xNew">Nova ronda</button></div>
+    <p id="xMsg" style="margin:0;text-align:center;font-weight:600;font-size:17px"></p>
+    <div class="galo" id="xBoard" aria-label="Tabuleiro do jogo do galo"></div>
+    <p class="note" style="margin:0;text-align:center">Faz uma linha de três: na horizontal, na vertical ou na diagonal.</p>
+  </section>
+
+  <section id="tab-memoria" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Memória</span><span></span></nav>
+    <h1 class="large">Memória</h1>
+    <div class="gamebar"><div><div class="k">Jogadas</div><div class="v" id="mMoves">0</div></div><div><div class="k">Recorde</div><div class="v" id="mBest">—</div><div class="note" id="mBestBy"></div></div><button class="btn ghost" type="button" id="mNew">Novo jogo</button></div>
+    <div class="memo" id="mBoard" aria-label="Cartas"></div>
+    <p class="note" style="margin:0;text-align:center" id="mMsg">Vira duas cartas de cada vez e encontra os pares iguais.</p>
+  </section>
+
   <section id="tab-jogo" class="group" style="gap:14px" hidden>
-    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Blocos</span><span></span></nav>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Blocos</span><span></span></nav>
     <h1 class="large">Blocos</h1>
     <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="gScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="gBest">0</div><div class="note" id="gBestBy"></div></div><button class="btn ghost" type="button" id="gNew">Novo jogo</button></div>
     <div id="board" class="board" aria-label="Tabuleiro"></div>
@@ -816,7 +901,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
   </section>
 
   <section id="tab-snake" class="group" style="gap:14px" hidden>
-    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Snake</span><span></span></nav>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Snake</span><span></span></nav>
     <h1 class="large">Snake</h1>
     <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="sScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="sBest">0</div><div class="note" id="sBestBy"></div></div><button class="btn ghost" type="button" id="sNew">Novo jogo</button></div>
     <canvas id="sCanvas" width="540" height="540" aria-label="Jogo da cobra"></canvas>
@@ -1089,11 +1174,12 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogo","snake","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
-  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1402,7 +1488,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Snake",sRenderBest)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2006,6 +2092,138 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id
 /* Nas Contas, "Crédito 22/36 ›" abre o crédito no separador Créditos */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-goloan]");if(!t)return;e.preventDefault();e.stopPropagation();
   show("creditos");setTimeout(()=>{const c=document.querySelector(`[data-editloan="${t.dataset.goloan}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)},true);
+
+/* ---------- Jogos: recordes partilhados (kind:"game") ----------
+   lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
+function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
+function recTry(id,name,val,lower){const x=recGet(id);if(x&&(lower?val>=x.best:val<=x.best))return false;
+  putBill({id,kind:"game",name,best:val,...(myName()?{by:myName()}:{})});return true}
+const fmtSec=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`;
+function renderGames(){const set=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t};
+  const g=gBest(), sn=sBest(), t=recGet("2048-recorde"), m=recGet("memoria-recorde");
+  set("recBlocos",g.best?`Recorde ${g.best}${g.by?" · "+g.by:""}`:"Arrasta as peças");
+  set("recSnake",sn.best?`Recorde ${sn.best}${sn.by?" · "+sn.by:""}`:"Come as maçãs");
+  set("rec2048",t?`Recorde ${t.best}${t.by?" · "+t.by:""}`:"Junta os números");
+  const k=["facil","medio","dificil"].map(l=>recGet("sudoku-"+l)).find(Boolean);
+  set("recSudoku",k?`Recorde ${fmtSec(k.best)}${k.by?" · "+k.by:""}`:"Fácil, médio ou difícil");
+  set("recGalo","Contra o telemóvel ou a dois");
+  set("recMemo",m?`Recorde ${m.best} jogadas${m.by?" · "+m.by:""}`:"Encontra os pares")}
+
+/* ---------- 2048 ---------- */
+let T=null;
+function tSave(){try{localStorage.setItem("casa-2048",JSON.stringify(T))}catch(e){}}
+function tAdd(){const f=T.b.map((v,i)=>v?-1:i).filter(i=>i>=0);if(f.length)T.b[f[Math.floor(Math.random()*f.length)]]=Math.random()<.9?2:4}
+function tNew(){T={b:Array(16).fill(0),score:0,over:false,won:false};tAdd();tAdd();tSave();tRender()}
+function tOpen(){if(!T){try{T=JSON.parse(localStorage.getItem("casa-2048")||"null")}catch(e){}if(!T||!Array.isArray(T.b)||T.b.length!==16)return tNew()}tRender()}
+function tCanMove(){for(let i=0;i<16;i++){if(!T.b[i])return true;if(i%4<3&&T.b[i]===T.b[i+1])return true;if(i<12&&T.b[i]===T.b[i+4])return true}return false}
+function tMove(dir){if(!T||T.over)return;const L=[];
+  for(let k=0;k<4;k++){const idx=[0,1,2,3].map(j=>dir==="left"?k*4+j:dir==="right"?k*4+3-j:dir==="up"?j*4+k:(3-j)*4+k);L.push(idx)}
+  let moved=false;
+  for(const idx of L){const v=idx.map(i=>T.b[i]).filter(Boolean), out=[];
+    for(let i=0;i<v.length;i++){if(v[i]===v[i+1]){out.push(v[i]*2);T.score+=v[i]*2;if(v[i]*2===2048&&!T.won){T.won=true;toast("Chegaste ao 2048! 🎉")}i++}else out.push(v[i])}
+    while(out.length<4)out.push(0);idx.forEach((i,j)=>{if(T.b[i]!==out[j])moved=true;T.b[i]=out[j]})}
+  if(!moved)return;tAdd();
+  if(!tCanMove()){T.over=true;const rec=recTry("2048-recorde","Recorde do 2048",T.score,false);toast(rec?`Fim do jogo · ${T.score} pontos · novo recorde! 🎉`:`Fim do jogo · ${T.score} pontos`)}
+  tSave();tRender()}
+function tRender(){const el=document.getElementById("tBoard");if(!el||!T)return;
+  el.innerHTML=T.b.map(v=>`<div class="${v?(v>2048?"vbig":"v"+v):""}">${v||""}</div>`).join("");
+  document.getElementById("tScore").textContent=T.score;const r=recGet("2048-recorde");
+  document.getElementById("tBest").textContent=r?Math.max(r.best,0):0;document.getElementById("tBestBy").textContent=r&&r.by?"de "+r.by:"";
+  if(T.over)el.insertAdjacentHTML("beforeend","")}
+document.getElementById("tNew").addEventListener("click",tNew);
+document.getElementById("tPad").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-tdir]");if(b){e.preventDefault();tMove(b.dataset.tdir)}});
+function swipe(el,fn){let x0=0,y0=0,on=false;
+  el.addEventListener("pointerdown",e=>{x0=e.clientX;y0=e.clientY;on=true});
+  el.addEventListener("pointerup",e=>{if(!on)return;on=false;const dx=e.clientX-x0,dy=e.clientY-y0;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+    fn(Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up"))});
+  el.addEventListener("pointercancel",()=>on=false)}
+swipe(document.getElementById("tBoard"),tMove);
+document.addEventListener("keydown",e=>{if(document.getElementById("tab-g2048").hidden)return;const k={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"}[e.key];if(k){e.preventDefault();tMove(k)}});
+
+/* ---------- Sudoku ---------- */
+let K=null, kTimer=0, kLevel=(()=>{try{return localStorage.getItem("casa-sudoku-nivel")||"facil"}catch(e){return"facil"}})();
+const K_HOLES={facil:38,medio:46,dificil:53}, K_NAME={facil:"Fácil",medio:"Médio",dificil:"Difícil"};
+function kOk(g,i,n){const r=Math.floor(i/9),c=i%9,br=r-r%3,bc=c-c%3;
+  for(let j=0;j<9;j++){if(g[r*9+j]===n||g[j*9+c]===n||g[(br+Math.floor(j/3))*9+bc+j%3]===n)return false}return true}
+function kSolve(g,limit){let n=0;const rec=()=>{const i=g.indexOf(0);if(i<0){n++;return n>=limit}
+    const nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5);
+    for(const v of nums)if(kOk(g,i,v)){g[i]=v;if(rec())return true;g[i]=0}return false};rec();return n}
+function kGen(level){const sol=Array(81).fill(0);kSolve(sol,1);const g=sol.slice();
+  const order=[...Array(81).keys()].sort(()=>Math.random()-.5);let holes=0;
+  for(const i of order){if(holes>=K_HOLES[level])break;const v=g[i];g[i]=0;const t=g.slice();if(kSolve(t,2)!==1){g[i]=v}else holes++}
+  return{sol,given:g.map(v=>v>0),cur:g,level,t:0,sel:-1,done:false}}
+function kSave(){try{localStorage.setItem("casa-sudoku",JSON.stringify(K))}catch(e){}}
+function kNew(){K=kGen(kLevel);kSave();kRender();kStart()}
+function kStart(){clearInterval(kTimer);if(K&&!K.done)kTimer=setInterval(()=>{K.t++;document.getElementById("kTime").textContent=fmtSec(K.t);if(K.t%5===0)kSave()},1000)}
+function kStop(){clearInterval(kTimer);kTimer=0;if(K)kSave()}
+function kOpen(){if(!K){try{K=JSON.parse(localStorage.getItem("casa-sudoku")||"null")}catch(e){}if(!K||!Array.isArray(K.cur))return kNew()}kRender();kStart()}
+function kRender(){const el=document.getElementById("kBoard");if(!el||!K)return;
+  document.querySelectorAll("[data-klevel]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.klevel===kLevel));
+  const selV=K.sel>=0?K.cur[K.sel]:0;
+  el.innerHTML=K.cur.map((v,i)=>{const r=Math.floor(i/9),c=i%9;const bad=v&&!K.given[i]&&v!==K.sol[i];
+    const cls=[K.given[i]?"g":"",i===K.sel?"sel":selV&&v===selV?"same":"",bad?"bad":"",c%3===2&&c<8?"c3":"",r%3===2&&r<8?"r3":""].filter(Boolean).join(" ");
+    return`<button type="button" data-kcell="${i}" class="${cls}" aria-label="Linha ${r+1}, coluna ${c+1}${v?", "+v:""}">${v||""}</button>`}).join("");
+  const cnt=n=>K.cur.filter((v,i)=>v===n&&v===K.sol[i]).length;
+  document.getElementById("kPad").innerHTML=[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-knum="${n}"${cnt(n)===9?' class="done"':""}>${n}</button>`).join("")+`<button type="button" data-knum="0" aria-label="Apagar">⌫</button>`;
+  document.getElementById("kTime").textContent=fmtSec(K.t);
+  const r=recGet("sudoku-"+K.level);document.getElementById("kBest").textContent=r?fmtSec(r.best):"—";document.getElementById("kBestBy").textContent=r&&r.by?"de "+r.by:""}
+document.getElementById("kBoard").addEventListener("click",e=>{const b=e.target.closest("[data-kcell]");if(!b||!K)return;K.sel=+b.dataset.kcell;kRender()});
+document.getElementById("kPad").addEventListener("click",e=>{const b=e.target.closest("[data-knum]");if(!b||!K||K.done||K.sel<0||K.given[K.sel])return;
+  K.cur[K.sel]=+b.dataset.knum;
+  if(K.cur.every((v,i)=>v===K.sol[i])){K.done=true;kStop();const rec=recTry("sudoku-"+K.level,"Recorde do Sudoku ("+K_NAME[K.level]+")",K.t,true);
+    document.getElementById("kMsg").textContent=`Resolvido em ${fmtSec(K.t)}!${rec?" Novo recorde! 🎉":""}`;toast(rec?"Sudoku resolvido · novo recorde! 🎉":"Sudoku resolvido! 🎉")}
+  kSave();kRender()});
+document.getElementById("kNew").addEventListener("click",()=>{if(K&&!K.done&&K.cur.some((v,i)=>v&&!K.given[i])&&!confirm("Começar um Sudoku novo? Perdes este."))return;
+  document.getElementById("kMsg").textContent="Toca numa casa e depois num número. Cada linha, coluna e quadrado tem os números de 1 a 9.";kNew()});
+document.getElementById("kLevel").addEventListener("click",e=>{const b=e.target.closest("[data-klevel]");if(!b||b.dataset.klevel===kLevel)return;
+  if(K&&!K.done&&K.cur.some((v,i)=>v&&!K.given[i])&&!confirm("Mudar de dificuldade? Perdes este Sudoku."))return;
+  kLevel=b.dataset.klevel;try{localStorage.setItem("casa-sudoku-nivel",kLevel)}catch(err){}kNew()});
+
+/* ---------- Jogo do galo ---------- */
+let X={b:Array(9).fill(""),turn:"x",mode:(()=>{try{return localStorage.getItem("casa-galo-modo")||"cpu"}catch(e){return"cpu"}})(),wx:0,wo:0,over:false,win:null,first:"x"};
+const XL=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function xWin(b){for(const l of XL)if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[1]]===b[l[2]])return l;return null}
+function xBestMove(b){/* minimax; 1 em 4 vezes joga ao acaso para dar hipótese */
+  const free=b.map((v,i)=>v?-1:i).filter(i=>i>=0);if(Math.random()<.25)return free[Math.floor(Math.random()*free.length)];
+  const mm=(b,me)=>{const w=xWin(b);if(w)return b[w[0]]==="o"?1:-1;if(b.every(Boolean))return 0;let best=me?-2:2;
+    for(let i=0;i<9;i++)if(!b[i]){b[i]=me?"o":"x";const v=mm(b,!me);b[i]="";best=me?Math.max(best,v):Math.min(best,v)}return best};
+  let bi=free[0],bv=-2;for(const i of free){b[i]="o";const v=mm(b,false);b[i]="";if(v>bv){bv=v;bi=i}}return bi}
+function xPlay(i){if(X.over||X.b[i])return;X.b[i]=X.turn;const w=xWin(X.b);
+  if(w){X.over=true;X.win=w;X.turn==="x"?X.wx++:X.wo++}else if(X.b.every(Boolean))X.over=true;else X.turn=X.turn==="x"?"o":"x";
+  xRender();if(!X.over&&X.mode==="cpu"&&X.turn==="o")setTimeout(()=>xPlay(xBestMove(X.b.slice())),350)}
+function xNew(){X.b=Array(9).fill("");X.over=false;X.win=null;X.first=X.first==="x"?"o":"x";X.turn=X.first;xRender();
+  if(X.mode==="cpu"&&X.turn==="o")setTimeout(()=>xPlay(xBestMove(X.b.slice())),350)}
+function xOpen(){xRender()}
+function xRender(){const el=document.getElementById("xBoard");if(!el)return;
+  document.querySelectorAll("[data-xmode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.xmode===X.mode));
+  const cpu=X.mode==="cpu";document.getElementById("xLblX").textContent=cpu?"Tu (✕)":"✕";document.getElementById("xLblO").textContent=cpu?"Telemóvel (◯)":"◯";
+  document.getElementById("xWinX").textContent=X.wx;document.getElementById("xWinO").textContent=X.wo;
+  el.innerHTML=X.b.map((v,i)=>`<button type="button" data-xcell="${i}" class="${v?"g"+v:""}${X.win&&X.win.includes(i)?" win":""}" aria-label="Casa ${i+1}${v?": "+(v==="x"?"cruz":"bola"):""}">${v==="x"?"✕":v==="o"?"◯":""}</button>`).join("");
+  const sym=t=>t==="x"?"✕":"◯";
+  document.getElementById("xMsg").textContent=X.win?(cpu?(X.b[X.win[0]]==="x"?"Ganhaste! 🎉":"O telemóvel ganhou"):`${sym(X.b[X.win[0]])} ganhou! 🎉`):X.over?"Empate":cpu?(X.turn==="x"?"É a tua vez":"O telemóvel está a pensar…"):`Vez de ${sym(X.turn)}`}
+document.getElementById("xBoard").addEventListener("click",e=>{const b=e.target.closest("[data-xcell]");if(!b)return;if(X.mode==="cpu"&&X.turn==="o")return;xPlay(+b.dataset.xcell)});
+document.getElementById("xNew").addEventListener("click",xNew);
+document.querySelectorAll("[data-xmode]").forEach(b=>b.addEventListener("click",()=>{if(X.mode===b.dataset.xmode)return;X.mode=b.dataset.xmode;try{localStorage.setItem("casa-galo-modo",X.mode)}catch(e){}X.wx=X.wo=0;X.first="o";xNew()}));
+
+/* ---------- Memória ---------- */
+let M=null, mLock=false;
+const M_EMO=["🐶","🐱","🦊","🐼","🐸","🦄","🐙","🦋","🍓","🍉","🌻","⭐"];
+function mNew(){const e=M_EMO.slice().sort(()=>Math.random()-.5).slice(0,8);M={c:[...e,...e].sort(()=>Math.random()-.5),up:[],ok:[],moves:0};mLock=false;
+  document.getElementById("mMsg").textContent="Vira duas cartas de cada vez e encontra os pares iguais.";mRender()}
+function mOpen(){if(!M)mNew();else mRender()}
+function mRender(){const el=document.getElementById("mBoard");if(!el||!M)return;
+  el.innerHTML=M.c.map((e,i)=>`<button type="button" data-mcard="${i}" class="${M.ok.includes(i)?"ok":M.up.includes(i)?"up":""}" aria-label="Carta ${i+1}"><span>${e}</span></button>`).join("");
+  document.getElementById("mMoves").textContent=M.moves;const r=recGet("memoria-recorde");
+  document.getElementById("mBest").textContent=r?r.best:"—";document.getElementById("mBestBy").textContent=r&&r.by?"de "+r.by:""}
+document.getElementById("mBoard").addEventListener("click",e=>{const b=e.target.closest("[data-mcard]");if(!b||!M||mLock)return;const i=+b.dataset.mcard;
+  if(M.ok.includes(i)||M.up.includes(i))return;M.up.push(i);
+  if(M.up.length===2){M.moves++;const [a,c]=M.up;
+    if(M.c[a]===M.c[c]){M.ok.push(a,c);M.up=[];
+      if(M.ok.length===M.c.length){const rec=recTry("memoria-recorde","Recorde da Memória",M.moves,true);
+        document.getElementById("mMsg").textContent=`Muito bem! ${M.moves} jogadas.${rec?" Novo recorde! 🎉":""}`}}
+    else{mLock=true;setTimeout(()=>{M.up=[];mLock=false;mRender()},850)}}
+  mRender()});
+document.getElementById("mNew").addEventListener("click",mNew);
 
 /* ---------- Snake ----------
    Grelha 18×18; acelera à medida que come. O recorde é partilhado (kind:"game", id "snake-recorde"). */
