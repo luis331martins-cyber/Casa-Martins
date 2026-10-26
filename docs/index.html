@@ -2590,8 +2590,11 @@ function cardFace(c){const st=cardStyle(c), ex=c.exp?c.exp.slice(5,7)+"/"+c.exp.
     <div class="cbot"><span><b>Titular</b>${esc(c.who||"—")}</span><span style="text-align:right"><b>Válido até</b>${ex||"—"}</span></div></button>`}
 /* Compras no cartão: c.buys [{id,v,d,n}] (pagamentos com v negativo); o "usado" acompanha */
 let cardBuy="";
-const buysOf=(c,mk)=>(c.buys||[]).filter(x=>!mk||x.d.slice(0,7)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1));
-function cardBuys(c){const mk=ymOf(new Date()), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
+/* Mês que os cartões mostram: o atual, mas nunca antes do mês em que a app começa a contar (START) */
+const cardK=()=>{const k=ymOf(new Date());return k<START?START:k};
+const kName=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"long"})};
+const buysOf=(c,mk)=>(c.buys||[]).filter(x=>!mk||x.d.slice(0,7)===mk||(mk===START&&x.d<START)).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1));
+function cardBuys(c){const mk=cardK(), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
   const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n).map(x=>x.n))].slice(0,6);
   const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
@@ -2602,16 +2605,16 @@ function cardBuys(c){const mk=ymOf(new Date()), L=buysOf(c,mk), tot=L.filter(x=>
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
     :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)&&c.limit?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
   const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
-  return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${new Date().toLocaleDateString("pt-PT",{month:"long"})}</span><span>${eur(tot)}</span></div>${rows}
+  return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${kName(mk)}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
-function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=ymOf(new Date());
+function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round((+c.used||0)/c.limit*100));
     L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
-  if(b)L.push(`<div class="row"><span>A pagar em ${new Date().toLocaleDateString("pt-PT",{month:"long"})}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
+  if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
   if(isCredit(c)&&c.limit)L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
-  const AU=(c.auto||[]).map(a=>{const b=a.bill&&bills.find(x=>x.id===c.bill);if(a.bill&&!b)return"";const v=b?monthAmt(b,ymOf(new Date())):a.v, d=b?b.day:a.day;
+  const AU=(c.auto||[]).map(a=>{const b=a.bill&&bills.find(x=>x.id===c.bill);if(a.bill&&!b)return"";const v=b?monthAmt(b,cardK()):a.v, d=b?b.day:a.day;
     return`${esc(a.bill?"Prestação":a.n)} ${a.t==="compra"?"+":"−"}${eur(v)} · dia ${d}`}).filter(Boolean);
   if(AU.length)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>🔁 ${AU.join(" · ")}</span></div>`);
   L.push(cardBuys(c));
@@ -2679,7 +2682,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.cardall){cardAll=t.dataset.cardall;renderCards()}
   else if(t.dataset.buyplace){const f=t.closest("form");if(f)f.n.value=t.dataset.buyplace}
   else if(t.dataset.cardpay){const c=cards().find(x=>x.id===t.dataset.cardpay);if(!c)return;const b=c.bill&&bills.find(x=>x.id===c.bill);
-    const v=prompt(`Quanto pagaste do ${c.name}? (€)`,b?String(Math.round(monthAmt(b,ymOf(new Date()))*100)/100).replace(".",","):"");if(v===null)return;
+    const v=prompt(`Quanto pagaste do ${c.name}? (€)`,b?String(Math.round(monthAmt(b,cardK())*100)/100).replace(".",","):"");if(v===null)return;
     const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));if(!n||n<=0)return;cardMove(c,-n,ymd(new Date()),"Pagamento da fatura")}
   else if(t.dataset.delbuy){const [cid,bid]=t.dataset.delbuy.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.buys||[]).find(y=>y.id===bid);if(!x)return;
     if(!confirm(`Apagar "${x.n||(x.v<0?"Pagamento":"Compra")}" de ${eur(Math.abs(x.v))}?`))return;
@@ -3645,7 +3648,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v78";
+const APPV="casa-v79";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
