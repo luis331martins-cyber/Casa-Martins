@@ -569,6 +569,18 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 <datalist id="shopList"></datalist>
 
 <script>
+/* Se algo correr mal, mostra o erro no ecrã em vez de a app ficar em branco (para se poder enviar uma captura) */
+function showFatal(msg){try{let el=document.getElementById("fatal");
+  if(!el){el=document.createElement("div");el.id="fatal";el.setAttribute("role","alert");
+    el.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9;background:#d70015;color:#fff;border-radius:12px;padding:12px 14px;font:14px/1.35 -apple-system,system-ui,sans-serif;white-space:pre-wrap;max-height:45vh;overflow:auto";
+    el.addEventListener("click",()=>el.remove());document.body.appendChild(el);el.textContent="A app encontrou um erro. Tira uma captura deste aviso e envia-a. (Toca para fechar.)\n"}
+  el.textContent+="\n• "+String(msg).slice(0,400)}catch(e){}}
+addEventListener("error",e=>showFatal((e.message||"Erro")+(e.lineno?` (linha ${e.lineno}:${e.colno})`:"")));
+addEventListener("unhandledrejection",e=>{const r=e.reason;showFatal(r&&(r.code?r.code+": ":"")+(r&&r.message||r))});
+/* Corre uma parte da app sem deixar que um erro nela impeça o resto de abrir */
+/* Dados incompletos (ex.: sem nome) não podem impedir a app de abrir */
+const fixNames=L=>(Array.isArray(L)?L:[]).filter(x=>x&&typeof x==="object").map(x=>({...x,name:String(x.name??x.title??"").trim()||"Sem nome"}));
+function safe(name,fn){try{return fn()}catch(err){showFatal(name+": "+(err&&err.message||err));console.error(err)}}
 const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Fruta","Outros"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
 const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Outros"];
 const MEAT=["Carne","Peixe"];
@@ -668,7 +680,7 @@ function render(){
   document.getElementById("meatChips").innerHTML=MQUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
   const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
   const mb=document.getElementById("meatBadge");mb.hidden=!mExp.length;mb.textContent=mExp.length;
-  if(typeof renderMeals==="function")renderMeals();
+  if(typeof renderMeals==="function")safe("O que comer",renderMeals);
 
   /* Compras separadas pela loja onde se compra; o que não tem loja fica no fim */
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
@@ -1020,7 +1032,7 @@ function renderBills(){
       <div class="amt"${(+a.bal||0)<0?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
     </div>`).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
-  if(typeof renderMeals==="function")renderMeals();
+  if(typeof renderMeals==="function")safe("O que comer",renderMeals);
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1238,11 +1250,11 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=snap.docs.map(d=>({...d.data()}));local.save();render()},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=snap.docs.map(d=>({...d.data()}));billLocal.save();renderBills()},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
-  store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();renderCal()},
+  store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
 }
 async function startShared(){
@@ -1325,7 +1337,8 @@ document.getElementById("leaveHouse").addEventListener("click",async()=>{
 });
 
 /* ---------- arranque ---------- */
-items=local.load();bills=billLocal.load();events=evLocal.load();render();renderBills();renderCal();
+items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(houseCode)startShared().catch(()=>{document.getElementById("sub").textContent=SUB_LOCAL});
 else if(ls.get("casa-local")){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
