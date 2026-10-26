@@ -134,8 +134,12 @@ async function house(code, now) {
     if (vistos.has(e.id)) continue;
     vistos.add(e.id);
     if (!first) {
-      jobs.push(() => send(code, {title: "Nova marcação", body: `${e.title} · ${longDate(e.date)}${e.time ? " às " + e.time : ""}`,
-        go: "calendario", tag: "nova-" + e.id}, e.by));
+      const quando = `${longDate(e.date)}${e.time ? " às " + e.time : ""}`;
+      /* "Bianca marcou: Jantar com os pais" quando a marcação traz o nome de quem a fez */
+      const msg = e.byName ?
+        {title: `${e.byName} marcou: ${e.title}`, body: quando[0].toUpperCase() + quando.slice(1)} :
+        {title: "Nova marcação", body: `${e.title} · ${quando}`};
+      jobs.push(() => send(code, {...msg, go: "calendario", tag: "nova-" + e.id}, e.by));
     }
   }
 

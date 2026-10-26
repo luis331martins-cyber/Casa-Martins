@@ -646,7 +646,7 @@ function renderCal(){
   document.getElementById("dayLabel").textContent=selDay===todayS?"Hoje":sd.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
   const inf=dayInfo(selDay);
   const evs=[...inf.ev].sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
-  let rows=evs.map(e=>`<div class="ev-row"><span class="t">${e.time||"—"}</span><span class="name">${esc(e.title)}</span><button class="x" data-delev="${e.id}" aria-label="Apagar ${esc(e.title)}">×</button></div>`).join("");
+  let rows=evs.map(e=>`<div class="ev-row"><span class="t">${e.time||"—"}</span><span class="name">${esc(e.title)}${e.byName?`<span class="meta" style="display:block;font-weight:400;font-size:.8rem;color:var(--muted)">Marcado por ${esc(e.byName)}</span>`:""}</span><button class="x" data-delev="${e.id}" aria-label="Apagar ${esc(e.title)}">×</button></div>`).join("");
   const mk=selDay.slice(0,7);
   rows+=inf.bl.map(b=>`<div class="ev-row auto"><i class="dot bl"></i><span class="name">${esc(b.name)} · ${eur(+b.amount||0)}${b.paid&&b.paid[mk]?" (paga)":""}</span><span></span></div>`).join("");
   rows+=inf.ex.map(i=>`<div class="ev-row auto"><i class="dot ex"></i><span class="name">Termina a validade: ${esc(i.name)}</span><span></span></div>`).join("");
@@ -680,7 +680,7 @@ async function delEv(id){events=events.filter(e=>e.id!==id);renderCal();
 document.getElementById("evForm").addEventListener("submit",e=>{e.preventDefault();
   const title=document.getElementById("evTitle").value.trim();if(!title)return;
   /* "by" permite à notificação de nova marcação não avisar quem a criou */
-  putEv({id:uid(),date:selDay,title,time:document.getElementById("evTime").value||"",...(store&&meId?{by:meId}:{})});
+  putEv({id:uid(),date:selDay,title,time:document.getElementById("evTime").value||"",...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})});
   e.target.reset();toast("Marcado")});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.dataset.day){selDay=t.dataset.day;const d=new Date(selDay+"T00:00");if(d.getMonth()!==calM){calM=d.getMonth();calY=d.getFullYear()}renderCal()}
