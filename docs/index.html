@@ -676,7 +676,8 @@ function showFatal(msg){try{let el=document.getElementById("fatal");
     el.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9;background:#d70015;color:#fff;border-radius:12px;padding:12px 14px;font:14px/1.35 -apple-system,system-ui,sans-serif;white-space:pre-wrap;max-height:45vh;overflow:auto";
     el.addEventListener("click",()=>el.remove());document.body.appendChild(el);el.textContent="A app encontrou um erro. Tira uma captura deste aviso e envia-a. (Toca para fechar.)\n"}
   el.textContent+="\n• "+String(msg).slice(0,400)}catch(e){}}
-addEventListener("error",e=>showFatal((e.message||"Erro")+(e.lineno?` (linha ${e.lineno}:${e.colno})`:"")));
+/* "Script error." sem ficheiro vem de scripts de fora (ex.: o browser dentro de outra app), não da nossa: ignora */
+addEventListener("error",e=>{if(/^Script error\.?$/i.test(e.message||"")&&!e.filename)return;showFatal((e.message||"Erro")+(e.lineno?` (linha ${e.lineno}:${e.colno})`:""))});
 addEventListener("unhandledrejection",e=>{const r=e.reason;showFatal(r&&(r.code?r.code+": ":"")+(r&&r.message||r))});
 /* Corre uma parte da app sem deixar que um erro nela impeça o resto de abrir */
 /* Dados incompletos (ex.: sem nome) não podem impedir a app de abrir */
