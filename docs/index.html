@@ -207,6 +207,13 @@ form.join{display:flex;flex-direction:column;gap:8px}
 .chatbar textarea{flex:1;resize:none;min-height:38px;max-height:120px;border-radius:19px;padding:8px 14px;font:inherit;font-size:16px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .chatbar button{width:38px;height:38px;border-radius:50%;padding:0;display:grid;place-items:center;background:#0a84ff;color:#fff;flex:none}
 .chatbar button svg{width:20px;height:20px;fill:currentColor}
+.chatbar .cam{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none;color:#0a84ff;background:var(--fill);cursor:pointer}
+.chatbar .cam svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8}
+.cm.pic{padding:4px;background:transparent}.cm.pic.me{background:transparent}
+.cm img{display:block;max-width:100%;width:220px;border-radius:14px;cursor:zoom-in}
+.cm.pic time{color:var(--muted);padding:0 6px}
+#picView{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:16px}
+#picView img{max-width:100%;max-height:100%;border-radius:8px}
 .agenda{display:block;width:100%;text-align:left;background:var(--surface);border-radius:16px;padding:14px 16px;font:inherit;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .agenda .ahead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
 .agenda .ahead b{font-size:13px;color:#ff3b30;text-transform:uppercase;letter-spacing:.03em}
@@ -493,6 +500,18 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .vrow2 .track{grid-column:2/4;height:6px;border-radius:3px;background:var(--fill);overflow:hidden}.vrow2 .track span{display:block;height:100%;border-radius:3px}
 .vrow2 .d{grid-column:2/4;font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
 .up{color:#c4271b}.down{color:#1d7a3a}
+.i-plan{background:linear-gradient(160deg,#ffb340,#ff7a00)}
+/* Plano de refeições */
+.pday{background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.pday.today{outline:2px solid var(--accent)}
+.pday h3{margin:0;padding:10px 16px 6px;font-size:13px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.pday.today h3{color:var(--accent)}
+.pslot{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px 16px;background:transparent;color:var(--fg);font:inherit;text-align:left;position:relative}
+.pslot+.pslot::before,.pday h3+.pslot::before{content:"";position:absolute;left:16px;right:0;top:0;height:.5px;background:var(--line)}
+.pslot .k{font-size:13px;color:var(--muted)}.pslot .d{font-weight:500;overflow-wrap:anywhere}.pslot .d.empty{color:var(--accent);font-weight:500;border:0;background:none;padding:0;text-align:left}
+.pslot .m{font-size:12px;color:var(--bad);white-space:nowrap}
+.ppick{padding:10px 16px 14px;display:flex;flex-direction:column;gap:8px;background:var(--fill)}
+.ppick .chips{max-height:220px;overflow:auto}
 .i-health{background:linear-gradient(160deg,#ff8787,#e03131)}
 .i-car{background:linear-gradient(160deg,#7d7aff,#3634a3)}
 .i-doc{background:linear-gradient(160deg,#9be15d,#3f8f1f)}
@@ -683,6 +702,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
         <button class="app" data-go="carne"><span class="ico i-meat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-4.5 8-6 12.5-3.2L20 6v12l-4.5-2.8C11 18 6 16.5 3 12z" style="fill:rgba(255,255,255,.3)"/><circle cx="8" cy="11.2" r=".9" style="fill:#fff;stroke:none"/></svg><span class="nbadge" id="meatBadge" hidden></span></span><span class="lbl">Carne e Peixe</span></button>
         <button class="app" data-go="lista"><span class="ico i-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7.5H6.2"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg><span class="nbadge" id="shopBadge" hidden></span></span><span class="lbl">Compras</span></button>
       <button class="app" data-go="comer"><span class="ico i-food"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10M17 21V3c-2.4 1.5-3.3 4.4-3.3 7.4 0 1.8 1.1 2.9 3.3 2.9"/></svg></span><span class="lbl">O que comer</span></button>
+      <button class="app" data-go="plano"><span class="ico i-plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M9 13v4.5M9 13c-1.2 0-1.5 1-1.5 1.8S8 16 9 16M14.5 13v4.5M14.5 13c1.3.2 1.8 1.2 1.8 2.2s-.8 1.3-1.8 1.3"/></svg></span><span class="lbl">Plano</span></button>
       </div>
       <h3>Casa e família</h3>
       <div class="apps">
@@ -945,6 +965,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <h1 class="large">Mensagens</h1>
     <div id="msgs" aria-live="polite"></div>
     <form class="chatbar" id="chatForm" autocomplete="off">
+      <label class="cam" aria-label="Enviar fotografia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><input type="file" id="chatPic" accept="image/*" hidden></label>
       <textarea id="chatText" rows="1" placeholder="Mensagem" aria-label="Mensagem" maxlength="1000" enterkeyhint="send"></textarea>
       <button type="submit" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 10.5l1.4 1.4L11 7.3V20h2V7.3l4.6 4.6 1.4-1.4z"/></svg></button>
     </form>
@@ -1019,6 +1040,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <p class="note" style="margin:0;text-align:center">Desliza o dedo no tabuleiro ou usa as setas. Come as maçãs e não batas na cauda nem nas paredes.</p>
   </section>
 
+  <section id="tab-plano" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Plano</span><span></span></nav>
+    <h1 class="large">Plano de refeições</h1>
+    <div class="month"><button class="nav-m" id="pPrev" aria-label="Semana anterior">‹</button><h2 id="pLabel" style="font-size:17px;text-transform:none"></h2><button class="nav-m" id="pNext" aria-label="Semana seguinte">›</button></div>
+    <div id="planDays" class="group" style="gap:10px"></div>
+    <button class="btn" type="button" id="planShop">Pôr nas compras o que falta para esta semana</button>
+    <p class="note" style="margin:0">Toca em “+ Escolher” para pôr um prato. As sugestões de cima usam o que tens em casa; também podes escrever outro prato. Os pratos com receita sabem os ingredientes: o botão de cima põe nas Compras o que falta.</p>
+  </section>
+
   <section id="tab-comer" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">O que comer</span><span></span></nav>
     <h1 class="large">O que comer</h1>
@@ -1028,6 +1058,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     </div>
     <div id="meals" class="group"></div>
     <button class="btn ghost" type="button" id="addRecipe">+ Juntar um prato nosso</button>
+    <button class="btn ghost" type="button" data-go="plano">📅 Plano de refeições da semana</button>
     <div id="recipeNew"></div>
   </section>
 
@@ -1122,6 +1153,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 <button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.8-.8L3 20.5l1.4-4.3A8 8 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/></svg><b id="chatBadge" hidden></b></button>
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
+<div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
 <div class="toast" id="toast" hidden></div>
 <datalist id="shopList"></datalist>
 
@@ -1330,12 +1362,12 @@ document.addEventListener("change",e=>{
     if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#graficos":"graficos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#graficos":"graficos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -1500,7 +1532,7 @@ const BUDQUICK=["Supermercado","Restauração","Combustível","Farmácia"], INCQ
 /* Sugestões de "onde / o quê" para cada gasto: as já usadas nessa despesa e algumas habituais */
 const SHOPS={super:["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Auchan","Minipreço"],rest:["Almoço","Jantar","Café","Take-away"]};
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
-const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills))}catch(e){}}};
+const billLocal={key:"despesas-casa",load(){try{return JSON.parse(localStorage.getItem(this.key)||"[]")}catch(e){return[]}},save(){try{localStorage.setItem(this.key,JSON.stringify(bills.map(b=>b.img?{...b,img:""}:b)))}catch(e){}}};
 const now=new Date(); let viewY=now.getFullYear(), viewM=now.getMonth();
 if(`${viewY}-${String(viewM+1).padStart(2,"0")}`<START){viewY=+START.slice(0,4);viewM=+START.slice(5)-1}
 const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
@@ -1644,7 +1676,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1871,7 +1903,8 @@ function renderAgenda(){const el=document.getElementById("agenda");if(!el)return
   L.sort((a,b)=>a.key.localeCompare(b.key));
   const tm=new Date(now);tm.setDate(tm.getDate()+1);const tomS=ymd(tm);
   const when=ds=>ds===todayS?"Hoje":ds===tomS?"Amanhã":new Date(ds+"T12:00").toLocaleDateString("pt-PT",{weekday:"long"});
-  el.innerHTML=`<div class="ahead"><b>Agenda</b></div>`+(L.length?L.slice(0,3).map(x=>{const d=new Date(x.day+"T12:00");
+  const PT=planOf(todayS);const meal=PT&&(PT.almoco||PT.jantar)?`<div class="am" style="margin:2px 0 6px;color:var(--fg)">🍽️ ${[PT.almoco?"Almoço: "+esc(PT.almoco):"",PT.jantar?"Jantar: "+esc(PT.jantar):""].filter(Boolean).join(" · ")}</div>`:"";
+  el.innerHTML=`<div class="ahead"><b>Agenda</b></div>`+meal+(L.length?L.slice(0,3).map(x=>{const d=new Date(x.day+"T12:00");
     return`<div class="arow"><div class="adate"><small>${wdS(d)}</small><span>${d.getDate()}</span></div><div class="abar" style="background:${x.col}"></div><div style="min-width:0"><div class="at">${esc(x.t)}</div><div class="am">${esc(when(x.day)[0].toUpperCase()+when(x.day).slice(1))}${x.m?" · "+esc(x.m):""}</div></div></div>`}).join("")
     :`<div class="anone">Nada marcado nos próximos dias. Toca para marcar.</div>`)}
 async function putEv(ev){events.push(ev);renderCal();
@@ -2739,6 +2772,47 @@ document.getElementById("carPdf").addEventListener("change",async e=>{const file
   form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 ${f.kind?"Parece "+(f.kind==="iuc"?"o comprovativo do IUC":"a "+nomes[f.kind]):"PDF lido"}. Encontrei: ${keys.map(k=>`<b>${CARLBL[k]}</b> ${k==="seguroVal"?eur(f[k]):k==="km"||k==="revKm"?fmtN(f[k])+" km":fmtD(f[k])}`).join(", ")||"nada de novo"}. Confirma (a verde) e toca em Guardar.</p>`);
   say("");window.scrollTo({top:form.getBoundingClientRect().top+scrollY-70,behavior:"smooth"})});
 
+/* ---------- Plano de refeições da semana ----------
+   Um documento por dia em "bills": {id:"plano-AAAA-MM-DD", kind:"plan", date, almoco, jantar} */
+let planWeek=0, planPick="";
+const PSLOTS=[["almoco","Almoço"],["jantar","Jantar"]];
+const planOf=ds=>bills.find(b=>b.id==="plano-"+ds)||null;
+function weekStart(off){const d=new Date(now);d.setDate(d.getDate()-((d.getDay()+6)%7)+off*7);return d}
+/* Todos os pratos (nossos e sugeridos) com o que falta de cada um */
+function allDishes(){const base=RECIPES.filter(r=>r[1]==="refeicao").map(([name,,req])=>({name,req:req.map(ingOf)}));
+  const ours=myRecipes().filter(r=>(r.type||"refeicao")==="refeicao").map(r=>({name:r.name,req:(r.ing||[]).map(ingFree),id:r.id}));
+  return[...ours,...base].map(r=>({...r,miss:r.req.filter(g=>!findIngr(g))}))}
+const dishInfo=name=>allDishes().find(d=>norm(d.name)===norm(name));
+function renderPlan(){const el=document.getElementById("planDays");if(!el)return;const ws=weekStart(planWeek), today=ymd(now);
+  const we=new Date(ws);we.setDate(we.getDate()+6);
+  document.getElementById("pLabel").textContent=planWeek===0?"Esta semana":planWeek===1?"Próxima semana":`${ws.getDate()} ${MES[ws.getMonth()]} – ${we.getDate()} ${MES[we.getMonth()]}`;
+  const dishes=allDishes().sort((a,b)=>a.miss.length-b.miss.length||!!b.id-!!a.id||a.name.localeCompare(b.name,"pt"));
+  let html="";
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const ds=ymd(d), P=planOf(ds)||{};
+    const wd=d.toLocaleDateString("pt-PT",{weekday:"long"});
+    html+=`<div class="pday${ds===today?" today":""}"><h3>${ds===today?"Hoje · ":""}${wd[0].toUpperCase()+wd.slice(1)} ${d.getDate()}</h3>`;
+    for(const [k,lab] of PSLOTS){const v=P[k]||"", key=ds+"|"+k, inf=v&&dishInfo(v);
+      html+=`<button type="button" class="pslot" data-pslot="${key}"><span class="k">${lab}</span><span class="d${v?"":" empty"}">${v?esc(v):"+ Escolher"}</span><span class="m">${inf&&inf.miss.length?`falta${inf.miss.length===1?"":"m"} ${inf.miss.length}`:""}</span></button>`;
+      if(planPick===key)html+=`<div class="ppick"><div class="chips">${["Sobras","Comer fora",...dishes.map(x=>x.name)].map(n=>`<button type="button" class="chip" data-pset="${key}" data-v="${esc(n)}">${esc(n)}</button>`).join("")}</div>
+        <form class="add" data-pfree="${key}" autocomplete="off"><input name="v" placeholder="Outro prato" value="${v&&!dishes.some(x=>x.name===v)&&v!=="Sobras"&&v!=="Comer fora"?esc(v):""}" autocapitalize="sentences"><button class="btn" type="submit">OK</button></form>
+        ${v?`<button type="button" class="back" data-pset="${key}" data-v="" style="align-self:flex-start;color:var(--bad)">Tirar do plano</button>`:""}</div>`}
+    html+=`</div>`}
+  el.innerHTML=html}
+function planSet(key,v){const [ds,k]=key.split("|"), old=planOf(ds)||{id:"plano-"+ds,kind:"plan",name:"Plano "+ds,date:ds};const n={...old};
+  if(v)n[k]=v.slice(0,80);else delete n[k];planPick="";if(!n.almoco&&!n.jantar)delBill(n.id);else putBill(n);renderPlan();if(typeof renderAgenda==="function")safe("Agenda",renderAgenda)}
+document.getElementById("planDays").addEventListener("click",e=>{const s=e.target.closest("[data-pset]");if(s){planSet(s.dataset.pset,s.dataset.v);return}
+  const b=e.target.closest("[data-pslot]");if(b){planPick=planPick===b.dataset.pslot?"":b.dataset.pslot;renderPlan()}});
+document.getElementById("planDays").addEventListener("submit",e=>{const k=e.target.dataset.pfree;if(!k)return;e.preventDefault();const v=e.target.v.value.trim();if(v)planSet(k,v)});
+document.getElementById("pPrev").onclick=()=>{planWeek--;planPick="";renderPlan()};
+document.getElementById("pNext").onclick=()=>{planWeek++;planPick="";renderPlan()};
+/* Compras da semana: junta o que falta de todos os pratos (cada ingrediente uma vez) */
+document.getElementById("planShop").addEventListener("click",()=>{const ws=weekStart(planWeek), need=new Map();
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const P=planOf(ymd(d));if(!P)continue;
+    for(const [k] of PSLOTS){const inf=P[k]&&dishInfo(P[k]);if(inf)inf.miss.forEach(g=>need.set(norm(g.label),g))}}
+  if(!need.size){toast("Não falta nada para os pratos desta semana.");return}
+  need.forEach(g=>{const ex=findIngr(g,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}else{const it={id:uid(),name:g.label,cat:g.cat,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
+  render();renderPlan();toast(`${need.size} ingrediente${need.size===1?"":"s"} nas compras: ${[...need.values()].map(g=>g.label).join(", ")}`)});
+
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
 var chatOn=false;
@@ -2759,7 +2833,7 @@ function renderChat(){const el=document.getElementById("msgs");if(!el)return;con
     if(day!==lastDay){html+=`<div class="msg-day">${day===ymd(new Date())?"Hoje":d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"})}</div>`;lastDay=day;lastWho=""}
     const who=mine?"me":m.uid||m.name;
     if(who!==lastWho&&!mine&&m.name)html+=`<div class="msg-who">${esc(m.name)}</div>`;lastWho=who;
-    html+=`<div class="cm${mine?" me":""}"${mine?` data-delmsg="${m.id}" role="button" tabindex="0"`:""}>${esc(m.text)}<time>${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})}</time></div>`}
+    html+=`<div class="cm${mine?" me":""}${m.img?" pic":""}"${mine?` data-delmsg="${m.id}" role="button" tabindex="0"`:""}>${m.img?`<img src="${m.img}" alt="Fotografia" data-pic="1" loading="lazy">`:""}${esc(m.text||"")}<time>${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})}</time></div>`}
   el.innerHTML=html||`<div class="empty">Ainda não há mensagens.<br>Escreve em baixo para mandar uma à tua casa.</div>`;
   if(chatOn&&atBottom)window.scrollTo(0,document.body.scrollHeight);
   chatFabState()}
@@ -2767,8 +2841,22 @@ document.getElementById("chatForm").addEventListener("submit",e=>{e.preventDefau
   putBill({id:uid(),kind:"msg",text:text.slice(0,1000),uid:meId||"",name:myName()||"",at:Date.now()});t.value="";t.style.height="";
   renderChat();window.scrollTo(0,document.body.scrollHeight)});
 document.getElementById("chatText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();document.getElementById("chatForm").requestSubmit()}});
+document.getElementById("picView").addEventListener("click",e=>{e.currentTarget.hidden=true});
+/* Fotografia no chat: reduzida no telemóvel (máx. 1000 px, ~150 KB) e guardada na própria mensagem
+   (no plano grátis do Firebase não há espaço para ficheiros). */
+function shrinkImage(file){return new Promise((ok,ko)=>{const url=URL.createObjectURL(file), img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);let max=1000,q=.7,out="";
+    for(let k=0;k<6;k++){const r=Math.min(1,max/Math.max(img.width,img.height)), c=document.createElement("canvas");c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);out=c.toDataURL("image/jpeg",q);if(out.length<200000)break;max*=.8;q=Math.max(.45,q-.08)}
+    ok(out)};img.onerror=()=>{URL.revokeObjectURL(url);ko(new Error("img"))};img.src=url})}
+document.getElementById("chatPic").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;
+  toast("A enviar a fotografia…");let img;try{img=await shrinkImage(file)}catch(err){toast("Não foi possível abrir essa fotografia.");return}
+  const t=document.getElementById("chatText"), text=t.value.trim().slice(0,1000);t.value="";
+  putBill({id:uid(),kind:"msg",text,img,uid:meId||"",name:myName()||"",at:Date.now()});renderChat();setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),100)});
 document.getElementById("chatText").addEventListener("input",e=>{const t=e.target;t.style.height="";t.style.height=Math.min(120,t.scrollHeight)+"px"});
-document.getElementById("msgs").addEventListener("click",e=>{const m=e.target.closest("[data-delmsg]");if(m&&confirm("Apagar esta mensagem?"))delBill(m.dataset.delmsg)});
+document.getElementById("msgs").addEventListener("click",e=>{const im=e.target.closest("[data-pic]");
+  if(im){const v=document.getElementById("picView");v.querySelector("img").src=im.src;v.hidden=false;return}
+  const m=e.target.closest("[data-delmsg]");if(m&&confirm("Apagar esta mensagem?"))delBill(m.dataset.delmsg)});
 /* Relógio no Início (atualiza também a data à meia-noite) */
 function tick(){const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
   let t=d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});t=t[0].toUpperCase()+t.slice(1);if(document.getElementById("today").textContent!==t)document.getElementById("today").textContent=t}
@@ -2894,7 +2982,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v60";
+const APPV="casa-v61";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

@@ -230,7 +230,7 @@ async function house(code, now) {
     if (msgVistas.has(m.id)) continue;
     msgVistas.add(m.id);
     if (msgPrimeira) continue;
-    const text = String(m.text || "");
+    const text = String(m.text || "") || (m.img ? "📷 Fotografia" : "");
     jobs.push(() => send(code, {title: m.name ? `💬 ${m.name}` : "💬 Nova mensagem", body: text.length > 180 ? text.slice(0, 178) + "…" : text,
       go: "chat", tag: "msg-" + m.id}, m.uid));
   }
