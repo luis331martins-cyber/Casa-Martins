@@ -1,6 +1,6 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v69";
+const VERSION="casa-v70";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
   "icons/casam.svg","icons/casam-180.png","icons/casam-192.png","icons/casam-512.png"];
 const SDK=["app","auth","firestore","messaging"].map(n=>`https://www.gstatic.com/firebasejs/12.19.0/firebase-${n}.js`);
@@ -65,12 +65,15 @@ self.addEventListener("push",e=>{
     tag:d.tag||undefined,
     icon:"icons/casam-192.png",
     badge:"icons/casam-192.png",
-    data:{link:d.link||(p.fcmOptions&&p.fcmOptions.link)||"./"}
+    data:{link:d.link||(p.fcmOptions&&p.fcmOptions.link)||"./",k:d.k||""},
+    /* Toma de medicamento: botão "Tomei" (Android e computador; o iPhone não mostra botões e pergunta na app) */
+    ...(d.k?{actions:[{action:"tomei",title:"✓ Tomei"}]}:{})
   }));
 });
 self.addEventListener("notificationclick",e=>{
   e.notification.close();
-  const link=new URL(e.notification.data&&e.notification.data.link||"./",self.registration.scope).href;
+  const k=e.notification.data&&e.notification.data.k;
+  const link=e.action==="tomei"&&k?new URL("./#tomei:"+encodeURIComponent(k),self.registration.scope).href:new URL(e.notification.data&&e.notification.data.link||"./",self.registration.scope).href;
   const go=new URL(link).hash.slice(1);
   e.waitUntil((async()=>{
     const all=await self.clients.matchAll({type:"window",includeUncontrolled:true});

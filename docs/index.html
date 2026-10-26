@@ -225,6 +225,13 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .cm.pic{padding:4px;background:transparent}.cm.pic.me{background:transparent}
 .cm img{display:block;max-width:100%;width:220px;border-radius:14px;cursor:zoom-in}
 .cm.pic time{color:var(--muted);padding:0 6px}
+#takeAsk{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
+#takeAsk[hidden]{display:none}
+.ta-box{background:var(--surface);border-radius:20px;padding:16px;width:100%;max-width:520px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-height:80vh;overflow:auto}
+.ta-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ta-h b{font-size:19px}
+.ta-row{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:.5px solid var(--line)}
+.ta-row b{display:block}.ta-row small{color:var(--muted)}
+.ta-b{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.ta-b .btn{padding:10px 6px;font-size:14px}
 #picView{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:16px}
 #picView img{max-width:100%;max-height:100%;border-radius:8px}
 .agenda{display:block;width:100%;text-align:left;background:var(--surface);border-radius:16px;padding:14px 16px;font:inherit;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.06)}
@@ -1220,6 +1227,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
+<div id="takeAsk" hidden role="dialog" aria-label="Já tomou?"><div class="ta-box"><div class="ta-h"><b>💊 Já tomou?</b><button type="button" id="taClose" class="back">Fechar</button></div><div class="ta-list"></div></div></div>
 <div id="fileView" hidden role="dialog" aria-label="Anexo"><div class="fv-bar"><button type="button" id="fvClose">Fechar</button><b id="fvName"></b><button type="button" id="fvShare">Partilhar</button><button type="button" id="fvDel" style="color:#ff6b6b">Apagar</button></div><div class="fv-body" id="fvBody"></div></div>
 <div class="toast" id="toast" hidden></div>
 <datalist id="shopList"></datalist>
@@ -1435,7 +1443,8 @@ function show(tab){["login","setup","inicio","chat","definicoes","despensa","car
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
 const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#graficos":"graficos","#carro":"carro","#documentos":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
-function route(h){if(ROUTES[h])show(ROUTES[h])}
+function route(h){if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
+  if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
 
@@ -1744,7 +1753,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Atualizar valores",renderAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2254,14 +2263,29 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   else if(t.dataset.medwho){const f=t.closest("form");if(f)f.w.value=t.dataset.medwho}
   else if(t.dataset.delmed){const m=meds().find(x=>x.id===t.dataset.delmed);if(m&&confirm(`Apagar "${m.name}" (${m.who})?`)){editMed="";delBill(m.id);renderMeds();toast(m.name+" apagado")}}
 });
-document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.dataset.take;if(!v)return;
-  const [id,t]=v.split("|"), m=meds().find(x=>x.id===id);if(!m)return;
-  const d=ymd(now), taken={};Object.entries(m.taken||{}).forEach(([k,a])=>{if(k>=ymd(new Date(Date.now()-30*864e5)))taken[k]=a});
-  const day=new Set(taken[d]||[]), was=day.has(t);if(e.target.checked)day.add(t);else day.delete(t);taken[d]=[...day];
-  const P=medPlan(m,d)||{per:+m.per||1}, nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,Math.round((m.stock+(e.target.checked?-1:1)*(+P.per||1))*100)/100);
+document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.dataset.take;if(!v)return;const [id,t]=v.split("|");medTake(id,t,e.target.checked)});
+/* Marcar (ou desmarcar) uma toma: guarda no dia e desconta (ou repõe) o stock da fase desse dia */
+function medTake(id,t,on,d){const m=meds().find(x=>x.id===id);if(!m)return;d=d||ymd(new Date());
+  const taken={};Object.entries(m.taken||{}).forEach(([k,a])=>{if(k>=ymd(new Date(Date.now()-30*864e5)))taken[k]=a});
+  const day=new Set(taken[d]||[]), was=day.has(t);if(on)day.add(t);else day.delete(t);taken[d]=[...day];
+  const P=medPlan(m,d)||{per:+m.per||1}, nm={...m,taken};if(m.stock!=null&&was!==on)nm.stock=Math.max(0,Math.round((m.stock+(on?-1:1)*(+P.per||1))*100)/100);
   putBill(nm);renderMeds();medShopSync();const dl=medDays(nm);
-  if(e.target.checked)toast(dl!=null&&dl<=(nm.warnDays||7)?`${m.name}: só dá para ${dl} dia${dl===1?"":"s"} · está nas Compras`:`${m.who}: ${m.name} tomado`);
-});
+  if(on)toast(dl!=null&&dl<=(nm.warnDays||7)?`${m.name}: só dá para ${dl} dia${dl===1?"":"s"} · está nas Compras`:`${m.who}: ${m.name} tomado`)}
+/* ---------- "Já tomou?": pergunta ao abrir a app pelas tomas que já passaram da hora (até 4 h) e ainda não estão marcadas ---------- */
+const askKey="casa-toma-resposta";
+function askRead(){try{return JSON.parse(localStorage.getItem(askKey)||"{}")}catch(e){return{}}}
+function askWrite(o){try{localStorage.setItem(askKey,JSON.stringify(o))}catch(e){}}
+function dosesToAsk(){const nm=minsNow(), d=ymd(new Date()), A=askRead();
+  return dosesToday("").filter(x=>!x.done&&tMin(x.t)<=nm&&nm-tMin(x.t)<=240).filter(x=>{const k=`${x.m.id}|${d}|${x.t}`, v=A[k];return!v||(v!=="nao"&&+v<=Date.now())})}
+function renderTakeAsk(){const box=document.getElementById("takeAsk");if(!box)return;const L=dosesToAsk(), d=ymd(new Date());box.hidden=!L.length;if(!L.length)return;
+  box.querySelector(".ta-list").innerHTML=L.map(x=>`<div class="ta-row"><div style="min-width:0"><b>${esc(x.m.who)} · ${esc(x.m.name)}</b><small>${x.t}${x.m.phases&&x.m.phases.length?" · "+String(x.per).replace(".",",")+" por toma":x.m.dose?" · "+esc(x.m.dose):""}</small></div>
+    <div class="ta-b"><button type="button" class="btn" data-ta="sim" data-k="${x.m.id}|${d}|${x.t}">✓ Tomei</button><button type="button" class="btn ghost" data-ta="depois" data-k="${x.m.id}|${d}|${x.t}">Daqui a 30 min</button><button type="button" class="btn ghost" data-ta="nao" data-k="${x.m.id}|${d}|${x.t}" style="color:var(--bad)">Não tomou</button></div></div>`).join("")}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-ta]");if(b){const [id,d,t]=b.dataset.k.split("|"), A=askRead();
+    if(b.dataset.ta==="sim")medTake(id,t,true,d);else{A[b.dataset.k]=b.dataset.ta==="nao"?"nao":String(Date.now()+30*60000);
+      Object.keys(A).forEach(k=>{if(k.split("|")[1]<ymd(new Date(Date.now()-2*864e5)))delete A[k]});askWrite(A);if(b.dataset.ta==="depois")toast("Pergunto outra vez daqui a 30 minutos")}
+    renderTakeAsk();return}
+  if(e.target.closest("#taClose")){document.getElementById("takeAsk").hidden=true}});
+setInterval(()=>safe("Já tomou?",renderTakeAsk),60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)safe("Já tomou?",renderTakeAsk)});
 document.addEventListener("submit",e=>{const id=e.target.dataset.medform;if(!id)return;e.preventDefault();
   const f=e.target, faseada=f.ph&&f.ph.checked;
   const phases=faseada?[...f.querySelectorAll(".phase")].map(row=>{const g=k=>row.querySelector(`[data-pk="${k}"]`).value;
@@ -3276,7 +3300,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v69";
+const APPV="casa-v70";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

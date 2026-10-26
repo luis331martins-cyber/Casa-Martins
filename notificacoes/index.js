@@ -48,7 +48,7 @@ const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
 
 /* ---------- envio ---------- */
 /* Envia para todos os telemóveis da casa (menos "except", se indicado) e apaga tokens que já não valem. */
-async function send(code, {title, body, go, tag}, except) {
+async function send(code, {title, body, go, tag, k}, except) {
   const snap = await db.collection(`households/${code}/tokens`).get();
   const docs = snap.docs.filter((d) => d.id !== except && d.get("token"));
   if (!docs.length) return;
@@ -56,7 +56,7 @@ async function send(code, {title, body, go, tag}, except) {
   /* Só "data": quem mostra a notificação é o service worker da app (docs/sw.js). */
   const res = await getMessaging().sendEach(docs.map((d) => ({
     token: d.get("token"),
-    data: {title, body, link, tag: tag || ""},
+    data: {title, body, link, tag: tag || "", ...(k ? {k} : {})},
     webpush: {headers: {Urgency: "high", TTL: "86400"}},
   })));
   await Promise.all(res.responses.map((r, i) => {
@@ -248,11 +248,18 @@ async function house(code, now) {
       const [hh, mm] = t.split(":").map(Number);
       const late = now.min - (hh * 60 + mm);
       const key = `${d.id}|${now.date}|${t}`;
-      if (late < 0 || late > 45 || medsSent.has(key)) continue;
       if (((m.taken || {})[now.date] || []).includes(t)) continue;
-      medsSent.add(key);
-      jobs.push(() => send(code, {title: `💊 ${m.who ? m.who + ": " : ""}${m.name}`,
-        body: `Toma das ${t}${m.phases && m.phases.length ? " · " + String(P.per).replace(".", ",") + " por toma" : m.dose ? " · " + m.dose : ""}${m.notes ? " · " + m.notes : ""}`, go: "medicamentos", tag: "med-" + key}));
+      const qt = m.phases && m.phases.length ? " · " + String(P.per).replace(".", ",") + " por toma" : m.dose ? " · " + m.dose : "";
+      /* 1.º aviso à hora (até 45 min depois); 2.º "Já tomou?" cerca de 1 hora depois, se ainda não foi marcada */
+      if (late >= 0 && late <= 45 && !medsSent.has(key)) {
+        medsSent.add(key);
+        jobs.push(() => send(code, {title: `💊 ${m.who ? m.who + ": " : ""}${m.name}`,
+          body: `Toma das ${t}${qt}${m.notes ? " · " + m.notes : ""}`, go: "medicamentos", tag: "med-" + key, k: key}));
+      } else if (late >= 60 && late <= 120 && !medsSent.has(key + "|2")) {
+        medsSent.add(key + "|2");
+        jobs.push(() => send(code, {title: `💊 Já tomou? ${m.who ? m.who + ": " : ""}${m.name}`,
+          body: `A toma das ${t}${qt} ainda não está marcada. Abre a app para marcar.`, go: "medicamentos", tag: "med-" + key, k: key}));
+      }
     }
   }
 
