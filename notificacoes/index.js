@@ -73,7 +73,7 @@ async function morning(code, now) {
   /* Contas: as mesmas regras dos alertas da app (atrasadas, hoje, próximos 3 dias). */
   const contas = [];
   for (const b of bills) {
-    if (b.kind === "income" || !b.day || (b.paid && b.paid[mk])) continue;
+    if (b.kind === "income" || b.kind === "budget" || !b.day || (b.paid && b.paid[mk])) continue;
     const d = Math.min(b.day, last);
     if (d < now.d) contas.push({o: 0, t: `Atrasada: ${b.name} · ${eur(b.amount)}`});
     else if (d === now.d) contas.push({o: 1, t: `Hoje: ${b.name} · ${eur(b.amount)}`});
