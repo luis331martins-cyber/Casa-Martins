@@ -732,7 +732,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     <div id="loanList"></div>
     <button class="btn ghost" type="button" id="addLoan">+ Juntar crédito</button>
     <div id="loanNew"></div>
-    <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam. “Falta pagar” é a soma das prestações que faltam (com juros).</p>
+    <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam (a do mês atual já conta como paga). “Falta pagar” é a soma das prestações que faltam (com juros).</p>
   </section>
 
   <section id="tab-meds" class="group" style="gap:16px" hidden>
@@ -1883,9 +1883,9 @@ var editLoan="";
 const loans=()=>bills.filter(b=>b.kind==="loan");
 const mIdx=k=>{const [y,m]=String(k||"").split("-").map(Number);return y*12+m-1};
 const mLong=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"})};
-/* Prestações pagas até hoje: meses desde a primeira, contando a deste mês só depois do dia do débito */
+/* Prestações pagas até hoje: meses desde a primeira, contando já a deste mês como paga */
 function loanState(l){const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
-  let paid=mIdx(ymOf(d))-mIdx(l.first)+(d.getDate()>=(+l.day||1)?1:0);paid=Math.max(0,Math.min(n,paid));
+  let paid=mIdx(ymOf(d))-mIdx(l.first)+1;paid=Math.max(0,Math.min(n,paid));
   const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
 function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data-loanform="${l?l.id:"new"}" autocomplete="off">
     <label class="f wide">Nome<input name="n" required value="${l?esc(l.name):""}" placeholder="ex.: Crédito do carro" autocapitalize="sentences"></label>
