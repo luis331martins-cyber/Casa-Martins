@@ -2610,7 +2610,7 @@ function cardBuys(c){const mk=cardK(), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).re
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
-    :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)&&c.limit?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
+    :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
   const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${kName(mk)}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
@@ -2620,7 +2620,8 @@ function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=
     L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
-  if(isCredit(c)&&c.limit)L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
+  if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
+  if(isCredit(c))L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
   const AU=(c.auto||[]).map(a=>{const b=a.bill&&bills.find(x=>x.id===c.bill);if(a.bill&&!b)return"";const v=b?monthAmt(b,cardK()):a.v, d=b?b.day:a.day;
     return`${esc(a.bill?"Prestação":a.n)} ${a.t==="compra"?"+":"−"}${eur(v)} · dia ${d}`}).filter(Boolean);
   if(AU.length)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>🔁 ${AU.join(" · ")}</span></div>`);
@@ -2680,8 +2681,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.cancelcard){editCard="";renderCards()}
   else if(t.dataset.cstyle){const f=t.closest("form");f.st.value=t.dataset.cstyle;f.querySelectorAll("[data-cstyle]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
   else if(t.dataset.delcard){const c=cards().find(x=>x.id===t.dataset.delcard);if(c&&confirm(`Apagar o cartão "${c.name}"?`)){editCard="";delBill(c.id);renderCards();toast("Cartão apagado")}}
-  else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;const v=prompt(`Quanto já usaste do ${c.name}? (€)`,c.used!=null?String(c.used).replace(".",","):"");if(v===null)return;
-    const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;putBill({...c,used:n,usedAt:Date.now()});renderCards();toast(`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`)}
+  else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;const v=prompt(`Saldo usado do ${c.name} (o valor que aparece na app do banco), em €:`,c.used!=null?String(c.used).replace(".",","):"");if(v===null)return;
+    const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;putBill({...c,used:n,usedAt:Date.now()});renderCards();toast(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`)}
   else if(t.dataset.gocard){e.preventDefault();e.stopPropagation();show("cartoes");setTimeout(()=>{const c=document.querySelector(`[data-editcard="${t.dataset.gocard}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)}
   else if(t.dataset.gocontas){show("despesas")}
   else if(t.dataset.cardbuyopen){cardBuy=t.dataset.cardbuyopen;renderCards();const i=document.querySelector(`[data-cardbuy="${cardBuy}"] [name=v]`);if(i)i.focus()}
@@ -3700,7 +3701,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v80";
+const APPV="casa-v81";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
