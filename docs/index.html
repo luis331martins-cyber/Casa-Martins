@@ -266,6 +266,9 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .cm.pic time{color:var(--muted);padding:0 6px}
 #takeAsk{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
 #takeAsk[hidden]{display:none}
+.sheetbg{position:fixed;inset:0;z-index:24;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}.sheetbg[hidden]{display:none}
+.ia-row{display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;padding:10px 0;border-top:.5px solid var(--line)}
+.ia-row b{display:block}.ia-row small{color:var(--muted)}.ia-row input{text-align:right;font-size:17px;background:var(--fill);border:0;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;color:var(--fg);font-variant-numeric:tabular-nums}
 .ta-box{background:var(--surface);border-radius:20px;padding:16px;width:100%;max-width:520px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-height:80vh;overflow:auto}
 .ta-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ta-h b{font-size:19px}
 .ta-row{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:.5px solid var(--line)}
@@ -1394,6 +1397,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
+<div id="incAsk" class="sheetbg" hidden role="dialog" aria-label="Fim do mês"><form class="ta-box" id="incAskForm" autocomplete="off"><div class="ta-h"><b id="incAskT">💶 Fim do mês</b><button type="button" id="incAskLater" class="back">Mais tarde</button></div>
+  <p class="note" style="margin:0 0 4px">Escreve quanto entrou. Se for igual, deixa como está.</p><div id="incAskList"></div>
+  <button class="btn" type="submit" style="width:100%;margin-top:10px">Guardar</button></form></div>
 <div id="takeAsk" hidden role="dialog" aria-label="Já tomou?"><div class="ta-box"><div class="ta-h"><b>💊 Já tomou?</b><button type="button" id="taClose" class="back">Fechar</button></div><div class="ta-list"></div></div></div>
 <div id="fileView" hidden role="dialog" aria-label="Anexo"><div class="fv-bar"><button type="button" id="fvClose">Fechar</button><b id="fvName"></b><button type="button" id="fvShare">Partilhar</button><button type="button" id="fvDel" style="color:#ff6b6b">Apagar</button></div><div class="fv-body" id="fvBody"></div></div>
 <div class="toast" id="toast" hidden></div>
@@ -1833,7 +1839,7 @@ function renderBills(){
       <label class="tick wide"><input type="checkbox" class="switch" name="keep"> Manter este valor nos meses seguintes</label>
       ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
-      ${isInc(b)||isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
+      ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
@@ -2142,6 +2148,8 @@ function renderAlerts(){
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":`Faltam ${d} dia${d===1?"":"s"} · ${fmtD(x.date)}`})});
+  /* Fim do mês: ordenados e outras receitas por escrever */
+  if(typeof incAskMonth==="function"){const k=incAskMonth(), L=k?incAskList(k):[];if(L.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Escrever o que entrou em ${mFull(k).split(" de ")[0]}`,meta:L.map(b=>b.name).join(", ")})}
   /* Valores do mês seguinte por atualizar (a partir do dia 20) */
   if(typeof askPending==="function"){const P=askPending();if(P.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Atualizar ${P.length} valor${P.length===1?"":"es"} de ${[...new Set(P.map(x=>mFull(x.k).split(" de ")[0]))].join(" e ")}`,meta:P.map(x=>x.b.name).join(", ")})}
   const toBuy=items.filter(i=>i.lvl<2).length;
@@ -3712,6 +3720,36 @@ document.addEventListener("pointerup",gDrop);document.addEventListener("pointerc
 document.getElementById("gNew").addEventListener("click",()=>{if(G&&G.score&&!G.over&&!confirm("Começar um jogo novo? Perdes os pontos deste."))return;gNew()});
 document.getElementById("gAgain").addEventListener("click",()=>gNew());
 
+/* ---------- Fim do mês: perguntar quanto entrou (ordenados, cartão Break, caixa…) ----------
+   No último dia útil do mês (e nos primeiros 5 dias do mês seguinte, se ficou por fazer) abre uma janela com as receitas marcadas.
+   Por defeito: as que se chamam ordenado, salário, vencimento, Break ou caixa. Guardar escreve o valor do mês e marca como recebido. */
+const INC_ASK=/ordenado|salario|vencimento|break|caixa/;
+const askInc=b=>isInc(b)&&(b.ask!=null?!!b.ask:INC_ASK.test(noAcc(b.name||"")));
+const PT_FIXOS=["01-01","04-25","05-01","06-10","08-15","10-05","11-01","12-01","12-08","12-25"];
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=(h+l-7*m+114)%31+1;return new Date(y,mo-1,da)}
+function feriado(d){const md=ymd(d).slice(5);if(PT_FIXOS.includes(md))return true;const e=easter(d.getFullYear());
+  return[-2,0,60].some(n=>{const x=new Date(e);x.setDate(x.getDate()+n);return ymd(x)===ymd(d)})}
+function lastBizDay(y,m){const d=new Date(y,m+1,0);while(d.getDay()===0||d.getDay()===6||feriado(d))d.setDate(d.getDate()-1);return d}
+function incAskMonth(){const t=new Date(), lb=lastBizDay(t.getFullYear(),t.getMonth());let k=null;
+  if(ymd(t)>=ymd(lb))k=ymOf(t);else if(t.getDate()<=5){k=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1))}
+  return k&&k>=START?k:null}
+function incAskList(k){return bills.filter(b=>askInc(b)&&!(b.iconf&&b.iconf[k]))}
+function renderIncAsk(){const box=document.getElementById("incAsk");if(!box||!store&&!bills.length)return;const k=incAskMonth(), L=k?incAskList(k):[];
+  let later="";try{later=localStorage.getItem("casa-incask-depois")||""}catch(e){}
+  if(!L.length||later===ymd(new Date())){box.hidden=true;return}
+  if(!box.hidden&&box.dataset.k===k)return;box.dataset.k=k;
+  document.getElementById("incAskT").textContent=`💶 Fim de ${mFull(k).split(" de ")[0]}`;
+  document.getElementById("incAskList").innerHTML=L.map(b=>`<label class="ia-row"><span style="min-width:0"><b>${esc(b.name)}</b><small>${b.day?"Dia "+b.day+" · ":""}habitual ${eur(baseAmt(b,k))}</small></span>
+    <input name="${b.id}" type="number" step="0.01" min="0" inputmode="decimal" value="${Math.round(monthAmt(b,k)*100)/100}"></label>`).join("");
+  box.hidden=false}
+document.getElementById("incAskLater").addEventListener("click",()=>{try{localStorage.setItem("casa-incask-depois",ymd(new Date()))}catch(e){}document.getElementById("incAsk").hidden=true;toast("Pergunto outra vez amanhã")});
+document.getElementById("incAskForm").addEventListener("submit",e=>{e.preventDefault();const k=document.getElementById("incAsk").dataset.k;if(!k)return;let n=0;
+  for(const inp of e.target.querySelectorAll("input[name]")){const b=bills.find(x=>x.id===inp.name);const v=parseFloat(String(inp.value).replace(",","."));if(!b||isNaN(v))continue;
+    const amounts={...(b.amounts||{})};delete amounts[k];if(Math.abs(v-baseAmt(b,k))>.004)amounts[k]=v;
+    putBill({...b,amounts,paid:{...(b.paid||{}),[k]:true},iconf:{...(b.iconf||{}),[k]:true}});n++}
+  document.getElementById("incAsk").hidden=true;toast(`${n} valor${n===1?"":"es"} guardado${n===1?"":"s"}`)});
+setTimeout(()=>safe("Fim do mês",renderIncAsk),1500);setInterval(()=>safe("Fim do mês",renderIncAsk),300000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>safe("Fim do mês",renderIncAsk),800)});
 /* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
    Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
    É um cadeado do ecrã: a sessão continua a ser a da conta com PIN, e "Entrar com o PIN" termina a sessão para entrar de novo. */
@@ -3731,14 +3769,14 @@ async function bioEnable(){
       user:{id:rnd(16),name:myName()||"casa",displayName:myName()||"A nossa casa"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
       authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
     localStorage.setItem(BIO_KEY,b64u(c.rawId));toast("Face ID ligado neste telemóvel");return true}
-  catch(e){toast("Não foi possível ligar o Face ID");return false}}
+  catch(e){const ok=await bioAvailable();toast(ok?"Não foi possível ligar o Face ID ("+(e&&e.name||"erro")+")":"Este telemóvel não deixa usar o Face ID na app. Confirma que o Face ID está ligado nos Ajustes.");return false}}
 document.getElementById("bioSw").addEventListener("change",async e=>{const sw=e.target;
   if(sw.checked){sw.checked=await bioEnable()}else{try{localStorage.removeItem(BIO_KEY)}catch(err){}toast("Face ID desligado")}});
 document.getElementById("bioGo").addEventListener("click",bioUnlock);
 document.getElementById("bioPin").addEventListener("click",async()=>{try{localStorage.removeItem(BIO_KEY)}catch(e){}document.getElementById("bioLock").hidden=true;
   document.getElementById("bioSw").checked=false;if(fb&&fb.logout){try{await fb.logout()}catch(e){}}location.reload()});
 document.addEventListener("visibilitychange",()=>{if(!bioId())return;if(document.hidden)bioHiddenAt=Date.now();else if(bioHiddenAt&&Date.now()-bioHiddenAt>180000){bioShow();bioUnlock()}});
-bioAvailable().then(ok=>{document.getElementById("bioItem").hidden=!ok;document.getElementById("bioSw").checked=!!bioId()});
+document.getElementById("bioItem").hidden=!window.PublicKeyCredential;document.getElementById("bioSw").checked=!!bioId();
 if(bioId()){bioShow();bioUnlock()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
@@ -3800,7 +3838,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v92";
+const APPV="casa-v93";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

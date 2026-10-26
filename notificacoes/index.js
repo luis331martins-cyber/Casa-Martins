@@ -118,6 +118,23 @@ async function morning(code, now) {
       body: leit.map((x) => x.t).join("\n"), go: "despesas", tag: "contagem"});
   }
 
+  /* Fim do mês: no último dia útil (e até dia 5 do mês seguinte, se ficou por fazer) lembra de escrever o que entrou
+     (receitas marcadas: ordenados, cartão Break, caixa…), como a janela da app */
+  {
+    const pad = (n) => String(n).padStart(2, "0");
+    const fixos = ["01-01", "04-25", "05-01", "06-10", "08-15", "10-05", "11-01", "12-01", "12-08", "12-25"];
+    const pascoa = (y) => { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mo = Math.floor((h + l - 7 * m + 114) / 31), da = (h + l - 7 * m + 114) % 31 + 1; return `${y}-${pad(mo)}-${pad(da)}`; };
+    const feriado = (ds) => fixos.includes(ds.slice(5)) || [-2, 0, 60].some((n) => addDays(pascoa(+ds.slice(0, 4)), n) === ds);
+    let ult = `${now.y}-${pad(now.m)}-${pad(last)}`;
+    while ([0, 6].includes(new Date(ult + "T12:00:00Z").getUTCDay()) || feriado(ult)) ult = addDays(ult, -1);
+    const k = now.date >= ult ? mk : now.d <= 5 ? (now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${pad(now.m - 1)}`) : null;
+    const sem = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const faltam = k && k >= START ? bills.filter((b) => b.kind === "income" && (b.ask != null ? !!b.ask : /ordenado|salario|vencimento|break|caixa/.test(sem(b.name))) && !(b.iconf && b.iconf[k])) : [];
+    if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
+  }
+
   /* Valores que mudam todos os meses (cartões, água, luz…): a partir do dia 25 lembra os do mês seguinte que faltam. */
   if (now.d >= 25) {
     const nk = now.m === 12 ? `${now.y + 1}-01` : `${now.y}-${String(now.m + 1).padStart(2, "0")}`;
