@@ -407,6 +407,50 @@ button.spend{width:100%;background:transparent;color:var(--fg);text-align:left;f
 html{background:var(--bg)}
 body{background:transparent}
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--wall,var(--bg))}
+/* ---------- Fundos animados: só se mexe a camada (transform), por isso gasta pouca bateria ----------
+   Com "Reduzir movimento" ligado no iPhone ficam parados. */
+:root[data-wall^="v-"] body::before{inset:-25%;will-change:transform}
+:root[data-wall="v-aurora"]{--wall:radial-gradient(at 20% 20%,#a5f3e4 0,transparent 35%),radial-gradient(at 80% 25%,#c4b5fd 0,transparent 35%),radial-gradient(at 30% 80%,#93c5fd 0,transparent 35%),radial-gradient(at 85% 85%,#f9a8d4 0,transparent 35%),#eef4ff}
+:root[data-wall="v-aurora"] body::before{animation:vDrift 28s ease-in-out infinite alternate}
+:root[data-wall="v-verao"]{--wall:radial-gradient(at 15% 15%,#ffe27a 0,transparent 35%),radial-gradient(at 85% 30%,#ffb38a 0,transparent 35%),radial-gradient(at 25% 75%,#8eecdc 0,transparent 35%),radial-gradient(at 80% 85%,#9fd8ff 0,transparent 35%),#fff7e6}
+:root[data-wall="v-verao"] body::before{animation:vDrift 24s ease-in-out infinite alternate}
+:root[data-wall="v-arcoiris"]{--wall:linear-gradient(135deg,#ffd1dc,#ffe3c2,#fff5b8,#d4f7c9,#c9ecff,#e2d4ff,#ffd1dc)}
+:root[data-wall="v-arcoiris"] body::before{animation:vSlide 30s linear infinite alternate}
+:root[data-wall="v-ondas"]{--wall:linear-gradient(180deg,#eaf4ff,#d6eaff)}
+:root[data-wall="v-ondas"] body::before{inset:0}
+:root[data-wall="v-ondas"] body::after,:root[data-wall="v-nuvens"] body::after,:root[data-wall="v-bolhas"] body::after,:root[data-wall="v-confetes"] body::after{content:"";position:fixed;z-index:-1;pointer-events:none;will-change:transform}
+:root[data-wall="v-ondas"] body::after{left:0;bottom:0;width:200%;height:45vh;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200' preserveAspectRatio='none'%3E%3Cpath d='M0 100C100 60 200 140 300 100S500 60 600 100 700 140 800 100V200H0Z' fill='%239ccbf5'/%3E%3C/svg%3E") 0 0/50% 60% repeat-x,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200' preserveAspectRatio='none'%3E%3Cpath d='M0 100C100 60 200 140 300 100S500 60 600 100 700 140 800 100V200H0Z' fill='%236fb1ef'/%3E%3C/svg%3E") 0 40%/50% 60% repeat-x,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200' preserveAspectRatio='none'%3E%3Cpath d='M0 100C100 60 200 140 300 100S500 60 600 100 700 140 800 100V200H0Z' fill='%234a97e6'/%3E%3C/svg%3E") 0 100%/50% 55% repeat-x;opacity:.75;animation:vWave 14s linear infinite}
+:root[data-wall="v-nuvens"]{--wall:linear-gradient(180deg,#9fd0ff 0,#cfe8ff 55%,#eef7ff 100%)}
+:root[data-wall="v-nuvens"] body::before{inset:0}
+:root[data-wall="v-nuvens"] body::after{top:0;left:0;width:200%;height:100%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'%3E%3Cg fill='white' opacity='.85'%3E%3Cellipse cx='90' cy='70' rx='60' ry='22'/%3E%3Cellipse cx='120' cy='58' rx='38' ry='24'/%3E%3Cellipse cx='380' cy='150' rx='80' ry='26'/%3E%3Cellipse cx='420' cy='134' rx='46' ry='28'/%3E%3Cellipse cx='230' cy='250' rx='55' ry='18'/%3E%3C/g%3E%3C/svg%3E") 0 0/50% 60% repeat;animation:vWave 60s linear infinite}
+:root[data-wall="v-bolhas"]{--wall:linear-gradient(170deg,#fdf2ff,#e8f3ff)}
+:root[data-wall="v-bolhas"] body::before{inset:0}
+:root[data-wall="v-bolhas"] body::after{left:0;top:0;width:100%;height:200%;background:radial-gradient(circle at 15% 20%,#ffc8dd 0 22px,transparent 23px),radial-gradient(circle at 70% 35%,#bde0fe 0 34px,transparent 35px),radial-gradient(circle at 40% 70%,#cdb4db 0 18px,transparent 19px),radial-gradient(circle at 85% 80%,#ffe5a8 0 26px,transparent 27px),radial-gradient(circle at 25% 92%,#b9f2d0 0 30px,transparent 31px);background-size:100% 50%;opacity:.8;animation:vRise 26s linear infinite}
+:root[data-wall="v-confetes"]{--wall:linear-gradient(170deg,#fffaf2,#f4f8ff)}
+:root[data-wall="v-confetes"] body::before{inset:0}
+:root[data-wall="v-confetes"] body::after{left:0;top:-100%;width:100%;height:200%;background:radial-gradient(circle at 20% 30%,#ffb3c6 0 3px,transparent 3.5px) 0 0/70px 70px,radial-gradient(circle at 70% 60%,#ffd97a 0 3px,transparent 3.5px) 0 0/70px 70px,radial-gradient(circle at 45% 85%,#8fdfee 0 3px,transparent 3.5px) 0 0/70px 70px,radial-gradient(circle at 85% 15%,#b2ebb2 0 3px,transparent 3.5px) 0 0/70px 70px,radial-gradient(circle at 10% 75%,#cdb3ff 0 3px,transparent 3.5px) 0 0/70px 70px;animation:vFall 30s linear infinite}
+@keyframes vDrift{0%{transform:translate(-6%,-4%) rotate(0deg) scale(1)}50%{transform:translate(5%,3%) rotate(8deg) scale(1.08)}100%{transform:translate(-3%,6%) rotate(-6deg) scale(1.02)}}
+@keyframes vSlide{0%{transform:translate(-12%,-12%)}100%{transform:translate(12%,12%)}}
+@keyframes vWave{to{transform:translateX(-50%)}}
+@keyframes vRise{to{transform:translateY(-50%)}}
+@keyframes vFall{to{transform:translateY(50%)}}
+/* modo escuro: véu escuro por cima para o texto se ler */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-wall^="v-"] body::after{opacity:.35}:root:not([data-theme="light"])[data-wall^="v-"] body::before{filter:brightness(.35)}}
+:root[data-theme="dark"][data-wall^="v-"] body::after{opacity:.35}:root[data-theme="dark"][data-wall^="v-"] body::before{filter:brightness(.35)}
+@media (prefers-reduced-motion: reduce){:root[data-wall^="v-"] body::before,:root[data-wall^="v-"] body::after{animation:none!important}}
+/* miniaturas na ⚙️ (também se mexem, devagar) */
+.wall[data-wall^="v-"] i{position:relative;overflow:hidden}
+.wall[data-wall^="v-"] i::after{content:"▶";position:absolute;right:5px;bottom:4px;font-size:9px;color:rgba(0,0,0,.45)}
+.wall[data-wall="v-aurora"] i{background:radial-gradient(at 20% 20%,#a5f3e4 0,transparent 55%),radial-gradient(at 80% 25%,#c4b5fd 0,transparent 55%),radial-gradient(at 30% 80%,#93c5fd 0,transparent 55%),radial-gradient(at 85% 85%,#f9a8d4 0,transparent 55%),#eef4ff;background-size:200% 200%;animation:vSw 8s ease-in-out infinite alternate}
+.wall[data-wall="v-verao"] i{background:radial-gradient(at 15% 15%,#ffe27a 0,transparent 55%),radial-gradient(at 85% 30%,#ffb38a 0,transparent 55%),radial-gradient(at 25% 75%,#8eecdc 0,transparent 55%),#fff7e6;background-size:200% 200%;animation:vSw 7s ease-in-out infinite alternate}
+.wall[data-wall="v-arcoiris"] i{background:linear-gradient(135deg,#ffd1dc,#ffe3c2,#fff5b8,#d4f7c9,#c9ecff,#e2d4ff,#ffd1dc);background-size:300% 300%;animation:vSw 8s linear infinite alternate}
+.wall[data-wall="v-ondas"] i{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200' preserveAspectRatio='none'%3E%3Cpath d='M0 100C100 60 200 140 300 100S500 60 600 100 700 140 800 100V200H0Z' fill='%236fb1ef'/%3E%3C/svg%3E") 0 100%/200% 45% repeat-x,linear-gradient(180deg,#eaf4ff,#d6eaff);animation:vSwX 5s linear infinite}
+.wall[data-wall="v-nuvens"] i{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'%3E%3Cg fill='white' opacity='.85'%3E%3Cellipse cx='90' cy='70' rx='60' ry='22'/%3E%3Cellipse cx='120' cy='58' rx='38' ry='24'/%3E%3Cellipse cx='380' cy='150' rx='80' ry='26'/%3E%3Cellipse cx='420' cy='134' rx='46' ry='28'/%3E%3Cellipse cx='230' cy='250' rx='55' ry='18'/%3E%3C/g%3E%3C/svg%3E") 0 0/200% 60% repeat-x,linear-gradient(180deg,#9fd0ff,#eef7ff);animation:vSwX 14s linear infinite}
+.wall[data-wall="v-bolhas"] i{background:radial-gradient(circle at 30% 30%,#ffc8dd 0 8px,transparent 9px) 0 0/100% 50%,radial-gradient(circle at 70% 70%,#bde0fe 0 11px,transparent 12px) 0 0/100% 50%,linear-gradient(170deg,#fdf2ff,#e8f3ff);animation:vSwY 6s linear infinite}
+.wall[data-wall="v-confetes"] i{background:radial-gradient(circle,#ffb3c6 0 2px,transparent 2.5px) 0 0/18px 18px,radial-gradient(circle,#8fdfee 0 2px,transparent 2.5px) 9px 9px/18px 18px,linear-gradient(170deg,#fffaf2,#f4f8ff);animation:vSwF 4s linear infinite}
+@keyframes vSw{to{background-position:100% 100%}}@keyframes vSwX{to{background-position-x:-200%}}@keyframes vSwY{to{background-position-y:-100%}}@keyframes vSwF{to{background-position:0 36px,9px 45px,0 0}}
+@media (prefers-reduced-motion: reduce){.wall i{animation:none!important}}
+
 :root[data-wall="jardim"]{--wall:radial-gradient(at 12% 8%,#cdeedd 0,transparent 55%),radial-gradient(at 92% 18%,#d6e6fb 0,transparent 50%),radial-gradient(at 70% 92%,#e3f3d2 0,transparent 55%),#edf3ef}
 :root[data-wall="manha"]{--wall:radial-gradient(at 10% 10%,#ffdcc8 0,transparent 55%),radial-gradient(at 90% 25%,#f8d3e8 0,transparent 50%),radial-gradient(at 50% 95%,#e2dcfb 0,transparent 60%),#f7f1f4}
 :root[data-wall="oceano"]{--wall:radial-gradient(at 15% 10%,#cfe6fb 0,transparent 55%),radial-gradient(at 85% 30%,#cdf1ec 0,transparent 50%),radial-gradient(at 40% 95%,#dbe2fb 0,transparent 60%),#eef3f8}
@@ -796,6 +840,13 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       </div>
       <div class="name">Fundo da app</div>
       <div class="walls" role="group" aria-label="Fundo da app">
+        <button type="button" class="wall" data-wall="v-aurora"><i></i>Aurora ✨</button>
+        <button type="button" class="wall" data-wall="v-verao"><i></i>Verão ✨</button>
+        <button type="button" class="wall" data-wall="v-arcoiris"><i></i>Arco-íris ✨</button>
+        <button type="button" class="wall" data-wall="v-ondas"><i></i>Mar ✨</button>
+        <button type="button" class="wall" data-wall="v-nuvens"><i></i>Nuvens ✨</button>
+        <button type="button" class="wall" data-wall="v-bolhas"><i></i>Bolhas ✨</button>
+        <button type="button" class="wall" data-wall="v-confetes"><i></i>Confetes ✨</button>
         <button type="button" class="wall" data-wall="verao"><i></i>Verão</button>
         <button type="button" class="wall" data-wall="arcoiris"><i></i>Arco-íris</button>
         <button type="button" class="wall" data-wall="tropical"><i></i>Tropical</button>
@@ -828,7 +879,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label class="f">Cor de baixo<input type="color" id="wallB" value="#d6e6fb"></label>
         <button class="btn" type="submit">Aplicar</button>
       </form>
-      <p class="note" style="margin:0">O fundo fica guardado só neste telemóvel.</p>
+      <p class="note" style="margin:0">O fundo fica guardado só neste telemóvel. Os fundos com ✨ mexem-se devagar (ficam parados se o iPhone tiver “Reduzir movimento” ligado).</p>
     </div></div>
     <div id="houseShared" class="group" hidden>
       <div class="item">
@@ -3302,7 +3353,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v71";
+const APPV="casa-v72";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
