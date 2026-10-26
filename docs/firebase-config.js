@@ -16,4 +16,4 @@ self.FIREBASE_VAPID_KEY = "BLjM7SMIN_7PVaRJrPp98OmxKZOqq8rjuM7h51bbc0JqC4iEIc6kZ
 
 /* Chave da YouTube Data API v3 para procurar vídeos dentro da app (Google Cloud → Credenciais).
    Restringida ao site da app e à YouTube Data API. Vazia: o botão Procurar abre o YouTube. */
-self.YOUTUBE_KEY = "";
+self.YOUTUBE_KEY = "AIzaSyDw6pgImK8IMvBYMI29JcQU-7ZSCewSEOk";
