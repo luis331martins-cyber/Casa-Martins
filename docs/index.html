@@ -187,7 +187,7 @@ form.join{display:flex;flex-direction:column;gap:8px}
 #today .wdred{color:#ff3b30;text-transform:uppercase;font-size:13px;font-weight:700;letter-spacing:.04em;margin-right:4px}
 #clock{font-family:-apple-system,"SF Pro Display",system-ui,var(--display);font-weight:600;font-size:52px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
 /* Início compacto: data e engrenagem em cima; "Olá" e o relógio na mesma linha */
-header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px}
+header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding-top:16px}
 header.hdr #today{grid-column:1}header.hdr .gear{grid-column:2;justify-self:end}
 header.hdr #hello{grid-column:1;font-size:30px;margin:0}header.hdr #clock{grid-column:2}
 header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
@@ -3732,10 +3732,10 @@ function setTheme(t){try{localStorage.setItem("casa-tema",t)}catch(e){}if(t==="a
 markTheme();
 document.addEventListener("click",e=>{const t=e.target.closest("[data-tema]");if(t)setTheme(t.dataset.tema)});
 /* Estilo dos ícones do Início (cada telemóvel escolhe): 3D (imagens na app), iPhone (os emojis do próprio iPhone) ou Animados */
-const ICO_EMO={despensa:["🫙","🥫"],carne:["🥩","🐟"],lista:["🛒"],comer:["🍝"],plano:["🗓️"],despesas:["💶"],creditos:["🏦"],cartoes:["💳"],poupancas:["🐷"],docs:["🪪"],meds:["💊"],saude:["❤️"],carro:["🚗"],videos:["📺"],jogos:["🎮"]};
+const ICO_EMO={despensa:["🥫"],carne:["🥩","🐟"],lista:["🛒"],comer:["🍽️"],plano:["🗓️"],despesas:["💶"],creditos:["🏦"],cartoes:["💳"],poupancas:["🐷"],docs:["🪪"],meds:["💊"],saude:["🩺"],carro:["🚗"],videos:["🎬"],jogos:["🎮"]};
 /* Com animação própria (Fluent Emoji animados); os outros mexem-se com um movimento suave */
 const ICO_ANIM=["carne","comer","despesas","poupancas","plano","carro","saude"];
-function iconStyle(){try{const v=localStorage.getItem("casa-icones");return["3d","apple","anim"].includes(v)?v:"3d"}catch(e){return"3d"}}
+function iconStyle(){try{const v=localStorage.getItem("casa-icones");return["3d","apple","anim"].includes(v)?v:"apple"}catch(e){return"apple"}}
 function applyIcons(){const st=iconStyle();root.dataset.icons=st;
   document.querySelectorAll("#tab-inicio .app[data-go] .ico.ios").forEach(el=>{const go=el.parentElement.dataset.go, img=el.querySelector("img.e3d");
     if(st==="apple"&&!el.querySelector(".eap")){const E=ICO_EMO[go]||["⭐"], ap=document.createElement("span");ap.className="eap"+(E[1]?" two":"");ap.setAttribute("aria-hidden","true");
@@ -3770,7 +3770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v87";
+const APPV="casa-v88";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
