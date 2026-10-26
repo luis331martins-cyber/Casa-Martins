@@ -456,6 +456,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loan.lightbk .lbar{background:rgba(22,51,0,.18)}.loan.lightbk .lbar span{background:#163300}
 .loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
 .loan.done{--bk:#8e8e93}
+.loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 .i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
@@ -1360,6 +1361,8 @@ function renderBills(){
     if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
     when+=only;
+    const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
+    if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
     if(b.id===editBill)return editRow(b,"Despesa");
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
@@ -1946,6 +1949,9 @@ const mLong=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).to
 function loanState(l){const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
   let paid=mIdx(ymOf(d))-mIdx(l.first)+1;paid=Math.max(0,Math.min(n,paid));
   const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
+/* Sugere a linha das Contas com nome parecido (ex.: crédito "Crédito carro" e conta "Carro") */
+const normN=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/cr[eé]dito|prestac[aã]o|emprestimo/g,"").replace(/[^a-z0-9]+/g," ").trim();
+function sameName(a,b){a=normN(a);b=normN(b);return!!a&&!!b&&(a===b||(Math.min(a.length,b.length)>=3&&(a.includes(b)||b.includes(a))))}
 function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data-loanform="${l?l.id:"new"}" autocomplete="off">
     <label class="f wide">Nome<input name="n" required value="${l?esc(l.name):""}" placeholder="ex.: Crédito do carro" autocapitalize="sentences"></label>
     <label class="f wide">Banco<select name="c"><option value="">Automático (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${l&&l.color===c?" selected":""}>${n}</option>`).join("")}</select></label>
@@ -1954,6 +1960,7 @@ function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data
     <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
     <label class="f">Última prestação<input name="b" type="month" required value="${l?v(l.last):""}"></label>
     <label class="f">Montante pedido (€)<input name="m" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.amount):""}" placeholder="opcional"></label>
+    <label class="f wide">Linha nas Contas<select name="l"><option value="">Não ligar</option><option value="new"${!l?" selected":""}>Criar uma linha nova nas Contas</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${l&&(l.bill===b.id||!l.bill&&sameName(l.name,b.name))?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
     <label class="f">TAEG (%)<input name="t" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.taeg):""}" placeholder="opcional"></label>
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cancelloan="1">Cancelar</button>
@@ -1969,7 +1976,7 @@ function renderLoans(){const el=document.getElementById("loanList");if(!el)retur
     const c=s.done?"":bankColor(l), pct=Math.round(s.paid/s.n*100);
     return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}"`:""} aria-label="Editar ${esc(l.name)}">
       <div class="top"><span class="name">${esc(l.name)}</span><span class="amt">${eur(+l.pay||0)}<span style="font-size:13px;font-weight:500">/mês</span></span></div>
-      <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last):`Dia ${l.day} · termina em ${mLong(l.last)}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
+      <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last)+(l.bill&&bills.some(b=>b.id===l.bill)?" · já podes apagar a linha nas Contas":""):`Dia ${l.day} · termina em ${mLong(l.last)}${l.bill&&bills.some(b=>b.id===l.bill)?" · nas Contas":""}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
       <div class="lbar"><span style="width:${pct}%"></span></div>
       <div class="row"><span>${s.paid} de ${s.n} pagas (${pct}%)</span><span>${s.done?"":`Faltam ${s.left} · ${eur(s.leftAmt)}`}</span></div>
       ${l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:""}
@@ -1987,7 +1994,15 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id
   const old=id==="new"?null:loans().find(x=>x.id===id);
   const l={...(old||{}),id:old?old.id:uid(),kind:"loan",name:f.n.value.trim(),pay:num(f.p.value)||0,day:Math.min(31,Math.max(1,parseInt(f.d.value)||1)),first,last};
   for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null]])if(v==null)delete l[k];else l[k]=v;
-  editLoan="";putBill(l);renderLoans();toast("Crédito guardado")});
+  /* Ligação à linha da prestação nas Contas: a prestação e o dia ficam iguais nos dois sítios */
+  const lk=f.l.value;
+  if(lk==="new"){const b={id:uid(),name:l.name,amount:l.pay,day:l.day,dd:true,paid:{}};putBill(b);l.bill=b.id}
+  else if(lk){l.bill=lk;const b=bills.find(x=>x.id===lk);if(b&&(+b.amount!==l.pay||+b.day!==l.day))putBill({...b,amount:l.pay,day:l.day})}
+  else delete l.bill;
+  editLoan="";putBill(l);renderLoans();toast(lk==="new"?"Crédito guardado e juntado às Contas":"Crédito guardado")});
+/* Nas Contas, "Crédito 22/36 ›" abre o crédito no separador Créditos */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-goloan]");if(!t)return;e.preventDefault();e.stopPropagation();
+  show("creditos");setTimeout(()=>{const c=document.querySelector(`[data-editloan="${t.dataset.goloan}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)},true);
 
 /* ---------- Snake ----------
    Grelha 18×18; acelera à medida que come. O recorde é partilhado (kind:"game", id "snake-recorde"). */
