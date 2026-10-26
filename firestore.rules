@@ -1,17 +1,26 @@
 rules_version = '2';
 
 // Casa partilhada por código: households/{código}/...
-// Só entra quem tem sessão (autenticação anónima) E conhece o código de uma casa que já existe.
+// Só entra quem tem conta (e-mail e palavra-passe; sessões anónimas não contam) E conhece o código de uma casa que já existe.
 // Não é possível listar casas, por isso o código funciona como uma chave.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
     function isMember(code) {
       return signedIn()
         && exists(/databases/$(database)/documents/households/$(code)/members/$(request.auth.uid));
+    }
+
+    // Código da casa guardado na conta de cada pessoa (para entrar noutro telemóvel sem o escrever).
+    match /users/{uid} {
+      allow get, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code', 'name', 'updated'])
+        && request.resource.data.code is string
+        && request.resource.data.code.size() <= 40;
     }
 
     match /households/{code} {

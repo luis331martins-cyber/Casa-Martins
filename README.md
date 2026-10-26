@@ -20,6 +20,15 @@ notificacoes/index.js     ← envia as notificações (corre no GitHub Actions)
 firestore.rules           ← regras de segurança do Firestore
 ```
 
+## Contas e código da casa
+
+- Cada pessoa entra com **e-mail e palavra-passe** (Firebase Authentication). Há "Esqueci-me da palavra-passe".
+- Na primeira vez, cria-se a casa ou escreve-se o **código da casa**; o código fica guardado na conta
+  (`users/{uid}`), por isso noutro telemóvel basta entrar com a conta.
+- Sessões anónimas de versões anteriores passam a conta sem perder nada (o utilizador mantém-se).
+- Para isto funcionar: **Authentication → Método de login → E-mail/senha → Ativar** e as regras de
+  [`firestore.rules`](firestore.rules) publicadas no Firestore.
+
 ## Como funciona o "código da casa"
 
 - Cada telemóvel entra no Firebase com **autenticação anónima** (sem email nem palavra-passe).

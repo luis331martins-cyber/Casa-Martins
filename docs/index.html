@@ -171,7 +171,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 /* Casa partilhada: código e notificações */
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
-form.join input{text-transform:uppercase;letter-spacing:.06em}
+#joinCode{text-transform:uppercase;letter-spacing:.06em}
 header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .gear{flex:none;display:grid;place-items:center;padding:0}
 .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -396,6 +396,25 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 <body>
 
 <div class="wrap">
+  <section id="tab-login" class="group" style="gap:18px" hidden>
+    <header>
+      <h1>A nossa casa</h1>
+      <p class="sub" id="loginSub">Entra com a tua conta. Se mudares de telemóvel ou apagares a app, basta voltares a entrar.</p>
+    </header>
+    <div class="seg" role="group" aria-label="Entrar ou criar conta" style="display:grid;grid-template-columns:1fr 1fr">
+      <button type="button" data-authmode="in" aria-pressed="true">Entrar</button><button type="button" data-authmode="up" aria-pressed="false">Criar conta</button>
+    </div>
+    <form class="join" id="authForm">
+      <label class="f" id="authNameBox" hidden>O teu nome<input id="authName" autocomplete="given-name" autocapitalize="words" maxlength="30" placeholder="ex.: Bianca"></label>
+      <label class="f">E-mail<input id="authEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" required placeholder="nome@exemplo.pt"></label>
+      <label class="f">Palavra-passe<input id="authPass" type="password" autocomplete="current-password" minlength="6" required placeholder="pelo menos 6 carateres"></label>
+      <button class="btn" type="submit" id="authBtn">Entrar</button>
+    </form>
+    <p class="msg" id="authMsg" role="alert" hidden></p>
+    <button class="back" type="button" id="forgotPass" style="align-self:flex-start">Esqueci-me da palavra-passe</button>
+    <button class="back" type="button" id="useLocalNoAcc" style="align-self:flex-start;color:var(--muted)">Usar só neste aparelho, sem conta</button>
+  </section>
+
   <section id="tab-setup" class="group" style="gap:20px" hidden>
     <header>
       <h1>A nossa casa</h1>
@@ -492,9 +511,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       </div>
       <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
+    <div id="accBox" class="group" hidden>
+      <div class="item">
+        <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
+        <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
+      </div>
+    </div>
     <div id="houseLocal" class="item" hidden>
       <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
-      <button class="btn" type="button" data-go="setup">Partilhar</button>
+      <button class="btn" type="button" data-go="login">Partilhar</button>
     </div>
   </section>
 
@@ -829,7 +854,7 @@ document.addEventListener("change",e=>{
   e.target.closest(".check").classList.add("done");
   setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals)}
+function show(tab){["login","setup","inicio","definicoes","despensa","carne","lista","comer","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
 const ROUTES={"#comer":"comer","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
@@ -1374,6 +1399,59 @@ async function startShared(){
   if(typeof Notification!=="undefined"&&Notification.permission==="granted"&&await f.pushSupported())
     navigator.serviceWorker.ready.then(reg=>f.enablePush(houseCode,reg)).then(()=>ls.set("casa-push",houseCode)).catch(()=>{});
 }
+/* ---------- conta (e-mail e palavra-passe) ---------- */
+let authMode="in", acct=null;
+function authMsg(m){const el=document.getElementById("authMsg");el.hidden=!m;el.textContent=m||""}
+function setAuthMode(m){authMode=m;document.querySelectorAll("[data-authmode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.authmode===m));
+  document.getElementById("authNameBox").hidden=m!=="up";document.getElementById("authBtn").textContent=m==="up"?"Criar conta":"Entrar";
+  document.getElementById("authPass").autocomplete=m==="up"?"new-password":"current-password";authMsg("")}
+function login(msg,mode){setAuthMode(mode||authMode);if(msg)authMsg(msg);
+  if(!document.getElementById("authName").value)document.getElementById("authName").value=myName();show("login")}
+const AUTHERR={"auth/invalid-credential":"E-mail ou palavra-passe errados.","auth/wrong-password":"E-mail ou palavra-passe errados.","auth/user-not-found":"Não há nenhuma conta com esse e-mail. Escolhe “Criar conta”.",
+  "auth/email-already-in-use":"Já existe uma conta com este e-mail. Escolhe “Entrar”.","auth/credential-already-in-use":"Já existe uma conta com este e-mail. Escolhe “Entrar”.",
+  "auth/weak-password":"A palavra-passe tem de ter pelo menos 6 carateres.","auth/invalid-email":"Esse e-mail não parece válido.","auth/missing-password":"Escreve a palavra-passe.",
+  "auth/operation-not-allowed":"O login por e-mail ainda não está ligado no Firebase (Authentication → Método de login → E-mail/senha).",
+  "auth/network-request-failed":"Sem ligação à internet. Tenta outra vez.","auth/too-many-requests":"Muitas tentativas seguidas. Espera um pouco e tenta outra vez."};
+const authErr=e=>AUTHERR[e&&e.code]||"Não foi possível. Tenta outra vez."+(e&&e.code?` (${e.code})`:"");
+/* Depois de entrar: o código vem deste telemóvel ou da conta; sem código, escolhe-se a casa */
+async function afterLogin(a){
+  acct=a;if(a.name&&!myName())setMyName(a.name);
+  const f=await loadFb();
+  if(!houseCode){const c=await f.myCode().catch(()=>"");if(c){houseCode=c;ls.set("casa-codigo",c)}}
+  if(houseCode){ls.set("casa-local","");show("inicio");await startShared();f.saveMyCode(houseCode,myName()).catch(()=>{})}
+  else setup();
+}
+async function startAuth(){
+  let f;try{f=await loadFb()}catch(e){document.getElementById("sub").textContent=SUB_LOCAL;return}
+  const a=await f.account();
+  /* Sem conta, ou com a sessão anónima antiga: pede para entrar (a anónima passa a conta mantendo a casa) */
+  if(!a||a.anon)return login(a&&houseCode?"Cria a tua conta para continuares. Fica tudo como está, incluindo a casa.":"",a&&houseCode?"up":"in");
+  await afterLogin(a);
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-authmode]");if(t)setAuthMode(t.dataset.authmode)});
+document.getElementById("authForm").addEventListener("submit",async e=>{e.preventDefault();
+  const email=document.getElementById("authEmail").value.trim(), pass=document.getElementById("authPass").value, name=document.getElementById("authName").value.trim();
+  if(authMode==="up"&&!name){authMsg("Escreve o teu nome.");return}
+  if(!navigator.onLine){authMsg("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
+  const btn=document.getElementById("authBtn");btn.disabled=true;authMsg("");
+  try{const f=await loadFb();const a=authMode==="up"?await f.signUp(email,pass,name):await f.signIn(email,pass);
+    if(authMode==="up")setMyName(name);
+    document.getElementById("authPass").value="";await afterLogin(a);toast(authMode==="up"?"Conta criada":"Sessão iniciada")}
+  catch(err){authMsg(authErr(err))}
+  btn.disabled=false;
+});
+document.getElementById("forgotPass").addEventListener("click",async()=>{
+  const email=document.getElementById("authEmail").value.trim();if(!email){authMsg("Escreve primeiro o teu e-mail em cima.");return}
+  try{await(await loadFb()).resetPass(email);authMsg("");toast("Enviámos um e-mail para repores a palavra-passe")}catch(err){authMsg(authErr(err))}
+});
+document.getElementById("useLocalNoAcc").addEventListener("click",()=>{ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});
+document.getElementById("logoutBtn").addEventListener("click",async()=>{
+  if(!confirm("Terminar sessão neste telemóvel? Para voltar, basta entrares com o teu e-mail e palavra-passe."))return;
+  try{await fb.logout()}catch(e){}
+  ["casa-codigo","casa-push",local.key,billLocal.key,evLocal.key].forEach(k=>ls.set(k,""));
+  location.reload();
+});
+
 function setup(msg){
   const m=document.getElementById("setupMsg");m.hidden=!msg;m.textContent=msg||"";
   show("setup");
@@ -1382,6 +1460,7 @@ function busy(on){["joinBtn","newHouse"].forEach(id=>document.getElementById(id)
 async function enter(c,how,tab){
   setMyName(document.getElementById("setupName").value);
   houseCode=c;ls.set("casa-codigo",c);ls.set("casa-local","");busy(false);
+  if(fb)fb.saveMyCode(c,myName()).catch(()=>{});
   document.getElementById("joinCode").value="";show(tab||"inicio");
   await startShared();toast(how);
 }
@@ -1390,6 +1469,7 @@ function renderHouse(){
   document.getElementById("houseShared").hidden=!houseCode;
   document.getElementById("houseLocal").hidden=!!houseCode;
   if(houseCode){document.getElementById("houseCode").textContent=fmtCode(houseCode);renderPush()}
+  const ab=document.getElementById("accBox");ab.hidden=!(acct&&acct.email);if(acct)document.getElementById("accEmail").textContent=acct.email;
 }
 async function renderPush(){
   const meta=document.getElementById("pushMeta"), btn=document.getElementById("pushBtn");
@@ -1409,18 +1489,18 @@ document.getElementById("joinForm").addEventListener("submit",async e=>{e.preven
   if(!navigator.onLine){setup("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
   busy(true);
   try{await(await loadFb()).join(c)}
-  catch(err){busy(false);setup(err&&err.code==="permission-denied"?"Não há nenhuma casa com esse código. Confirma as letras e os números.":"Não foi possível entrar. Verifica a internet e tenta outra vez.");return}
+  catch(err){busy(false);if(err&&err.code==="auth/no-session")return login("Entra primeiro com a tua conta.");setup(err&&err.code==="permission-denied"?"Não há nenhuma casa com esse código. Confirma as letras e os números.":"Não foi possível entrar. Verifica a internet e tenta outra vez.");return}
   enter(c,"Entraste na casa");
 });
 document.getElementById("newHouse").addEventListener("click",async()=>{
   if(!navigator.onLine){setup("Sem ligação à internet. Tenta outra vez quando tiveres rede.");return}
   busy(true);
   try{const c=await(await loadFb()).create({items,bills,events});enter(c,"Casa criada. Partilha o código.","definicoes")}
-  catch(err){busy(false);setup("Não foi possível criar a casa. Verifica a internet e tenta outra vez.")}
+  catch(err){busy(false);if(err&&err.code==="auth/no-session")return login("Entra primeiro com a tua conta.");setup("Não foi possível criar a casa. Verifica a internet e tenta outra vez.")}
 });
 document.getElementById("useLocal").addEventListener("click",()=>{setMyName(document.getElementById("setupName").value);ls.set("casa-local","1");document.getElementById("sub").textContent=SUB_LOCAL;renderHouse();show("inicio")});
 document.getElementById("shareCode").addEventListener("click",async()=>{
-  const c=fmtCode(houseCode), text=`Código da nossa casa: ${c}\nAbre ${location.origin+location.pathname} no iPhone, adiciona ao ecrã principal e escreve o código.`;
+  const c=fmtCode(houseCode), text=`Código da nossa casa: ${c}\nAbre ${location.origin+location.pathname} no iPhone, adiciona ao ecrã principal, cria a tua conta e escreve o código.`;
   if(navigator.share){try{await navigator.share({text});return}catch(e){if(e&&e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(c);toast("Código copiado")}catch(e){toast(c)}
 });
@@ -1444,9 +1524,8 @@ document.getElementById("leaveHouse").addEventListener("click",async()=>{
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
 safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
-else if(houseCode)startShared().catch(()=>{document.getElementById("sub").textContent=SUB_LOCAL});
-else if(ls.get("casa-local")){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
-else setup();
+else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
+else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
 
 /* Fundo da app: cada telemóvel escolhe o seu */
 const root=document.documentElement;
