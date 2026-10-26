@@ -76,6 +76,8 @@ async function load(code, name) {
 
 /* ---------- 9h: contas, validades e resumo do dia ---------- */
 async function morning(code, now) {
+  /* Tudo o que sai às 9h vai numa só notificação "Bom dia" (contas, valores, validades, prazos e o resumo do dia) */
+  const partes = [];
   const [items, bills, events] = await Promise.all(["items", "bills", "events"].map((n) => load(code, n)));
   const mk = now.date.slice(0, 7);
   const last = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
@@ -98,7 +100,7 @@ async function morning(code, now) {
   }
   if (contas.length) {
     contas.sort((a, b) => a.o - b.o);
-    await send(code, {title: contas.length === 1 ? "Conta a pagar" : `${contas.length} contas a pagar`,
+    partes.push({title: contas.length === 1 ? "Conta a pagar" : `${contas.length} contas a pagar`,
       body: contas.map((c) => c.t).join("\n"), go: "despesas", tag: "contas"});
   }
 
@@ -109,7 +111,7 @@ async function morning(code, now) {
     const pede = (b) => !b.kind && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/.test(semAcento(b.name)));
     const faltam = nk >= START ? bills.filter((b) => pede(b) && !(b.conf && b.conf[nk])) : [];
     if (faltam.length) {
-      await send(code, {title: `📝 Atualiza ${plural(faltam.length, "valor", "valores")} do próximo mês`,
+      partes.push({title: `📝 Atualiza ${plural(faltam.length, "valor", "valores")} do próximo mês`,
         body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "valores-" + nk});
     }
   }
@@ -120,7 +122,7 @@ async function morning(code, now) {
   if (val.length) {
     const txt = (d) => d < 0 ? "passou do prazo" : d === 0 ? "termina hoje" : d === 1 ? "termina amanhã" : `termina em ${d} dias`;
     const soCarne = val.every((x) => ["Carne", "Peixe"].includes(x.i.cat));
-    await send(code, {title: val.length === 1 ? "Validade a terminar" : `${val.length} validades a terminar`,
+    partes.push({title: val.length === 1 ? "Validade a terminar" : `${val.length} validades a terminar`,
       body: val.map((x) => `${x.i.name} — ${txt(x.d)}`).join("\n"), go: soCarne ? "carne" : "despensa", tag: "validades"});
   }
 
@@ -136,7 +138,7 @@ async function morning(code, now) {
       .filter((x) => x.at.includes(x.d) || (x.d < 0 && x.d >= -28 && -x.d % 7 === 0)).sort((a, b) => a.d - b.d);
   if (avisar.length) {
     const txt = (d) => d < 0 ? `passou há ${-d} dias` : d === 0 ? "termina hoje" : d === 1 ? "termina amanhã" : `faltam ${d} dias`;
-    await send(code, {title: avisar.length === 1 ? "Prazo a terminar" : `${avisar.length} prazos a terminar`,
+    partes.push({title: avisar.length === 1 ? "Prazo a terminar" : `${avisar.length} prazos a terminar`,
       body: avisar.map((x) => `${x.t} — ${txt(x.d)}`).join("\n"), go: avisar[0].go, tag: "prazos"});
   }
 
@@ -166,9 +168,13 @@ async function morning(code, now) {
   }
   if (toBuy) linhas.push(`${plural(toBuy, "produto", "produtos")} para comprar`);
   if (linhas.length) {
-    await send(code, {title: hoje.length ? `Bom dia! ${plural(hoje.length, "marcação", "marcações")} hoje` : "Bom dia! Resumo da casa",
+    partes.push({title: hoje.length ? `Bom dia! ${plural(hoje.length, "marcação", "marcações")} hoje` : "Bom dia! Resumo da casa",
       body: linhas.join("\n"), go: hoje.length || amanha.length ? "calendario" : "compras", tag: "resumo"});
   }
+  if (!partes.length) return;
+  const resumo = partes.find((x) => x.tag === "resumo"), outras = partes.filter((x) => x !== resumo);
+  const corpo = [...outras.map((x) => `${x.title}: ${x.body.split("\n").join(" · ")}`), ...(resumo ? resumo.body.split("\n") : [])];
+  await send(code, {title: resumo ? resumo.title : "Bom dia! 🏠", body: corpo.join("\n"), go: (outras[0] || resumo).go, tag: "bom-dia"});
 }
 
 /* ---------- uma casa ---------- */
@@ -263,6 +269,36 @@ async function house(code, now) {
     }
   }
 
+  /* Coisas novas juntadas por alguém da casa: uma notificação por pessoa, para os outros telemóveis.
+     Contas, medicamentos, consultas, documentos, carro, créditos, pratos, plano e vídeos novos; e produtos que entram nas compras. */
+  const [itemsT, billsT] = await Promise.all(["items", "bills"].map((n) => db.collection(`households/${code}/${n}`).get().then((q) => q.docs.map((x) => ({...x.data(), id: x.id})))));
+  const primeiraVez = !Array.isArray(st.seenB);
+  const seenB = new Set(st.seenB || []), compraAntes = new Set(st.buy || []);
+  const TIPO = {"": ["Conta", "despesas"], income: ["Receita", "despesas"], budget: ["Gastos do mês", "despesas"], med: ["Medicamento", "medicamentos"],
+    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], recipe: ["Prato", "comer"],
+    plan: ["Plano de refeições", "plano"], video: ["Vídeo", "videos"]};
+  const porQuem = new Map();
+  const juntar = (lb, rotulo, nome, go) => {
+    if (!lb || primeiraVez) return;
+    const [uid, quem] = String(lb).split("|");
+    if (!porQuem.has(uid)) porQuem.set(uid, {quem: quem || "Alguém", go, grupos: new Map()});
+    const g = porQuem.get(uid).grupos;
+    if (!g.has(rotulo)) g.set(rotulo, []);
+    g.get(rotulo).push(nome);
+  };
+  for (const b of billsT) {
+    if (seenB.has(b.id)) continue;
+    const t = TIPO[b.kind || ""];
+    if (t && !(b.kind === "health" && b.ev)) juntar(b.lb, t[0], b.kind === "health" ? `${b.who}: ${b.title || b.type}` : b.kind === "med" ? `${b.name} (${b.who})` : b.kind === "plan" ? b.date : b.name, t[1]);
+  }
+  const compraAgora = itemsT.filter((i) => i.lvl < 2).map((i) => i.id);
+  for (const i of itemsT) if (i.lvl < 2 && !compraAntes.has(i.id)) juntar(i.lb, "Compras", i.name, "compras");
+  for (const [uid, x] of porQuem) {
+    const linhas = [...x.grupos].map(([rot, nomes]) => `${rot}: ${nomes.slice(0, 6).join(", ")}${nomes.length > 6 ? "…" : ""}`);
+    jobs.push(() => send(code, {title: `🏠 ${x.quem} juntou`, body: linhas.join("\n"), go: x.go, tag: "juntou-" + uid}, uid));
+  }
+  const novosSeenB = billsT.map((b) => b.id);
+
   /* Mensagens novas do chat: uma notificação por mensagem, para os outros telemóveis */
   const msgSnap = await db.collection(`households/${code}/bills`).where("kind", "==", "msg").get();
   const recentes = msgSnap.docs.map((d) => ({...d.data(), id: d.id}))
@@ -284,7 +320,7 @@ async function house(code, now) {
     jobs.push(() => morning(code, now));
   }
 
-  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], msgs: [...msgVistas], at: new Date()});
+  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], msgs: [...msgVistas], seenB: novosSeenB, buy: compraAgora, at: new Date()});
   for (const job of jobs) await job();
 }
 

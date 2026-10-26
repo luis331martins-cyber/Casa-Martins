@@ -1271,8 +1271,10 @@ const local={
   save(){try{localStorage.setItem(this.key,JSON.stringify(items))}catch(e){}}
 };
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+/* "lb": quem mudou por último (uid|nome); serve para avisar o outro telemóvel do que foi juntado, e não quem o fez */
+const stampLb=x=>{if(store&&meId)x.lb=meId+"|"+(myName()||"");return x};
 async function put(it){
-  if(store){try{await store.collection("items").doc(it.id).set(it)}catch(e){toast(e&&e.code==="resource-exhausted"?"Lista cheia: apaga alguns produtos.":"Não foi possível guardar. Tenta outra vez.")}}
+  if(store){stampLb(it);try{await store.collection("items").doc(it.id).set(it)}catch(e){toast(e&&e.code==="resource-exhausted"?"Lista cheia: apaga alguns produtos.":"Não foi possível guardar. Tenta outra vez.")}}
   else{local.save();render()}
 }
 async function remove(id){
@@ -1616,7 +1618,7 @@ const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
 const eur=v=>{v=Math.round((+v||0)*100)/100;const [i,d]=Math.abs(v).toFixed(2).split(".");return(v<0?"−":"")+i.replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+d+"\u00a0€"};
 async function putBill(b){
   const i=bills.findIndex(x=>x.id===b.id); if(i>=0)bills[i]=b; else bills.push(b); renderBills();
-  if(store){try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
+  if(store){stampLb(b);try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
 }
 async function delBill(id){
   bills=bills.filter(b=>b.id!==id); renderBills();
@@ -3300,7 +3302,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v70";
+const APPV="casa-v71";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
