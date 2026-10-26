@@ -157,7 +157,7 @@ async function morning(code, now) {
   for (const m of bills.filter((b) => b.kind === "med" && b.stock != null)) {
     if ((m.start && m.start > now.date) || (m.end && m.end < now.date)) continue;
     const fases = Array.isArray(m.phases) && m.phases.length;
-    const hoje = fases ? (() => { const i = m.start ? daysBetween(m.start, now.date) : 0; let acc = 0;
+    const hoje = fases ? m.phases[0].from ? m.phases.find((p) => now.date >= p.from && (!p.to || now.date <= p.to)) || null : (() => { const i = m.start ? daysBetween(m.start, now.date) : 0; let acc = 0;
       for (const ph of m.phases) { const d = +ph.days || 0; if (d === 0 || i < acc + d) return ph; acc += d; } return null; })() : m;
     if (!hoje) continue;
     const perDay = (hoje.times || []).length * (+hoje.per || 1);
@@ -221,6 +221,10 @@ async function house(code, now) {
   /* Toma faseada: horários e quantidade da fase do dia (igual à app); última fase com 0 dias continua sempre */
   const plano = (m, ds) => {
     if (!Array.isArray(m.phases) || !m.phases.length) return {times: m.times || [], per: +m.per || 1};
+    if (m.phases[0].from) {
+      const ph = m.phases.find((p) => ds >= p.from && (!p.to || ds <= p.to));
+      return ph ? {times: ph.times || [], per: +ph.per || 1} : null;
+    }
     const i = m.start ? daysBetween(m.start, ds) : 0;
     if (i < 0) return null;
     let acc = 0;
