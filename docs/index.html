@@ -551,6 +551,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
 .loan.done{--bk:#8e8e93}
 .loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
+.rdlink{color:var(--accent);font-weight:600}.rdlink.ok{color:var(--good)}.rdlink.warn{color:var(--warn,#c77700)}.rdlink.bad{color:var(--bad)}
 /* Atualizar os valores que mudam todos os meses */
 #askBox{border:2px solid #0a84ff}
 #askBox .ah{padding:12px 16px 4px;font-weight:700}#askBox .an{padding:0 16px 8px;font-size:13px;color:var(--muted)}
@@ -1718,6 +1719,7 @@ function renderBills(){
       ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       ${isInc(b)||isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
+      ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
@@ -1770,6 +1772,8 @@ function renderBills(){
     when+=only;
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
     if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
+    const r=rdState(b,k);
+    if(r)when+=`<br><span class="rdlink${r.done?" ok":r.left<0&&isCur?" bad":r.left<=3&&isCur?" warn":""}" data-rd="${b.id}" role="button">${r.done?"📟 Contagem dada ✓":`📟 Contagem até dia ${r.d}${isCur&&r.left<=3?" · tocar quando der":""}`}</span>`;
     if(b.id===editBill)return editRow(b,"Despesa");
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
@@ -1863,6 +1867,13 @@ const BANKS=[[/cr[eé]dito agr[ií]cola|caixa agr[ií]cola|\bca\b/i,"#00703c","C
   [/openbank/i,"#e5004f","Openbank"],[/banco ctt|\bctt\b/i,"#d50f25","Banco CTT"],[/eurobic|\bbic\b/i,"#0b3b7a","EuroBic"],[/\bwise\b/i,"#9fe870","Wise"]];
 const LIGHTBK=new Set(["#9fe870"]);
 function bankColor(a){if(a.color==="none")return"";if(a.color)return a.color==="#5fae2e"?"#00a3e0":a.color; /* ActivoBank passou de verde a azul claro */const b=BANKS.find(([re])=>re.test(a.name||""));return b?b[1]:""}
+/* Contagem (leitura) da água, luz, gás: dia limite em b.rd, dada por mês em b.rdone["AAAA-MM"] */
+function rdState(b,mk){if(!b.rd||b.kind)return null;const [y,m]=mk.split("-").map(Number), d=Math.min(b.rd,new Date(y,m,0).getDate());
+  return {d,done:!!(b.rdone&&b.rdone[mk]),left:Math.round((new Date(y,m-1,d)-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5)}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-rd]");if(!t)return;e.preventDefault();e.stopPropagation();
+  const b=bills.find(x=>x.id===t.dataset.rd);if(!b)return;const k=mKey(), done=!(b.rdone&&b.rdone[k]);
+  const rdone={...(b.rdone||{})};if(done)rdone[k]=true;else delete rdone[k];putBill({...b,rdone});
+  toast(done?`Contagem de ${b.name} dada`:`Contagem de ${b.name} por dar`)},true);
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
@@ -1897,6 +1908,7 @@ document.addEventListener("submit",e=>{
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
   if(e.target.ask)nb.ask=e.target.ask.checked;
+  if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
   const amounts={...(b.amounts||{})};
@@ -2000,6 +2012,8 @@ function renderAlerts(){
     const v=eur(monthAmt(b,mk));
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     else if(d===td)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto hoje":"Vence hoje"} · ${v}`});});
+  if(mk>=START)fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>3||r.left<-3)return;
+    A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",name:`Dar a contagem: ${b.name}`,meta:r.left<0?`O prazo era dia ${r.d}`:r.left===0?"Último dia é hoje":`Até dia ${r.d} · faltam ${r.left} dia${r.left===1?"":"s"}`})});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
@@ -3353,7 +3367,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v73";
+const APPV="casa-v74";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
