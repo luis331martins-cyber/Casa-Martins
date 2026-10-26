@@ -141,6 +141,13 @@ async function morning(code, now) {
       ` (dia ${daysBetween(e.date, now.date) + 1} de ${daysBetween(e.date, e.end) + 1})` : ""}`),
     ...amanha.map((e) => `Amanhã${e.time ? " às " + e.time : ""} · ${e.title}`),
   ];
+  /* Medicamentos a acabar: comprimidos que restam ÷ (tomas por dia × por toma) */
+  for (const m of bills.filter((b) => b.kind === "med" && b.stock != null)) {
+    if ((m.start && m.start > now.date) || (m.end && m.end < now.date)) continue;
+    const perDay = (m.times || []).length * (+m.per || 1);
+    const dias = perDay ? Math.floor(m.stock / perDay) : null;
+    if (dias !== null && dias <= (m.warnDays || 7)) linhas.push(`💊 Comprar ${m.name} (${m.who}) — dá para ${dias} dia${dias === 1 ? "" : "s"}`);
+  }
   if (toBuy) linhas.push(`${plural(toBuy, "produto", "produtos")} para comprar`);
   if (linhas.length) {
     await send(code, {title: hoje.length ? `Bom dia! ${plural(hoje.length, "marcação", "marcações")} hoje` : "Bom dia! Resumo da casa",

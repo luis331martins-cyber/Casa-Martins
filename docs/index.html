@@ -911,7 +911,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <button class="btn ghost" type="button" id="addMed">+ Juntar medicamento</button>
       <div id="medNew"></div>
     </div>
-    <p class="note" style="margin:0">Marca cada toma quando for tomada. Se puseres o stock, a app desconta uma dose em cada toma e avisa quando estiver a acabar. As notificações chegam à hora de cada toma (pode haver uns minutos de atraso).</p>
+    <p class="note" style="margin:0">Marca cada toma quando for tomada. Se puseres quantos comprimidos tens e quantos traz a caixa, a app desconta em cada toma, avisa quando só der para poucos dias e põe o medicamento nas Compras (Farmácia). Quando comprares, toca em “Comprei 1 caixa” (ou marca-o nas Compras) e o stock sobe sozinho. As notificações chegam à hora de cada toma (pode haver uns minutos de atraso).</p>
   </section>
 
   <section id="tab-videos" class="group" style="gap:16px" hidden>
@@ -1272,7 +1272,7 @@ document.addEventListener("submit",e=>{
 document.addEventListener("change",e=>{
   const id=e.target.dataset.buy;if(!id)return;
   e.target.closest(".check").classList.add("done");
-  setTimeout(()=>{setLevel(id,2);toast("Comprado")},350);
+  setTimeout(()=>{const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}setLevel(id,2);toast("Comprado")},350);
 });
 function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","meds","creditos","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
@@ -1588,7 +1588,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1786,7 +1786,7 @@ function renderAlerts(){
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
   let medLate=0;if(typeof dosesToday==="function"){const nm=minsNow();
     dosesToday("").forEach(({m,t,done})=>{if(!done&&tMin(t)<nm){medLate++;A.push({o:1,cls:"warn",dot:"bad",go:"meds",name:`${m.who}: ${m.name}`,meta:`Toma das ${t} por tomar${m.dose?" · "+m.dose:""}`})}});
-    meds().filter(m=>m.stock!=null&&m.stock<=5&&medActive(m,todayS)).forEach(m=>A.push({o:3,cls:"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`Restam ${m.stock} dose${m.stock===1?"":"s"} (${m.who})`}))}
+    meds().filter(m=>medLow(m)&&medActive(m,todayS)).forEach(m=>{const dl=medDays(m);A.push({o:dl<=1?1:3,cls:dl<=1?"warn":"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`${m.who} · restam ${String(m.stock).replace(".",",")}${dl!=null?` · dá para ${dl} dia${dl===1?"":"s"}`:""}`})})}
   const mdb=document.getElementById("medBadge");if(mdb){mdb.hidden=!medLate;mdb.textContent=medLate}
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
@@ -2014,6 +2014,16 @@ function tMin(t){const [h,m]=String(t||"0:0").split(":").map(Number);return h*60
 function dosesToday(who){const d=ymd(now), L=[];
   meds().filter(m=>medActive(m,d)&&(!who||m.who===who)).forEach(m=>(m.times||[]).forEach(t=>L.push({m,t,done:((m.taken||{})[d]||[]).includes(t)})));
   return L.sort((a,b)=>a.t.localeCompare(b.t)||String(a.m.who).localeCompare(String(b.m.who),"pt"))}
+/* Stock: comprimidos que restam ÷ (tomas por dia × por toma) = dias que ainda dá */
+function medDays(m){if(m.stock==null)return null;const perDay=(m.times||[]).length*(+m.per||1);return perDay?Math.floor(m.stock/perDay):null}
+function medLow(m){if(m.stock==null)return false;const d=medDays(m);return d!=null?d<=(m.warnDays||7):m.stock<=5}
+/* Quando está a acabar, põe nas Compras (loja "Farmácia"); id fixo "med-…" para os dois telemóveis não o porem duas vezes */
+function medShopSync(){meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=>i.id===id), low=medLow(m)&&medActive(m,ymd(now));
+  if(low&&!it){const n={id,name:`${m.name} (${m.who})`,cat:"Outros",lvl:0,shop:"Farmácia",added:Date.now(),med:m.id};upsert(n);put(n)}
+  else if(!low&&it&&it.lvl<2)remove(id)})}
+function medBought(id){const m=meds().find(x=>x.id===id);if(!m)return;const nm={...m,stock:Math.round(((+m.stock||0)+(+m.box||0))*100)/100};
+  putBill(nm);if(items.some(i=>i.id==="med-"+id))remove("med-"+id);renderMeds();toast(`${m.name}: +${m.box} · restam ${String(nm.stock).replace(".",",")}`)}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-medbuy]");if(b)medBought(b.dataset.medbuy)});
 function medForm(m){const id=m?m.id:"new", times=m?(m.times||[]):["08:00"];return `<form class="bill-edit" data-medform="${id}" autocomplete="off">
     <label class="f wide">Para quem<input name="w" required value="${esc(m?m.who:(medWho||""))}" placeholder="ex.: Maria" autocapitalize="words"></label>
     <div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-medwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>
@@ -2022,7 +2032,10 @@ function medForm(m){const id=m?m.id:"new", times=m?(m.times||[]):["08:00"];retur
     <label class="f wide">Horários<span class="times">${[0,1,2,3].map(i=>`<input type="time" name="t${i}" value="${times[i]||""}" aria-label="Horário ${i+1}">`).join("")}</span></label>
     <label class="f">Início<input type="date" name="s" value="${m?(m.start||""):ymd(now)}"></label>
     <label class="f">Fim (opcional)<input type="date" name="e" value="${m?(m.end||""):""}"></label>
-    <label class="f wide">Stock: doses que restam (opcional)<input type="number" name="k" min="0" step="1" inputmode="numeric" value="${m&&m.stock!=null?m.stock:""}" placeholder="ex.: 20"></label>
+    <label class="f">Comprimidos por caixa<input type="number" name="bx" min="1" step="1" inputmode="numeric" value="${m&&m.box?m.box:""}" placeholder="ex.: 30"></label>
+    <label class="f">Por toma<input type="number" name="pt" min="0.25" step="0.25" inputmode="decimal" value="${m&&m.per?m.per:1}" placeholder="1"></label>
+    <label class="f wide">Tenho em casa (comprimidos que restam)<input type="number" name="k" min="0" step="any" inputmode="decimal" value="${m&&m.stock!=null?m.stock:""}" placeholder="ex.: 30"></label>
+    <label class="f wide">Avisar para comprar quando der para<select name="wd">${[3,5,7,10,14].map(d=>`<option value="${d}"${(m&&m.warnDays||7)===d?" selected":""}>${d} dias</option>`).join("")}</select></label>
     <label class="f wide">Notas<input name="o" value="${m?esc(m.notes||""):""}" placeholder="ex.: depois do pequeno-almoço"></label>
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cancelmed="1">Cancelar</button>
@@ -2043,9 +2056,10 @@ function renderMeds(){
   const fmtD=d=>new Date(d+"T00:00").toLocaleDateString("pt-PT",{day:"numeric",month:"short"});
   document.getElementById("medList").innerHTML=list.length?list.map(m=>{if(m.id===editMed)return medForm(m);
     const d=ymd(now), st=!medActive(m,d)?(m.start>d?"começa a "+fmtD(m.start):"terminou"):m.end?"até "+fmtD(m.end):"contínuo";
-    const low=m.stock!=null&&m.stock<=5;
-    return `<div class="item"><button type="button" class="bname" data-editmed="${m.id}" aria-label="Editar ${esc(m.name)}"><div class="name">${esc(m.name)} <span class="tag">${esc(m.who)}</span></div>
-      <div class="meta">${[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${m.stock}</span>`:""}${m.notes?"<br>"+esc(m.notes):""}</div></button></div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
+    const dl=medDays(m), low=medLow(m);
+    return `<div class="item" style="flex-wrap:wrap"><button type="button" class="bname" data-editmed="${m.id}" aria-label="Editar ${esc(m.name)}"><div class="name">${esc(m.name)} <span class="tag">${esc(m.who)}</span></div>
+      <div class="meta">${[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${String(m.stock).replace(".",",")}${dl!=null?` (dá para ${dl} dia${dl===1?"":"s"})`:""}</span>`:""}${low?" · nas Compras":""}${m.notes?"<br>"+esc(m.notes):""}</div></button>
+      ${m.box?`<button type="button" class="bump" data-medbuy="${m.id}" style="margin-left:auto;white-space:nowrap">+ Comprei 1 caixa (${m.box})</button>`:""}</div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
   document.getElementById("medNew").innerHTML=editMed==="new"?medForm(null):"";
   document.getElementById("addMed").hidden=editMed==="new";
 }
@@ -2061,15 +2075,17 @@ document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.datase
   const [id,t]=v.split("|"), m=meds().find(x=>x.id===id);if(!m)return;
   const d=ymd(now), taken={};Object.entries(m.taken||{}).forEach(([k,a])=>{if(k>=ymd(new Date(Date.now()-30*864e5)))taken[k]=a});
   const day=new Set(taken[d]||[]), was=day.has(t);if(e.target.checked)day.add(t);else day.delete(t);taken[d]=[...day];
-  const nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,m.stock+(e.target.checked?-1:1));
-  putBill(nm);renderMeds();if(e.target.checked)toast(`${m.who}: ${m.name} tomado`);
+  const nm={...m,taken};if(m.stock!=null&&was!==e.target.checked)nm.stock=Math.max(0,Math.round((m.stock+(e.target.checked?-1:1)*(+m.per||1))*100)/100);
+  putBill(nm);renderMeds();medShopSync();const dl=medDays(nm);
+  if(e.target.checked)toast(dl!=null&&dl<=(nm.warnDays||7)?`${m.name}: só dá para ${dl} dia${dl===1?"":"s"} · está nas Compras`:`${m.who}: ${m.name} tomado`);
 });
 document.addEventListener("submit",e=>{const id=e.target.dataset.medform;if(!id)return;e.preventDefault();
   const f=e.target, times=[0,1,2,3].map(i=>f["t"+i].value).filter(Boolean).sort();
   if(!f.n.value.trim()||!f.w.value.trim())return;if(!times.length){toast("Escreve pelo menos um horário.");return}
-  const old=id==="new"?null:meds().find(x=>x.id===id), k=f.k.value===""?null:Math.max(0,parseInt(f.k.value)||0);
+  const old=id==="new"?null:meds().find(x=>x.id===id), k=f.k.value===""?null:Math.max(0,parseFloat(String(f.k.value).replace(",","."))||0);
   const m={...(old||{}),id:old?old.id:uid(),kind:"med",name:f.n.value.trim(),who:f.w.value.trim(),dose:f.d.value.trim(),times:[...new Set(times)],start:f.s.value||ymd(now),end:f.e.value||"",notes:f.o.value.trim(),taken:old&&old.taken||{}};
   if(k===null)delete m.stock;else m.stock=k;
+  const bx=parseInt(f.bx.value)||0, pt=parseFloat(String(f.pt.value).replace(",","."))||1;if(bx)m.box=bx;else delete m.box;m.per=pt;m.warnDays=+f.wd.value||7;
   editMed="";putBill(m);renderMeds();toast(old?"Guardado":m.name+" juntado");
 });
 
