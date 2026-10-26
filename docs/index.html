@@ -130,7 +130,7 @@ form.addev{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
 .note{font-size:.8rem;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:.88rem;z-index:6}
 .month{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.month h2{text-transform:capitalize}
+.month h2{text-transform:none}
 .nav-m{background:var(--surface);border:1px solid var(--line);color:var(--fg);width:40px;height:40px;font-size:1.1rem}
 .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
@@ -500,6 +500,13 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
 .loan.done{--bk:#8e8e93}
 .loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
+/* Atualizar os valores que mudam todos os meses */
+#askBox{border:2px solid #0a84ff}
+#askBox .ah{padding:12px 16px 4px;font-weight:700}#askBox .an{padding:0 16px 8px;font-size:13px;color:var(--muted)}
+.askrow{display:grid;grid-template-columns:minmax(0,1fr) 110px auto auto;gap:6px;align-items:center;padding:8px 16px;border-top:.5px solid var(--line)}
+.askrow .n{font-weight:500;overflow-wrap:anywhere}.askrow .n small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.askrow input{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);text-align:right}
+.askrow button{padding:8px 10px;border-radius:10px;font-weight:600;font-size:14px}
 .i-vid{background:linear-gradient(160deg,#ff5f57,#d1201b)}
 .i-game{background:linear-gradient(160deg,#5ac8fa,#1d7fd6)}
 .i-snake{background:linear-gradient(160deg,#7ed957,#2f9e44)}
@@ -1108,6 +1115,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       <h2 id="mLabel"></h2>
       <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
     </div>
+    <div id="askBox" class="rcard" hidden></div>
     <div class="totals two">
       <button class="tot" type="button" data-scroll="accSec"><div class="k">Saldo hoje</div><div class="v" id="vBal"></div></button>
       <div class="tot" id="fcBox"><div class="k" id="fcLabel">Fim do mês</div><div class="v" id="vFc"></div></div>
@@ -1583,7 +1591,7 @@ function fitTotals(){document.querySelectorAll(".tot .v").forEach(v=>{const box=
 function renderBills(){
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
-  document.getElementById("mLabel").textContent=label;
+  document.getElementById("mLabel").textContent=label[0].toUpperCase()+label.slice(1);
   const byName=(a,b)=>a.name.localeCompare(b.name,"pt");
   const order=sortBy==="name"?byName:sortBy==="amt"?(a,b)=>planned(b,k)-planned(a,k)||byName(a,b):(a,b)=>(a.day||99)-(b.day||99)||byName(a,b);
   const all=contas(), list=fixas().sort(order), buds=all.filter(isBud).sort(sortBy==="day"?byName:order);
@@ -1619,6 +1627,7 @@ function renderBills(){
       <label class="tick wide"><input type="checkbox" class="switch" name="keep"> Manter este valor nos meses seguintes</label>
       ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
+      ${isInc(b)||isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-canceledit="1">Cancelar</button>
@@ -1707,7 +1716,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Atualizar valores",renderAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -1797,6 +1806,7 @@ document.addEventListener("submit",e=>{
   const nb={...b,name,day:Math.min(Math.max(day,0),31)};
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
+  if(e.target.ask)nb.ask=e.target.ask.checked;
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
   const amounts={...(b.amounts||{})};
@@ -1910,6 +1920,8 @@ function renderAlerts(){
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":`Faltam ${d} dia${d===1?"":"s"} · ${fmtD(x.date)}`})});
+  /* Valores do mês seguinte por atualizar (a partir do dia 20) */
+  if(typeof askPending==="function"){const P=askPending();if(P.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Atualizar ${P.length} valor${P.length===1?"":"es"} de ${[...new Set(P.map(x=>mFull(x.k).split(" de ")[0]))].join(" e ")}`,meta:P.map(x=>x.b.name).join(", ")})}
   const toBuy=items.filter(i=>i.lvl<2).length;
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
@@ -2871,6 +2883,30 @@ document.getElementById("pinForm").addEventListener("submit",async e=>{e.prevent
   try{await(await loadFb()).changePass(f.o.value,f.n.value);f.reset();f.hidden=true;document.getElementById("pinBtn").hidden=false;toast("PIN mudado ✓")}
   catch(err){toast(/wrong-password|invalid-credential/.test(err&&err.code||"")?"O PIN atual está errado.":err&&err.code==="auth/too-many-requests"?"Muitas tentativas. Espera um pouco.":"Não foi possível mudar o PIN. Verifica a internet.")}});
 
+/* ---------- Valores que mudam todos os meses (cartões, água, luz…) ----------
+   A partir do dia 20 pede o valor do mês seguinte; até ao dia 7 ainda pede o do mês atual, se faltar.
+   Confirmados em conf["AAAA-MM"]=true. Por defeito: CGD Gold, WiZink, ActivoBank Gold, água e luz. */
+const ASK_DEFAULT=/cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/;
+const askBill=b=>!b.kind&&(b.ask!=null?!!b.ask:ASK_DEFAULT.test(noAcc(b.name||"")));
+function askMonths(){const d=new Date(), cur=ymOf(d), L=[];
+  if(d.getDate()<=7&&cur>=START)L.push(cur);
+  if(d.getDate()>=20){const nx=ymOf(new Date(d.getFullYear(),d.getMonth()+1,1));if(nx>=START)L.push(nx)}
+  if(cur<START&&d.getDate()>=20&&!L.includes(START))L.push(START);
+  return L}
+function askPending(){const L=[];askMonths().forEach(k=>fixas().filter(askBill).forEach(b=>{if(!(b.conf&&b.conf[k]))L.push({b,k})}));return L}
+function renderAsk(){const box=document.getElementById("askBox");if(!box)return;const P=askPending();box.hidden=!P.length;if(!P.length){box.innerHTML="";return}
+  const ks=[...new Set(P.map(x=>x.k))];
+  box.innerHTML=`<div class="ah">📝 Atualiza os valores de ${ks.map(k=>mFull(k).split(" de ")[0]).join(" e ")}</div><div class="an">Escreve o valor que vai sair (vê no extrato ou na fatura) e toca em ✓. Se for igual, toca em “Igual”.</div>`+
+    P.map(({b,k})=>`<form class="askrow" data-ask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mFull(k).split(" de ")[0]} · dia ${b.day||"—"}</small></span>
+      <input name="v" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="${(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",")}" aria-label="Valor de ${esc(b.name)}">
+      <button type="submit" class="btn">✓</button><button type="button" class="btn ghost" data-asksame="${b.id}|${k}">Igual</button></form>`).join("")}
+function askSave(id,k,v){const b=bills.find(x=>x.id===id);if(!b)return;const nb={...b,conf:{...(b.conf||{}),[k]:true}};
+  if(v!=null){const amounts={...(b.amounts||{})};delete amounts[k];if(Math.abs(v-baseAmt(nb,k))>.004)amounts[k]=v;nb.amounts=amounts}
+  putBill(nb);toast(`${b.name}: ${eur(v!=null?v:monthAmt(b,k))} em ${mFull(k).split(" de ")[0]}`)}
+document.addEventListener("submit",e=>{const a=e.target.dataset&&e.target.dataset.ask;if(!a)return;e.preventDefault();const [id,k]=a.split("|");
+  const v=parseFloat(String(e.target.v.value).replace(",","."));if(isNaN(v)){toast("Escreve o valor ou toca em “Igual”.");return}askSave(id,k,v)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-asksame]");if(!b)return;const [id,k]=b.dataset.asksame.split("|");askSave(id,k,null)});
+
 /* ---------- Mensagens entre os dois ----------
    Na coleção "bills" com kind:"msg": {text, uid (de quem enviou), name, at}. O GitHub Actions avisa o outro telemóvel. */
 var chatOn=false;
@@ -3040,7 +3076,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v63";
+const APPV="casa-v64";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

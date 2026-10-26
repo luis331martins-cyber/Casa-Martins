@@ -102,6 +102,18 @@ async function morning(code, now) {
       body: contas.map((c) => c.t).join("\n"), go: "despesas", tag: "contas"});
   }
 
+  /* Valores que mudam todos os meses (cartões, água, luz…): a partir do dia 25 lembra os do mês seguinte que faltam. */
+  if (now.d >= 25) {
+    const nk = now.m === 12 ? `${now.y + 1}-01` : `${now.y}-${String(now.m + 1).padStart(2, "0")}`;
+    const semAcento = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const pede = (b) => !b.kind && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/.test(semAcento(b.name)));
+    const faltam = nk >= START ? bills.filter((b) => pede(b) && !(b.conf && b.conf[nk])) : [];
+    if (faltam.length) {
+      await send(code, {title: `📝 Atualiza ${plural(faltam.length, "valor", "valores")} do próximo mês`,
+        body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "valores-" + nk});
+    }
+  }
+
   /* Validades a terminar nos próximos 3 dias (ou já passadas). */
   const val = items.map((i) => ({i, d: i.exp ? daysBetween(now.date, i.exp) : null}))
       .filter((x) => x.d !== null && x.d <= 3).sort((a, b) => a.d - b.d);
