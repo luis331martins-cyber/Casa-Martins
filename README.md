@@ -150,6 +150,8 @@ O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em
 | Quando | O quê |
 |---|---|
 | A partir das 9h, **numa só notificação "Bom dia"** | **Contas a pagar**: atrasadas, a vencer hoje e nos próximos 3 dias (as que ainda não estão marcadas como pagas) |
+| Cerca de 1h30 depois de uma marcação (sem hora: às 20h) | **✅ Já está feito?** — toca para confirmar na app |
+| No dia de um débito direto ou entrada automática, às 18h | **🏦 Saiu da conta? / 💶 Entrou?** — toca para confirmar na app |
 | A partir das 9h, no "Bom dia" | **✅ Por confirmar**: débitos diretos e entradas automáticas que já passaram e marcações dos últimos 7 dias ainda sem confirmação |
 | A partir das 9h, no "Bom dia" | **✈️ Viagens**: uma semana antes e na véspera, com o que falta arrumar na mala |
 | A partir das 9h, no "Bom dia" | **🎂 Aniversários**: 7 dias antes, na véspera e no dia |

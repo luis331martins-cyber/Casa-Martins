@@ -440,6 +440,37 @@ async function house(code, now) {
       go: "chat", tag: "msg-" + m.id}, m.uid));
   }
 
+  /* Confirmar: marcações que já passaram (cerca de 1h30 depois; sem hora, às 20h do último dia) e
+     débitos diretos / entradas automáticas no próprio dia, às 18h. Cada aviso vai uma vez só. */
+  const confSent = new Set((st.conf || []).filter((k) => k.slice(-10) >= addDays(now.date, -3)));
+  {
+    const hm = (t) => { const [h, m] = String(t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+    for (const e of evs) {
+      const fim = e.end && e.end > e.date ? e.end : e.date;
+      if (fim !== now.date || e.done || e.skip || /^🎒.*(Férias|Feriado)/.test(e.title || "")) continue;
+      const desde = e.time && fim === e.date ? hm(e.time) + 90 : 20 * 60;
+      if (now.min < desde || now.min > desde + 180) continue;
+      const key = `ev|${e.id}|${now.date}`;
+      if (confSent.has(key)) continue;
+      confSent.add(key);
+      jobs.push(() => send(code, {title: `✅ ${e.title}: já está feito?`, body: "Toca para confirmar na app.", go: "inicio", tag: "conf-" + e.id}));
+    }
+    const mkC = now.date.slice(0, 7), lastC = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
+    if (mkC >= START && now.min >= 18 * 60 && now.min < 22 * 60) {
+      const bs = (await db.collection(`households/${code}/bills`).get()).docs.map((x) => ({...x.data(), id: x.id}));
+      for (const b of bs) {
+        if ((b.kind && b.kind !== "income") || !b.dd || !b.day || Math.min(b.day, lastC) !== now.d) continue;
+        if ((b.paid && b.paid[mkC] === false) || (b.ok && b.ok[mkC])) continue;
+        const key = `b|${b.id}|${now.date}`;
+        if (confSent.has(key)) continue;
+        confSent.add(key);
+        const inc = b.kind === "income";
+        jobs.push(() => send(code, {title: `${inc ? "💶" : "🏦"} ${b.name}: ${inc ? "entrou" : "saiu da conta"}?`,
+          body: `${eur(monthAmt(b, mkC))} ${inc ? "deviam ter entrado" : "em débito direto"} hoje. Toca para confirmar na app.`, go: "inicio", tag: "conf-" + b.id}));
+      }
+    }
+  }
+
   /* Resumo diário: a partir das 9h, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
   let resumo = st.resumo;
   if (resumo !== now.date && now.min >= 9 * 60 && now.min < 21 * 60) {
@@ -447,7 +478,7 @@ async function house(code, now) {
     jobs.push(() => morning(code, now));
   }
 
-  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], msgs: [...msgVistas], seenB: novosSeenB, buy: compraAgora, at: new Date()});
+  await ref.set({resumo, vistos: [...vistos], lembrados: [...lembrados], meds: [...medsSent], conf: [...confSent], msgs: [...msgVistas], seenB: novosSeenB, buy: compraAgora, at: new Date()});
   for (const job of jobs) await job();
 }
 
