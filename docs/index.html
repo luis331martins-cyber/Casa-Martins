@@ -1176,9 +1176,12 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="group" style="gap:8px"><h2>Próximas datas</h2>
       <div id="escDatas" class="rcard"></div>
       <button class="back" type="button" id="addData" style="align-self:flex-start">+ Juntar data (reunião, teste, férias…)</button><div id="dataNew"></div></div>
-    <div class="group" style="gap:8px"><h2>Material a comprar</h2>
+    <div class="group" style="gap:8px"><h2>Material</h2>
       <div id="escMat" class="rcard"></div>
-      <form class="item" id="matForm" autocomplete="off" style="align-items:end"><label class="f" style="min-width:0">Juntar<input id="matName" placeholder="ex.: Caderno quadriculado" autocapitalize="sentences"></label><button class="btn" type="submit">+</button></form></div>
+      <form class="bill-edit" id="matForm" autocomplete="off">
+        <label class="f wide">Juntar (um por linha; podes colar uma lista)<textarea id="matName" rows="3" placeholder="ex.: Caderno quadriculado&#10;Lápis de cor&#10;Bata" autocapitalize="sentences" style="resize:vertical"></textarea></label>
+        <label class="tick wide"><input type="checkbox" class="switch" id="matDone"> Já está comprado</label>
+        <button class="btn wide" type="submit">Juntar</button></form></div>
     <div class="group" style="gap:8px"><h2>Contactos</h2>
       <div id="escCont" class="rcard"></div>
       <button class="back" type="button" id="addCont" style="align-self:flex-start">+ Juntar contacto</button><div id="contNew"></div></div>
@@ -3003,6 +3006,7 @@ function aulaForm(a){const v=x=>x==null?"":esc(x);return`<form class="bill-edit"
     <label class="f">Início<input name="a" type="time" required value="${a?v(a.from):""}"></label>
     <label class="f">Fim<input name="b" type="time" value="${a?v(a.to):""}"></label>
     <label class="f wide">Onde / notas<input name="o" value="${a?v(a.notes):""}" placeholder="ex.: levar fato de banho"></label>
+    ${a?"":`<label class="tick wide"><input type="checkbox" class="switch" name="all"> Todos os dias (segunda a sexta)</label>`}
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-esccancel="aula">Cancelar</button>
     ${a?`<button class="btn danger wide" type="button" data-escdel="${a.id}">Apagar</button>`:""}</form>`}
 function contForm(c){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-escform="cont|${c?c.id:"new"}" autocomplete="off">
@@ -3028,7 +3032,7 @@ function renderEscola(){const el=document.getElementById("escAulas");if(!el)retu
   document.getElementById("escDatas").innerHTML=D.map(e=>`<div class="esc-row"><span class="t">${fmtD(e.date).replace(/ \d{4}$/,"")}${e.end&&e.end>e.date?"<small>até "+fmtD(e.end).replace(/ \d{4}$/,"")+"</small>":""}</span><span style="min-width:0"><b>${esc(e.title.replace(/^🎒\s*/,""))}</b><small>${e.time?e.time+" · ":""}${dueTag(e.date,7)}</small></span><button type="button" class="back" data-escdelev="${e.id}" aria-label="Apagar">×</button></div>`).join("")||`<div class="esc-empty">Sem datas marcadas. As datas que juntares também aparecem na Agenda e no calendário.</div>`;
   document.getElementById("dataNew").innerHTML=escEdit.data==="new"?dataForm():"";
   const Mt=escOf("mat").sort((a,b)=>(a.done?1:0)-(b.done?1:0));
-  document.getElementById("escMat").innerHTML=Mt.map(m=>`<label class="mat${m.done?" done":""}"><input type="checkbox" data-escmat="${m.id}"${m.done?" checked":""}><span>${esc(m.name)}</span><button type="button" data-escdel="${m.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="esc-empty">Nada para comprar.</div>`;
+  document.getElementById("escMat").innerHTML=Mt.map(m=>`<label class="mat${m.done?" done":""}"><input type="checkbox" data-escmat="${m.id}"${m.done?" checked":""}><span>${esc(m.name)}</span><button type="button" data-escdel="${m.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="esc-empty">Ainda não há material. Junta o que falta comprar ou o que já compraste.</div>`;
   const C=escOf("cont").sort((a,b)=>a.name.localeCompare(b.name,"pt"));
   document.getElementById("escCont").innerHTML=C.map(c=>c.id===escEdit.cont?contForm(c):`<div class="esc-row" style="grid-template-columns:minmax(0,1fr) auto auto;gap:6px"><button type="button" data-escedit="cont|${c.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;min-width:0"><b>${esc(c.name)}</b><small>${[c.rel,c.phone].filter(Boolean).map(esc).join(" · ")}</small></button>
       ${c.phone?`<a class="cbtn" href="tel:${esc(c.phone.replace(/[^\d+]/g,""))}">📞</a><a class="cbtn" href="https://wa.me/${esc((c.phone.replace(/\D/g,"").length===9?"351":"")+c.phone.replace(/\D/g,""))}" target="_blank" rel="noopener">💬</a>`:""}</div>`).join("")||`<div class="esc-empty">Junta a professora, a secretaria da escola, o ATL…</div>`;
@@ -3037,7 +3041,10 @@ function renderEscola(){const el=document.getElementById("escAulas");if(!el)retu
 document.getElementById("addAula").addEventListener("click",()=>{escEdit.aula="new";renderEscola()});
 document.getElementById("addData").addEventListener("click",()=>{escEdit.data="new";renderEscola()});
 document.getElementById("addCont").addEventListener("click",()=>{escEdit.cont="new";renderEscola()});
-document.getElementById("matForm").addEventListener("submit",e=>{e.preventDefault();const n=document.getElementById("matName").value.trim();if(!n)return;putBill({id:uid(),kind:"esc",t:"mat",name:n});document.getElementById("matName").value="";renderEscola()});
+document.getElementById("matForm").addEventListener("submit",e=>{e.preventDefault();
+  const L=document.getElementById("matName").value.split(/\r?\n|;/).map(t=>t.replace(/^\s*[-*•·]\s*|^\s*\d+[.)]\s*/,"").trim()).filter(Boolean), done=document.getElementById("matDone").checked;if(!L.length)return;
+  const have=new Set(escOf("mat").map(m=>noAcc(m.name)));let n=0;L.forEach(t=>{if(have.has(noAcc(t)))return;have.add(noAcc(t));putBill({id:uid(),kind:"esc",t:"mat",name:t,...(done?{done:true}:{})});n++});
+  document.getElementById("matName").value="";renderEscola();toast(`${n} juntado${n===1?"":"s"}${done?" como comprado"+(n===1?"":"s"):""}`)});
 document.addEventListener("click",e=>{const t=e.target.closest("button,input");if(!t)return;
   if(t.dataset.escday){escDay=+t.dataset.escday;renderEscola()}
   else if(t.dataset.escedit){const [k,id]=t.dataset.escedit.split("|");escEdit[k]=id;renderEscola()}
@@ -3051,7 +3058,8 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.escform;if(!re
     const ev={id:uid(),date:f.a.value,time:f.h.value||"",title,...(f.b.value&&f.b.value>f.a.value?{end:f.b.value}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
     escEdit.data="";putEv(ev);renderEscola();toast("Guardado também no calendário");return}
   const old=id==="new"?null:bills.find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"esc",t:k,name:f.n.value.trim()};
-  if(k==="aula"){x.wd=+f.wd.value;x.from=f.a.value;if(f.b.value)x.to=f.b.value;else delete x.to;x.who=f.who.value.trim();if(f.o.value.trim())x.notes=f.o.value.trim();else delete x.notes;escDay=x.wd}
+  if(k==="aula"){x.wd=+f.wd.value;x.from=f.a.value;if(f.b.value)x.to=f.b.value;else delete x.to;x.who=f.who.value.trim();if(f.o.value.trim())x.notes=f.o.value.trim();else delete x.notes;escDay=x.wd
+    if(!old&&f.all&&f.all.checked){[0,1,2,3,4].forEach(w=>putBill({...x,id:uid(),wd:w}));escEdit.aula="";renderEscola();toast("Juntado de segunda a sexta");return}}
   if(k==="cont"){if(f.r.value.trim())x.rel=f.r.value.trim();else delete x.rel;if(f.p.value.trim())x.phone=f.p.value.trim();else delete x.phone}
   escEdit[k]="";putBill(x);renderEscola();toast("Guardado")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
@@ -4035,7 +4043,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v101";
+const APPV="casa-v102";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
