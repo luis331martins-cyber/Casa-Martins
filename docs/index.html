@@ -212,9 +212,20 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 :root[data-icons="ios"] #tab-inicio .ico.ios{background:linear-gradient(180deg,var(--v1),var(--v2))}
 :root[data-icons="ios"] #tab-inicio .ico.ios::before{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%);box-shadow:inset 0 .5px 0 rgba(255,255,255,.35)}
 :root[data-icons="ios"] #tab-inicio .ico.ios svg.sf{filter:drop-shadow(0 .5px .5px rgba(0,0,0,.15))}
-#tab-inicio .ico.ios svg.sf>circle{fill:inherit}#tab-inicio .ico.ios svg.sf .tail{stroke:#fff}
+#tab-inicio .ico.ios svg.sf>circle{fill:inherit}
+/* Com os ícones escuros, o calendário, o chat e as definições também ficam escuros */
+@media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) .calfab{background:linear-gradient(180deg,#2c2c2e,#121214);color:#fff;outline-color:rgba(255,255,255,.16)}:root[data-icons="ios"]:not([data-theme="light"]) .calfab .cal-d{color:#fff}
+:root[data-icons="ios"]:not([data-theme="light"]) .chatfab{background:linear-gradient(180deg,#2c2c2e,#121214);color:#34c759;outline-color:rgba(255,255,255,.16)}:root[data-icons="ios"]:not([data-theme="light"]) .chatfab svg{fill:#34c759}
+:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios,:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .iosgear{outline-color:rgba(255,255,255,.16)}
+:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .iosgear{background:linear-gradient(180deg,#2c2c2e,#121214)}:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .iosgear svg.sfg{fill:#aeaeb2;filter:none}}
+:root[data-icons="ios"][data-theme="dark"] .calfab{background:linear-gradient(180deg,#2c2c2e,#121214);color:#fff;outline-color:rgba(255,255,255,.16)}:root[data-icons="ios"][data-theme="dark"] .calfab .cal-d{color:#fff}
+:root[data-icons="ios"][data-theme="dark"] .chatfab{background:linear-gradient(180deg,#2c2c2e,#121214);color:#34c759;outline-color:rgba(255,255,255,.16)}:root[data-icons="ios"][data-theme="dark"] .chatfab svg{fill:#34c759}
+:root[data-icons="ios"][data-theme="dark"] #tab-inicio .ico.ios,:root[data-icons="ios"][data-theme="dark"] #tab-inicio .iosgear{outline-color:rgba(255,255,255,.16)}
+:root[data-icons="ios"][data-theme="dark"] #tab-inicio .iosgear{background:linear-gradient(180deg,#2c2c2e,#121214)}:root[data-icons="ios"][data-theme="dark"] #tab-inicio .iosgear svg.sfg{fill:#aeaeb2;filter:none}#tab-inicio .ico.ios svg.sf .tail{stroke:#fff}
 @media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf .tail{stroke:color-mix(in srgb,var(--v1) 70%,#fff)}}
 :root[data-icons="ios"][data-theme="dark"] #tab-inicio .ico.ios svg.sf .tail{stroke:color-mix(in srgb,var(--v1) 70%,#fff)}
+/* Rebordo fino à volta dos ícones, como um vidro (fica bem nos fundos claros e escuros) */
+:root[data-icons="ios"] #tab-inicio .ico.ios,.calfab,.chatfab,#tab-inicio .iosgear{outline:1px solid rgba(255,255,255,.55);outline-offset:-1px}
 /* Modo escuro: como os ícones escuros do iOS 18 (fundo preto, símbolo com a cor da app) */
 @media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios{background:linear-gradient(180deg,#2c2c2e,#121214)!important;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.12)}
 :root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf{fill:color-mix(in srgb,var(--v1) 70%,#fff)}}
@@ -266,9 +277,7 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .cm.pic time{color:var(--muted);padding:0 6px}
 #takeAsk{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
 #takeAsk[hidden]{display:none}
-.sheetbg{position:fixed;inset:0;z-index:24;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}.sheetbg[hidden]{display:none}
-.ia-row{display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;padding:10px 0;border-top:.5px solid var(--line)}
-.ia-row b{display:block}.ia-row small{color:var(--muted)}.ia-row input{text-align:right;font-size:17px;background:var(--fill);border:0;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;color:var(--fg);font-variant-numeric:tabular-nums}
+.askrow.cx{grid-template-columns:1fr 84px 84px auto}.cxf{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.cxf input{width:100%;min-width:0}
 .ta-box{background:var(--surface);border-radius:20px;padding:16px;width:100%;max-width:520px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-height:80vh;overflow:auto}
 .ta-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ta-h b{font-size:19px}
 .ta-row{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:.5px solid var(--line)}
@@ -629,8 +638,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
 .rdlink{color:var(--accent);font-weight:600}.rdlink.ok{color:var(--good)}.rdlink.warn{color:var(--warn,#c77700)}.rdlink.bad{color:var(--bad)}
 /* Atualizar os valores que mudam todos os meses */
-#askBox{border:2px solid #0a84ff}
-#askBox .ah{padding:12px 16px 4px;font-weight:700}#askBox .an{padding:0 16px 8px;font-size:13px;color:var(--muted)}
+#askBox{border:2px solid #0a84ff}#incAskBox{border:2px solid #34c759}
+#askBox .ah,#incAskBox .ah{padding:12px 16px 4px;font-weight:700}#askBox .an,#incAskBox .an{padding:0 16px 8px;font-size:13px;color:var(--muted)}
 .askrow{display:grid;grid-template-columns:minmax(0,1fr) 110px auto auto;gap:6px;align-items:center;padding:8px 16px;border-top:.5px solid var(--line)}
 .askrow .n{font-weight:500;overflow-wrap:anywhere}.askrow .n small{display:block;color:var(--muted);font-weight:400;font-size:12px}
 .askrow input{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);text-align:right}
@@ -1319,6 +1328,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <h2 id="mLabel"></h2>
       <button class="nav-m" id="mNext" aria-label="Mês seguinte">›</button>
     </div>
+    <div id="incAskBox" class="rcard" hidden></div>
     <div id="askBox" class="rcard" hidden></div>
     <div class="totals two">
       <button class="tot" type="button" data-scroll="accSec"><div class="k">Saldo hoje</div><div class="v" id="vBal"></div></button>
@@ -1397,9 +1407,6 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
-<div id="incAsk" class="sheetbg" hidden role="dialog" aria-label="Fim do mês"><form class="ta-box" id="incAskForm" autocomplete="off"><div class="ta-h"><b id="incAskT">💶 Fim do mês</b><button type="button" id="incAskLater" class="back">Mais tarde</button></div>
-  <p class="note" style="margin:0 0 4px">Escreve quanto entrou. Se for igual, deixa como está.</p><div id="incAskList"></div>
-  <button class="btn" type="submit" style="width:100%;margin-top:10px">Guardar</button></form></div>
 <div id="takeAsk" hidden role="dialog" aria-label="Já tomou?"><div class="ta-box"><div class="ta-h"><b>💊 Já tomou?</b><button type="button" id="taClose" class="back">Fechar</button></div><div class="ta-list"></div></div></div>
 <div id="fileView" hidden role="dialog" aria-label="Anexo"><div class="fv-bar"><button type="button" id="fvClose">Fechar</button><b id="fvName"></b><button type="button" id="fvShare">Partilhar</button><button type="button" id="fvDel" style="color:#ff6b6b">Apagar</button></div><div class="fv-body" id="fvBody"></div></div>
 <div class="toast" id="toast" hidden></div>
@@ -1879,7 +1886,9 @@ function renderBills(){
     </div>`}).join("");
   document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>{if(b.id===editBill)return editRow(b,"Receita");
     const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
-    const meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
+    let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
+    const cx=isCaixa(b)&&b.caixa&&b.caixa[k];
+    if(cx)meta+=`<br>Total ${eur(cx.t)} · empresa ${eur(cx.e)}${cx.e>0?` · <span class="${b.lev&&b.lev[k]?"ok":"loanlink"}" data-lev="${b.id}|${k}" role="button">${b.lev&&b.lev[k]?"levantado ✓":"levantar ›"}</span>`:""}`;
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></button>
@@ -1933,7 +1942,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2148,6 +2157,7 @@ function renderAlerts(){
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":`Faltam ${d} dia${d===1?"":"s"} · ${fmtD(x.date)}`})});
+  if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",name:`Levantar ${eur(x.v)} para a empresa`,meta:`${x.b.name} de ${mFull(x.k).split(" de ")[0]} · toca em “levantar” nas Contas quando estiver feito`}));
   /* Fim do mês: ordenados e outras receitas por escrever */
   if(typeof incAskMonth==="function"){const k=incAskMonth(), L=k?incAskList(k):[];if(L.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Escrever o que entrou em ${mFull(k).split(" de ")[0]}`,meta:L.map(b=>b.name).join(", ")})}
   /* Valores do mês seguinte por atualizar (a partir do dia 20) */
@@ -3734,22 +3744,32 @@ function incAskMonth(){const t=new Date(), lb=lastBizDay(t.getFullYear(),t.getMo
   if(ymd(t)>=ymd(lb))k=ymOf(t);else if(t.getDate()<=5){k=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1))}
   return k&&k>=START?k:null}
 function incAskList(k){return bills.filter(b=>askInc(b)&&!(b.iconf&&b.iconf[k]))}
-function renderIncAsk(){const box=document.getElementById("incAsk");if(!box||!store&&!bills.length)return;const k=incAskMonth(), L=k?incAskList(k):[];
-  let later="";try{later=localStorage.getItem("casa-incask-depois")||""}catch(e){}
-  if(!L.length||later===ymd(new Date())){box.hidden=true;return}
-  if(!box.hidden&&box.dataset.k===k)return;box.dataset.k=k;
-  document.getElementById("incAskT").textContent=`💶 Fim de ${mFull(k).split(" de ")[0]}`;
-  document.getElementById("incAskList").innerHTML=L.map(b=>`<label class="ia-row"><span style="min-width:0"><b>${esc(b.name)}</b><small>${b.day?"Dia "+b.day+" · ":""}habitual ${eur(baseAmt(b,k))}</small></span>
-    <input name="${b.id}" type="number" step="0.01" min="0" inputmode="decimal" value="${Math.round(monthAmt(b,k)*100)/100}"></label>`).join("");
-  box.hidden=false}
-document.getElementById("incAskLater").addEventListener("click",()=>{try{localStorage.setItem("casa-incask-depois",ymd(new Date()))}catch(e){}document.getElementById("incAsk").hidden=true;toast("Pergunto outra vez amanhã")});
-document.getElementById("incAskForm").addEventListener("submit",e=>{e.preventDefault();const k=document.getElementById("incAsk").dataset.k;if(!k)return;let n=0;
-  for(const inp of e.target.querySelectorAll("input[name]")){const b=bills.find(x=>x.id===inp.name);const v=parseFloat(String(inp.value).replace(",","."));if(!b||isNaN(v))continue;
-    const amounts={...(b.amounts||{})};delete amounts[k];if(Math.abs(v-baseAmt(b,k))>.004)amounts[k]=v;
-    putBill({...b,amounts,paid:{...(b.paid||{}),[k]:true},iconf:{...(b.iconf||{}),[k]:true}});n++}
-  document.getElementById("incAsk").hidden=true;toast(`${n} valor${n===1?"":"es"} guardado${n===1?"":"s"}`)});
-setTimeout(()=>safe("Fim do mês",renderIncAsk),1500);setInterval(()=>safe("Fim do mês",renderIncAsk),300000);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>safe("Fim do mês",renderIncAsk),800)});
+/* Caixa: escreve-se o total e o que fica para a empresa; nas contas da casa só entra o resto. b.caixa[mês]={t,e}, b.lev[mês]=true quando já levantou */
+const isCaixa=b=>isInc(b)&&/caixa/.test(noAcc(b.name||""));
+function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const k=incAskMonth(), L=k?incAskList(k):[];box.hidden=!L.length;if(!L.length){box.innerHTML="";return}
+  const mn=mFull(k).split(" de ")[0], val=v=>(Math.round(v*100)/100).toFixed(2).replace(".",",");
+  box.innerHTML=`<div class="ah">💶 O que entrou em ${mn}</div><div class="an">Escreve o valor que recebeste e toca em ✓. Se for igual, toca em “Igual”. Na caixa, escreve o total e o que fica para a empresa: só o resto conta para casa.</div>`+
+    L.map(b=>isCaixa(b)?`<form class="askrow cx" data-incask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mn} · habitual ${eur(baseAmt(b,k))}</small></span>
+        <label class="cxf">Total<input name="t" type="text" inputmode="decimal" placeholder="0,00" aria-label="Total da caixa"></label>
+        <label class="cxf">Empresa<input name="e" type="text" inputmode="decimal" placeholder="0,00" aria-label="Para a empresa"></label>
+        <button type="submit" class="btn">✓</button></form>`
+      :`<form class="askrow" data-incask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mn}${b.day?" · dia "+b.day:""}</small></span>
+        <input name="v" type="text" inputmode="decimal" placeholder="${val(monthAmt(b,k))}" aria-label="Valor de ${esc(b.name)}">
+        <button type="submit" class="btn">✓</button><button type="button" class="btn ghost" data-incsame="${b.id}|${k}">Igual</button></form>`).join("")}
+function incSave(id,k,v,cx){const b=bills.find(x=>x.id===id);if(!b)return;const amounts={...(b.amounts||{})};delete amounts[k];
+  if(Math.abs(v-baseAmt(b,k))>.004)amounts[k]=v;
+  const nb={...b,amounts,paid:{...(b.paid||{}),[k]:true},iconf:{...(b.iconf||{}),[k]:true}};if(cx)nb.caixa={...(b.caixa||{}),[k]:cx};
+  putBill(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
+const numIn=t=>{t=String(t||"").trim().replace(/\s/g,"");if(!t)return NaN;if(/,/.test(t))t=t.replace(/\./g,"").replace(",",".");return parseFloat(t)};
+document.addEventListener("submit",e=>{const a=e.target.dataset&&e.target.dataset.incask;if(!a)return;e.preventDefault();const [id,k]=a.split("|"), f=e.target;
+  if(f.t){const t=numIn(f.t.value), em=numIn(f.e.value)||0;if(isNaN(t)){toast("Escreve o total da caixa.");return}if(em>t){toast("A parte da empresa é maior do que o total.");return}
+    incSave(id,k,Math.round((t-em)*100)/100,{t,e:em});return}
+  const v=numIn(f.v.value);if(isNaN(v)){toast("Escreve o valor ou toca em “Igual”.");return}incSave(id,k,v)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-incsame]");if(!b)return;const [id,k]=b.dataset.incsame.split("|");const x=bills.find(y=>y.id===id);if(x)incSave(id,k,monthAmt(x,k))});
+/* "Levantar X para a empresa": toca quando já levantaste */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-lev]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.lev.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
+  const on=!(b.lev&&b.lev[k]), lev={...(b.lev||{})};if(on)lev[k]=true;else delete lev[k];putBill({...b,lev});toast(on?"Marcado como levantado":"Por levantar")},true);
+function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=START)L.push({b,k,v:c.e})}));return L}
 /* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
    Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
    É um cadeado do ecrã: a sessão continua a ser a da conta com PIN, e "Entrar com o PIN" termina a sessão para entrar de novo. */
@@ -3838,7 +3858,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v93";
+const APPV="casa-v94";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
