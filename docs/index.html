@@ -978,7 +978,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
       </div>
-      <div class="name">Cor das letras do Início (nome, data e hora)</div>
+      <div class="name">Cor das letras e dos rebordos do Início</div>
       <div class="hdrcols" role="group" aria-label="Cor das letras do Início">
         <button type="button" data-hdrcol="ouro" style="--c:linear-gradient(135deg,#f5dc95,#b8892f)" aria-label="Dourado"></button>
         <button type="button" data-hdrcol="auto" style="--c:linear-gradient(135deg,#fff 50%,#1c1c1e 50%)" aria-label="Branco ou preto, conforme o tema"></button>
@@ -4230,7 +4230,9 @@ renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidde
 /* Cor das letras do Início: "ouro" (por defeito, dourado conforme o tema), "auto" (branco/preto) ou uma cor */
 function hdrCol(){try{return localStorage.getItem("casa-letras")||"ouro"}catch(e){return"ouro"}}
 function applyHdr(){const v=hdrCol(), r=document.documentElement;
-  if(v==="ouro")r.style.removeProperty("--hdrc");else r.style.setProperty("--hdrc",v==="auto"?"var(--fg)":v);
+  /* as letras e os rebordos dos ícones mudam juntos */
+  if(v==="ouro"){r.style.removeProperty("--hdrc");r.style.removeProperty("--icoRing")}
+  else{r.style.setProperty("--hdrc",v==="auto"?"var(--fg)":v);r.style.setProperty("--icoRing",v==="auto"?"color-mix(in srgb,var(--fg) 40%,transparent)":v)}
   document.querySelectorAll("[data-hdrcol]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hdrcol===v));
   const known=[...document.querySelectorAll("[data-hdrcol]")].some(b=>b.dataset.hdrcol===v), pk=document.getElementById("hdrPick");
   if(pk){pk.parentElement.style.outline=known?"":"3px solid var(--accent)";pk.parentElement.style.outlineOffset="2px";if(!known&&/^#/.test(v))pk.value=v}}
@@ -4298,7 +4300,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v111";
+const APPV="casa-v112";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
