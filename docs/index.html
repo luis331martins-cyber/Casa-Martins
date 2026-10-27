@@ -183,8 +183,8 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .code{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 form.join{display:flex;flex-direction:column;gap:8px}
 #joinCode,#authCode{text-transform:uppercase;letter-spacing:.06em}
-#today{margin:0;font-size:16px;font-weight:600;color:var(--fg);letter-spacing:-.01em;white-space:nowrap}
-#today .wdred{color:#ff3b30;text-transform:uppercase;font-size:13px;font-weight:700;letter-spacing:.04em;margin-right:4px}
+#today{margin:0;font-size:20px;font-weight:600;color:var(--fg);letter-spacing:-.01em;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.18)}
+#today .wdred{color:inherit;font-weight:700;margin-right:2px}
 #clock{font-family:-apple-system,"SF Pro Display",system-ui,var(--display);font-weight:600;font-size:52px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
 /* Início compacto: data e engrenagem em cima; "Olá" e o relógio na mesma linha */
 header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding-top:16px}
@@ -3653,7 +3653,7 @@ document.getElementById("msgs").addEventListener("click",e=>{const im=e.target.c
 /* Relógio no Início (atualiza também a data à meia-noite) */
 function tick(){const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
   const wd=d.toLocaleDateString("pt-PT",{weekday:"long"}), dm=d.toLocaleDateString("pt-PT",{day:"numeric",month:"long"}), el=document.getElementById("today");
-  if(el.dataset.k!==wd+dm){el.dataset.k=wd+dm;el.innerHTML=`<span class="wdred">${esc(wd)}</span> ${esc(dm)}`}}
+  if(el.dataset.k!==wd+dm){el.dataset.k=wd+dm;el.innerHTML=`<span class="wdred">${esc(wd[0].toUpperCase()+wd.slice(1))},</span> ${esc(dm)}`}}
 tick();setInterval(tick,5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
 
 /* ---------- Jogo de blocos (estilo Block Blast) ----------
@@ -3882,7 +3882,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v99";
+const APPV="casa-v100";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
