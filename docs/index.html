@@ -1667,7 +1667,24 @@ function show(tab){["login","setup","inicio","chat","definicoes","despensa","car
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
 const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
-function route(h){if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
+/* Links para juntar dados de uma vez (os dados vêm só no link, não no código):
+   #juntar-aula:Nome|09:15|17:00|Quem   → aula de segunda a sexta
+   #juntar-material:item1|item2|…        → material já comprado */
+setInterval(()=>{let h="";try{h=localStorage.getItem("casa-pendente")||""}catch(e){}if(!h)return;
+  const ready=typeof hasFb!=="undefined"&&(store||!hasFb||ls.get("casa-local"));if(!ready||!document.getElementById("tab-login").hidden)return;
+  try{localStorage.removeItem("casa-pendente")}catch(e){}linkAdd(h).catch(e=>console.error(e))},1000);
+async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)), P=raw.split("|").map(x=>x.trim()).filter(Boolean);
+  await new Promise(r=>setTimeout(r,800));show("escola");
+  if(h.startsWith("#juntar-aula:")){const [name,from,to,who]=P;if(!name||!/^\d{1,2}:\d{2}$/.test(from||""))return;
+    if(!confirm(`Juntar "${name}" das ${from}${to?" às "+to:""}, de segunda a sexta${who?" ("+who+")":""}?`))return;let n=0;
+    [0,1,2,3,4].forEach(w=>{if(escOf("aula").some(a=>+a.wd===w&&a.from===from&&noAcc(a.name)===noAcc(name)))return;putBill({id:uid(),kind:"esc",t:"aula",name,wd:w,from,...(to?{to}:{}),who:who||""});n++});
+    renderEscola();toast(n?`Horário juntado (${n} dias)`:"Esse horário já lá estava");return}
+  if(h.startsWith("#juntar-material:")){if(!P.length||!confirm(`Juntar ${P.length} itens ao material, como já comprados?`))return;
+    const have=new Set(escOf("mat").map(m=>noAcc(m.name)));let n=0;P.forEach(t=>{if(have.has(noAcc(t)))return;have.add(noAcc(t));putBill({id:uid(),kind:"esc",t:"mat",name:t,done:true});n++});
+    renderEscola();toast(`${n} juntado${n===1?"":"s"}`)}}
+/* Guarda o pedido até a app estar pronta (por exemplo, depois de entrar com o PIN) */
+function route(h){if(/^#juntar-(aula|material):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
+  if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
   if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
 addEventListener("hashchange",()=>route(location.hash));
@@ -4043,7 +4060,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v102";
+const APPV="casa-v103";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
