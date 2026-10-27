@@ -190,6 +190,16 @@ form.join{display:flex;flex-direction:column;gap:8px}
 header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding-top:16px}
 header.hdr #today{grid-column:1}header.hdr .gear{grid-column:2;justify-self:end}
 header.hdr #hello{grid-column:1;font-size:30px;margin:0}header.hdr #clock{grid-column:2}
+/* Cor das letras do Início (nome, data e hora): dourado por defeito; escolhe-se na ⚙️ */
+:root{--hdr:#a87a1e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hdr:#e7c46e}}
+:root[data-theme="dark"]{--hdr:#e7c46e}
+header.hdr #today,header.hdr #hello,header.hdr #clock{color:var(--hdrc,var(--hdr))}
+.hdrcols{display:flex;flex-wrap:wrap;gap:10px}
+.hdrcols button{width:38px;height:38px;border-radius:50%;padding:0;border:2px solid var(--line);background:var(--c)}
+.hdrcols button[aria-pressed=true]{outline:3px solid var(--accent);outline-offset:2px}
+.hdrcols label{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);cursor:pointer;position:relative}
+.hdrcols label input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 #tab-inicio{gap:12px!important}
 #tab-inicio>.group{gap:6px!important}
@@ -967,6 +977,19 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="name">Estilo dos ícones</div>
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
+      </div>
+      <div class="name">Cor das letras do Início (nome, data e hora)</div>
+      <div class="hdrcols" role="group" aria-label="Cor das letras do Início">
+        <button type="button" data-hdrcol="ouro" style="--c:linear-gradient(135deg,#f5dc95,#b8892f)" aria-label="Dourado"></button>
+        <button type="button" data-hdrcol="auto" style="--c:linear-gradient(135deg,#fff 50%,#1c1c1e 50%)" aria-label="Branco ou preto, conforme o tema"></button>
+        <button type="button" data-hdrcol="#c0c0c8" style="--c:linear-gradient(135deg,#f2f2f7,#8e8e93)" aria-label="Prateado"></button>
+        <button type="button" data-hdrcol="#ff5a7a" style="--c:#ff5a7a" aria-label="Rosa"></button>
+        <button type="button" data-hdrcol="#ff453a" style="--c:#ff453a" aria-label="Vermelho"></button>
+        <button type="button" data-hdrcol="#ff9f0a" style="--c:#ff9f0a" aria-label="Laranja"></button>
+        <button type="button" data-hdrcol="#30d158" style="--c:#30d158" aria-label="Verde"></button>
+        <button type="button" data-hdrcol="#0a84ff" style="--c:#0a84ff" aria-label="Azul"></button>
+        <button type="button" data-hdrcol="#bf5af2" style="--c:#bf5af2" aria-label="Roxo"></button>
+        <label aria-label="Outra cor"><input type="color" id="hdrPick" value="#e7c46e"></label>
       </div>
       <div class="name">Início</div>
       <div class="seg" role="group" aria-label="Organização do Início" style="display:grid;grid-template-columns:1fr 1fr">
@@ -4204,6 +4227,17 @@ document.addEventListener("click",e=>{const f=e.target.closest("[data-openfold]"
   const o=document.getElementById("folderOpen");if(!o.hidden){if(e.target.closest("#folderPanel .app"))setTimeout(closeFold,0);else if(!e.target.closest("#folderPanel"))closeFold()}
   const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast(t.dataset.homelay==="pastas"?"Início em pastas":"Início com tudo à vista")}});
 renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidden&&!openFold)safe("Pastas",renderFolders)},3000);
+/* Cor das letras do Início: "ouro" (por defeito, dourado conforme o tema), "auto" (branco/preto) ou uma cor */
+function hdrCol(){try{return localStorage.getItem("casa-letras")||"ouro"}catch(e){return"ouro"}}
+function applyHdr(){const v=hdrCol(), r=document.documentElement;
+  if(v==="ouro")r.style.removeProperty("--hdrc");else r.style.setProperty("--hdrc",v==="auto"?"var(--fg)":v);
+  document.querySelectorAll("[data-hdrcol]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hdrcol===v));
+  const known=[...document.querySelectorAll("[data-hdrcol]")].some(b=>b.dataset.hdrcol===v), pk=document.getElementById("hdrPick");
+  if(pk){pk.parentElement.style.outline=known?"":"3px solid var(--accent)";pk.parentElement.style.outlineOffset="2px";if(!known&&/^#/.test(v))pk.value=v}}
+function setHdr(v){try{localStorage.setItem("casa-letras",v)}catch(e){}applyHdr()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hdrcol]");if(b){setHdr(b.dataset.hdrcol);toast(b.getAttribute("aria-label"))}});
+document.getElementById("hdrPick").addEventListener("input",e=>setHdr(e.target.value));
+applyHdr();
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
 safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
@@ -4264,7 +4298,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v110";
+const APPV="casa-v111";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
