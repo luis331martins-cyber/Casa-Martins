@@ -640,6 +640,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .pkwho{font-size:12px;font-weight:700;color:var(--accent);margin-top:6px}
 .trip form.add{display:flex;gap:8px}.trip form.add input,.trip form.add select{min-width:0}.trip form.add input{flex:1}
 .trip .tacts{display:flex;gap:8px;flex-wrap:wrap}.trip .tacts .btn{padding:9px 12px;font-size:14px;text-decoration:none}
+.confbox{border:2px solid #34c759}
+.confbox .ah{padding:12px 16px 2px;font-weight:700}.confbox .an{padding:0 16px 8px;font-size:13px;color:var(--muted)}
+.cfrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:10px 16px;border-top:.5px solid var(--line)}
+.cfrow b{display:block;font-size:15px}.cfrow small{color:var(--muted);font-size:13px}
+.cfrow .btn{padding:8px 11px;font-size:14px;white-space:nowrap}
 .boom{position:fixed;font-size:28px;pointer-events:none;z-index:99;animation:boom 1.4s ease-out forwards}
 @keyframes boom{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 /* Créditos: cartão com a cor do banco e barra do que já está pago */
@@ -901,6 +906,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <p class="sub" id="sub"></p>
     </header>
     <div class="agenda" id="agenda" role="region" aria-label="Agenda"></div>
+    <div class="rcard confbox" id="confSec" hidden></div>
     <div class="group" style="gap:8px" id="alertSec">
       <h2>Alertas</h2>
       <div id="alerts" class="group"></div>
@@ -2221,7 +2227,7 @@ function renderCal(){
   document.getElementById("dayList").innerHTML=rows||`<p class="note" style="margin:0">Nada marcado para este dia.</p>`;
   renderAlerts();
 }
-function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders)},0);
+function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
   const todayS=ymd(now), tm=new Date(now); tm.setDate(tm.getDate()+1); const tomS=ymd(tm);
   const A=[];
   /* As marcações aparecem no cartão Agenda; os alertas são só o que precisa de ação agora */
@@ -3181,6 +3187,35 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
   if(f.cal.checked){const evId=t.ev||"t-"+t.id;t.ev=evId;events=events.filter(y=>y.id!==evId);putEv({id:evId,date:t.from,time:"",title:`✈️ ${t.name}${t.dest?" · "+t.dest:""}`,...(t.to&&t.to>t.from?{end:t.to}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})})}
   else if(t.ev){delEv(t.ev);delete t.ev}
   editTrip="";openTrip=t.id;tripPut(t);toast(old?"Viagem guardada":"Viagem criada, com a lista da mala")});
+/* ---------- Confirmar o que estava agendado ----------
+   Débitos diretos e entradas automáticas que já deviam ter acontecido este mês (ou no anterior), e marcações que já passaram.
+   Contas: b.ok[mês]=true quando se confirma; "Não saiu" põe paid[mês]=false (fica por pagar). Marcações: done / skip. */
+function confPending(){const L=[], t=new Date(), td=ymd(t), cur=ymOf(t), prev=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1));
+  for(const k of [prev,cur]){if(k<START)continue;const last=new Date(+k.slice(0,4),+k.slice(5),0).getDate();
+    bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day).forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||(b.ok&&b.ok[k]))return;
+      const d=Math.min(b.day,last), ds=`${k}-${String(d).padStart(2,"0")}`;if(ds>td)return;if(p==null&&!isPaid(b,k))return;
+      L.push({type:"bill",b,k,ds,inc:isInc(b)})})}
+  const nm=minsNow(), lim=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()-10));
+  events.filter(e=>!e.done&&!e.skip&&!/^🎒.*(Férias|Feriado)/.test(e.title||"")).forEach(e=>{const end=evEnd(e);
+    const passou=end<td||(end===td&&e.time&&tMin(e.time)+90<=nm);if(passou&&end>=lim)L.push({type:"ev",e,ds:end})});
+  return L.sort((a,b)=>a.ds.localeCompare(b.ds))}
+function renderConf(){const box=document.getElementById("confSec");if(!box)return;const L=confPending();box.hidden=!L.length;if(!L.length){box.innerHTML="";return}
+  const quando=ds=>{const d=daysTo(ds);return d===0?"hoje":d===-1?"ontem":fmtD(ds).replace(/ \d{4}$/,"")};
+  box.innerHTML=`<div class="ah">✅ Confirmar</div><div class="an">O que estava agendado já aconteceu? Confirma para ficar tudo certo.</div>`+L.slice(0,8).map(x=>x.type==="bill"
+    ?`<div class="cfrow"><span style="min-width:0"><b>${x.inc?"💶":"🏦"} ${esc(x.b.name)} · ${eur(monthAmt(x.b,x.k))}</b><small>${x.inc?"Devia ter entrado":"Débito direto"} ${quando(x.ds)}</small></span>
+        <button type="button" class="btn" data-conf="b|${x.b.id}|${x.k}|1">✓ ${x.inc?"Entrou":"Saiu"}</button><button type="button" class="btn ghost" data-conf="b|${x.b.id}|${x.k}|0">✗ Não</button></div>`
+    :`<div class="cfrow"><span style="min-width:0"><b>📅 ${esc(x.e.title)}</b><small>${quando(x.ds)}${x.e.time?" às "+x.e.time:""}</small></span>
+        <button type="button" class="btn" data-conf="e|${x.e.id}||1">✓ Feito</button><button type="button" class="btn ghost" data-conf="e|${x.e.id}||0">✗ Não</button></div>`).join("")
+    +(L.length>8?`<div class="an" style="padding-top:8px">E mais ${L.length-8}…</div>`:"")}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-conf]");if(!t)return;const [ty,id,k,yes]=t.dataset.conf.split("|"), ok=yes==="1";
+  if(ty==="b"){const b=bills.find(x=>x.id===id);if(!b)return;
+    if(ok)putBill({...b,paid:{...(b.paid||{}),[k]:true},ok:{...(b.ok||{}),[k]:true}});
+    else{const okm={...(b.ok||{})};delete okm[k];putBill({...b,paid:{...(b.paid||{}),[k]:false},ok:okm})}
+    toast(ok?`${b.name}: confirmado`:isInc(b)?`${b.name} fica por receber`:`${b.name} fica por pagar (vê nas Contas)`)}
+  else{const ev=events.find(x=>x.id===id);if(!ev)return;const n={...ev,...(ok?{done:true}:{skip:true})};events=events.filter(x=>x.id!==id);putEv(n);
+    toast(ok?"Feito ✓":"Ficou por fazer. Se for preciso, marca outra vez no calendário.")}
+  safe("Confirmar",renderConf);safe("Alertas",renderAlerts)});
+setInterval(()=>{if(!document.getElementById("tab-inicio").hidden)safe("Confirmar",renderConf)},60000);
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -4162,7 +4197,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v104";
+const APPV="casa-v105";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

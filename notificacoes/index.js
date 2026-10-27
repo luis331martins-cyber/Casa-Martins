@@ -135,6 +135,24 @@ async function morning(code, now) {
     if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
   }
 
+  /* Por confirmar: débitos diretos / entradas automáticas deste mês que já passaram e marcações dos últimos 7 dias */
+  {
+    const conf = [];
+    if (mk >= START) for (const b of bills) {
+      if ((b.kind && b.kind !== "income") || !b.dd || !b.day) continue;
+      const p = b.paid && b.paid[mk];
+      if (p === false || (b.ok && b.ok[mk]) || Math.min(b.day, last) >= now.d) continue;
+      conf.push(`${b.name} (${b.kind === "income" ? "entrou?" : "saiu?"})`);
+    }
+    const lim = addDays(now.date, -7);
+    for (const e of events) {
+      const fim = e.end && e.end > e.date ? e.end : e.date;
+      if (e.done || e.skip || fim >= now.date || fim < lim || /^🎒.*(Férias|Feriado)/.test(e.title || "")) continue;
+      conf.push(`${e.title} (feito?)`);
+    }
+    if (conf.length) partes.push({title: `✅ Por confirmar (${conf.length})`, body: conf.slice(0, 6).join(", ") + (conf.length > 6 ? "…" : ""), go: "inicio", tag: "confirmar"});
+  }
+
   /* Viagens: uma semana antes e na véspera, com o que falta arrumar na mala */
   {
     const vg = [];
