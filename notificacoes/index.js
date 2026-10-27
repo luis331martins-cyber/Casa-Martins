@@ -135,6 +135,19 @@ async function morning(code, now) {
     if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
   }
 
+  /* Viagens: uma semana antes e na véspera, com o que falta arrumar na mala */
+  {
+    const vg = [];
+    for (const b of bills) {
+      if (b.kind !== "trip" || !/^\d{4}-\d{2}-\d{2}$/.test(b.from || "")) continue;
+      const d = daysBetween(now.date, b.from);
+      if (![7, 1].includes(d)) continue;
+      const P = Array.isArray(b.pack) ? b.pack : [], falta = P.filter((x) => !x.done).length;
+      vg.push(`${b.name} ${d === 1 ? "é amanhã" : "é daqui a uma semana"}${P.length ? (falta ? ` · faltam ${falta} coisas na mala` : " · mala pronta") : ""}`);
+    }
+    if (vg.length) partes.push({title: "✈️ Viagem", body: vg.join("\n"), go: "viagens", tag: "viagens"});
+  }
+
   /* Aniversários: 7 dias antes, na véspera e no dia */
   {
     const anos = [];
@@ -371,7 +384,7 @@ async function house(code, now) {
   const primeiraVez = !Array.isArray(st.seenB);
   const seenB = new Set(st.seenB || []), compraAntes = new Set(st.buy || []);
   const TIPO = {"": ["Conta", "despesas"], income: ["Receita", "despesas"], budget: ["Gastos do mês", "despesas"], med: ["Medicamento", "medicamentos"],
-    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], bday: ["Aniversário", "aniversarios"], recipe: ["Prato", "comer"],
+    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], bday: ["Aniversário", "aniversarios"], trip: ["Viagem", "viagens"], recipe: ["Prato", "comer"],
     plan: ["Plano de refeições", "plano"], video: ["Vídeo", "videos"]};
   const porQuem = new Map();
   const juntar = (lb, rotulo, nome, go) => {

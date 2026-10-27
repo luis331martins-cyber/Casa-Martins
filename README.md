@@ -150,6 +150,7 @@ O GitHub Actions corre [`notificacoes/index.js`](notificacoes/index.js) de 15 em
 | Quando | O quê |
 |---|---|
 | A partir das 9h, **numa só notificação "Bom dia"** | **Contas a pagar**: atrasadas, a vencer hoje e nos próximos 3 dias (as que ainda não estão marcadas como pagas) |
+| A partir das 9h, no "Bom dia" | **✈️ Viagens**: uma semana antes e na véspera, com o que falta arrumar na mala |
 | A partir das 9h, no "Bom dia" | **🎂 Aniversários**: 7 dias antes, na véspera e no dia |
 | A partir das 9h, no "Bom dia" | **📟 Dar a contagem** (água, luz, gás…): nos 3 dias antes do dia limite e no próprio dia, até a marcares como dada (em Contas → editar a despesa → "Dar a contagem até ao dia") |
 | A partir das 9h, uma vez por dia | **Validades a terminar**: produtos que terminam nos próximos 3 dias ou já passaram do prazo |

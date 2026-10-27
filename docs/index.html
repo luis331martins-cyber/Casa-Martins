@@ -627,6 +627,19 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cbtn{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--fill);text-decoration:none;font-size:18px}
 .mat{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:.5px solid var(--line)}.mat:first-child{border-top:0}
 .mat input{width:22px;height:22px;flex:none}.mat.done span{text-decoration:line-through;color:var(--muted)}.mat button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
+.trip{background:var(--surface);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.trip .th{display:flex;align-items:center;gap:12px;width:100%;background:transparent;padding:14px 16px;color:var(--fg);font:inherit;text-align:left}
+.trip .tem{font-size:26px;width:48px;height:48px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,#3d97e0 15%,transparent);flex:none}
+.trip .tn{font-weight:700;font-size:17px}.trip .tm{font-size:13px;color:var(--muted)}
+.trip .tb{padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.trip h4{margin:6px 0 0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.trip .bar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.trip .bar span{display:block;height:100%;background:#34c759;border-radius:4px}
+.pk{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:.5px solid var(--line);font-size:15px}
+.pk input{width:21px;height:21px;flex:none}.pk.done span{text-decoration:line-through;color:var(--muted)}
+.pk button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
+.pkwho{font-size:12px;font-weight:700;color:var(--accent);margin-top:6px}
+.trip form.add{display:flex;gap:8px}.trip form.add input,.trip form.add select{min-width:0}.trip form.add input{flex:1}
+.trip .tacts{display:flex;gap:8px;flex-wrap:wrap}.trip .tacts .btn{padding:9px 12px;font-size:14px;text-decoration:none}
 .boom{position:fixed;font-size:28px;pointer-events:none;z-index:99;animation:boom 1.4s ease-out forwards}
 @keyframes boom{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 /* Créditos: cartão com a cor do banco e barra do que já está pago */
@@ -922,6 +935,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="apps" data-fold="lazer" data-fname="Lazer">
         <button class="app" data-go="videos"><span class="ico i-vid ios" style="--g1:#ffd2d2;--g2:#ff6161;--v1:#c43a3a;--v2:#8a1d1d"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPlay" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M10 8.9v6.2l5.4-3.1z" fill="#000"/></mask></defs><rect mask="url(#mPlay)" x="2.4" y="5.4" width="19.2" height="13.2" rx="3.6"/></svg><img class="e3d" src="icons/3d/videos.webp" alt="" draggable="false"></span><span class="lbl">Vídeos</span></button>
         <button class="app" data-go="jogos"><span class="ico i-games ios" style="--g1:#e3dcff;--g2:#8e7bff;--v1:#3e6a8a;--v2:#22435c"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPad" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="5.8" y="10.4" width="4.4" height="1.5" rx=".6" fill="#000"/><rect x="7.25" y="8.95" width="1.5" height="4.4" rx=".6" fill="#000"/><circle cx="15.6" cy="10" r="1" fill="#000"/><circle cx="17.6" cy="12.2" r="1" fill="#000"/></mask></defs><path mask="url(#mPad)" d="M7.4 6.4h9.2c3.1 0 5.1 2.7 5.6 6.6l.4 3.2c.3 2.3-2.4 3.6-4 1.9l-2.2-2.4H7.6l-2.2 2.4c-1.6 1.7-4.3.4-4-1.9l.4-3.2c.5-3.9 2.5-6.6 5.6-6.6z"/></svg><img class="e3d" src="icons/3d/jogos.webp" alt="" draggable="false"></span><span class="lbl">Jogos</span></button>
+        <button class="app" data-go="viagens"><span class="ico i-trip ios" style="--g1:#d3ecff;--g2:#6cb8ff;--v1:#3d97e0;--v2:#1d5fa3"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 3.1c.8.8.6 2.1-.3 3l-3.6 3.5 2 8.7c.1.4 0 .8-.3 1.1l-.9.9c-.4.4-1.1.3-1.4-.2l-3.6-6.5-3.4 3.3.4 2.7c0 .3 0 .6-.3.8l-.7.7c-.4.4-1 .3-1.3-.2l-1.6-3-3-1.6c-.5-.3-.6-.9-.2-1.3l.7-.7c.2-.2.5-.3.8-.3l2.7.4 3.3-3.4-6.5-3.6c-.5-.3-.6-1-.2-1.4l.9-.9c.3-.3.7-.4 1.1-.3l8.7 2 3.5-3.6c.9-.9 2.2-1.1 3-.3z"/></svg><img class="e3d" src="icons/3d/viagens.webp" alt="" draggable="false"><span class="nbadge" id="viagensBadge" hidden></span></span><span class="lbl">Viagens</span></button>
       </div>
     </div>
   </section>
@@ -1185,6 +1199,20 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="group" style="gap:8px"><h2>Contactos</h2>
       <div id="escCont" class="rcard"></div>
       <button class="back" type="button" id="addCont" style="align-self:flex-start">+ Juntar contacto</button><div id="contNew"></div></div>
+  </section>
+
+  <section id="tab-viagens" class="group" style="gap:12px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Viagens</span><span></span></nav>
+    <h1 class="large">Viagens</h1>
+    <div id="tripList"></div>
+    <button class="btn ghost" type="button" id="addTrip">+ Nova viagem</button>
+    <div id="tripNew"></div>
+    <div id="tripPast"></div>
+    <button class="back" type="button" id="tplBtn" style="align-self:flex-start">🧳 Editar a lista da mala habitual</button>
+    <form class="bill-edit" id="tplForm" hidden autocomplete="off">
+      <label class="f wide">Lista da mala habitual (uma coisa por linha; “Maria: pijama” para dizer de quem é)<textarea name="t" rows="10"></textarea></label>
+      <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" id="tplCancel">Cancelar</button></form>
+    <p class="note" style="margin:0">Cada viagem nova começa com a lista da mala habitual. As datas vão para o calendário e a app avisa uma semana antes e na véspera, com quanto falta arrumar.</p>
   </section>
 
   <section id="tab-docs" class="group" style="gap:16px" hidden>
@@ -1661,12 +1689,12 @@ document.addEventListener("change",e=>{
     if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="viagens")safe("Viagens",renderTrips);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#viagens":"viagens","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 /* Links para juntar dados de uma vez (os dados vêm só no link, não no código):
    #juntar-aula:Nome|09:15|17:00|Quem   → aula de segunda a sexta
    #juntar-material:item1|item2|…        → material já comprado */
@@ -2001,7 +2029,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);safe("Viagens",renderTrips);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2219,6 +2247,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",name:`Levantar ${eur(x.v)} para a empresa`,meta:`${x.b.name} de ${mFull(x.k).split(" de ")[0]} · toca em “levantar” nas Contas quando estiver feito`}));
   if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>7)return;
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
+  if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>7)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
+    A.push({o:d<=1?1:3,cls:d<=1&&n?"warn":"",dot:"bl",go:"viagens",name:`✈️ ${t.name} ${d===0?"é hoje":d===1?"é amanhã":`daqui a ${d} dias`}`,meta:P.length?(n?`Falta arrumar ${n} de ${P.length} coisas na mala`:"Mala pronta ✓"):"Sem lista da mala"})});
   /* Fim do mês: ordenados e outras receitas por escrever */
   if(typeof incAskMonth==="function"){const k=incAskMonth(), L=k?incAskList(k):[];if(L.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Escrever o que entrou em ${mFull(k).split(" de ")[0]}`,meta:L.map(b=>b.name).join(", ")})}
   /* Valores do mês seguinte por atualizar (a partir do dia 20) */
@@ -3079,6 +3109,78 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.escform;if(!re
     if(!old&&f.all&&f.all.checked){[0,1,2,3,4].forEach(w=>putBill({...x,id:uid(),wd:w}));escEdit.aula="";renderEscola();toast("Juntado de segunda a sexta");return}}
   if(k==="cont"){if(f.r.value.trim())x.rel=f.r.value.trim();else delete x.rel;if(f.p.value.trim())x.phone=f.p.value.trim();else delete x.phone}
   escEdit[k]="";putBill(x);renderEscola();toast("Guardado")});
+/* ---------- Viagens (kind:"trip") ----------
+   {name, dest, from, to, budget, sav (objetivo das Poupanças), pack:[{id,t,w,done}], todo:[{id,t,done}], notes, ev (marcação no calendário)}
+   Lista da mala habitual em kind:"packtpl" (id "packtpl"): {items:[{t,w}]} */
+const trips=()=>bills.filter(b=>b.kind==="trip");
+let editTrip="", openTrip="";
+const PACK_DEFAULT=["Família: Cartões de cidadão / passaportes","Família: Cartão Europeu de Seguro de Doença","Família: Carregadores e powerbank","Família: Medicamentos","Família: Protetor solar","Família: Snacks e água para a viagem",
+  "Luís: Roupa","Luís: Pijama","Luís: Escova de dentes","Bianca: Roupa","Bianca: Pijama","Bianca: Escova de dentes",
+  "Maria: Roupa para os dias","Maria: Pijama","Maria: Casaco","Maria: Sapatos extra","Maria: Escova e pasta de dentes","Maria: Brinquedo / peluche favorito","Maria: Livros ou jogos para a viagem"];
+function packTpl(){const d=bills.find(b=>b.kind==="packtpl");return d&&Array.isArray(d.items)&&d.items.length?d.items:PACK_DEFAULT.map(l=>{const m=l.match(/^([^:]{1,20}):\s*(.+)$/);return m?{w:m[1].trim(),t:m[2].trim()}:{w:"",t:l}})}
+const tripDays=t=>t.from?daysTo(t.from):null;
+function tripForm(t){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-tripform="${t?t.id:"new"}" autocomplete="off">
+    <label class="f wide">Viagem<input name="n" required value="${t?esc(t.name):""}" placeholder="ex.: Férias no Algarve" autocapitalize="sentences"></label>
+    <label class="f wide">Destino<input name="d" value="${t?v(t.dest):""}" placeholder="ex.: Albufeira"></label>
+    <label class="f">De<input name="a" type="date" required value="${t?v(t.from):""}"></label>
+    <label class="f">Até<input name="b" type="date" value="${t?v(t.to):""}"></label>
+    <label class="f">Orçamento (€)<input name="o" type="number" step="0.01" min="0" inputmode="decimal" value="${t?v(t.budget):""}" placeholder="opcional"></label>
+    <label class="f">Poupança<select name="s"><option value="">Não ligar</option>${t?"":`<option value="new">Criar objetivo nas Poupanças</option>`}${savs().map(x=>`<option value="${x.id}"${t&&t.sav===x.id?" selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
+    <label class="tick wide"><input type="checkbox" class="switch" name="cal"${!t||t.ev?" checked":""}> Pôr no calendário</label>
+    <label class="f wide">Notas<input name="x" value="${t?v(t.notes):""}" placeholder="ex.: reserva n.º…, check-in às 15h"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-canceltrip="1">Cancelar</button>
+    ${t?`<button class="btn danger wide" type="button" data-deltrip="${t.id}">Apagar viagem</button>`:""}</form>`}
+function tripCard(t){const d=tripDays(t), P=t.pack||[], done=P.filter(x=>x.done).length, past=t.to?daysTo(t.to)<0:d!=null&&d<0, open=openTrip===t.id;
+  const when=d==null?"":d>1?`Faltam ${d} dias`:d===1?"Amanhã!":d===0?"Hoje! ✈️":past?"Já foi":"A decorrer";
+  const sv=t.sav&&savs().find(x=>x.id===t.sav), ss=sv&&savState(sv);
+  const groups=[...new Set(P.map(x=>x.w||""))];
+  return`<div class="trip"><button type="button" class="th" data-opentrip="${t.id}" aria-expanded="${open}"><span class="tem">${past?"📸":"🧳"}</span>
+      <span style="min-width:0;flex:1"><span class="tn" style="display:block">${esc(t.name)}</span><span class="tm">${[t.dest?esc(t.dest):"",t.from?fmtD(t.from).replace(/ \d{4}$/,"")+(t.to&&t.to!==t.from?" – "+fmtD(t.to):""):""].filter(Boolean).join(" · ")}</span></span>
+      <span style="text-align:right">${when?`<span class="due ${past?"ok":d!=null&&d<=7?"warn":"ok"}">${when}</span>`:""}${P.length&&!past?`<span class="tm" style="display:block;margin-top:4px">mala ${done}/${P.length}</span>`:""}</span></button>
+    ${open?`<div class="tb">
+      ${t.budget||ss?`<div class="tm" style="font-size:14px">${t.budget?`Orçamento <b style="color:var(--fg)">${eur(+t.budget)}</b>`:""}${ss?`${t.budget?" · ":""}Poupado ${eur(ss.have)} de ${eur(ss.goal)} (${ss.pct}%)`:""}</div>`:""}
+      ${t.notes?`<div class="tm" style="font-size:14px">📝 ${esc(t.notes)}</div>`:""}
+      <h4>Mala ${done}/${P.length}</h4><div class="bar"><span style="width:${P.length?Math.round(done/P.length*100):0}%"></span></div>
+      <div>${groups.map(g=>`${g?`<div class="pkwho">${esc(g)}</div>`:""}${P.filter(x=>(x.w||"")===g).map(x=>`<label class="pk${x.done?" done":""}"><input type="checkbox" data-pk="${t.id}|${x.id}"${x.done?" checked":""}><span>${esc(x.t)}</span><button type="button" data-delpk="${t.id}|${x.id}" aria-label="Apagar">×</button></label>`).join("")}`).join("")}</div>
+      <form class="add" data-pkadd="${t.id}" autocomplete="off"><select name="w" style="width:104px;background:var(--fill);border:0">${["Família",...PEOPLE].filter((x,i,a)=>a.indexOf(x)===i).map(p=>`<option>${esc(p)}</option>`).join("")}</select><input name="t" placeholder="Juntar à mala"><button class="btn" type="submit" style="padding:8px 14px">+</button></form>
+      <h4>A fazer no destino</h4>
+      <div>${(t.todo||[]).map(x=>`<label class="pk${x.done?" done":""}"><input type="checkbox" data-td="${t.id}|${x.id}"${x.done?" checked":""}><span>${esc(x.t)}</span><button type="button" data-deltd="${t.id}|${x.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="tm">Ainda nada. Junta passeios, restaurantes, praias…</div>`}</div>
+      <form class="add" data-tdadd="${t.id}" autocomplete="off"><input name="t" placeholder="ex.: Zoomarine, jantar na marina"><button class="btn" type="submit" style="padding:8px 14px">+</button></form>
+      <div class="tacts"><button class="btn ghost" type="button" data-edittrip="${t.id}">Editar</button><button class="btn ghost" type="button" data-pkreset="${t.id}">Desmarcar a mala</button>${t.dest?`<a class="btn ghost" href="https://maps.apple.com/?q=${encodeURIComponent(t.dest)}" target="_blank" rel="noopener">🗺️ Mapa</a>`:""}</div>
+    </div>`:""}</div>`}
+function renderTrips(){const el=document.getElementById("tripList");if(!el)return;
+  const L=trips().sort((a,b)=>(a.from||"9").localeCompare(b.from||"9")), td=ymd(new Date()), up=L.filter(t=>(t.to||t.from||"9")>=td), past=L.filter(t=>(t.to||t.from||"9")<td).reverse();
+  el.innerHTML=up.map(t=>t.id===editTrip?tripForm(t):tripCard(t)).join("")||(editTrip==="new"?"":`<div class="empty">Ainda não há viagens marcadas.<br>Toca em “Nova viagem”.</div>`);
+  document.getElementById("tripNew").innerHTML=editTrip==="new"?tripForm(null):"";document.getElementById("addTrip").hidden=editTrip==="new";
+  document.getElementById("tripPast").innerHTML=past.length?`<h2 style="margin:8px 0">Viagens passadas</h2>`+past.map(t=>t.id===editTrip?tripForm(t):tripCard(t)).join(""):"";
+  const bb=document.getElementById("viagensBadge");if(bb){const n=up.filter(t=>{const d=tripDays(t);return d!=null&&d<=1&&d>=0&&(t.pack||[]).some(x=>!x.done)}).length;bb.hidden=!n;bb.textContent=n}}
+function tripPut(t){putBill(t);renderTrips()}
+const tripById=id=>trips().find(x=>x.id===id);
+document.getElementById("addTrip").addEventListener("click",()=>{editTrip="new";renderTrips();const f=document.querySelector('[data-tripform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
+document.getElementById("tplBtn").addEventListener("click",()=>{const f=document.getElementById("tplForm");f.hidden=!f.hidden;if(!f.hidden)f.t.value=packTpl().map(x=>(x.w?x.w+": ":"")+x.t).join("\n")});
+document.getElementById("tplCancel").addEventListener("click",()=>{document.getElementById("tplForm").hidden=true});
+document.getElementById("tplForm").addEventListener("submit",e=>{e.preventDefault();const items=e.target.t.value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).slice(0,80).map(l=>{const m=l.match(/^([^:]{1,20}):\s*(.+)$/);return m?{w:m[1].trim(),t:m[2].trim()}:{w:"",t:l}});
+  putBill({id:"packtpl",kind:"packtpl",items});e.target.hidden=true;toast("Lista da mala habitual guardada")});
+document.addEventListener("click",e=>{const t=e.target.closest("button,input");if(!t)return;const ds=t.dataset;
+  if(ds.opentrip){openTrip=openTrip===ds.opentrip?"":ds.opentrip;renderTrips()}
+  else if(ds.edittrip){editTrip=ds.edittrip;renderTrips()}
+  else if(ds.canceltrip){editTrip="";renderTrips()}
+  else if(ds.deltrip){const x=tripById(ds.deltrip);if(x&&confirm(`Apagar a viagem "${x.name}"?`)){if(x.ev)delEv(x.ev);editTrip="";delBill(x.id);renderTrips();toast("Apagada")}}
+  else if(ds.pk||ds.td){const [id,iid]=(ds.pk||ds.td).split("|"), x=tripById(id), k=ds.pk?"pack":"todo";if(!x)return;tripPut({...x,[k]:(x[k]||[]).map(y=>y.id===iid?{...y,done:t.checked}:y)})}
+  else if(ds.delpk||ds.deltd){const [id,iid]=(ds.delpk||ds.deltd).split("|"), x=tripById(id), k=ds.delpk?"pack":"todo";if(!x)return;tripPut({...x,[k]:(x[k]||[]).filter(y=>y.id!==iid)})}
+  else if(ds.pkreset){const x=tripById(ds.pkreset);if(x&&confirm("Desmarcar tudo na mala (para arrumar de novo)?"))tripPut({...x,pack:(x.pack||[]).map(y=>({...y,done:false}))})}});
+document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
+  if(ds.pkadd||ds.tdadd){e.preventDefault();const x=tripById(ds.pkadd||ds.tdadd), v=f.t.value.trim();if(!x||!v)return;
+    if(ds.pkadd)tripPut({...x,pack:[...(x.pack||[]),{id:uid(),t:v,w:f.w.value}].slice(-120)});else tripPut({...x,todo:[...(x.todo||[]),{id:uid(),t:v}].slice(-60)});
+    setTimeout(()=>{const n=document.querySelector(`[data-${ds.pkadd?"pkadd":"tdadd"}="${x.id}"] [name=t]`);if(n)n.focus()},50);return}
+  const id=ds.tripform;if(!id)return;e.preventDefault();const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
+  const old=id==="new"?null:tripById(id);const t={...(old||{}),id:old?old.id:uid(),kind:"trip",name:f.n.value.trim(),from:f.a.value};
+  for(const [k,v] of [["dest",f.d.value.trim()||null],["to",f.b.value&&f.b.value>=f.a.value?f.b.value:null],["budget",num(f.o.value)],["notes",f.x.value.trim()||null]])if(v==null)delete t[k];else t[k]=v;
+  if(!old)t.pack=packTpl().map(x=>({id:uid(),t:x.t,w:x.w||""}));
+  if(f.s.value==="new"){const sv={id:uid(),kind:"saving",name:t.name,emoji:"✈️",goal:t.budget||0,saved:0,...(t.from?{until:t.from.slice(0,7)}:{})};putBill(sv);t.sav=sv.id}else if(f.s.value)t.sav=f.s.value;else delete t.sav;
+  if(f.cal.checked){const evId=t.ev||"t-"+t.id;t.ev=evId;events=events.filter(y=>y.id!==evId);putEv({id:evId,date:t.from,time:"",title:`✈️ ${t.name}${t.dest?" · "+t.dest:""}`,...(t.to&&t.to>t.from?{end:t.to}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})})}
+  else if(t.ev){delEv(t.ev);delete t.ev}
+  editTrip="";openTrip=t.id;tripPut(t);toast(old?"Viagem guardada":"Viagem criada, com a lista da mala")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -4060,7 +4162,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v103";
+const APPV="casa-v104";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
