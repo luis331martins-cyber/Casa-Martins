@@ -440,7 +440,7 @@ async function house(code, now) {
       go: "chat", tag: "msg-" + m.id}, m.uid));
   }
 
-  /* Confirmar: marcações que já passaram (cerca de 1h30 depois; sem hora, às 20h do último dia) e
+  /* Confirmar: marcações que já passaram (cerca de 1 hora depois; sem hora, às 20h do último dia) e
      débitos diretos / entradas automáticas no próprio dia, às 18h. Cada aviso vai uma vez só. */
   const confSent = new Set((st.conf || []).filter((k) => k.slice(-10) >= addDays(now.date, -3)));
   {
@@ -448,8 +448,8 @@ async function house(code, now) {
     for (const e of evs) {
       const fim = e.end && e.end > e.date ? e.end : e.date;
       if (fim !== now.date || e.done || e.skip || /^🎒.*(Férias|Feriado)/.test(e.title || "")) continue;
-      const desde = e.time && fim === e.date ? hm(e.time) + 90 : 20 * 60;
-      if (now.min < desde || now.min > desde + 180) continue;
+      const desde = e.time && fim === e.date ? hm(e.time) + 60 : 20 * 60;
+      if (now.min < desde || now.min > desde + 300) continue;
       const key = `ev|${e.id}|${now.date}`;
       if (confSent.has(key)) continue;
       confSent.add(key);

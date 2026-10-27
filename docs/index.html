@@ -3197,7 +3197,7 @@ function confPending(){const L=[], t=new Date(), td=ymd(t), cur=ymOf(t), prev=ym
       L.push({type:"bill",b,k,ds,inc:isInc(b)})})}
   const nm=minsNow(), lim=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()-10));
   events.filter(e=>!e.done&&!e.skip&&!/^🎒.*(Férias|Feriado)/.test(e.title||"")).forEach(e=>{const end=evEnd(e);
-    const passou=end<td||(end===td&&e.time&&tMin(e.time)+90<=nm);if(passou&&end>=lim)L.push({type:"ev",e,ds:end})});
+    const passou=end<td||(end===td&&e.time&&tMin(e.time)+60<=nm);if(passou&&end>=lim)L.push({type:"ev",e,ds:end})});
   return L.sort((a,b)=>a.ds.localeCompare(b.ds))}
 function renderConf(){const box=document.getElementById("confSec");if(!box)return;const L=confPending();box.hidden=!L.length;if(!L.length){box.innerHTML="";return}
   const quando=ds=>{const d=daysTo(ds);return d===0?"hoje":d===-1?"ontem":fmtD(ds).replace(/ \d{4}$/,"")};
@@ -4197,7 +4197,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v105";
+const APPV="casa-v106";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
