@@ -229,7 +229,7 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .apps[hidden],.frow[hidden],#appGroups h3[hidden]{display:none}
 .frow{display:grid;grid-template-columns:repeat(2,128px);justify-content:center;gap:14px 34px;margin-top:4px}
 .fold{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent;padding:0;color:var(--fg);min-width:0;position:relative}
-.fold .fb{position:relative;width:128px;height:128px;border-radius:30px;background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);outline:1.5px solid var(--icoRing);outline-offset:-1.5px;
+.fold .fb{position:relative;width:128px;height:128px;border-radius:30px;background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);outline:2.5px solid var(--icoRing);outline-offset:-2.5px;
   display:grid;grid-template-columns:repeat(3,30px);grid-auto-rows:30px;gap:8px;padding:12px;box-sizing:border-box;align-content:start;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fold .fb{background:rgba(80,80,86,.55)}}
 :root[data-theme="dark"] .fold .fb{background:rgba(80,80,86,.55)}
@@ -254,11 +254,11 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 :root[data-theme="dark"] .fopen .panel{background:rgba(44,44,46,.7)}
 #tab-inicio .fopen .panel .apps{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 6px}
 @keyframes fIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-/* Rebordo dos ícones conforme o tema: escuro no tema claro, claro no tema escuro */
-:root{--icoRing:rgba(0,0,0,.22)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--icoRing:rgba(255,255,255,.34)}}
-:root[data-theme="dark"]{--icoRing:rgba(255,255,255,.34)}
-#tab-inicio .ico.ios,.calfab,.chatfab,#tab-inicio .iosgear{outline:1.5px solid var(--icoRing);outline-offset:-1.5px}
+/* Rebordo dourado dos ícones (um pouco mais claro no tema escuro) */
+:root{--icoRing:#c9a24a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--icoRing:#e2bf6a}}
+:root[data-theme="dark"]{--icoRing:#e2bf6a}
+#tab-inicio .ico.ios,.calfab,.chatfab,#tab-inicio .iosgear{outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
 /* Modo escuro: como os ícones escuros do iOS 18 (fundo preto, símbolo com a cor da app) */
 @media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios{background:linear-gradient(180deg,#2c2c2e,#121214)!important;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.12)}
 :root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf{fill:color-mix(in srgb,var(--v1) 70%,#fff)}}
@@ -4264,7 +4264,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v109";
+const APPV="casa-v110";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
