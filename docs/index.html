@@ -610,6 +610,23 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .hold{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;text-align:left;color:var(--fg);font:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:6px solid var(--hc,#e8457e)}
 .hold .hemo{font-size:24px;flex:none}.hold .hn{font-weight:700;font-size:16px}.hold .hm{font-size:13px;color:var(--muted)}
 .hold .hv{margin-left:auto;font-weight:700;font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.bd{background:var(--surface);border-radius:16px;padding:14px 16px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.bd.today{outline:2px solid #ff375f}
+.bd .bh{display:flex;align-items:center;gap:12px;background:transparent;padding:0;color:var(--fg);font:inherit;text-align:left;width:100%}
+.bd .bdn{font-size:22px;font-weight:700;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;line-height:1;flex:none;background:color-mix(in srgb,#ff375f 14%,transparent);color:#d61f4b;text-align:center}
+.bd .bdn small{display:block;font-size:10px;font-weight:700;text-transform:uppercase}
+.bd .bn{font-weight:700;font-size:17px}.bd .bm{font-size:13px;color:var(--muted)}
+.bd .idea{display:flex;align-items:center;gap:10px;font-size:15px;padding:4px 0;border-top:.5px solid var(--line)}
+.bd .idea input{width:20px;height:20px;flex:none}.bd .idea.done span{text-decoration:line-through;color:var(--muted)}
+.bd .idea button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
+.bd form{display:flex;gap:8px}.bd form input{flex:1;min-width:0}
+.esc-row{box-sizing:border-box;display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 16px;border-top:.5px solid var(--line);background:transparent;color:var(--fg);font:inherit;text-align:left;width:100%}
+.esc-row:first-child{border-top:0}.esc-row .t{font-variant-numeric:tabular-nums;font-weight:600}.esc-row small{display:block;color:var(--muted);font-size:13px}
+.esc-row.now{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.esc-empty{padding:14px 16px;color:var(--muted);font-size:14px}
+.cbtn{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--fill);text-decoration:none;font-size:18px}
+.mat{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:.5px solid var(--line)}.mat:first-child{border-top:0}
+.mat input{width:22px;height:22px;flex:none}.mat.done span{text-decoration:line-through;color:var(--muted)}.mat button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
 .boom{position:fixed;font-size:28px;pointer-events:none;z-index:99;animation:boom 1.4s ease-out forwards}
 @keyframes boom{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 /* Créditos: cartão com a cor do banco e barra do que já está pago */
@@ -898,6 +915,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <button class="app" data-go="meds"><span class="ico i-med ios" style="--g1:#c9f5e8;--g2:#3fd1a5;--v1:#1f9874;--v2:#126650"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-45 12 12)"><path d="M12 7H8.2a5 5 0 0 0 0 10H12z"/><path d="M12 7h3.8a5 5 0 0 1 0 10H12z" opacity=".55"/></g></svg><img class="e3d" src="icons/3d/meds.webp" alt="" draggable="false"><span class="nbadge" id="medBadge" hidden></span></span><span class="lbl">Medicamentos</span></button>
         <button class="app" data-go="saude"><span class="ico i-health ios" style="--g1:#ffffff;--g2:#f1f1f6;--v1:#ffffff;--v2:#ececf1"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.6s-8.6-5.1-8.6-11.3A4.9 4.9 0 0 1 12 6.3a4.9 4.9 0 0 1 8.6 3c0 6.2-8.6 11.3-8.6 11.3z" fill="url(#hg2)"/><defs><linearGradient id="hg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5c7a"/><stop offset="1" stop-color="#e8173f"/></linearGradient></defs></svg><img class="e3d" src="icons/3d/saude.webp" alt="" draggable="false"></span><span class="lbl">Saúde</span></button>
         <button class="app" data-go="carro"><span class="ico i-car ios" style="--g1:#d4ecff;--g2:#5fb0ff;--v1:#4a4a4f;--v2:#1c1c1e"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mCar" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M7.9 6.9h8.2l1.3 3.4H6.6z" fill="#000"/><rect x="5.2" y="13.4" width="2.6" height="1.5" rx=".75" fill="#000"/><rect x="16.2" y="13.4" width="2.6" height="1.5" rx=".75" fill="#000"/></mask></defs><path mask="url(#mCar)" d="M7.6 4.8h8.8c.9 0 1.7.6 2 1.4l1.6 4.4c.9.4 1.5 1.3 1.5 2.3v4.5c0 .6-.4 1-1 1H20v1.4a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-1.4h-9v1.4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1.4h-.5c-.6 0-1-.4-1-1V13c0-1 .6-1.9 1.5-2.3l1.6-4.4c.3-.8 1.1-1.4 2-1.4z"/></svg><img class="e3d" src="icons/3d/carro.webp" alt="" draggable="false"></span><span class="lbl">Carro</span></button>
+        <button class="app" data-go="anos"><span class="ico i-anos ios" style="--g1:#ffd9e2;--g2:#ff8aa6;--v1:#d4486a;--v2:#9b2445"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mCake" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M4.6 14.6c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0" fill="none" stroke="#000" stroke-width="1.4" stroke-linecap="round"/></mask></defs><path d="M12 2.2c1 1.1 1.5 2 1.5 2.7a1.5 1.5 0 0 1-3 0c0-.7.5-1.6 1.5-2.7z"/><rect x="11.2" y="6.9" width="1.6" height="3.4" rx=".6"/><path mask="url(#mCake)" d="M5 11.2h14a1.5 1.5 0 0 1 1.5 1.5V19H3.5v-6.3A1.5 1.5 0 0 1 5 11.2z"/><rect x="2.3" y="19.6" width="19.4" height="2" rx=".9"/></svg><img class="e3d" src="icons/3d/anos.webp" alt="" draggable="false"><span class="nbadge" id="anosBadge" hidden></span></span><span class="lbl">Aniversários</span></button>
+        <button class="app" data-go="escola"><span class="ico i-esc ios" style="--g1:#d7e8ff;--g2:#6aa8ff;--v1:#3a78c9;--v2:#1f4f8f"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mBag" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="8" y="13" width="8" height="4.6" rx="1.2" fill="#000"/><rect x="8" y="14.8" width="8" height="1" fill="#fff"/></mask></defs><path d="M9.5 4.2a2.5 2.5 0 0 1 5 0v1h-1.6v-1a.9.9 0 0 0-1.8 0v1H9.5z"/><path mask="url(#mBag)" d="M8 5.6h8a4 4 0 0 1 4 4V19a2.4 2.4 0 0 1-2.4 2.4H6.4A2.4 2.4 0 0 1 4 19V9.6a4 4 0 0 1 4-4z"/></svg><img class="e3d" src="icons/3d/escola.webp" alt="" draggable="false"><span class="nbadge" id="escolaBadge" hidden></span></span><span class="lbl">Escola</span></button>
       </div>
       <h3 data-fh="lazer">Lazer</h3>
       <div class="apps" data-fold="lazer" data-fname="Lazer">
@@ -1136,6 +1155,33 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <button class="btn ghost" type="button" id="addCar">+ Juntar carro</button>
     <div id="carNew"></div>
     <p class="note" style="margin:0">Revisão: escreve a data e os km da última; a app calcula a próxima (1 ano ou 25.000 km, o que chegar primeiro) e avisa. Atualiza os km de vez em quando em Editar. Importar PDF: escolhe a apólice do seguro, a ficha de inspeção, o comprovativo do IUC ou a fatura da revisão. A app lê as datas, o valor, a matrícula e os km, preenche o carro e só tens de confirmar e tocar em Guardar. Funciona com PDFs com texto (não com fotografias digitalizadas). Recebes uma notificação 30 dias, 7 dias e 1 dia antes de cada prazo. Quando renovares, toca em “Renovado” para passar para o ano seguinte.</p>
+  </section>
+
+  <section id="tab-anos" class="group" style="gap:12px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Aniversários</span><span></span></nav>
+    <h1 class="large">Aniversários</h1>
+    <div id="anosList"></div>
+    <button class="btn ghost" type="button" id="addAnos">+ Juntar aniversário</button>
+    <div id="anosNew"></div>
+    <p class="note" style="margin:0">Avisa 7 dias antes, na véspera e no próprio dia (no Início e na notificação Bom dia). Em cada pessoa podes ir guardando ideias de presentes ao longo do ano; para a Maria, usa como lista de desejos.</p>
+  </section>
+
+  <section id="tab-escola" class="group" style="gap:14px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Escola</span><span></span></nav>
+    <h1 class="large">Escola</h1>
+    <div class="group" style="gap:8px"><h2>Horário</h2>
+      <div class="seg" role="group" aria-label="Dia da semana" id="escDays" style="display:grid;grid-template-columns:repeat(5,1fr)"></div>
+      <div id="escAulas" class="rcard"></div>
+      <button class="back" type="button" id="addAula" style="align-self:flex-start">+ Juntar aula ou atividade</button><div id="aulaNew"></div></div>
+    <div class="group" style="gap:8px"><h2>Próximas datas</h2>
+      <div id="escDatas" class="rcard"></div>
+      <button class="back" type="button" id="addData" style="align-self:flex-start">+ Juntar data (reunião, teste, férias…)</button><div id="dataNew"></div></div>
+    <div class="group" style="gap:8px"><h2>Material a comprar</h2>
+      <div id="escMat" class="rcard"></div>
+      <form class="item" id="matForm" autocomplete="off" style="align-items:end"><label class="f" style="min-width:0">Juntar<input id="matName" placeholder="ex.: Caderno quadriculado" autocapitalize="sentences"></label><button class="btn" type="submit">+</button></form></div>
+    <div class="group" style="gap:8px"><h2>Contactos</h2>
+      <div id="escCont" class="rcard"></div>
+      <button class="back" type="button" id="addCont" style="align-self:flex-start">+ Juntar contacto</button><div id="contNew"></div></div>
   </section>
 
   <section id="tab-docs" class="group" style="gap:16px" hidden>
@@ -1612,12 +1658,12 @@ document.addEventListener("change",e=>{
     if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 function route(h){if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
   if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
@@ -1935,7 +1981,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -2151,6 +2197,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>x.alert||d<-180)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":`Faltam ${d} dia${d===1?"":"s"} · ${fmtD(x.date)}`})});
   if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",name:`Levantar ${eur(x.v)} para a empresa`,meta:`${x.b.name} de ${mFull(x.k).split(" de ")[0]} · toca em “levantar” nas Contas quando estiver feito`}));
+  if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>7)return;
+    A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
   /* Fim do mês: ordenados e outras receitas por escrever */
   if(typeof incAskMonth==="function"){const k=incAskMonth(), L=k?incAskList(k):[];if(L.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Escrever o que entrou em ${mFull(k).split(" de ")[0]}`,meta:L.map(b=>b.name).join(", ")})}
   /* Valores do mês seguinte por atualizar (a partir do dia 20) */
@@ -2901,6 +2949,111 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.holdform;if(!id
   if(!old||old.val!==h.val)h.valAt=Date.now();
   for(const [k,v] of [["who",f.w.value||null],["rate",num(f.r.value)],["end",f.e.value||null],["color",f.c.value||null]])if(v==null)delete h[k];else h[k]=v;
   editHold="";putBill(h);renderSavs();toast("Guardado")});
+/* ---------- Aniversários (kind:"bday") ----------
+   {name, md "MM-DD", year (opcional), rel, ideas:[{id,t,done}]} — avisa 7 dias antes, na véspera e no dia */
+const bdays=()=>bills.filter(b=>b.kind==="bday");
+let editAnos="";
+function bdNext(b){const t=new Date(), y=t.getFullYear(), [m,d]=b.md.split("-").map(Number);let n=new Date(y,m-1,d);
+  const td=new Date(y,t.getMonth(),t.getDate());if(n<td)n=new Date(y+1,m-1,d);const days=Math.round((n-td)/864e5);return{date:n,days,age:b.year?n.getFullYear()-b.year:null}}
+function anosForm(b){const v=x=>x==null?"":esc(x), [m,d]=b?b.md.split("-").map(Number):[0,0];
+  return`<form class="bill-edit" data-anosform="${b?b.id:"new"}" autocomplete="off">
+    <label class="f wide">Nome<input name="n" required value="${b?esc(b.name):""}" placeholder="ex.: Avó Rosa" autocapitalize="words"></label>
+    <label class="f">Dia<input name="d" type="number" min="1" max="31" inputmode="numeric" required value="${d||""}"></label>
+    <label class="f">Mês<select name="m">${MESL.map((x,i)=>`<option value="${i+1}"${m===i+1?" selected":""}>${x}</option>`).join("")}</select></label>
+    <label class="f">Ano de nascimento<input name="y" type="number" min="1900" max="2100" inputmode="numeric" value="${b?v(b.year):""}" placeholder="opcional"></label>
+    <label class="f">Quem é<input name="r" value="${b?v(b.rel):""}" placeholder="ex.: avó, amigo"></label>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cancelanos="1">Cancelar</button>
+    ${b?`<button class="btn danger wide" type="button" data-delanos="${b.id}">Apagar ${esc(b.name)}</button>`:""}</form>`}
+function renderAnos(){const el=document.getElementById("anosList");if(!el)return;
+  const L=bdays().map(b=>({b,n:bdNext(b)})).sort((a,c)=>a.n.days-c.n.days);
+  el.innerHTML=L.map(({b,n})=>{if(b.id===editAnos)return anosForm(b);const ideas=b.ideas||[];
+    const when=n.days===0?"Hoje! 🎉":n.days===1?"Amanhã":`Daqui a ${n.days} dias`;
+    const wd=n.date.toLocaleDateString("pt-PT",{weekday:"long"});
+    return`<div class="bd${n.days===0?" today":""}"><button type="button" class="bh" data-editanos="${b.id}" aria-label="Editar ${esc(b.name)}">
+        <span class="bdn">${n.date.getDate()}<small>${MES[n.date.getMonth()]}</small></span>
+        <span style="min-width:0;flex:1"><span class="bn" style="display:block">${esc(b.name)}</span><span class="bm">${[b.rel?esc(b.rel):"",n.age!=null?`faz ${n.age} anos`:"",wd].filter(Boolean).join(" · ")}</span></span>
+        <span class="due ${n.days===0?"bad":n.days<=7?"warn":"ok"}">${when}</span></button>
+      ${ideas.map(x=>`<label class="idea${x.done?" done":""}"><input type="checkbox" data-idea="${b.id}|${x.id}"${x.done?" checked":""}><span>🎁 ${esc(x.t)}</span><button type="button" data-delidea="${b.id}|${x.id}" aria-label="Apagar ideia">×</button></label>`).join("")}
+      <form data-ideaform="${b.id}" autocomplete="off"><input name="t" placeholder="${b.name.toLowerCase().startsWith("maria")?"Juntar à lista de desejos":"Ideia de presente"}" autocapitalize="sentences"><button class="btn" type="submit" style="padding:8px 14px">+</button></form></div>`}).join("")
+    +(editAnos==="new"?"":"")||(editAnos==="new"?"":`<div class="empty">Ainda não há aniversários.<br>Toca em “Juntar aniversário”.</div>`);
+  document.getElementById("anosNew").innerHTML=editAnos==="new"?anosForm(null):"";document.getElementById("addAnos").hidden=editAnos==="new";
+  const bb=document.getElementById("anosBadge");if(bb){const n=L.filter(x=>x.n.days===0).length;bb.hidden=!n;bb.textContent=n}}
+document.getElementById("addAnos").addEventListener("click",()=>{editAnos="new";renderAnos();const f=document.querySelector('[data-anosform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
+document.addEventListener("click",e=>{const t=e.target.closest("button,input");if(!t)return;
+  if(t.dataset.editanos){editAnos=t.dataset.editanos;renderAnos()}
+  else if(t.dataset.cancelanos){editAnos="";renderAnos()}
+  else if(t.dataset.delanos){const b=bdays().find(x=>x.id===t.dataset.delanos);if(b&&confirm(`Apagar o aniversário de ${b.name}?`)){editAnos="";delBill(b.id);renderAnos();toast("Apagado")}}
+  else if(t.dataset.idea){const [id,iid]=t.dataset.idea.split("|"), b=bdays().find(x=>x.id===id);if(!b)return;putBill({...b,ideas:(b.ideas||[]).map(x=>x.id===iid?{...x,done:t.checked}:x)});renderAnos()}
+  else if(t.dataset.delidea){const [id,iid]=t.dataset.delidea.split("|"), b=bdays().find(x=>x.id===id);if(!b)return;putBill({...b,ideas:(b.ideas||[]).filter(x=>x.id!==iid)});renderAnos()}});
+document.addEventListener("submit",e=>{const f=e.target;
+  if(f.dataset.ideaform){e.preventDefault();const b=bdays().find(x=>x.id===f.dataset.ideaform), t=f.t.value.trim();if(!b||!t)return;putBill({...b,ideas:[...(b.ideas||[]),{id:uid(),t}].slice(-30)});renderAnos();toast("Ideia guardada");return}
+  const id=f.dataset.anosform;if(!id)return;e.preventDefault();const d=Math.min(31,Math.max(1,parseInt(f.d.value)||1)), m=parseInt(f.m.value)||1, y=parseInt(f.y.value);
+  const old=id==="new"?null:bdays().find(x=>x.id===id);const b={...(old||{}),id:old?old.id:uid(),kind:"bday",name:f.n.value.trim(),md:`${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`};
+  if(y>1900)b.year=y;else delete b.year;if(f.r.value.trim())b.rel=f.r.value.trim();else delete b.rel;editAnos="";putBill(b);renderAnos();toast("Guardado")});
+
+/* ---------- Escola (kind:"esc", t: "aula" | "mat" | "cont"); as datas vão para o calendário (título com 🎒) ---------- */
+const escOf=t=>bills.filter(b=>b.kind==="esc"&&b.t===t);
+const ESC_WD=["Seg","Ter","Qua","Qui","Sex"];
+let escDay=Math.min(4,Math.max(0,new Date().getDay()-1)), escEdit={aula:"",data:"",cont:""};
+function aulaForm(a){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-escform="aula|${a?a.id:"new"}" autocomplete="off">
+    <label class="f wide">O quê<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: Matemática, Natação" autocapitalize="sentences"></label>
+    <label class="f">Dia<select name="wd">${ESC_WD.map((x,i)=>`<option value="${i}"${(a?a.wd:escDay)===i?" selected":""}>${x}</option>`).join("")}</select></label>
+    <label class="f">Quem<input name="who" value="${a?v(a.who):"Maria"}"></label>
+    <label class="f">Início<input name="a" type="time" required value="${a?v(a.from):""}"></label>
+    <label class="f">Fim<input name="b" type="time" value="${a?v(a.to):""}"></label>
+    <label class="f wide">Onde / notas<input name="o" value="${a?v(a.notes):""}" placeholder="ex.: levar fato de banho"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-esccancel="aula">Cancelar</button>
+    ${a?`<button class="btn danger wide" type="button" data-escdel="${a.id}">Apagar</button>`:""}</form>`}
+function contForm(c){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-escform="cont|${c?c.id:"new"}" autocomplete="off">
+    <label class="f wide">Nome<input name="n" required value="${c?esc(c.name):""}" placeholder="ex.: Professora Ana" autocapitalize="words"></label>
+    <label class="f">Quem é<input name="r" value="${c?v(c.rel):""}" placeholder="ex.: professora, secretaria"></label>
+    <label class="f">Telefone<input name="p" type="tel" inputmode="tel" value="${c?v(c.phone):""}"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-esccancel="cont">Cancelar</button>
+    ${c?`<button class="btn danger wide" type="button" data-escdel="${c.id}">Apagar</button>`:""}</form>`}
+function dataForm(){return`<form class="bill-edit" data-escform="data|new" autocomplete="off">
+    <label class="f">Tipo<select name="k"><option>Reunião</option><option>Teste</option><option>Férias</option><option>Visita de estudo</option><option>Festa</option><option>Outro</option></select></label>
+    <label class="f">Quem<input name="who" value="Maria"></label>
+    <label class="f wide">Descrição<input name="n" placeholder="ex.: Reunião de pais" autocapitalize="sentences"></label>
+    <label class="f">Dia<input name="a" type="date" required></label>
+    <label class="f">Até (opcional)<input name="b" type="date"></label>
+    <label class="f">Hora (opcional)<input name="h" type="time"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-esccancel="data">Cancelar</button></form>`}
+function renderEscola(){const el=document.getElementById("escAulas");if(!el)return;const isToday=new Date().getDay()-1===escDay, nm=minsNow();
+  document.getElementById("escDays").innerHTML=ESC_WD.map((x,i)=>`<button type="button" data-escday="${i}" aria-pressed="${i===escDay}">${x}</button>`).join("");
+  const A=escOf("aula").filter(a=>+a.wd===escDay).sort((a,b)=>(a.from||"").localeCompare(b.from||""));
+  el.innerHTML=A.map(a=>a.id===escEdit.aula?aulaForm(a):`<button type="button" class="esc-row${isToday&&tMin(a.from)<=nm&&(!a.to||tMin(a.to)>nm)?" now":""}" data-escedit="aula|${a.id}"><span class="t">${esc(a.from||"")}${a.to?"–"+esc(a.to):""}</span><span style="min-width:0"><b>${esc(a.name)}</b><small>${[a.who,a.notes].filter(Boolean).map(esc).join(" · ")}</small></span><span class="edit">›</span></button>`).join("")||`<div class="esc-empty">Nada em ${ESC_WD[escDay]}.</div>`;
+  document.getElementById("aulaNew").innerHTML=escEdit.aula==="new"?aulaForm(null):"";
+  const td=ymd(new Date()), D=events.filter(e=>/^🎒/.test(e.title||"")&&evEnd(e)>=td).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,12);
+  document.getElementById("escDatas").innerHTML=D.map(e=>`<div class="esc-row"><span class="t">${fmtD(e.date).replace(/ \d{4}$/,"")}${e.end&&e.end>e.date?"<small>até "+fmtD(e.end).replace(/ \d{4}$/,"")+"</small>":""}</span><span style="min-width:0"><b>${esc(e.title.replace(/^🎒\s*/,""))}</b><small>${e.time?e.time+" · ":""}${dueTag(e.date,7)}</small></span><button type="button" class="back" data-escdelev="${e.id}" aria-label="Apagar">×</button></div>`).join("")||`<div class="esc-empty">Sem datas marcadas. As datas que juntares também aparecem na Agenda e no calendário.</div>`;
+  document.getElementById("dataNew").innerHTML=escEdit.data==="new"?dataForm():"";
+  const Mt=escOf("mat").sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  document.getElementById("escMat").innerHTML=Mt.map(m=>`<label class="mat${m.done?" done":""}"><input type="checkbox" data-escmat="${m.id}"${m.done?" checked":""}><span>${esc(m.name)}</span><button type="button" data-escdel="${m.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="esc-empty">Nada para comprar.</div>`;
+  const C=escOf("cont").sort((a,b)=>a.name.localeCompare(b.name,"pt"));
+  document.getElementById("escCont").innerHTML=C.map(c=>c.id===escEdit.cont?contForm(c):`<div class="esc-row" style="grid-template-columns:minmax(0,1fr) auto auto;gap:6px"><button type="button" data-escedit="cont|${c.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;min-width:0"><b>${esc(c.name)}</b><small>${[c.rel,c.phone].filter(Boolean).map(esc).join(" · ")}</small></button>
+      ${c.phone?`<a class="cbtn" href="tel:${esc(c.phone.replace(/[^\d+]/g,""))}">📞</a><a class="cbtn" href="https://wa.me/${esc((c.phone.replace(/\D/g,"").length===9?"351":"")+c.phone.replace(/\D/g,""))}" target="_blank" rel="noopener">💬</a>`:""}</div>`).join("")||`<div class="esc-empty">Junta a professora, a secretaria da escola, o ATL…</div>`;
+  document.getElementById("contNew").innerHTML=escEdit.cont==="new"?contForm(null):"";
+  ["addAula","addData","addCont"].forEach((b,i)=>document.getElementById(b).hidden=escEdit[["aula","data","cont"][i]]==="new")}
+document.getElementById("addAula").addEventListener("click",()=>{escEdit.aula="new";renderEscola()});
+document.getElementById("addData").addEventListener("click",()=>{escEdit.data="new";renderEscola()});
+document.getElementById("addCont").addEventListener("click",()=>{escEdit.cont="new";renderEscola()});
+document.getElementById("matForm").addEventListener("submit",e=>{e.preventDefault();const n=document.getElementById("matName").value.trim();if(!n)return;putBill({id:uid(),kind:"esc",t:"mat",name:n});document.getElementById("matName").value="";renderEscola()});
+document.addEventListener("click",e=>{const t=e.target.closest("button,input");if(!t)return;
+  if(t.dataset.escday){escDay=+t.dataset.escday;renderEscola()}
+  else if(t.dataset.escedit){const [k,id]=t.dataset.escedit.split("|");escEdit[k]=id;renderEscola()}
+  else if(t.dataset.esccancel){escEdit[t.dataset.esccancel]="";renderEscola()}
+  else if(t.dataset.escdel){const x=bills.find(y=>y.id===t.dataset.escdel);if(x&&(x.t==="mat"||confirm("Apagar?"))){Object.keys(escEdit).forEach(k=>escEdit[k]="");delBill(x.id);renderEscola()}}
+  else if(t.dataset.escmat){const x=bills.find(y=>y.id===t.dataset.escmat);if(x){putBill({...x,done:t.checked});renderEscola()}}
+  else if(t.dataset.escdelev){if(confirm("Apagar esta data?")){delEv(t.dataset.escdelev);renderEscola()}}});
+document.addEventListener("submit",e=>{const ref=e.target.dataset.escform;if(!ref)return;e.preventDefault();const [k,id]=ref.split("|"), f=e.target;
+  if(k==="data"){const desc=f.n.value.trim(), who=f.who.value.trim();
+    const title=`🎒 ${who?who+": ":""}${f.k.value==="Outro"?desc||"Escola":(desc?(noAcc(desc).startsWith(noAcc(f.k.value))?desc:f.k.value+" · "+desc):f.k.value)}`;
+    const ev={id:uid(),date:f.a.value,time:f.h.value||"",title,...(f.b.value&&f.b.value>f.a.value?{end:f.b.value}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
+    escEdit.data="";putEv(ev);renderEscola();toast("Guardado também no calendário");return}
+  const old=id==="new"?null:bills.find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"esc",t:k,name:f.n.value.trim()};
+  if(k==="aula"){x.wd=+f.wd.value;x.from=f.a.value;if(f.b.value)x.to=f.b.value;else delete x.to;x.who=f.who.value.trim();if(f.o.value.trim())x.notes=f.o.value.trim();else delete x.notes;escDay=x.wd}
+  if(k==="cont"){if(f.r.value.trim())x.rel=f.r.value.trim();else delete x.rel;if(f.p.value.trim())x.phone=f.p.value.trim();else delete x.phone}
+  escEdit[k]="";putBill(x);renderEscola();toast("Guardado")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -3882,7 +4035,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v100";
+const APPV="casa-v101";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

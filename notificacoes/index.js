@@ -135,6 +135,24 @@ async function morning(code, now) {
     if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
   }
 
+  /* Aniversários: 7 dias antes, na véspera e no dia */
+  {
+    const anos = [];
+    for (const b of bills) {
+      if (b.kind !== "bday" || !/^\d{2}-\d{2}$/.test(b.md || "")) continue;
+      let dt = `${now.y}-${b.md}`;
+      if (dt < now.date) dt = `${now.y + 1}-${b.md}`;
+      const d = daysBetween(now.date, dt);
+      if (![7, 1, 0].includes(d)) continue;
+      const idade = b.year ? +dt.slice(0, 4) - b.year : null;
+      anos.push({d, t: d === 0 ? `Hoje: ${b.name}${idade ? ` faz ${idade} anos` : ""} 🎉` : `${d === 1 ? "Amanhã" : "Daqui a 7 dias"}: ${b.name}${idade ? ` (${idade} anos)` : ""}`});
+    }
+    if (anos.length) {
+      anos.sort((a, b) => a.d - b.d);
+      partes.push({title: "🎂 Aniversários", body: anos.map((x) => x.t).join("\n"), go: "aniversarios", tag: "anos"});
+    }
+  }
+
   /* Valores que mudam todos os meses (cartões, água, luz…): a partir do dia 25 lembra os do mês seguinte que faltam. */
   if (now.d >= 25) {
     const nk = now.m === 12 ? `${now.y + 1}-01` : `${now.y}-${String(now.m + 1).padStart(2, "0")}`;
@@ -353,7 +371,7 @@ async function house(code, now) {
   const primeiraVez = !Array.isArray(st.seenB);
   const seenB = new Set(st.seenB || []), compraAntes = new Set(st.buy || []);
   const TIPO = {"": ["Conta", "despesas"], income: ["Receita", "despesas"], budget: ["Gastos do mês", "despesas"], med: ["Medicamento", "medicamentos"],
-    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], recipe: ["Prato", "comer"],
+    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], bday: ["Aniversário", "aniversarios"], recipe: ["Prato", "comer"],
     plan: ["Plano de refeições", "plano"], video: ["Vídeo", "videos"]};
   const porQuem = new Map();
   const juntar = (lb, rotulo, nome, go) => {
