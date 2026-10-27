@@ -227,18 +227,22 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 /* Rebordo fino à volta dos ícones, como um vidro (fica bem nos fundos claros e escuros) */
 /* Pastas no Início (como no iPhone): cada grupo fica uma pasta; ao tocar abre por cima com os ícones */
 .apps[hidden],.frow[hidden],#appGroups h3[hidden]{display:none}
-.frow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 4px}
-.fold{display:flex;flex-direction:column;align-items:center;gap:5px;background:transparent;padding:0;color:var(--fg);min-width:0;position:relative}
-.fold .fb{position:relative;width:66px;height:66px;border-radius:15px;background:rgba(255,255,255,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);outline:1.5px solid var(--icoRing);outline-offset:-1.5px;
-  display:grid;grid-template-columns:repeat(3,15px);grid-auto-rows:15px;gap:4px;padding:9px 8px;box-sizing:border-box;align-content:start;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.12)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fold .fb{background:rgba(60,60,64,.55)}}
-:root[data-theme="dark"] .fold .fb{background:rgba(60,60,64,.55)}
-#tab-inicio .fold .fb .ico{width:15px;height:15px;border-radius:4px;outline:none;box-shadow:none}
+.frow{display:grid;grid-template-columns:repeat(2,128px);justify-content:center;gap:14px 34px;margin-top:4px}
+.fold{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent;padding:0;color:var(--fg);min-width:0;position:relative}
+.fold .fb{position:relative;width:128px;height:128px;border-radius:30px;background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);outline:1.5px solid var(--icoRing);outline-offset:-1.5px;
+  display:grid;grid-template-columns:repeat(3,30px);grid-auto-rows:30px;gap:8px;padding:12px;box-sizing:border-box;align-content:start;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fold .fb{background:rgba(80,80,86,.55)}}
+:root[data-theme="dark"] .fold .fb{background:rgba(80,80,86,.55)}
+/* Dentro das pastas os ícones ficam sempre com a cor da app, para se verem bem */
+#tab-inicio .fold .fb .ico{width:30px;height:30px;border-radius:8px;outline:none;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 #tab-inicio .fold .fb .ico::before{display:none}
-#tab-inicio .fold .fb .ico svg.sf{width:10px!important;height:10px!important}#tab-inicio .fold .fb .ico img.e3d{width:13px;height:13px}
-.fold .lbl{font-size:11px;font-weight:500;line-height:1.15;text-align:center}
+:root[data-icons="ios"] #tab-inicio .fold .fb .ico.ios{background:linear-gradient(180deg,var(--v1),var(--v2))!important}
+:root[data-icons="ios"] #tab-inicio .fold .fb .ico.ios svg.sf{display:block;width:19px!important;height:19px!important;fill:#fff!important;filter:none}
+:root[data-icons="ios"] #tab-inicio .fold .fb .ico.i-health svg.sf{fill:#ff2d55!important}
+#tab-inicio .fold .fb .ico img.e3d{width:26px;height:26px}
+.fold .lbl{font-size:14px;font-weight:600;line-height:1.15;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.25)}
 .fold:active .fb{transform:scale(.94)}
-.fold .nbadge{top:-6px;right:-6px}
+.fold .nbadge{top:-6px;right:-6px;min-width:26px;height:26px;line-height:26px;font-size:.85rem}
 .fopen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px;
   background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(24px) saturate(1.2);backdrop-filter:blur(24px) saturate(1.2);animation:fIn .18s ease-out}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fopen{background:rgba(0,0,0,.35)}}
@@ -3795,7 +3799,7 @@ document.getElementById("bioItem").hidden=!window.PublicKeyCredential;document.g
 if(bioId()){bioShow();bioUnlock()}
 /* ---------- Início em pastas (como no iPhone) ou com tudo à vista; cada telemóvel escolhe ---------- */
 function homeLay(){try{return localStorage.getItem("casa-inicio")==="tudo"?"tudo":"pastas"}catch(e){return"pastas"}}
-let openFold="";
+let openFold="", foldUid=0;
 function renderFolders(){const row=document.getElementById("folderRow");if(!row)return;const L=homeLay()==="pastas", groups=[...document.querySelectorAll("#appGroups .apps[data-fold], #folderPanel .apps[data-fold]")];
   row.hidden=!L;document.querySelectorAll("#appGroups [data-fh]").forEach(h=>h.hidden=L);
   document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>a.hidden=L);
@@ -3803,7 +3807,9 @@ function renderFolders(){const row=document.getElementById("folderRow");if(!row)
   if(!L){if(openFold)closeFold();return}
   if(!document.getElementById("folderOpen").hidden)return;
   row.innerHTML=groups.sort((a,b)=>["comida","dinheiro","familia","lazer"].indexOf(a.dataset.fold)-["comida","dinheiro","familia","lazer"].indexOf(b.dataset.fold)).map(a=>{
-    const minis=[...a.querySelectorAll(".ico")].slice(0,9).map(ic=>{const c=ic.cloneNode(true);c.removeAttribute("id");c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));c.querySelectorAll(".nbadge").forEach(x=>x.remove());return c.outerHTML}).join("");
+    const minis=[...a.querySelectorAll(".ico")].slice(0,9).map(ic=>{const c=ic.cloneNode(true);c.removeAttribute("id");c.querySelectorAll(".nbadge").forEach(x=>x.remove());
+      /* ids próprios para as máscaras e gradientes da miniatura (os originais podem estar escondidos) */
+      c.querySelectorAll("[id]").forEach(x=>{const o=x.id, n=o+"-f"+(++foldUid);x.id=n;c.querySelectorAll("[mask],[fill]").forEach(y=>["mask","fill"].forEach(at=>{const v=y.getAttribute(at);if(v==="url(#"+o+")")y.setAttribute(at,"url(#"+n+")")}))});return c.outerHTML}).join("");
     const n=[...a.querySelectorAll(".nbadge")].filter(b=>!b.hidden).reduce((t,b)=>t+(parseInt(b.textContent)||0),0);
     return`<button type="button" class="fold" data-openfold="${a.dataset.fold}" aria-label="Pasta ${esc(a.dataset.fname)}"><span class="fb">${minis}</span>${n?`<span class="nbadge">${n}</span>`:""}<span class="lbl">${esc(a.dataset.fname)}</span></button>`}).join("")}
 function openFolder(id){const a=document.querySelector(`.apps[data-fold="${id}"]`);if(!a)return;openFold=id;
@@ -3876,7 +3882,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v98";
+const APPV="casa-v99";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
