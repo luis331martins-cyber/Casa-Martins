@@ -7,7 +7,7 @@
 <meta name="description" content="Despensa, carne e peixe, lista de compras, contas mensais e agenda da casa, partilhadas entre o casal.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/casam.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/casam-180.png">
+<link rel="apple-touch-icon" href="icons/casam-180.png?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Casa">
@@ -4264,7 +4264,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v108";
+const APPV="casa-v109";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
