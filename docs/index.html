@@ -783,6 +783,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .memo button.ok{opacity:.55}
 
 /* Snake */
+#csCanvas{display:block;width:100%;max-width:420px;aspect-ratio:9/15;margin:0 auto;border-radius:18px;background:#1b1b22;touch-action:none;-webkit-user-select:none;user-select:none}
+.i-cs{background:linear-gradient(160deg,#2c2c34,#111116)}
 #sCanvas{display:block;width:100%;max-width:420px;aspect-ratio:1;margin:0 auto;border-radius:16px;background:#1c2b22;touch-action:none}
 .spad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:8px;justify-content:center;user-select:none;-webkit-user-select:none}
 .spad button{border-radius:14px;background:var(--surface);color:var(--fg);font-size:24px;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.12);touch-action:manipulation}
@@ -1304,6 +1306,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <button type="button" class="gcard" data-go="sudoku"><span class="ico i-sudoku"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" style="fill:none;stroke:#fff;stroke-width:2"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17" style="stroke:#fff;stroke-width:1.4"/></svg></span><b>Sudoku</b><small id="recSudoku"></small></button>
       <button type="button" class="gcard" data-go="galo"><span class="ico i-galo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l5 5M10 5l-5 5" style="stroke:#fff;stroke-width:2.4;stroke-linecap:round;fill:none"/><circle cx="16.5" cy="16.5" r="3.2" style="fill:none;stroke:#fff;stroke-width:2.4"/><path d="M12 3v18M3 12h18" style="stroke:rgba(255,255,255,.45);stroke-width:1.4"/></svg></span><b>Jogo do galo</b><small id="recGalo"></small></button>
       <button type="button" class="gcard" data-go="memoria"><span class="ico i-memo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="2" style="fill:#fff;stroke:none"/><rect x="13" y="5" width="8" height="14" rx="2" style="fill:rgba(255,255,255,.4);stroke:none"/><circle cx="7" cy="12" r="2" style="fill:#e0457b;stroke:none"/></svg></span><b>Memória</b><small id="recMemo"></small></button>
+      <button type="button" class="gcard" data-go="cswitch"><span class="ico i-cs"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-width="3.4"><path d="M12 4.5A7.5 7.5 0 0 1 19.5 12" stroke="#32e1f4"/><path d="M19.5 12A7.5 7.5 0 0 1 12 19.5" stroke="#f6df0e"/><path d="M12 19.5A7.5 7.5 0 0 1 4.5 12" stroke="#8c13fb"/><path d="M4.5 12A7.5 7.5 0 0 1 12 4.5" stroke="#ff0080"/></g><circle cx="12" cy="12" r="2.6" fill="#fff"/></svg></span><b>Color Switch</b><small id="recCS"></small></button>
     </div>
   </section>
 
@@ -1352,6 +1355,13 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div id="tray" class="tray"></div>
     <p class="note" style="margin:0;text-align:center">Arrasta as peças para o tabuleiro. Completa linhas ou colunas para as limpar.</p>
     <div id="gOver" class="gover" hidden><div class="gover-box"><h2>Fim do jogo</h2><p id="gOverTxt"></p><button class="btn" type="button" id="gAgain">Jogar outra vez</button></div></div>
+  </section>
+
+  <section id="tab-cswitch" class="group" style="gap:12px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="jogos"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Jogos</button><span class="navtitle" aria-hidden="true">Color Switch</span><span></span></nav>
+    <div class="gamebar"><div><div class="k">Pontos</div><div class="v" id="csScore">0</div></div><div><div class="k">Recorde</div><div class="v" id="csBest">0</div><div class="note" id="csBestBy"></div></div></div>
+    <canvas id="csCanvas" aria-label="Color Switch"></canvas>
+    <p class="note" style="margin:0;text-align:center">Toca no ecrã para a bola saltar. Só podes passar pela parte do anel da mesma cor da bola. As bolas coloridas mudam a cor da tua; as estrelas dão pontos.</p>
   </section>
 
   <section id="tab-snake" class="group" style="gap:14px" hidden>
@@ -1699,8 +1709,8 @@ document.addEventListener("change",e=>{
     if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")},350);
 });
-function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","graficos","carro","docs","saude","videos","jogos","jogo","snake","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
-  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();
+function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+  setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();if(tab==="cswitch")safe("Color Switch",csOpen);else if(typeof csPause==="function")csPause();
     if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="viagens")safe("Viagens",renderTrips);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
@@ -3223,6 +3233,55 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-conf]");if
     toast(ok?"Feito ✓":"Ficou por fazer. Se for preciso, marca outra vez no calendário.")}
   safe("Confirmar",renderConf);safe("Alertas",renderAlerts)});
 setInterval(()=>{if(!document.getElementById("tab-inicio").hidden)safe("Confirmar",renderConf)},60000);
+/* ---------- Color Switch: a bola sobe aos toques e só passa pela parte do anel da sua cor ----------
+   Mundo com 360 de largura; y cresce para baixo; a câmara sobe com a bola. Recorde partilhado (kind:"game"). */
+const CS_COL=["#32e1f4","#f6df0e","#8c13fb","#ff0080"];
+let CS=null, csRaf=0, csLast=0;
+function csNew(){const o=[];let y=180;for(let i=0;i<6;i++){o.push(csMake(y,i));y-=330}
+  CS={state:"ready",y:520,vy:0,col:Math.floor(Math.random()*4),cam:0,score:0,obs:o,next:y,n:6,parts:[]};csScore()}
+function csMake(y,i){const dif=Math.min(1,i/25), R=78+Math.random()*22-dif*10;
+  return{y,R,th:15,rot:Math.random()*Math.PI*2,sp:(0.018+dif*0.02+Math.random()*0.006)*(Math.random()<.5?-1:1),star:true,sw:{y:y-165,on:true}}}
+function csScore(){const a=document.getElementById("csScore");if(a)a.textContent=CS?CS.score:0}
+function csRenderBest(){const r=recGet("cswitch-recorde"), b=document.getElementById("csBest");if(!b)return;b.textContent=r?r.best:0;document.getElementById("csBestBy").textContent=r&&r.by?"de "+r.by:""}
+function csSize(){const c=document.getElementById("csCanvas"), w=c.clientWidth||360, h=c.clientHeight||600, d=window.devicePixelRatio||1;
+  if(c.width!==Math.round(w*d)){c.width=Math.round(w*d);c.height=Math.round(h*d)}return{c,k:c.width/360,H:c.height/(c.width/360)}}
+function csSeg(o,ang){let a=(ang-o.rot)%(Math.PI*2);if(a<0)a+=Math.PI*2;return Math.floor(a/(Math.PI/2))%4}
+function csStep(dt){const g=CS, {H}=csSize();if(g.state!=="play")return;
+  g.vy+=0.42*dt;g.y+=g.vy*dt;
+  const top=g.cam+H*0.45;if(g.y<top)g.cam=g.y-H*0.45;
+  for(const o of g.obs){o.rot+=o.sp*dt;
+    const dy=g.y-o.y, d=Math.abs(dy);
+    if(Math.abs(d-o.R)<o.th/2+9){const ang=dy<0?-Math.PI/2:Math.PI/2;if(csSeg(o,ang)!==g.col)return csOver()}
+    if(o.star&&Math.abs(g.y-o.y)<16){o.star=false;g.score++;csScore();csBurst(180,o.y,"#fff")}
+    if(o.sw.on&&Math.abs(g.y-o.sw.y)<16){o.sw.on=false;let c;do c=Math.floor(Math.random()*4);while(c===g.col);g.col=c;csBurst(180,o.sw.y,CS_COL[c])}}
+  /* novos anéis lá em cima e limpar os que ficaram para trás */
+  while(g.next>g.cam-400){g.obs.push(csMake(g.next,g.n++));g.next-=330}
+  g.obs=g.obs.filter(o=>o.y-o.R<g.cam+H+200);
+  g.parts=g.parts.filter(p=>(p.t-=dt)>0);g.parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=0.2*dt});
+  if(g.y-g.cam>H+20)csOver()}
+function csBurst(x,y,col){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2, v=1.5+Math.random()*3;CS.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:30+Math.random()*20,col})}}
+function csOver(){const g=CS;g.state="over";cancelAnimationFrame(csRaf);csBurst(180,g.y,CS_COL[g.col]);
+  const rec=g.score>0&&recTry("cswitch-recorde","Color Switch",g.score);g.rec=rec;csRenderBest();csDraw();if(rec)toast("🏆 Novo recorde: "+g.score)}
+function csDraw(){if(!CS)return;const {c,k,H}=csSize(), x=c.getContext("2d"), g=CS;x.setTransform(k,0,0,k,0,0);x.clearRect(0,0,360,H);
+  x.fillStyle="#1b1b22";x.fillRect(0,0,360,H);x.save();x.translate(0,-g.cam);
+  for(const o of g.obs){if(o.y+o.R<g.cam-20||o.y-o.R>g.cam+H+20)continue;x.lineWidth=o.th;x.lineCap="butt";
+    for(let i=0;i<4;i++){x.strokeStyle=CS_COL[i];x.beginPath();x.arc(180,o.y,o.R,o.rot+i*Math.PI/2+.02,o.rot+(i+1)*Math.PI/2-.02);x.stroke()}
+    if(o.star){x.fillStyle="#fff";x.beginPath();for(let i=0;i<10;i++){const r=i%2?6:14, a=-Math.PI/2+i*Math.PI/5;x.lineTo(180+Math.cos(a)*r,o.y+Math.sin(a)*r)}x.closePath();x.fill()}
+    if(o.sw.on){for(let i=0;i<4;i++){x.fillStyle=CS_COL[i];x.beginPath();x.moveTo(180,o.sw.y);x.arc(180,o.sw.y,12,i*Math.PI/2,(i+1)*Math.PI/2);x.closePath();x.fill()}}}
+  g.parts.forEach(p=>{x.globalAlpha=Math.min(1,p.t/20);x.fillStyle=p.col;x.beginPath();x.arc(p.x,p.y,3,0,7);x.fill()});x.globalAlpha=1;
+  if(g.state!=="over"){x.fillStyle=CS_COL[g.col];x.beginPath();x.arc(180,g.y,10,0,7);x.fill()}
+  x.restore();
+  if(g.state!=="play"){x.fillStyle="rgba(0,0,0,.45)";x.fillRect(0,0,360,H);x.fillStyle="#fff";x.textAlign="center";
+    x.font="700 30px -apple-system,system-ui,sans-serif";x.fillText(g.state==="over"?(g.rec?"Novo recorde! 🏆":"Fim do jogo"):"Color Switch",180,H/2-30);
+    x.font="500 18px -apple-system,system-ui,sans-serif";x.fillText(g.state==="over"?`${g.score} ponto${g.score===1?"":"s"}`:"",180,H/2+4);
+    x.fillText(g.state==="paused"?"Toca para continuar":g.state==="over"?"Toca para jogar outra vez":"Toca para começar",180,H/2+(g.state==="over"?40:10))}}
+function csLoop(t){if(!CS||CS.state!=="play")return;const dt=Math.min(3,(t-(csLast||t))/16.67);csLast=t;csStep(dt);csDraw();if(CS.state==="play")csRaf=requestAnimationFrame(csLoop)}
+function csTap(e){e.preventDefault();if(!CS)csNew();if(CS.state==="over"){csNew()}
+  if(CS.state!=="play"){CS.state="play";csLast=0;csRaf=requestAnimationFrame(csLoop)}CS.vy=-7.6}
+function csOpen(){if(!CS)csNew();csRenderBest();csScore();requestAnimationFrame(csDraw)}
+function csPause(){if(CS&&CS.state==="play"){CS.state="paused";cancelAnimationFrame(csRaf);csDraw()}}
+document.getElementById("csCanvas").addEventListener("pointerdown",csTap);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)csPause()});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -3237,6 +3296,7 @@ function renderGames(){const set=(id,t)=>{const el=document.getElementById(id);i
   const k=["facil","medio","dificil"].map(l=>recGet("sudoku-"+l)).find(Boolean);
   set("recSudoku",k?`Recorde ${fmtSec(k.best)}${k.by?" · "+k.by:""}`:"Fácil, médio ou difícil");
   set("recGalo","Contra o telemóvel ou a dois");
+  const cs=recGet("cswitch-recorde");set("recCS",cs?`Recorde ${cs.best}${cs.by?" · "+cs.by:""}`:"Passa pela cor certa");
   set("recMemo",m?`Recorde ${m.best} jogadas${m.by?" · "+m.by:""}`:"Encontra os pares")}
 
 /* ---------- 2048 ---------- */
@@ -4204,7 +4264,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v107";
+const APPV="casa-v108";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
