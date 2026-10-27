@@ -1350,6 +1350,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div id="incSec" class="group" style="gap:8px">
       <h2 style="margin-top:8px">Receitas</h2>
       <p class="note" style="margin:0" id="incLine"></p>
+      <button class="back" type="button" id="incAskOpen" style="align-self:flex-start" hidden>💶 Escrever o que entrou este mês</button>
       <div class="bar" aria-hidden="true"><span id="incFill" style="width:0"></span></div>
       <div id="incomes" class="group"></div>
     </div>
@@ -3746,7 +3747,11 @@ function incAskMonth(){const t=new Date(), lb=lastBizDay(t.getFullYear(),t.getMo
 function incAskList(k){return bills.filter(b=>askInc(b)&&!(b.iconf&&b.iconf[k]))}
 /* Caixa: escreve-se o total e o que fica para a empresa; nas contas da casa só entra o resto. b.caixa[mês]={t,e}, b.lev[mês]=true quando já levantou */
 const isCaixa=b=>isInc(b)&&/caixa/.test(noAcc(b.name||""));
-function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const k=incAskMonth(), L=k?incAskList(k):[];box.hidden=!L.length;if(!L.length){box.innerHTML="";return}
+/* Abre-se sozinho no último dia útil; o botão nas Receitas abre-o em qualquer dia, para o mês que se está a ver */
+let incForce="";
+function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const k=incForce||incAskMonth(), L=k?incAskList(k):[];
+  const ob=document.getElementById("incAskOpen");if(ob){const vk=mKey();ob.hidden=!!L.length&&k===vk||!incAskList(vk).length||vk<START}
+  box.hidden=!L.length;if(!L.length){box.innerHTML="";incForce="";return}
   const mn=mFull(k).split(" de ")[0], val=v=>(Math.round(v*100)/100).toFixed(2).replace(".",",");
   box.innerHTML=`<div class="ah">💶 O que entrou em ${mn}</div><div class="an">Escreve o valor que recebeste e toca em ✓. Se for igual, toca em “Igual”. Na caixa, escreve o total e o que fica para a empresa: só o resto conta para casa.</div>`+
     L.map(b=>isCaixa(b)?`<form class="askrow cx" data-incask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mn} · habitual ${eur(baseAmt(b,k))}</small></span>
@@ -3769,6 +3774,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-incsame]")
 /* "Levantar X para a empresa": toca quando já levantaste */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-lev]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.lev.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
   const on=!(b.lev&&b.lev[k]), lev={...(b.lev||{})};if(on)lev[k]=true;else delete lev[k];putBill({...b,lev});toast(on?"Marcado como levantado":"Por levantar")},true);
+document.getElementById("incAskOpen").addEventListener("click",()=>{incForce=mKey();safe("Fim do mês",renderIncAsk);
+  const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})});
 function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=START)L.push({b,k,v:c.e})}));return L}
 /* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
    Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
@@ -3858,7 +3865,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v94";
+const APPV="casa-v95";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
