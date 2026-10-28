@@ -320,6 +320,12 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .cm.pic time{color:var(--muted);padding:0 6px}
 #takeAsk{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
 #takeAsk[hidden]{display:none}
+#scanSheet{position:fixed;inset:0;z-index:26;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}#scanSheet[hidden]{display:none}
+.scanbtn{display:block;text-align:center;cursor:pointer}
+.sc-row{display:grid;grid-template-columns:26px minmax(0,1fr) 74px;gap:8px;align-items:center;padding:8px 0;border-top:.5px solid var(--line)}
+.sc-row input[type=checkbox]{width:22px;height:22px}.sc-row input[type=text]{font-size:16px;padding:8px 10px;background:var(--fill);border:0;border-radius:9px;width:100%;box-sizing:border-box;color:var(--fg)}
+.sc-row input[type=number]{font-size:16px;padding:8px;text-align:center;background:var(--fill);border:0;border-radius:9px;width:100%;box-sizing:border-box;color:var(--fg)}
+.sc-row small{grid-column:2/4;font-size:12px;color:var(--muted);margin-top:-4px}.sc-row small b{color:#34c759}
 .askrow.cx{grid-template-columns:1fr 84px 84px auto}.cxf{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.cxf input{width:100%;min-width:0}
 .ta-box{background:var(--surface);border-radius:20px;padding:16px;width:100%;max-width:520px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-height:80vh;overflow:auto}
 .ta-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ta-h b{font-size:19px}
@@ -1099,6 +1105,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Despensa</span><span></span></nav>
     <h1 class="large">Despensa</h1>
     <div class="summary" id="summary"></div>
+    <label class="btn ghost scanbtn">📷 Ler fotografia (talão ou etiquetas)<input type="file" accept="image/*" data-scan="despensa" hidden></label>
     <form class="add" id="addForm" autocomplete="off">
       <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -1123,6 +1130,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-carne" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carne e Peixe</span><span></span></nav>
     <h1 class="large">Carne e Peixe</h1>
+    <label class="btn ghost scanbtn">📷 Ler fotografia (talão ou etiquetas)<input type="file" accept="image/*" data-scan="carne" hidden></label>
     <form class="add" id="meatForm" autocomplete="off">
       <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -1520,6 +1528,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
+<div id="scanSheet" hidden role="dialog" aria-label="Ler fotografia"><form class="ta-box" id="scanForm" autocomplete="off"><div class="ta-h"><b id="scanTitle">📷 Encontrei</b><button type="button" id="scanClose" class="back">Cancelar</button></div>
+  <p class="note" id="scanNote" style="margin:0 0 6px"></p><div id="scanList"></div>
+  <button class="btn" type="submit" id="scanOk" style="width:100%;margin-top:10px">Juntar à despensa</button></form></div>
 <div id="takeAsk" hidden role="dialog" aria-label="Já tomou?"><div class="ta-box"><div class="ta-h"><b>💊 Já tomou?</b><button type="button" id="taClose" class="back">Fechar</button></div><div class="ta-list"></div></div></div>
 <div id="fileView" hidden role="dialog" aria-label="Anexo"><div class="fv-bar"><button type="button" id="fvClose">Fechar</button><b id="fvName"></b><button type="button" id="fvShare">Partilhar</button><button type="button" id="fvDel" style="color:#ff6b6b">Apagar</button></div><div class="fv-body" id="fvBody"></div></div>
 <div class="toast" id="toast" hidden></div>
@@ -4240,6 +4251,63 @@ function setHdr(v){try{localStorage.setItem("casa-letras",v)}catch(e){}applyHdr(
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hdrcol]");if(b){setHdr(b.dataset.hdrcol);toast(b.getAttribute("aria-label"))}});
 document.getElementById("hdrPick").addEventListener("input",e=>setHdr(e.target.value));
 applyHdr();
+/* ---------- Ler fotografia: talão de compras ou etiquetas (Despensa e Carne e Peixe) ----------
+   A foto é lida no telemóvel (Tesseract) e não é guardada. Cada linha com um produto vira uma sugestão:
+   se já existe, soma à quantidade; se não, junta como novo (com a categoria adivinhada). Tudo é revisto antes de juntar. */
+const SC_SKIP=/total|subtotal|iva|multibanco|visa|mastercard|cart[aã]o|troco|nif|contribuinte|fatura|factura|recibo|obrigad|data|hora|loja|tel\b|telef|www|\.pt\b|desconto|poupan|saldo|cliente|atendid|caixa\s*\d|op\.|n\.?º|pagamento|numer[aá]rio|dinheiro|continente|pingo|lidl|auchan|intermarch|mercadona|minipre|aldi|sonae|jer[oó]nimo|morada|rua\b|avenida|lisboa|porto|valor|qtd|pre[cç]o|artigo|documento|original|processado|programa|certificad|at\b|atcud|hash/i;
+const SC_FISH=/bacalhau|salm[aã]o|pescada|atum|camar[aã]o|gamba|dourada|robalo|sardinha|carapau|polvo|lula|choco|peixe|filete|perca|maruca|tamboril|marisco|mexilh|amêijo|ameijo/;
+const SC_MEAT=/frango|peru|porco|vaca|novilho|bife|carne|picad|costelet|entrecosto|febra|lombo|hamb[uú]rg|salsich|chouri[cç]|fiambre|presunto|bacon|perna|asa|coxa|espetad|panado|nugget|almôndeg|almondeg|vitela|borrego|cabrito|coelho|pato/;
+const SC_CATS=[[/leite|iogur|queijo|manteiga|natas|ovos?\b|sumo|nata|requeij|kefir|tofu|margarin|mozzar|fiambre/,"Frigorífico"],[/congel|gelado|ultracong|douradinho|pizza|ervilha cong/,"Congelados"],
+  [/detergent|lix[ií]via|amaciad|esfreg|limpa|sacos? do lixo|desinfet|lava.?lou[cç]a|pastilhas|esponja|guardanapo|rolo de cozinha|papel de cozinha/,"Limpeza"],
+  [/champ[oô]|gel de banho|gel banho|pasta de dentes|pasta dent|escova de dentes|papel higi|desodoriz|fralda|toalhit|cotonete|sabonete|creme|penso|tamp[aã]o/,"Higiene"]];
+function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Peixe";if(SC_MEAT.test(t))return"Carne";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
+const scWords=t=>noAcc(t).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
+function scMatch(name){const W=scWords(name);if(!W.length)return null;let best=null,bs=0;
+  for(const it of items){const I=scWords(it.name);if(!I.length)continue;const hit=I.filter(w=>W.some(x=>x.startsWith(w.slice(0,5))||w.startsWith(x.slice(0,5)))).length;const sc=hit/I.length;
+    if(sc>bs||(sc===bs&&best&&I.length>scWords(best.name).length)){bs=sc;best=it}}
+  return bs>=0.6?best:null}
+const scTitle=t=>t.toLowerCase().replace(/(^|\s)(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E|Com|Sem|Em)\b/g,w=>w.toLowerCase());
+function scParse(text){const out=[];
+  for(let raw of String(text).split(/\r?\n/)){let l=raw.replace(/[|_~«»"“”€]/g," ").replace(/\s+/g," ").trim();if(l.length<3)continue;
+    /* "2 X 0,89" ou "0,654 KG X 5,99": quantidade da linha anterior */
+    const mq=l.match(/^(\d+(?:[.,]\d+)?)\s*(kg|un|uni)?\s*[xX×*]\s*\d+[.,]\d{2}/i);
+    if(mq&&out.length){const q=parseFloat(mq[1].replace(",","."));const last=out[out.length-1];if(q>0&&q<50){last.qty=q;if(/kg/i.test(mq[2]||"")||!Number.isInteger(q))last.unit="kg"}continue}
+    if(SC_SKIP.test(noAcc(l)))continue;
+    let name=l.replace(/\s+\d+[.,]\d{2}\s*[A-Da-d]?\s*$/,"").replace(/\s+[A-Da-d]\s*$/,"").replace(/^\(?[A-Da-d]\)\s*/,"").replace(/^\d{4,}\s*/,"")
+      .replace(/\b\d+[.,]\d{2}\b/g,"").replace(/\s{2,}/g," ").trim();
+    let qty=1,unit="un";const mk=name.match(/(\d+[.,]\d+)\s*kg\b/i);if(mk){qty=parseFloat(mk[1].replace(",","."));unit="kg";name=name.replace(mk[0],"").trim()}
+    const letters=(name.match(/\p{L}/gu)||[]).length;if(letters<4||letters/name.length<.55)continue;
+    name=scTitle(name.replace(/\s+\d+\s*$/,"").trim()).slice(0,40);if(!name)continue;
+    const prev=out.find(x=>noAcc(x.name)===noAcc(name));if(prev){prev.qty+=qty;continue}
+    out.push({name,qty,unit})}
+  return out.slice(0,30)}
+async function scImage(file){const url=URL.createObjectURL(file), img=new Image();img.src=url;await img.decode();URL.revokeObjectURL(url);
+  const k=Math.min(1,2000/Math.max(img.width,img.height)), c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+  const g=c.getContext("2d");g.filter="grayscale(1) contrast(1.35)";g.drawImage(img,0,0,c.width,c.height);return c.toDataURL("image/png")}
+let scWhere="despensa", scFound=[];
+function scRender(){const L=document.getElementById("scanList");
+  L.innerHTML=scFound.map((x,i)=>{const m=x.match;return`<div class="sc-row"><input type="checkbox" data-sci="${i}"${x.on?" checked":""} aria-label="Juntar"><input type="text" data-scn="${i}" value="${esc(x.name)}"><input type="number" step="any" min="0" inputmode="decimal" data-scq="${i}" value="${x.qty}">
+    <small>${m?`Já tens <b>${esc(m.name)}</b>${m.qty!=null?` (${String(m.qty).replace(".",",")} ${m.unit||"un"})`:""}: soma ${String(x.qty).replace(".",",")} ${x.unit}`:`Novo em <b style="color:var(--accent)">${esc(scCat(x.name,scWhere))}</b> · ${String(x.qty).replace(".",",")} ${x.unit}`}</small></div>`}).join("")||`<p class="note">Não consegui ler nenhum produto. Tenta outra vez com mais luz, o talão direito e a ocupar a foto toda.</p>`;
+  const n=scFound.filter(x=>x.on).length;document.getElementById("scanOk").textContent=n?`Juntar ${n} produto${n===1?"":"s"}`:"Nada para juntar";document.getElementById("scanOk").disabled=!n}
+document.addEventListener("change",async e=>{const t=e.target;
+  if(t.dataset&&t.dataset.scan){const file=t.files&&t.files[0];t.value="";if(!file)return;scWhere=t.dataset.scan;
+    const sh=document.getElementById("scanSheet");document.getElementById("scanTitle").textContent="📷 A ler a fotografia…";document.getElementById("scanNote").textContent="Pode demorar uns segundos. A foto não é guardada.";
+    document.getElementById("scanList").innerHTML="";document.getElementById("scanOk").disabled=true;sh.hidden=false;
+    try{const src=await scImage(file);const txt=await ocrImage(src);scFound=scParse(txt).map(x=>({...x,match:scMatch(x.name),on:true}))}
+    catch(err){console.error(err);scFound=[];toast("Não foi possível ler a fotografia (precisa de internet na primeira vez).")}
+    document.getElementById("scanTitle").textContent=`📷 Encontrei ${scFound.length} produto${scFound.length===1?"":"s"}`;
+    document.getElementById("scanNote").textContent="Confirma os nomes e as quantidades. Desmarca o que não for para juntar.";scRender();return}
+  if(t.dataset&&t.dataset.sci!=null){scFound[+t.dataset.sci].on=t.checked;scRender()}});
+document.addEventListener("input",e=>{const t=e.target;if(!t.dataset)return;
+  if(t.dataset.scn!=null){const x=scFound[+t.dataset.scn];x.name=t.value;x.match=scMatch(x.name)}
+  else if(t.dataset.scq!=null){const v=parseFloat(String(t.value).replace(",","."));if(!isNaN(v))scFound[+t.dataset.scq].qty=v}});
+document.addEventListener("focusout",e=>{if(e.target.dataset&&(e.target.dataset.scn!=null||e.target.dataset.scq!=null))scRender()});
+document.getElementById("scanClose").addEventListener("click",()=>{document.getElementById("scanSheet").hidden=true;scFound=[]});
+document.getElementById("scanForm").addEventListener("submit",e=>{e.preventDefault();let a=0,n=0;
+  for(const x of scFound.filter(y=>y.on&&y.name.trim())){const m=scMatch(x.name);
+    if(m){const q=(m.qty!=null?+m.qty:(m.lvl>=2?1:0))+(+x.qty||1);setQty(m.id,q);a++}
+    else{const it={id:uid(),name:x.name.trim(),cat:scCat(x.name,scWhere),exp:"",added:Date.now(),qty:+x.qty||1,unit:x.unit||"un"};it.lvl=autoLvl(it,it.qty);items.push(it);put(it);n++}}
+  render();document.getElementById("scanSheet").hidden=true;scFound=[];toast(`${a?a+" atualizado"+(a===1?"":"s"):""}${a&&n?" e ":""}${n?n+" novo"+(n===1?"":"s"):""}`||"Nada juntado")});
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
 safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
@@ -4300,7 +4368,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v113";
+const APPV="casa-v114";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
