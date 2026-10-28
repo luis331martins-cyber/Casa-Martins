@@ -3413,7 +3413,7 @@ function hinsForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit"
     <label class="f wide">Renovação (próxima)<input name="r" type="date" value="${x?v(x.renew):""}"></label>
     <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: contacto do mediador"></label>
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelhins="1">Cancelar</button>
-    ${x?`<button class="btn danger wide" type="button" data-delhins="${x.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Depois de guardar, toca no seguro para juntar a apólice (foto ou PDF).</p>`}</form>`}
+    ${x?`<button class="btn danger wide" type="button" data-delhins="${x.id}">Apagar</button>`:hinsKeep?"":`<p class="note wide" style="margin:0">Depois de guardar, toca no seguro para juntar a apólice (foto ou PDF).</p>`}</form>`}
 function renderHins(){const el=document.getElementById("hinsBox");if(!el)return;const L=hinss();
   el.innerHTML=L.map(x=>{if(x.id===editHins)return hinsForm(x);const P=HINS_PER.find(y=>y[0]===x.per)||HINS_PER[3], d=x.renew?daysTo(x.renew):null, open=openHins===x.id;
     return`<div class="hins"><button type="button" class="hh2" data-openhins="${x.id}"><span style="font-size:26px">🛡️</span><span style="min-width:0;flex:1"><b style="display:block;font-size:16px">Seguro da casa · ${esc(x.name)}</b><span class="hmm" style="font-size:13px;color:var(--muted)">${esc(x.what||"")}${(x.files||[]).length?" · 📎":""}</span></span>
@@ -3422,18 +3422,51 @@ function renderHins(){const el=document.getElementById("hinsBox");if(!el)return;
       ${x.value&&P[2]!==1?`<div class="row" style="color:var(--muted)"><span>Por ano</span><span>${eur(+x.value*P[2])}</span></div>`:""}
       ${open?`${x.notes?`<div style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}
         <div style="display:flex;gap:8px;flex-wrap:wrap">${x.renew&&d<=60?`<button class="btn ghost" type="button" data-hinsrenew="${x.id}">Renovado ›</button>`:""}<button class="btn ghost" type="button" data-edithins="${x.id}">Editar</button></div>`:""}</div>`}).join("")
-    +(editHins==="new"?hinsForm(null):"")+(!L.length&&editHins!=="new"?`<button class="btn ghost" type="button" id="addHins" style="width:100%">🛡️ Juntar o seguro da casa</button>`:"")}
+    +(editHins==="new"?hinsForm(null):"")+(!L.length&&editHins!=="new"?`<button class="btn ghost" type="button" id="addHins" style="width:100%">🛡️ Juntar o seguro da casa</button>`:"")
+    +(editHins?"":`<label class="btn ghost scanbtn" style="margin-top:8px">📄 Ler a apólice ou o aviso de pagamento (PDF ou foto)<input type="file" accept="application/pdf,.pdf,image/*" id="hinsPdf" hidden></label>`)
+    +`<p class="note" id="hinsMsg" hidden style="margin:6px 0 0"></p>`}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.id==="addHins"){editHins="new";renderHins()}
   else if(t.dataset.openhins){openHins=openHins===t.dataset.openhins?"":t.dataset.openhins;renderHins()}
   else if(t.dataset.edithins){editHins=t.dataset.edithins;renderHins()}
-  else if(t.dataset.cancelhins){editHins="";renderHins()}
+  else if(t.dataset.cancelhins){editHins="";hinsKeep=null;renderHins()}
   else if(t.dataset.hinsrenew){const x=hinss().find(y=>y.id===t.dataset.hinsrenew);if(!x)return;let d=x.renew;while(daysTo(d)<=60)d=addYears(d,1);putBill({...x,renew:d});renderHins();toast("Próxima renovação: "+fmtD(d))}
   else if(t.dataset.delhins){const x=hinss().find(y=>y.id===t.dataset.delhins);if(x&&confirm("Apagar o seguro da casa?")){(x.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editHins="";delBill(x.id);renderHins();toast("Apagado")}}});
 document.addEventListener("submit",e=>{const id=e.target.dataset.hinsform;if(!id)return;e.preventDefault();const f=e.target;const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
   const old=id==="new"?null:hinss().find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"hins",name:f.n.value.trim(),per:f.p.value};
   for(const [k,v] of [["what",f.w.value.trim()||null],["value",num(f.v.value)],["renew",f.r.value||null],["notes",f.x.value.trim()||null]])if(v==null)delete x[k];else x[k]=v;
-  editHins="";openHins=x.id;putBill(x);renderHins();toast("Seguro guardado")});
+  editHins="";openHins=x.id;putBill(x);renderHins();toast("Seguro guardado");
+  if(hinsKeep){const file=hinsKeep;hinsKeep=null;setTimeout(()=>attachFile(x.id,file),400)}});
+/* Ler o PDF (ou uma foto) do seguro da casa: seguradora, valor anual, renovação e coberturas; abre o formulário preenchido para confirmar */
+var hinsKeep=null;
+const hinsSay=(t)=>{const m=document.getElementById("hinsMsg");if(!m)return;m.hidden=!t;m.textContent=t||""};
+function parseHins(raw){const t=noAcc(raw).replace(/[ \t]+/g," "), today=ymd(new Date()), D=findDates(t), out={};
+  const ins=insurerOf(t);if(ins)out.name=ins.replace(/\b\w/g,c=>c.toUpperCase()).replace(/^Ok /,"OK ");
+  const m=t.match(/(valid[oa] ate|data de (?:fim|termo|vencimento|renovacao)|vencimento|termo do contrato|renovacao|periodo de seguro|periodo de validade|proxima anuidade|anuidade|ate\s*:)/);
+  if(m){const W=D.filter(x=>x.i>=m.index&&x.i<=m.index+m[0].length+60).map(x=>x.ds).sort();if(W.length)out.renew=W.pop()}
+  if(!out.renew){const fut=D.map(x=>x.ds).filter(x=>x>today&&x<=addYears(today,2)).sort();if(fut.length)out.renew=fut[0]}
+  if(out.renew&&out.renew<today)out.renew=addYears(out.renew,1);
+  /* valor por pagamento, com a periodicidade do documento (ex.: 24,50 € por mês) */
+  const pv=premio(t), fr=docFreq(t), k=FRK[fr]||1, PER={mensal:"mes",trimestral:"trim",semestral:"sem",anual:"ano"};
+  if(pv){out.per=PER[fr]||"ano";out.value=k>1&&pv.note?Math.round(pv.v/k*100)/100:pv.v;out.year=k>1&&pv.note?pv.v:null;out.alt=pv.alt;out.ctx=pv.ctx}
+  out.what=/multirrisco/.test(t)?"Multirriscos habitação":/incendio/.test(t)?"Incêndio":/recheio/.test(t)?"Recheio":/habitacao|casa|imovel/.test(t)?"Habitação":"";
+  return out}
+async function hinsFromFile(file){const pdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name);let txt="";
+  try{if(pdf){hinsSay("A ler o PDF…");txt=await pdfText(file);if(txt.replace(/\s/g,"").length<30){hinsSay("Este PDF não tem texto (é uma digitalização): tira-lhe uma foto e escolhe a foto.");return}}
+    else{hinsSay("A ler a fotografia… (da primeira vez demora mais)");txt=await ocrImage(await shrinkDoc(file))}}
+  catch(err){hinsSay("Não foi possível ler o ficheiro. Verifica a internet e tenta outra vez.");return}
+  const f=parseHins(txt);if(!f.value&&!f.renew&&!f.name){hinsSay("Não encontrei os dados do seguro neste documento.");return}
+  const L=hinss(), old=L.length===1?L[0]:L.find(x=>f.name&&noAcc(x.name)===noAcc(f.name))||null;
+  hinsKeep=pdf?file:null;editHins=old?old.id:"new";renderHins();hinsSay("");
+  const form=document.querySelector(`[data-hinsform="${editHins}"]`);if(!form)return;
+  const set=(k,v)=>{const el=form[k];if(!el||v==null||v==="")return;el.value=v;const l=el.closest("label");if(l){l.style.outline="2px solid #34c759";l.style.borderRadius="10px"}};
+  set("n",f.name);set("w",f.what);set("v",f.value);if(f.value)set("p",f.per);set("r",f.renew);form.dataset.per=f.per||"ano";
+  const got=[f.name?"<b>Seguradora</b> "+esc(f.name):"",f.value?"<b>Valor</b> "+eur(f.value)+" "+(HINS_PER.find(y=>y[0]===f.per)||HINS_PER[3])[1]+(f.year?" ("+eur(f.year)+" por ano)":""):"",f.renew?"<b>Renovação</b> "+fmtD(f.renew):""].filter(Boolean).join(" · ");
+  form.insertAdjacentHTML("afterbegin",`<p class="note wide" style="margin:0;color:var(--fg)">📄 Encontrei: ${got||"pouca coisa"}. Confirma e toca em Guardar.${hinsKeep?" O PDF fica guardado nos anexos.":""}</p>`
+    +(f.alt&&f.alt.length?`<div class="chips wide" style="align-items:center"><span class="note" style="margin:0">Não é este o valor? Outros valores no documento:</span>${f.alt.slice(0,5).map(a=>`<button type="button" class="chip" data-hinsval="${a.v}">${eur(a.v)}${a.ctx?` · ${esc(a.ctx)}`:""}</button>`).join("")}</div>`:""));
+  form.scrollIntoView({block:"start",behavior:"smooth"})}
+document.addEventListener("change",e=>{if(e.target.id!=="hinsPdf")return;const file=e.target.files&&e.target.files[0];e.target.value="";if(file)hinsFromFile(file)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hinsval]");if(!b)return;const f=b.closest("form");if(f){f.v.value=b.dataset.hinsval;f.p.value=f.dataset.per||"ano";toast("Valor: "+eur(+b.dataset.hinsval))}});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -4491,7 +4524,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v117";
+const APPV="casa-v118";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
