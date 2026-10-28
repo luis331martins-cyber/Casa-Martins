@@ -112,10 +112,12 @@ async function morning(code, now) {
     if (falta < 0 || falta > 3) continue;
     leit.push({o: falta, t: `${b.name}: ${falta === 0 ? "último dia é hoje" : falta === 1 ? "até amanhã" : `até dia ${d}`}`});
   }
+  /* Vai numa notificação própria (dentro do "Bom dia" passava despercebida) */
+  console.log(`  contagem: ${leit.length}`);
   if (leit.length) {
     leit.sort((a, b) => a.o - b.o);
-    partes.push({title: `📟 Dar a contagem${leit.length > 1 ? ` (${leit.length})` : ""}`,
-      body: leit.map((x) => x.t).join("\n"), go: "despesas", tag: "contagem"});
+    await send(code, {title: `📟 Dar a contagem${leit.length > 1 ? ` (${leit.length})` : ""}`,
+      body: leit.map((x) => x.t).join("\n") + "\nToca para marcar como dada.", go: "despesas", tag: "contagem"});
   }
 
   /* Fim do mês: no último dia útil (e até dia 5 do mês seguinte, se ficou por fazer) lembra de escrever o que entrou
@@ -461,8 +463,16 @@ async function house(code, now) {
       jobs.push(() => send(code, {title: `✅ ${e.title}: já está feito?`, body: "Toca para confirmar na app.", go: "inicio", tag: "conf-" + e.id}));
     }
     const mkC = now.date.slice(0, 7), lastC = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
-    if (mkC >= START && now.min >= 18 * 60 && now.min < 22 * 60) {
-      const bs = (await db.collection(`households/${code}/bills`).get()).docs.map((x) => ({...x.data(), id: x.id}));
+    const bs = now.min >= 18 * 60 && now.min < 22 * 60 ? (await db.collection(`households/${code}/bills`).get()).docs.map((x) => ({...x.data(), id: x.id})) : [];
+    /* Contagem: no último dia, se ainda não foi marcada como dada, lembra outra vez ao fim do dia (a partir das 19h) */
+    if (now.min >= 19 * 60) for (const b of bs) {
+      if (b.kind || !b.rd || Math.min(b.rd, lastC) !== now.d || (b.rdone && b.rdone[mkC])) continue;
+      const key = `rd|${b.id}|${now.date}`;
+      if (confSent.has(key)) continue;
+      confSent.add(key);
+      jobs.push(() => send(code, {title: `📟 ${b.name}: hoje é o último dia para dar a contagem`, body: "Já deste? Toca para marcar como dada.", go: "despesas", tag: "contagem-" + b.id}));
+    }
+    if (mkC >= START && bs.length) {
       for (const b of bs) {
         if ((b.kind && b.kind !== "income") || !b.dd || !b.day || Math.min(b.day, lastC) !== now.d) continue;
         if ((b.paid && b.paid[mkC] === false) || (b.ok && b.ok[mkC])) continue;
