@@ -2255,7 +2255,15 @@ const billIc=b=>{const m=BIC.find(([re])=>re.test(b.name||"")), [k,c]=m?[m[1],m[
 /* Gás em bilha (Galp): uma vez, passa de conta fixa para "gastos do mês" (junta-se cada bilha com o valor) e sem contagem */
 let gasTidyDone=false;
 function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
-  bills.filter(b=>!b.kind&&!b.gasMig&&/\bg[aá]s\b|galp|bilha/i.test(b.name||"")).forEach(b=>{const n={...b,kind:"budget",spent:b.spent||{},day:0,gasMig:1};delete n.rd;delete n.dd;delete n.rdone;putBill(n)})}
+  /* só a bilha de gás (nunca a luz da Galp) */
+  bills.filter(b=>!b.kind&&!b.gasMig&&/\bg[aá]s\b|bilha/i.test(b.name||"")&&!/luz|eletric/i.test(b.name||"")).forEach(b=>{const n={...b,kind:"budget",spent:b.spent||{},day:0,gasMig:1,name:"Galp Gás"};delete n.rd;delete n.dd;delete n.rdone;putBill(n)});
+  /* correção: a Galp Luz tinha passado por engano para gastos do mês — volta a conta a pagar por débito direto; a bilha fica "Galp Gás" */
+  bills.filter(b=>b.gasMig&&!b.fix2).forEach(b=>{const n={...b,fix2:1};
+    if(/luz|eletric/i.test(b.name||"")){delete n.kind;delete n.gasMig;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;n.dd=true;if(!n.day)n.needDay=1}
+    else n.name="Galp Gás";putBill(n)});
+  /* acerto com a Mãe: Água (SMAS) paga pelos pais e Medicare com metade paga pela Mãe, se ainda não estiver ligado */
+  if(!bills.some(b=>b.ac||b.acAuto)){const ag=bills.find(b=>!b.kind&&/smas|[aá]gua/i.test(b.name||"")), md=bills.find(b=>!b.kind&&/medicare/i.test(b.name||""));
+    if(ag&&md){putBill({...ag,acm:"all",ac:"Mãe",acAuto:1});putBill({...md,acm:"half",ac:"Mãe",acAuto:1})}}}
 /* Nome mostrado no cartão do banco (o nome guardado não muda) */
 const bankLabel=n=>/^\s*cgd\s*$/i.test(n||"")?"C. Geral de Depósitos":n;
 function renderBills(){
@@ -2350,7 +2358,7 @@ function renderBills(){
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
-    let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:"Sem dia fixo";
+    let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
     when+=only;
@@ -2561,7 +2569,7 @@ document.addEventListener("submit",e=>{
   const name=e.target.n.value.trim(), v=parseFloat(e.target.v.value), day=parseInt(e.target.d.value)||0, k=mKey();
   if(!name||isNaN(v))return;
   if(moneyDocs().some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
-  const nb={...b,name,day:Math.min(Math.max(day,0),31)};
+  const nb={...b,name,day:Math.min(Math.max(day,0),31)};if(nb.day)delete nb.needDay;
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
   if(e.target.ask)nb.ask=e.target.ask.checked;
@@ -4971,7 +4979,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v156";
+const APPV="casa-v157";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
