@@ -186,15 +186,23 @@ async function morning(code, now) {
     }
   }
 
-  /* Valores que mudam todos os meses (cartões, água, luz…): a partir do dia 25 lembra os do mês seguinte que faltam. */
-  if (now.d >= 25) {
-    const nk = now.m === 12 ? `${now.y + 1}-01` : `${now.y}-${String(now.m + 1).padStart(2, "0")}`;
+  /* Valores que mudam todos os meses (cartões, água, luz…): pede cada um no dia em que se fica a saber o valor
+     (b.askDay; por defeito CGD Gold 11, WiZink 17, ActivoBank 1, Galp/Luz 25, Água/SMAS 2, Vodafone 25), igual à app. */
+  {
     const semAcento = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const pede = (b) => !b.kind && b.acm !== "all" && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/.test(semAcento(b.name)));
-    const faltam = nk >= START ? bills.filter((b) => pede(b) && !(b.conf && b.conf[nk])) : [];
+    const ym = (y, m) => { const d = new Date(Date.UTC(y, m - 1, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`; };
+    const pede = (b) => !b.kind && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b|vodafone|smas/.test(semAcento(b.name)));
+    const askDayOf = (b) => { if (b.askDay != null) return +b.askDay || null; const n = semAcento(b.name);
+      return /cgd gold|caixa.*gold/.test(n) ? 11 : /wizink/.test(n) ? 17 : /activo ?bank/.test(n) ? 1 : /vodafone/.test(n) ? 25 : /smas|\bagua\b/.test(n) ? 2 : /\bluz\b|galp/.test(n) ? 25 : null; };
+    const cur = ym(now.y, now.m), nx = ym(now.y, now.m + 1), pv = ym(now.y, now.m - 1);
+    const alvo = (b) => { const d = askDayOf(b); const tgt = (m, next) => b.acm === "all" ? m : (b.day && b.day > d ? m : next);
+      if (!d) return b.acm === "all" ? null : (now.d >= 25 ? nx : null);
+      if (now.d >= d) { const k = tgt(cur, nx); return k === cur && b.acm !== "all" && b.day && now.d > b.day ? null : k; }
+      return tgt(pv, cur) === cur && (!b.day || now.d <= b.day) ? cur : null; };
+    const faltam = bills.map((b) => ({b, k: pede(b) ? alvo(b) : null})).filter((x) => x.k && x.k >= START && !(x.b.conf && x.b.conf[x.k]));
     if (faltam.length) {
-      partes.push({title: `📝 Atualiza ${plural(faltam.length, "valor", "valores")} do próximo mês`,
-        body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "valores-" + nk});
+      partes.push({title: `📝 Confirma ${plural(faltam.length, "valor", "valores")}`,
+        body: faltam.map((x) => x.b.name).join(", "), go: "despesas", tag: "valores-" + now.date});
     }
   }
 

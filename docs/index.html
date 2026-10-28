@@ -1579,7 +1579,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="ctiles" id="ctiles" role="tablist" aria-label="Contas"></div>
     <p class="note" style="margin:-4px 0 0;text-align:center" data-ctp="mes">Toca num quadrado para ver só esse tipo.</p>
     <div class="cttl" data-ctp="pagar receitas gastos"><h3 id="cttlT"></h3><button type="button" class="back" data-ctab="mes">‹ Ver o mês todo</button></div>
-    <div id="acertoBox" data-ctp="mes pagar"></div>
+    <div id="acertoBox" data-ctp="receitas"></div>
     <div id="timeline" class="group" data-ctp="mes"></div>
     <div class="sortbar" data-ctp="pagar receitas"><span class="note">Ordenar por</span>
       <div class="seg" role="group" aria-label="Ordenar">
@@ -2305,7 +2305,8 @@ function renderBills(){
       <label class="tick wide"><input type="checkbox" class="switch" name="keep"> Manter este valor nos meses seguintes</label>
       ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
-      ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
+      ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o confirmar</label>
+      <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
@@ -2381,12 +2382,13 @@ function renderBills(){
   el.innerHTML=list.length?(unp.map(billRow).join("")||`<div class="empty" style="padding:14px">Está tudo pago este mês ✓</div>`)+
     (pd.length?`<button type="button" class="paidfold" data-paidfold="1" aria-expanded="${pOpen}"><span>✓ Pagas (${pd.length}) · ${eur(pd.reduce((t,b)=>t+monthAmt(b,k),0))}</span><span class="go">${pOpen?"⌃":"›"}</span></button>`+(pOpen?pd.map(billRow).join(""):""):""):`<div class="empty">Ainda não há contas fixas.<br>Toca em <b>＋ Adicionar</b> para juntar a renda, a luz ou a água.</div>`;
   /* Acerto com outra pessoa (ex.: Mãe): no início do mês ela passa metade da Medicare desse mês e desconta a Água do mês anterior (que os pais pagaram) */
+  const acL=[];
   {const box=document.getElementById("acertoBox"), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm), whos=[...new Set(AC.map(b=>b.ac))];
     const pk=ymOf(new Date(viewY,viewM-1,1)), pName=new Date(viewY,viewM-1,1).toLocaleDateString("pt-PT",{month:"long"});
     box.innerHTML=whos.map(w=>{const L=AC.filter(b=>b.ac===w), rec=bills.find(x=>x.kind==="acerto"&&x.who===w), dn=rec&&rec.done&&rec.done[k];
       const rows=L.map(b=>{if(b.id===editBill)return editRow(b,"Despesa");const half=b.acm==="half", kk=half?k:pk, v=half?monthAmt(b,k)/2:monthAmt(b,kk), cf=half||(b.conf&&b.conf[kk]);
         return {v:half?v:-v,h:`<div class="bill"><button type="button" class="bname wi" data-editbill="${b.id}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}${half?" (metade)":` de ${pName}`}</div><div class="meta">${half?`${esc(w)} paga metade · dia ${b.day||1}`:`pago por ${esc(w)} · ${cf?'<span class="ok">valor confirmado ✓</span>':`<span class="loanlink" data-acval="${b.id}|${kk}" role="button">confirmar o valor ›</span>`}`}</div></span></button><div class="amt"${half?' style="color:var(--good)"':""}>${half?"+":"−"}${eur(v)}</div></div>`}});
-      const tot=rows.reduce((t,x)=>t+(x.v||0),0);
+      const tot=rows.reduce((t,x)=>t+(x.v||0),0);acL.push({w,tot,dn:!!dn});
       return `<div class="acbox"><div class="ach">🤝 Acerto com ${esc(w)} · início de ${mName}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
         <div class="act"><span>${tot>=0?`${esc(w)} passa-te`:`Passas a ${esc(w)}`}</span><b>${eur(Math.abs(tot))}</b></div>
         ${dn?`<button type="button" class="back" data-acdone="${esc(w)}|${k}|0">✓ Acertado${rec.done[k].at?" a "+new Date(rec.done[k].at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"}):""} · desfazer</button>`:`<button type="button" class="btn" data-acdone="${esc(w)}|${k}|1">✓ Já acertámos</button>`}</div>`}).join("")}
@@ -2395,18 +2397,19 @@ function renderBills(){
     const bLeft=buds.reduce((s2,b)=>s2+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), sum=L=>L.reduce((s2,b)=>s2+monthAmt(b,k),0), e0=v=>eur(v).replace(",00","");
     const tile=(id,ic,c1,c2,tn,v,sub,bd)=>`<button type="button" class="ctile" data-ctab="${id}" style="background:linear-gradient(160deg,${c1},${c2})">${bd?`<span class="nbadge">${bd}</span>`:""}<svg viewBox="0 0 24 24" aria-hidden="true">${BICS[ic]}</svg><span class="tn">${tn}</span><b>${v}</b><small>${sub}</small></button>`;
     document.getElementById("ctiles").innerHTML=tile("pagar","euro","#ff6b5e","#c4231b","A pagar",e0(sum(uB)),uB.length?`${uB.length} por pagar`:"tudo pago ✓",late)+
-      tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(uI)),uI.length?"por receber":"tudo recebido ✓",0)+
+      tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(uI)+acL.filter(x=>!x.dn&&x.tot>0).reduce((t,x)=>t+x.tot,0)),uI.length||acL.some(x=>!x.dn)?"por receber":"tudo recebido ✓",0)+
       tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0);
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
     const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
     [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
+    acL.filter(x=>!x.dn).forEach(x=>{const d=isCur?Math.max(1,today):1;(groups[d]=groups[d]||[]).push({acerto:x,name:"Acerto com "+x.w})});
     const dlab=d=>{if(d===99)return"Sem dia fixo";const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
       const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
-    const rowOf=b=>isInc(b)?incRow(b):billRow(b);
+    const rowOf=b=>b.acerto?`<div class="bill"><button type="button" class="bname wi" data-ctab="receitas"><span class="bic" style="background:#34c759" aria-hidden="true"><svg viewBox="0 0 24 24">${BICS.cash}</svg></span><span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">metade da Medicare − água · toca para ver</div></span></button><div class="amt" style="color:${b.acerto.tot>=0?"var(--good)":"var(--bad)"}">${b.acerto.tot>=0?"+":"−"}${eur(Math.abs(b.acerto.tot))}</div></div>`:isInc(b)?incRow(b):billRow(b);
     let h="";if(confL.length){run-=sum(confL);h+=`<div class="tlday" style="color:var(--warn)"><span>Débitos por confirmar</span><span></span></div><div class="group tlg">${confL.map(rowOf).join("")}</div>`}
     if(lateL.length){run-=sum(lateL);h+=`<div class="tlday bad"><span>${lateL.length===1?"Atrasada":"Atrasadas"}</span><span></span></div><div class="group tlg">${lateL.map(rowOf).join("")}</div>`}
-    Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(d=>{const L=groups[d].sort((a,b)=>isInc(b)-isInc(a)||byName(a,b));L.forEach(b=>{run+=isInc(b)?monthAmt(b,k):-monthAmt(b,k)});
+    Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(d=>{const L=groups[d].sort((a,b)=>isInc(b)-isInc(a)||byName(a,b));L.forEach(b=>{run+=b.acerto?b.acerto.tot:isInc(b)?monthAmt(b,k):-monthAmt(b,k)});
       h+=`<div class="tlday"><span>${dlab(d)}</span><span>${hasBal&&d!==99?"fica "+eur(run):""}</span></div><div class="group tlg">${L.map(rowOf).join("")}</div>`});
     if(!h)h=`<div class="empty">Não há mais nada por pagar nem por receber este mês ✓</div>`;
     if(hasBal&&bLeft)h+=`<p class="note" style="margin:8px 4px 0">Depois dos gastos do mês ainda disponíveis (${eur(bLeft)}), fica <b>${eur(run-bLeft)}</b>.</p>`;
@@ -2423,7 +2426,7 @@ function renderBills(){
   document.getElementById("vBal").style.color=bal<0?"var(--bad)":"";
   const fcBox=document.getElementById("fcBox");fcBox.hidden=!accs.length||k!==fk;
   if(!fcBox.hidden){
-    const recv=inc.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0), pay=list.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0);
+    const recv=inc.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0)+acL.filter(x=>!x.dn).reduce((t,x)=>t+x.tot,0), pay=list.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0);
     const budLeft=buds.reduce((s,b)=>s+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), fc=bal+recv-pay-budLeft;
     document.getElementById("fcLabel").textContent="Fim de "+mName+" (previsto)";
     const v=document.getElementById("vFc");v.textContent=eur(fc);v.style.color=fc<0?"var(--bad)":"var(--good)";
@@ -2573,6 +2576,7 @@ document.addEventListener("submit",e=>{
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
   if(e.target.ask)nb.ask=e.target.ask.checked;
+  if(e.target.askd){const ad=parseInt(e.target.askd.value)||0;nb.askDay=ad>0?Math.min(ad,31):0}
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
@@ -4503,14 +4507,25 @@ document.getElementById("pinForm").addEventListener("submit",async e=>{e.prevent
 /* ---------- Valores que mudam todos os meses (cartões, água, luz…) ----------
    A partir do dia 20 pede o valor do mês seguinte; até ao dia 7 ainda pede o do mês atual, se faltar.
    Confirmados em conf["AAAA-MM"]=true. Por defeito: CGD Gold, WiZink, ActivoBank Gold, água e luz. */
-const ASK_DEFAULT=/cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/;
+const ASK_DEFAULT=/cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b|vodafone|smas/;
+/* Dia do mês em que se fica a saber o valor (fecho do cartão, fatura, contagem): pede-se nesse dia.
+   Por defeito pelo nome: CGD Gold 11, WiZink 17, ActivoBank 1, Galp/Luz 25, Água/SMAS 2, Vodafone 25. */
+const askDayOf=b=>{if(b.askDay!=null)return +b.askDay||null;const n=noAcc(b.name||"");
+  return /cgd gold|caixa.*gold/.test(n)?11:/wizink/.test(n)?17:/activo ?bank/.test(n)?1:/vodafone/.test(n)?25:/smas|\bagua\b/.test(n)?2:/\bluz\b|galp/.test(n)?25:null};
+/* Que mês se confirma: a conta que vem a seguir ao dia em que se sabe o valor (a da outra pessoa é sempre a do próprio mês) */
+function askTarget(b,td){const d=askDayOf(b);if(!d)return null;const cur=ymOf(td), nx=ymOf(new Date(td.getFullYear(),td.getMonth()+1,1)), t=td.getDate();
+  const tgt=(m,next)=>b.acm==="all"?m:(b.day&&b.day>d?m:next);
+  if(t>=d){const k=tgt(cur,nx);return k===cur&&b.acm!=="all"&&b.day&&t>b.day?null:k}
+  const prevT=tgt(ymOf(new Date(td.getFullYear(),td.getMonth()-1,1)),cur);return prevT===cur&&(!b.day||t<=b.day)?cur:null}
 const askBill=b=>!b.kind&&(b.ask!=null?!!b.ask:ASK_DEFAULT.test(noAcc(b.name||"")));
 function askMonths(){const d=new Date(), cur=ymOf(d), L=[];
   if(d.getDate()<=7&&cur>=START)L.push(cur);
   if(d.getDate()>=20){const nx=ymOf(new Date(d.getFullYear(),d.getMonth()+1,1));if(nx>=START)L.push(nx)}
   if(cur<START&&d.getDate()>=20&&!L.includes(START))L.push(START);
   return L}
-function askPending(){const L=[];askMonths().forEach(k=>fixas().filter(askBill).forEach(b=>{if(!(b.conf&&b.conf[k]))L.push({b,k})}));return L}
+function askPending(){const L=[], td=new Date();
+  [...fixas(),...others()].filter(askBill).forEach(b=>{if(askDayOf(b)==null){if(b.acm!=="all")askMonths().forEach(k=>{if(!(b.conf&&b.conf[k]))L.push({b,k})});return}
+    const k=askTarget(b,td);if(k&&k>=START&&!(b.conf&&b.conf[k]))L.push({b,k})});return L}
 function renderAsk(){const box=document.getElementById("askBox");if(!box)return;const P=askPending();box.hidden=!P.length;if(!P.length){box.innerHTML="";return}
   const ks=[...new Set(P.map(x=>x.k))];
   box.innerHTML=`<div class="ah">📝 Atualiza os valores de ${ks.map(k=>mFull(k).split(" de ")[0]).join(" e ")}</div><div class="an">Escreve o valor que vai sair (vê no extrato ou na fatura) e toca em ✓. Se for igual, toca em “Igual”.</div>`+
@@ -4979,7 +4994,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v157";
+const APPV="casa-v158";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
