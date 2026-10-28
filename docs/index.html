@@ -227,6 +227,9 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 #tab-despesas:not([data-ct="mes"]) .ctile{opacity:.5}
 #tab-despesas[data-ct="pagar"] .ctile[data-ctab="pagar"],#tab-despesas[data-ct="receitas"] .ctile[data-ctab="receitas"],#tab-despesas[data-ct="gastos"] .ctile[data-ctab="gastos"]{opacity:1;outline:3px solid #fff;outline-offset:-3px}
 .cttl{display:flex;align-items:center;justify-content:space-between}.cttl h3{margin:0!important;font-size:19px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
+.acbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 4px 12px;display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.acbox .ach{font-weight:700;font-size:15px;padding:0 12px}.acbox .bill{background:transparent!important}.acbox .act{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 0;border-top:1px solid var(--line);font-size:15px}
+.acbox .act b{font-size:19px}.acbox .btn,.acbox .back{margin:0 12px}
 .tlday{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:12px 4px 5px}.tlday span:last-child{font-weight:500;text-transform:none;letter-spacing:0}
 .tlday.bad{color:var(--bad)}.tlg{gap:0!important}
 .bname.wi{display:flex!important;align-items:center;gap:12px;min-width:0}.bname.wi .bt{min-width:0;display:block}
@@ -1576,6 +1579,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="ctiles" id="ctiles" role="tablist" aria-label="Contas"></div>
     <p class="note" style="margin:-4px 0 0;text-align:center" data-ctp="mes">Toca num quadrado para ver só esse tipo.</p>
     <div class="cttl" data-ctp="pagar receitas gastos"><h3 id="cttlT"></h3><button type="button" class="back" data-ctab="mes">‹ Ver o mês todo</button></div>
+    <div id="acertoBox" data-ctp="mes pagar"></div>
     <div id="timeline" class="group" data-ctp="mes"></div>
     <div class="sortbar" data-ctp="pagar receitas"><span class="note">Ordenar por</span>
       <div class="seg" role="group" aria-label="Ordenar">
@@ -2188,7 +2192,8 @@ document.addEventListener("submit",e=>{
 let bills=[]; let editBill="";
 /* Receitas ficam na mesma coleção "bills", com kind:"income" */
 /* Na mesma coleção também ficam as contas bancárias (kind:"account") e os pratos nossos (kind:"recipe") */
-const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>!b.kind||b.kind==="budget");
+/* Contas pagas por outra pessoa (b.ac quem, b.acm "all") não saem das nossas contas: ficam no "Acerto com …" */
+const isInc=b=>b.kind==="income", contas=()=>bills.filter(b=>(!b.kind||b.kind==="budget")&&b.acm!=="all"), others=()=>bills.filter(b=>!b.kind&&b.acm==="all");
 const accounts=()=>bills.filter(b=>b.kind==="account"), moneyDocs=()=>bills.filter(b=>!b.kind||b.kind==="income"||b.kind==="budget");
 let editAcc="";
 /* Gastos do mês (kind:"budget"): orçamento mensal com vários gastos em spent["AAAA-MM"]=[{v,d,n}] */
@@ -2289,6 +2294,8 @@ function renderBills(){
       ${isBud(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="dd" ${b.dd?"checked":""}> ${isInc(b)?"Entra sozinha no dia (transferência)":"Débito direto (fica paga sozinha no dia)"}</label>`}
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o atualizar antes do fim do mês</label>`}
+      ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
+      <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
@@ -2361,6 +2368,16 @@ function renderBills(){
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
   el.innerHTML=list.length?(unp.map(billRow).join("")||`<div class="empty" style="padding:14px">Está tudo pago este mês ✓</div>`)+
     (pd.length?`<button type="button" class="paidfold" data-paidfold="1" aria-expanded="${pOpen}"><span>✓ Pagas (${pd.length}) · ${eur(pd.reduce((t,b)=>t+monthAmt(b,k),0))}</span><span class="go">${pOpen?"⌃":"›"}</span></button>`+(pOpen?pd.map(billRow).join(""):""):""):`<div class="empty">Ainda não há contas fixas.<br>Toca em <b>＋ Adicionar</b> para juntar a renda, a luz ou a água.</div>`;
+  /* Acerto com outra pessoa (ex.: Mãe): no início do mês ela passa metade da Medicare desse mês e desconta a Água do mês anterior (que os pais pagaram) */
+  {const box=document.getElementById("acertoBox"), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm), whos=[...new Set(AC.map(b=>b.ac))];
+    const pk=ymOf(new Date(viewY,viewM-1,1)), pName=new Date(viewY,viewM-1,1).toLocaleDateString("pt-PT",{month:"long"});
+    box.innerHTML=whos.map(w=>{const L=AC.filter(b=>b.ac===w), rec=bills.find(x=>x.kind==="acerto"&&x.who===w), dn=rec&&rec.done&&rec.done[k];
+      const rows=L.map(b=>{if(b.id===editBill)return editRow(b,"Despesa");const half=b.acm==="half", kk=half?k:pk, v=half?monthAmt(b,k)/2:monthAmt(b,kk), cf=half||(b.conf&&b.conf[kk]);
+        return {v:half?v:-v,h:`<div class="bill"><button type="button" class="bname wi" data-editbill="${b.id}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}${half?" (metade)":` de ${pName}`}</div><div class="meta">${half?`${esc(w)} paga metade · dia ${b.day||1}`:`pago por ${esc(w)} · ${cf?'<span class="ok">valor confirmado ✓</span>':`<span class="loanlink" data-acval="${b.id}|${kk}" role="button">confirmar o valor ›</span>`}`}</div></span></button><div class="amt"${half?' style="color:var(--good)"':""}>${half?"+":"−"}${eur(v)}</div></div>`}});
+      const tot=rows.reduce((t,x)=>t+(x.v||0),0);
+      return `<div class="acbox"><div class="ach">🤝 Acerto com ${esc(w)} · início de ${mName}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
+        <div class="act"><span>${tot>=0?`${esc(w)} passa-te`:`Passas a ${esc(w)}`}</span><b>${eur(Math.abs(tot))}</b></div>
+        ${dn?`<button type="button" class="back" data-acdone="${esc(w)}|${k}|0">✓ Acertado${rec.done[k].at?" a "+new Date(rec.done[k].at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"}):""} · desfazer</button>`:`<button type="button" class="btn" data-acdone="${esc(w)}|${k}|1">✓ Já acertámos</button>`}</div>`}).join("")}
   /* Os 3 quadrados (A pagar · Receitas · Gastos) e a linha do tempo do mês, com o que fica nas contas depois de cada dia */
   {const uB=list.filter(b=>!isPaid(b,k)), uI=inc.filter(b=>!isPaid(b,k)), late=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd).length:0;
     const bLeft=buds.reduce((s2,b)=>s2+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), sum=L=>L.reduce((s2,b)=>s2+monthAmt(b,k),0), e0=v=>eur(v).replace(",00","");
@@ -2439,6 +2456,12 @@ function applyCTab(){const sec=document.getElementById("tab-despesas");if(sec)se
   const ab=document.getElementById("billAddOpen");if(ab&&document.getElementById("billAddBox").hidden)ab.textContent={pagar:"＋ Adicionar conta a pagar",receitas:"＋ Adicionar receita",gastos:"＋ Adicionar gastos do mês"}[cTab]||"＋ Adicionar"}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-ctab]");if(!t)return;const v=t.dataset.ctab;cTab=t.classList.contains("ctile")&&cTab===v?"mes":v;applyCTab();
   if(t.closest(".ctri"))document.getElementById("ctiles").scrollIntoView({behavior:"smooth",block:"start"})});
+/* Acerto: confirmar o valor da conta paga pela outra pessoa, e marcar o mês como acertado */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-acval]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.acval.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
+  const v=prompt(`Valor da ${b.name} de ${mFull(k).split(" de ")[0]} (€):`,String(Math.round(monthAmt(b,k)*100)/100).replace(".",","));if(v===null)return;
+  const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));if(isNaN(n))return;putBill({...b,amounts:{...(b.amounts||{}),[k]:n},conf:{...(b.conf||{}),[k]:true}});toast(`${b.name}: ${eur(n)} ✓`)},true);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-acdone]");if(!t)return;const [w,k,y]=t.dataset.acdone.split("|"), id="acerto-"+noAcc(w).toLowerCase().replace(/[^a-z0-9]+/g,"-");
+  const rec=bills.find(x=>x.id===id)||{id,kind:"acerto",who:w,done:{}}, done={...(rec.done||{})};if(y==="1")done[k]={at:Date.now()};else delete done[k];putBill({...rec,done});toast(y==="1"?"Acerto registado ✓":"Acerto desfeito")});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-tlpaid]");if(!t)return;tlPaidOpen=!tlPaidOpen;renderBills()});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-paidfold]");if(!t)return;paidOpen=!paidOpen;renderBills()});
 document.getElementById("billAddOpen").addEventListener("click",()=>{const box=document.getElementById("billAddBox"), b=document.getElementById("billAddOpen");box.hidden=!box.hidden;
@@ -2539,6 +2562,7 @@ document.addEventListener("submit",e=>{
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
   if(e.target.ask)nb.ask=e.target.ask.checked;
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
+  if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
   const amounts={...(b.amounts||{})};
@@ -2664,7 +2688,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     const v=eur(monthAmt(b,mk));
     if(d<td&&!b.dd)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     /* as contas e débitos de hoje e amanhã já aparecem na Agenda (e no "Confirmar"); aqui só as atrasadas */});
-  fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>1||r.left<0)return;
+  [...fixas(),...others()].forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>1||r.left<0)return;
     A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",rd:b.id,rdk:mk,name:`Dar a contagem: ${b.name}`,meta:r.left===0?"Último dia é hoje":"Último dia é amanhã"})});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>1||d<-3)return;const go="despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
@@ -3625,7 +3649,7 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
    Contas: b.ok[mês]=true quando se confirma; "Não saiu" põe paid[mês]=false (fica por pagar). Marcações: done / skip. */
 function confPending(){const L=[], t=new Date(), td=ymd(t), cur=ymOf(t), prev=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1));
   for(const k of [prev,cur]){if(k<START)continue;const last=new Date(+k.slice(0,4),+k.slice(5),0).getDate();
-    bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day).forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||p===true||(b.ok&&b.ok[k]))return;
+    bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day&&b.acm!=="all").forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||p===true||(b.ok&&b.ok[k]))return;
       const d=Math.min(b.day,last), ds=`${k}-${String(d).padStart(2,"0")}`;if(ds>td)return;
       L.push({type:"bill",b,k,ds,inc:isInc(b)})})}
   const nm=minsNow(), lim=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()-10));
@@ -4943,7 +4967,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v154";
+const APPV="casa-v155";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

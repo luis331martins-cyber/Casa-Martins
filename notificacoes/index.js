@@ -87,7 +87,7 @@ async function morning(code, now) {
   const contas = [];
   /* A app começa a contar em novembro de 2026: antes disso não há contas para avisar */
   if (mk >= START) for (const b of bills) {
-    if (b.kind || !b.day) continue; // só contas fixas (receitas, gastos do mês, contas bancárias e pratos têm kind)
+    if (b.kind || !b.day || b.acm === "all") continue; // só contas fixas (as pagas por outra pessoa ficam de fora) (receitas, gastos do mês, contas bancárias e pratos têm kind)
     const p = b.paid && b.paid[mk];
     if (p != null && p !== false) continue;
     const dd = b.dd && p !== false;
@@ -190,7 +190,7 @@ async function morning(code, now) {
   if (now.d >= 25) {
     const nk = now.m === 12 ? `${now.y + 1}-01` : `${now.y}-${String(now.m + 1).padStart(2, "0")}`;
     const semAcento = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const pede = (b) => !b.kind && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/.test(semAcento(b.name)));
+    const pede = (b) => !b.kind && b.acm !== "all" && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b/.test(semAcento(b.name)));
     const faltam = nk >= START ? bills.filter((b) => pede(b) && !(b.conf && b.conf[nk])) : [];
     if (faltam.length) {
       partes.push({title: `📝 Atualiza ${plural(faltam.length, "valor", "valores")} do próximo mês`,
@@ -474,7 +474,7 @@ async function house(code, now) {
     }
     if (mkC >= START && bs.length) {
       for (const b of bs) {
-        if ((b.kind && b.kind !== "income") || !b.dd || !b.day || Math.min(b.day, lastC) !== now.d) continue;
+        if ((b.kind && b.kind !== "income") || !b.dd || !b.day || b.acm === "all" || Math.min(b.day, lastC) !== now.d) continue;
         if ((b.paid && b.paid[mkC] != null) || (b.ok && b.ok[mkC])) continue; // já respondido (saiu/não saiu ou marcado à mão)
         const key = `b|${b.id}|${now.date}`;
         if (confSent.has(key)) continue;
