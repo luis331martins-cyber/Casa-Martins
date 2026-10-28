@@ -1604,8 +1604,8 @@ const LV=[["Acabou","s0"],["Pouco","s1"],["Tenho","s2"]];
 const COUNTU=["un","pacotes","latas","garrafas","caixas","doses","sacos"];
 const unitLow=u=>!u||COUNTU.includes(u)?1:u==="kg"||u==="L"?0.5:u==="g"?200:250;
 const unitStep=u=>u==="kg"||u==="L"?0.5:u==="g"||u==="ml"?100:1;
-const lowOf=i=>i.low!=null?+i.low:unitLow(i.unit);
-const buyOf=i=>i.buy!=null?+i.buy:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
+const lowOf=i=>i.low!=null?+i.low:MEAT.includes(i.cat)?0:unitLow(i.unit);
+const buyOf=i=>i.buy!=null?+i.buy:MEAT.includes(i.cat)?1:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
 const autoLvl=(i,q)=>q<=0?0:q<=lowOf(i)?1:2;
 function setQty(id,q){const it=items.find(i=>i.id===id);if(!it)return;q=Math.max(0,Math.round(q*100)/100);
   const n={...it,qty:q,unit:it.unit||"un"};n.lvl=autoLvl(n,q);if(n.lvl===2||q>(+it.qty||0))delete n.skip;if(it.qty===q&&it.lvl===n.lvl)return;upsert(n);render();put(n)}
@@ -1715,10 +1715,10 @@ function render(){
       <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>
     </form>`;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
-  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[packText(i),i.shop?esc(i.shop):"",e].filter(Boolean).join(" · ");
+  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[packText(i),e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];return `
       <div class="item">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>${m?" · "+m:""}</div></button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
         <div class="qrow" role="group" aria-label="Quantidade de ${esc(i.name)}">
           <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos ${esc(i.name)}">−</button>
           <span class="qv">${i.qty==null?"—":String(i.qty).replace(".",",")}<small>${i.qty==null?"qtd.":unitShort(i)}</small></span>
@@ -2424,7 +2424,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy)},
     ()=>{store=null;items=local.load();render()});
   store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
@@ -4542,9 +4542,19 @@ document.getElementById("scanForm").addEventListener("submit",e=>{e.preventDefau
 document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if(!b)return;e.preventDefault();e.stopPropagation();
   const it=items.find(i=>i.id===b.dataset.skip);if(!it)return;const n={...it};if(it.skip)delete n.skip;else n.skip=Date.now();
   upsert(n);render();put(n);toast(n.skip?`${it.name}: não comprei`:`${it.name} voltou à lista`)},true);
+/* Carne e Peixe contam-se por sacos/embalagens: sem quantidade passa a 1 (ou 0 se acabou); com "embalagem de…" em un. passa a sacos;
+   o estado acompanha a quantidade ("Pouco" só se for escolhido no produto). Só grava o que muda. */
+let meatTidyDone=false;
+function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
+  for(const it of items.filter(i=>MEAT.includes(i.cat))){const n={...it};
+    if(n.qty==null){n.qty=(n.lvl??2)===0?0:1;n.unit=n.packN?"sacos":(n.unit||"un")}
+    if(n.packN&&(!n.unit||n.unit==="un"))n.unit="sacos";
+    n.lvl=autoLvl(n,+n.qty||0);
+    if(n.qty!==it.qty||n.unit!==it.unit||n.lvl!==it.lvl){upsert(n);put(n)}}
+  render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local"))safe("Carne (acerto)",meatTidy);
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -4602,7 +4612,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v124";
+const APPV="casa-v125";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
