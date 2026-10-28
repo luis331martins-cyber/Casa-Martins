@@ -665,6 +665,12 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cfrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:10px 16px;border-top:.5px solid var(--line)}
 .cfrow b{display:block;font-size:15px}.cfrow small{color:var(--muted);font-size:13px}
 .cfrow .btn{padding:8px 11px;font-size:14px;white-space:nowrap}
+.clog{padding:10px 16px 12px;border-top:.5px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.clog .ch{display:flex;justify-content:space-between;align-items:baseline}.clog .ch b{font-size:15px}.clog .ch span{font-size:13px;color:var(--muted)}
+.cl{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;background:transparent;padding:6px 0;color:var(--fg);font:inherit;text-align:left;width:100%;border-top:.5px solid var(--line)}
+.cl .ce{font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--fill)}
+.cl b{display:block;font-size:15px}.cl small{color:var(--muted);font-size:12.5px}.cl .cv{font-weight:700;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.cl.plan{opacity:.95}.cl.plan .ce{background:color-mix(in srgb,#ff9f0a 22%,transparent)}
 .hins{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:5px solid var(--icoRing,#c9a24a)}
 .hins .hh2{display:flex;align-items:center;gap:12px;background:transparent;padding:0;color:var(--fg);font:inherit;text-align:left;width:100%}
 .hins .row{display:flex;justify-content:space-between;gap:8px;font-size:14px;flex-wrap:wrap}
@@ -3469,6 +3475,51 @@ async function hinsFromFile(file){const pdf=file.type==="application/pdf"||/\.pd
   form.scrollIntoView({block:"start",behavior:"smooth"})}
 document.addEventListener("change",e=>{if(e.target.id!=="hinsPdf")return;const file=e.target.files&&e.target.files[0];e.target.value="";if(file)hinsFromFile(file)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hinsval]");if(!b)return;const f=b.closest("form");if(f){f.v.value=b.dataset.hinsval;f.p.value=f.dataset.per||"ano";toast("Valor: "+eur(+b.dataset.hinsval))}});
+/* ---------- Carro: manutenções e reparações (kind:"carlog") ----------
+   {car (id do carro), what, type, date, km, value, shop, notes, files} — as de data futura ficam "marcadas" e vão para o calendário */
+const CL_TYPES=[["Travões (pastilhas/discos)","🛑"],["Bateria","🔋"],["Pneus","🛞"],["Óleo e filtros","🛢️"],["Escape / coletor","💨"],["Embraiagem","⚙️"],["Suspensão","🔩"],["Ar condicionado","❄️"],["Luzes","💡"],["Chapa e pintura","🎨"],["Vidros","🪟"],["Limpeza","🧽"],["Outra","🔧"]];
+const clEmo=t=>(CL_TYPES.find(x=>x[0]===t)||CL_TYPES[CL_TYPES.length-1])[1];
+function clGuess(w){const t=noAcc(w);return t.match(/pastilh|disco|trav/)?CL_TYPES[0][0]:t.match(/bateri/)?"Bateria":t.match(/pneu|jante|alinhament|calibr/)?"Pneus":t.match(/oleo|filtro/)?"Óleo e filtros":
+  t.match(/colet|escape|catalis|panela/)?"Escape / coletor":t.match(/embraiag/)?"Embraiagem":t.match(/amortec|suspens|rotula|braco/)?"Suspensão":t.match(/ar condic|a\/c|climatiz/)?"Ar condicionado":t.match(/lampad|farol|luz/)?"Luzes":t.match(/pintur|chapa|risco|amolg/)?"Chapa e pintura":t.match(/vidro|para-?brisas|escova/)?"Vidros":t.match(/lavag|limpez/)?"Limpeza":"Outra"}
+const carLogs=id=>bills.filter(b=>b.kind==="carlog"&&b.car===id).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+let editCl="", clAll="";
+function clForm(car,x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" data-clform="${car.id}|${x?x.id:"new"}" autocomplete="off" style="margin-top:6px">
+    <label class="f wide">O que foi feito<input name="w" required value="${x?esc(x.what):""}" placeholder="ex.: Pastilhas da frente, bateria nova" autocapitalize="sentences"></label>
+    <label class="f">Tipo<select name="t">${CL_TYPES.map(([t,e])=>`<option value="${t}"${x&&x.type===t?" selected":""}>${e} ${t}</option>`).join("")}</select></label>
+    <label class="f">Data<input name="d" type="date" value="${x?v(x.date):ymd(new Date())}"></label>
+    <label class="f">Km<input name="k" type="number" min="0" inputmode="numeric" value="${x?v(x.km):car.km!=null?Math.round(car.km):""}" placeholder="opcional"></label>
+    <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${x?v(x.value):""}" placeholder="opcional"></label>
+    <label class="f wide">Oficina<input name="s" value="${x?v(x.shop):""}" placeholder="opcional" autocapitalize="words"></label>
+    <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: garantia 2 anos, peças originais"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-clcancel="1">Cancelar</button>
+    ${x?`<button class="btn danger wide" type="button" data-cldel="${x.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Com data futura fica como marcada e vai para o calendário. Depois de guardar, podes juntar a fatura.</p>`}</form>`}
+function carLogBlock(c){const L=carLogs(c.id), td=ymd(new Date()), y=String(new Date().getFullYear()), spent=L.filter(x=>(x.date||"").startsWith(y)).reduce((t,x)=>t+(+x.value||0),0);
+  const show=clAll===c.id?L:L.slice(0,5);
+  return`<div class="clog"><div class="ch"><b>🔧 Manutenções e reparações</b><span>${spent?`${y}: ${eur(spent)}`:""}</span></div>
+    ${show.map(x=>{if(x.id===editCl)return clForm(c,x);const plan=x.date&&x.date>td, open=clAll==="o"+x.id;
+      return`<button type="button" class="cl${plan?" plan":""}" data-clopen="${x.id}"><span class="ce">${clEmo(x.type)}</span><span style="min-width:0"><b>${esc(x.what)}</b><small>${[plan?"📅 Marcada "+(daysTo(x.date)===1?"para amanhã":"para "+fmtD(x.date)):x.date?fmtD(x.date):"",x.km!=null?fmtN(x.km)+" km":"",x.shop?esc(x.shop):"",(x.files||[]).length?"📎":""].filter(Boolean).join(" · ")}</small></span><span class="cv">${x.value?eur(+x.value):""}</span></button>
+        ${open?`<div style="padding:0 0 8px 50px;display:flex;flex-direction:column;gap:6px;font-size:14px">${x.notes?`<div>📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}<div style="display:flex;gap:8px">${plan?`<button class="btn ghost" type="button" data-cldone="${x.id}">✓ Já está feito</button>`:""}<button class="btn ghost" type="button" data-cledit="${x.id}">Editar</button></div></div>`:""}`}).join("")}
+    ${L.length>5&&clAll!==c.id?`<button class="back" type="button" data-clall="${c.id}" style="align-self:flex-start">Ver todas (${L.length}) ›</button>`:""}
+    ${editCl==="new|"+c.id?clForm(c,null):`<button class="back" type="button" data-cladd="${c.id}" style="align-self:flex-start">+ Juntar manutenção ou reparação</button>`}</div>`}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const ds=t.dataset;
+  if(ds.cladd){editCl="new|"+ds.cladd;renderCars();setTimeout(()=>{const f=document.querySelector(`[data-clform="${ds.cladd}|new"] [name=w]`);if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}},40)}
+  else if(ds.clcancel){editCl="";renderCars()}
+  else if(ds.clall){clAll=ds.clall;renderCars()}
+  else if(ds.clopen){clAll=clAll==="o"+ds.clopen?"":"o"+ds.clopen;renderCars()}
+  else if(ds.cledit){editCl=ds.cledit;renderCars()}
+  else if(ds.cldone){const x=bills.find(y=>y.id===ds.cldone);if(!x)return;const n={...x,date:ymd(new Date())};if(x.ev){delEv(x.ev);delete n.ev}putBill(n);renderCars();toast("Marcado como feito hoje")}
+  else if(ds.cldel){const x=bills.find(y=>y.id===ds.cldel);if(x&&confirm(`Apagar "${x.what}"?`)){if(x.ev)delEv(x.ev);(x.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editCl="";delBill(x.id);renderCars();toast("Apagado")}}});
+document.addEventListener("input",e=>{const f=e.target.closest&&e.target.closest("[data-clform]");if(f&&e.target.name==="w"&&!f.dataset.typed)f.t.value=clGuess(e.target.value)});
+document.addEventListener("change",e=>{const f=e.target.closest&&e.target.closest("[data-clform]");if(f&&e.target.name==="t")f.dataset.typed="1"});
+document.addEventListener("submit",e=>{const ref=e.target.dataset.clform;if(!ref)return;e.preventDefault();const [carId,id]=ref.split("|"), f=e.target, car=bills.find(b=>b.id===carId);if(!car)return;
+  const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(/\s/g,"").replace(",","."))};
+  const old=id==="new"?null:bills.find(b=>b.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"carlog",car:carId,name:`${car.name}: ${f.w.value.trim()}`,what:f.w.value.trim(),type:f.t.value};
+  for(const [k,v] of [["date",f.d.value||null],["km",num(f.k.value)],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete x[k];else x[k]=v;
+  /* marcada no futuro: vai para o calendário (com lembrete); feita: atualiza os km do carro se forem maiores */
+  if(x.date&&x.date>ymd(new Date())){const evId=x.ev||"cl-"+x.id;x.ev=evId;events=events.filter(y=>y.id!==evId);putEv({id:evId,date:x.date,time:"",title:`🔧 ${car.name}: ${x.what}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})})}
+  else if(x.ev){delEv(x.ev);delete x.ev}
+  if(x.km!=null&&(car.km==null||x.km>car.km)&&(!x.date||x.date<=ymd(new Date())))putBill({...car,km:x.km,kmAt:Date.now()});
+  editCl="";clAll="o"+x.id;putBill(x);renderCars();toast(x.ev?"Marcada e posta no calendário":"Guardada. Toca nela para juntar a fatura.")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -3813,7 +3864,7 @@ function renderCars(){const el=document.getElementById("carList");if(!el)return;
   el.innerHTML=L.map(c=>c.id===editRec.car?recFormFor("car",c):`<div class="rcard"><button type="button" class="rhead" data-recedit="car|${c.id}"><span style="display:flex;align-items:center;min-width:0">${carLogo(c)}<span style="min-width:0"><b>${esc(c.name)}</b>${c.plate?`<span class="plate"><i>P</i><span>${esc(c.plate.toUpperCase())}</span></span>`:""}</span></span><span class="edit">Editar</span></button>
     ${c.km!=null?`<div class="rrow"><span class="rl">${fmtN(c.km)} km</span><span class="rm">Atualizado ${c.kmAt?(daysTo(ymd(new Date(c.kmAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.kmAt)))} dias`):""}</span></div>`:""}
     ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${revRow(c)}
-    ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}${attBlock(c)}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
+    ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}${carLogBlock(c)}${attBlock(c)}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
   document.getElementById("addCar").hidden=editRec.car==="new"}
 function renderDocs(){const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
   const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
@@ -4526,7 +4577,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v119";
+const APPV="casa-v120";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

@@ -407,7 +407,7 @@ async function house(code, now) {
   const primeiraVez = !Array.isArray(st.seenB);
   const seenB = new Set(st.seenB || []), compraAntes = new Set(st.buy || []);
   const TIPO = {"": ["Conta", "despesas"], income: ["Receita", "despesas"], budget: ["Gastos do mês", "despesas"], med: ["Medicamento", "medicamentos"],
-    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], bday: ["Aniversário", "aniversarios"], trip: ["Viagem", "viagens"], home: ["Casa", "casa"], recipe: ["Prato", "comer"],
+    health: ["Consulta", "saude"], doc: ["Documento", "documentos"], car: ["Carro", "carro"], loan: ["Crédito", "creditos"], card: ["Cartão", "cartoes"], saving: ["Objetivo de poupança", "poupancas"], hold: ["Poupança", "poupancas"], bday: ["Aniversário", "aniversarios"], trip: ["Viagem", "viagens"], home: ["Casa", "casa"], carlog: ["Carro (reparação)", "carro"], recipe: ["Prato", "comer"],
     plan: ["Plano de refeições", "plano"], video: ["Vídeo", "videos"]};
   const porQuem = new Map();
   const juntar = (lb, rotulo, nome, go) => {
