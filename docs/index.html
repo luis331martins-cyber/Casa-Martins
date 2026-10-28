@@ -81,6 +81,11 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .catg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;padding:6px 0}
 #meat .catg{grid-template-columns:repeat(2,minmax(0,1fr))}
 .addbox{display:flex;flex-direction:column;gap:12px}.addbox[hidden]{display:none}
+.lockb{margin-left:auto;padding:7px 14px;border-radius:999px;background:var(--fill);color:var(--accent);font-weight:600;font-size:14px}
+.lockb.on{background:var(--accent);color:#fff}
+.lockb.nudge{animation:nudge .5s}@keyframes nudge{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+body:not(.qopen) #pantry .qrow .qb,body:not(.qopen) #meat .qrow .qb,body:not(.qopen) #pantry .usep{opacity:.45}
+.toast .tundo{margin-left:12px;background:none;color:#4da3ff;font-weight:700;padding:0;font-size:inherit}
 .capp{background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;color:var(--fg)}
 .cico{position:relative;width:68px;height:68px;border-radius:24%;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.35);outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
 .cico svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 .5px .5px rgba(0,0,0,.2))}
@@ -1724,7 +1729,7 @@ function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-addopen]");if(!b)return;const box=document.getElementById(b.dataset.addopen);if(!box)return;
   box.hidden=!box.hidden;b.textContent=box.hidden?"＋ Adicionar produto":"Fechar";b.classList.toggle("ghost",!box.hidden);if(!box.hidden){const f=box.querySelector("input");if(f)setTimeout(()=>f.focus(),50)}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:"",s:""};
+const catSel={p:"",m:"",s:""};let qLock=true;
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
 const SHOPCOL=[[/continente/,"#ef3b3b","#b0121b"],[/pingo/,"#7cc35a","#2e7d32"],[/lidl/,"#2f6fd6","#0b3f8f"],[/mercadona/,"#3cc477","#0f7a43"],[/aldi/,"#3aaee6","#0d4f8f"],
   [/intermarch/,"#ef4b4b","#9c0012"],[/auchan|jumbo/,"#f05a5a","#b3202a"],[/minipre|dia\b/,"#f04848","#a3161c"],[/carne|talho/,"#c4535b","#7c2129"],[/peix/,"#4f9be0","#1f5a99"],[/farm/,"#4cc39a","#17795a"]];
@@ -1741,8 +1746,8 @@ const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12
   "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
 const catGrid=(cats,list,k)=>`<div class="catg">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO.Outros;
   return `<button type="button" class="capp" data-catopen="${k}|${c}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${nb?`<span class="nbadge">${nb}</span>`:""}</span><span class="lbl">${c}</span><span class="cnt">${L.length?L.length+" produto"+(L.length===1?"":"s"):"vazio"}</span></button>`}).join("")}</div>`;
-const catHead=(c,k,lb)=>`<div class="cathead"><button type="button" class="navback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>${lb||"Categorias"}</button><h3>${c}</h3></div>`;
-document.addEventListener("click",e=>{const b=e.target.closest("[data-catopen]");if(!b)return;const [k,c]=b.dataset.catopen.split("|");catSel[k]=c;editItem="";
+const catHead=(c,k,lb)=>`<div class="cathead"><button type="button" class="navback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>${lb||"Categorias"}</button><h3>${c}</h3>${k==="s"?"":`<button type="button" class="lockb${qLock?"":" on"}" data-qlock="1">${qLock?"Alterar":"✓ Concluído"}</button>`}</div>`;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-catopen]");if(!b)return;const [k,c]=b.dataset.catopen.split("|");catSel[k]=c;editItem="";qLock=true;
   const sel=k==="s"?null:document.getElementById(k==="p"?"newCat":"mCat");if(c&&sel)sel.value=c;render();(document.getElementById({p:"pantry",m:"meat",s:"shop"}[k])).scrollIntoView({block:"start",behavior:"smooth"})});
 function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};if(lvl===2)delete n.skip;upsert(n);render();put(n)}
 
@@ -1752,7 +1757,7 @@ function expText(exp){const d=daysLeft(exp);if(d===null)return"";if(d<0)return`<
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 /* ---------- render ---------- */
-function render(){
+function render(){document.body.classList.toggle("qopen",!qLock);
   const pantry=document.getElementById("pantry"), shop=document.getElementById("shop");
   const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,"pt"));
   const toBuy=sorted.filter(i=>i.lvl<2&&!i.skip);
@@ -1887,6 +1892,15 @@ document.addEventListener("submit",e=>{
   if(shop)n.shop=shop;
   editItem="";upsert(n);render();put(n);toast("Guardado");
 });
+/* Proteção contra toques sem querer na Despensa e na Carne e Peixe: os −/+ e o "Em uso" estão trancados até tocar em "Alterar";
+   cada alteração mostra "Desfazer" durante uns segundos */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-q],[data-use],[data-opn]");if(!b||!b.closest("#pantry,#meat"))return;
+  if(qLock){e.preventDefault();e.stopImmediatePropagation();toast("Toca em “Alterar” para mudar as quantidades");const l=document.querySelector(".lockb");if(l){l.classList.remove("nudge");void l.offsetWidth;l.classList.add("nudge")}return}
+  const id=(b.dataset.q||"").split("|")[0]||b.dataset.use||b.dataset.opn, prev=items.find(i=>i.id===id);if(!prev)return;const snap={...prev};
+  setTimeout(()=>{const now=items.find(i=>i.id===id);if(!now||JSON.stringify(now)===JSON.stringify(snap))return;
+    const t=isRes(now)?`${now.use?"Em uso":"Nenhum em uso"} · ${+now.res||0} guardado${(+now.res||0)===1?"":"s"}`:hasBags(now)&&now.bags.length?bagText(now):qtyText(now);
+    undoToast(`${now.name}: ${t}`,()=>{upsert(snap);render();put(snap);toast("Desfeito")})},0)},true);
+document.addEventListener("click",e=>{const b=e.target.closest("[data-qlock]");if(!b)return;qLock=!qLock;render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const [id,d]=b.dataset.q.split("|"), it=items.find(i=>i.id===id);if(!it)return;
     /* em uso + reserva: o −/+ mexe nos guardados */
     if(isRes(it)){if(it.res==null){setRes(it,it.lvl>0,+d>0?1:0);return}if(+d<0&&!it.res)return;setRes(it,it.use,it.res+(+d));return}
@@ -2407,7 +2421,9 @@ document.addEventListener("change",e=>{
 });
 document.getElementById("mPrev").onclick=()=>{if(mKey()<=START)return;viewM--;if(viewM<0){viewM=11;viewY--}editBill="";editSpend="";renderBills()};
 document.getElementById("mNext").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}editBill="";editSpend="";renderBills()};
-let tt;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+let undoFn=null;function undoToast(m,fn){const el=document.getElementById("toast");el.innerHTML=`${esc(m)}<button type="button" class="tundo">Desfazer</button>`;el.hidden=false;undoFn=fn;clearTimeout(tt);tt=setTimeout(()=>{el.hidden=true;undoFn=null},4500)}
+document.addEventListener("click",e=>{if(!e.target.closest(".tundo"))return;const f=undoFn;undoFn=null;if(f)f()});
+let tt;function toast(m){undoFn=null;const el=document.getElementById("toast");el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
 
 /* ---------- calendário ---------- */
 let events=[];
@@ -4743,7 +4759,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v133";
+const APPV="casa-v134";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
