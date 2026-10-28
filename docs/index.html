@@ -2307,6 +2307,7 @@ function renderBills(){
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o confirmar</label>
       <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
+      ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
@@ -2351,6 +2352,7 @@ function renderBills(){
     let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
     const cx=isCaixa(b)&&b.caixa&&b.caixa[k];
     if(cx)meta+=`<br>Total ${eur(cx.t)} · empresa ${eur(cx.e)}${cx.e>0?` · <span class="${b.lev&&b.lev[k]?"ok":"loanlink"}" data-lev="${b.id}|${k}" role="button">${b.lev&&b.lev[k]?"levantado ✓":"levantar ›"}</span>`:""}`;
+    else if(isCaixa(b))meta+=`<br>${+b.emp?`Empresa ${eur(+b.emp)} (habitual) · `:""}<span class="loanlink" data-cxopen="${k}" role="button">escrever total e empresa ›</span>`;
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
@@ -2582,6 +2584,7 @@ document.addEventListener("submit",e=>{
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
   if(e.target.ask)nb.ask=e.target.ask.checked;
+  if(e.target.emp){const em=parseFloat(e.target.emp.value);if(em>0)nb.emp=Math.round(em*100)/100;else delete nb.emp}
   if(e.target.askd){const ad=parseInt(e.target.askd.value)||0;nb.askDay=ad>0?Math.min(ad,31):0}
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
@@ -4776,7 +4779,7 @@ function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)r
   box.innerHTML=`<div class="ah">💶 O que entrou em ${mn}</div><div class="an">Escreve o valor que recebeste e toca em ✓. Se for igual, toca em “Igual”. Na caixa, escreve o total e o que fica para a empresa: só o resto conta para casa.</div>`+
     L.map(b=>isCaixa(b)?`<form class="askrow cx" data-incask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mn} · habitual ${eur(baseAmt(b,k))}</small></span>
         <label class="cxf">Total<input name="t" type="text" inputmode="decimal" placeholder="0,00" aria-label="Total da caixa"></label>
-        <label class="cxf">Empresa<input name="e" type="text" inputmode="decimal" placeholder="0,00" aria-label="Para a empresa"></label>
+        <label class="cxf">Empresa<input name="e" type="text" inputmode="decimal" placeholder="${+b.emp?val(+b.emp):"0,00"}" aria-label="Para a empresa (levantar)"></label>
         <button type="submit" class="btn">✓</button></form>`
       :`<form class="askrow" data-incask="${b.id}|${k}" autocomplete="off"><span class="n">${esc(b.name)}<small>${mn}${b.day?" · dia "+b.day:""}</small></span>
         <input name="v" type="text" inputmode="decimal" placeholder="${val(monthAmt(b,k))}" aria-label="Valor de ${esc(b.name)}">
@@ -4787,13 +4790,15 @@ function incSave(id,k,v,cx){const b=bills.find(x=>x.id===id);if(!b)return;const 
   putBill(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
 const numIn=t=>{t=String(t||"").trim().replace(/\s/g,"");if(!t)return NaN;if(/,/.test(t))t=t.replace(/\./g,"").replace(",",".");return parseFloat(t)};
 document.addEventListener("submit",e=>{const a=e.target.dataset&&e.target.dataset.incask;if(!a)return;e.preventDefault();const [id,k]=a.split("|"), f=e.target;
-  if(f.t){const t=numIn(f.t.value), em=numIn(f.e.value)||0;if(isNaN(t)){toast("Escreve o total da caixa.");return}if(em>t){toast("A parte da empresa é maior do que o total.");return}
+  if(f.t){const bb=bills.find(x=>x.id===id), t=numIn(f.t.value), e0=numIn(f.e.value), em=isNaN(e0)?(+(bb&&bb.emp)||0):e0;if(isNaN(t)){toast("Escreve o total da caixa.");return}if(em>t){toast("A parte da empresa é maior do que o total.");return}
     incSave(id,k,Math.round((t-em)*100)/100,{t,e:em});return}
   const v=numIn(f.v.value);if(isNaN(v)){toast("Escreve o valor ou toca em “Igual”.");return}incSave(id,k,v)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-incsame]");if(!b)return;const [id,k]=b.dataset.incsame.split("|");const x=bills.find(y=>y.id===id);if(x)incSave(id,k,monthAmt(x,k))});
 /* "Levantar X para a empresa": toca quando já levantaste */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-lev]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.lev.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
   const on=!(b.lev&&b.lev[k]), lev={...(b.lev||{})};if(on)lev[k]=true;else delete lev[k];putBill({...b,lev});toast(on?"Marcado como levantado":"Por levantar")},true);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cxopen]");if(!t)return;e.preventDefault();e.stopPropagation();incForce=t.dataset.cxopen;safe("Fim do mês",renderIncAsk);
+  const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})},true);
 document.getElementById("incAskOpen").addEventListener("click",()=>{incForce=mKey();safe("Fim do mês",renderIncAsk);
   const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})});
 function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=START)L.push({b,k,v:c.e})}));return L}
@@ -5003,7 +5008,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v159";
+const APPV="casa-v160";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
