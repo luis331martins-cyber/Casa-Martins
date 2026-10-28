@@ -78,6 +78,14 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lvl button[aria-pressed="true"].s0{background:var(--bad-soft);color:var(--bad)}
 .row-actions{display:flex;gap:6px;align-items:center}
 /* Quantidade com − e +; o estado (Tenho/Pouco/Acabou) segue a quantidade */
+.catg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;padding:6px 0}
+#meat .catg{grid-template-columns:repeat(2,minmax(0,1fr))}
+.capp{background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;color:var(--fg)}
+.cico{position:relative;width:68px;height:68px;border-radius:24%;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.35);outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
+.cico svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 .5px .5px rgba(0,0,0,.2))}
+.capp:active .cico{transform:scale(.94)}
+.capp .lbl{font-size:13px;font-weight:500}.capp .cnt{font-size:11px;color:var(--muted);margin-top:-3px}
+.cathead{display:flex;align-items:center;gap:10px}.cathead h3{margin:0}.cathead .navback{position:static}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
@@ -1698,6 +1706,21 @@ let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
   if(c)render()}
+/* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
+const catSel={p:"",m:""};
+const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/>'],
+  "Despensa":["#e0a85a","#a8662a",'<path d="M8.5 3h7v3h-7z"/><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"/><path d="M6 11.5h12"/>'],
+  "Congelados":["#8fd3f4","#3b8fc9",'<path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8M9.2 4l2.8 2 2.8-2M9.2 20l2.8-2 2.8 2"/>'],
+  "Limpeza":["#6fcf97","#2e8b57",'<path d="M9 9h6l1 3.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 20v-7.5z"/><path d="M10 9V5.5h4.5l2.5 1.8M13 5.5V3h-2.5"/>'],
+  "Higiene":["#c39bd3","#8e44ad",'<path d="M12 3s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.4 12 3 12 3z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>'],
+  "Outros":["#9aa3ad","#5d6670",'<circle cx="7.5" cy="7.5" r="2.2"/><circle cx="16.5" cy="7.5" r="2.2"/><circle cx="7.5" cy="16.5" r="2.2"/><circle cx="16.5" cy="16.5" r="2.2"/>'],
+  "Carne":["#ff8a7a","#b4424a",'<path d="M12.2 11.8 6.6 17.4"/><path d="M6.6 17.4a1.8 1.8 0 1 0-1.2 2.4 1.8 1.8 0 1 0 2.4-1.2"/><path d="M11.4 7.2a5 5 0 1 1 5.4 5.6l-3.4.9-2.9-2.9z"/>'],
+  "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
+const catGrid=(cats,list,k)=>`<div class="catg">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO.Outros;
+  return `<button type="button" class="capp" data-catopen="${k}|${c}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${nb?`<span class="nbadge">${nb}</span>`:""}</span><span class="lbl">${c}</span><span class="cnt">${L.length?L.length+" produto"+(L.length===1?"":"s"):"vazio"}</span></button>`}).join("")}</div>`;
+const catHead=(c,k)=>`<div class="cathead"><button type="button" class="navback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><h3>${c}</h3></div>`;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-catopen]");if(!b)return;const [k,c]=b.dataset.catopen.split("|");catSel[k]=c;editItem="";
+  const sel=document.getElementById(k==="p"?"newCat":"mCat");if(c&&sel)sel.value=c;render();(document.getElementById(k==="p"?"pantry":"meat")).scrollIntoView({block:"start",behavior:"smooth"})});
 function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};if(lvl===2)delete n.skip;upsert(n);render();put(n)}
 
 /* ---------- datas ---------- */
@@ -1772,10 +1795,10 @@ function render(){
   const groups=cats=>cats.map(cat=>{const list=sorted.filter(i=>i.cat===cat);return list.length?`<h3>${cat}</h3>`+list.map(row).join(""):""}).join("");
 
   if(!sorted.some(i=>!MEAT.includes(i.cat))){pantry.innerHTML=`<div class="empty">A despensa está vazia.<br>Escreve um produto acima ou toca num dos básicos para começar.</div>`}
-  else pantry.innerHTML=groups(CATS);
+  else pantry.innerHTML=CATS.includes(catSel.p)?catHead(catSel.p,"p")+(groups([catSel.p]).replace(/^<h3>[^<]*<\/h3>/,"")||`<div class="empty">Ainda não há nada em ${catSel.p}.</div>`):catGrid(CATS,sorted,"p");
 
   const meat=document.getElementById("meat");
-  meat.innerHTML=sorted.some(i=>MEAT.includes(i.cat))?groups(MEAT):`<div class="empty">Ainda não tens carne nem peixe registados.<br>Adiciona acima ou toca num dos atalhos.</div>`;
+  meat.innerHTML=sorted.some(i=>MEAT.includes(i.cat))?(MEAT.includes(catSel.m)?catHead(catSel.m,"m")+(groups([catSel.m]).replace(/^<h3>[^<]*<\/h3>/,"")||`<div class="empty">Ainda não há ${catSel.m.toLowerCase()} registado.</div>`):catGrid(MEAT,sorted,"m")):`<div class="empty">Ainda não tens carne nem peixe registados.<br>Adiciona acima ou toca num dos atalhos.</div>`;
   const mSug=MQUICK.filter(([n])=>!have.has(n.toLowerCase()));document.getElementById("meatSugN").textContent=mSug.length?`(${mSug.length})`:"";
   document.getElementById("meatChips").innerHTML=mSug.map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
   const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
@@ -4684,7 +4707,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v129";
+const APPV="casa-v130";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
