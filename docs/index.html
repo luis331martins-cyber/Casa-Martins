@@ -665,6 +665,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cfrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:10px 16px;border-top:.5px solid var(--line)}
 .cfrow b{display:block;font-size:15px}.cfrow small{color:var(--muted);font-size:13px}
 .cfrow .btn{padding:8px 11px;font-size:14px;white-space:nowrap}
+.hins{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:5px solid var(--icoRing,#c9a24a)}
+.hins .hh2{display:flex;align-items:center;gap:12px;background:transparent;padding:0;color:var(--fg);font:inherit;text-align:left;width:100%}
+.hins .row{display:flex;justify-content:space-between;gap:8px;font-size:14px;flex-wrap:wrap}
 .hmdiv{margin:6px 0 6px;display:flex;justify-content:space-between;align-items:baseline}.hmdiv h2{margin:0}.hmdiv span{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
 .hm{background:var(--surface);border-radius:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
 .hm .hh{display:flex;align-items:center;gap:12px;width:100%;background:transparent;padding:12px 14px;color:var(--fg);font:inherit;text-align:left}
@@ -1270,6 +1273,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-casa" class="group" style="gap:12px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Casa</span><span></span></nav>
     <h1 class="large">Casa</h1>
+    <div id="hinsBox"></div>
     <div class="totals two" id="hmTot" hidden>
       <div class="tot"><div class="k">Gasto na casa</div><div class="v" id="vHmTotal"></div></div>
       <div class="tot"><div class="k">Na garantia</div><div class="v" id="vHmWar"></div></div>
@@ -3373,7 +3377,7 @@ function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.i
       ${h.notes?`<div>📝 ${esc(h.notes)}</div>`:""}
       ${attBlock(h)}
       <button class="btn ghost" type="button" data-edithm="${h.id}" style="align-self:flex-start">Editar</button></div>`:""}</div>`}
-function renderHome(){const el=document.getElementById("hmList");if(!el)return;const L=homes();
+function renderHome(){const el=document.getElementById("hmList");if(!el)return;const L=homes();safe("Seguro da casa",renderHins);
   document.querySelectorAll("[data-hmsort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hmsort===hmSort));
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
@@ -3396,6 +3400,40 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)r
   const old=id==="new"?null:homes().find(x=>x.id===id);const h={...(old||{}),id:old?old.id:uid(),kind:"home",name:f.n.value.trim(),room:f.r.value,type:f.t.value};
   for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
   editHm="";openHm=h.id;putBill(h);renderHome();toast(old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
+/* ---------- Seguro da casa (kind:"hins") ----------
+   {name (seguradora), what, value, per ("mes"|"trim"|"sem"|"ano"), renew "AAAA-MM-DD", notes, files} — aviso 60, 30, 7 dias e no dia */
+const hinss=()=>bills.filter(b=>b.kind==="hins");
+const HINS_PER=[["mes","por mês",12],["trim","por trimestre",4],["sem","por semestre",2],["ano","por ano",1]];
+let editHins="", openHins="";
+function hinsForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" data-hinsform="${x?x.id:"new"}" autocomplete="off">
+    <label class="f wide">Seguradora<input name="n" required value="${x?esc(x.name):""}" placeholder="ex.: Fidelidade, Ageas" autocapitalize="words"></label>
+    <label class="f wide">O que cobre<input name="w" value="${x?v(x.what):"Multirriscos habitação"}" placeholder="ex.: Multirriscos habitação"></label>
+    <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${x?v(x.value):""}" placeholder="0,00"></label>
+    <label class="f">Paga-se<select name="p">${HINS_PER.map(([k,t])=>`<option value="${k}"${(x?x.per:"ano")===k?" selected":""}>${t}</option>`).join("")}</select></label>
+    <label class="f wide">Renovação (próxima)<input name="r" type="date" value="${x?v(x.renew):""}"></label>
+    <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: contacto do mediador"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelhins="1">Cancelar</button>
+    ${x?`<button class="btn danger wide" type="button" data-delhins="${x.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Depois de guardar, toca no seguro para juntar a apólice (foto ou PDF).</p>`}</form>`}
+function renderHins(){const el=document.getElementById("hinsBox");if(!el)return;const L=hinss();
+  el.innerHTML=L.map(x=>{if(x.id===editHins)return hinsForm(x);const P=HINS_PER.find(y=>y[0]===x.per)||HINS_PER[3], d=x.renew?daysTo(x.renew):null, open=openHins===x.id;
+    return`<div class="hins"><button type="button" class="hh2" data-openhins="${x.id}"><span style="font-size:26px">🛡️</span><span style="min-width:0;flex:1"><b style="display:block;font-size:16px">Seguro da casa · ${esc(x.name)}</b><span class="hmm" style="font-size:13px;color:var(--muted)">${esc(x.what||"")}${(x.files||[]).length?" · 📎":""}</span></span>
+        <span style="text-align:right;white-space:nowrap"><b>${x.value?eur(+x.value):""}</b><small style="display:block;color:var(--muted)">${x.value?P[1]:""}</small></span></button>
+      ${x.renew?`<div class="row"><span>Renovação ${fmtD(x.renew)}</span>${dueTag(x.renew,60)}</div>`:""}
+      ${x.value&&P[2]!==1?`<div class="row" style="color:var(--muted)"><span>Por ano</span><span>${eur(+x.value*P[2])}</span></div>`:""}
+      ${open?`${x.notes?`<div style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${x.renew&&d<=60?`<button class="btn ghost" type="button" data-hinsrenew="${x.id}">Renovado ›</button>`:""}<button class="btn ghost" type="button" data-edithins="${x.id}">Editar</button></div>`:""}</div>`}).join("")
+    +(editHins==="new"?hinsForm(null):"")+(!L.length&&editHins!=="new"?`<button class="btn ghost" type="button" id="addHins" style="width:100%">🛡️ Juntar o seguro da casa</button>`:"")}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.id==="addHins"){editHins="new";renderHins()}
+  else if(t.dataset.openhins){openHins=openHins===t.dataset.openhins?"":t.dataset.openhins;renderHins()}
+  else if(t.dataset.edithins){editHins=t.dataset.edithins;renderHins()}
+  else if(t.dataset.cancelhins){editHins="";renderHins()}
+  else if(t.dataset.hinsrenew){const x=hinss().find(y=>y.id===t.dataset.hinsrenew);if(!x)return;let d=x.renew;while(daysTo(d)<=60)d=addYears(d,1);putBill({...x,renew:d});renderHins();toast("Próxima renovação: "+fmtD(d))}
+  else if(t.dataset.delhins){const x=hinss().find(y=>y.id===t.dataset.delhins);if(x&&confirm("Apagar o seguro da casa?")){(x.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editHins="";delBill(x.id);renderHins();toast("Apagado")}}});
+document.addEventListener("submit",e=>{const id=e.target.dataset.hinsform;if(!id)return;e.preventDefault();const f=e.target;const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
+  const old=id==="new"?null:hinss().find(x=>x.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"hins",name:f.n.value.trim(),per:f.p.value};
+  for(const [k,v] of [["what",f.w.value.trim()||null],["value",num(f.v.value)],["renew",f.r.value||null],["notes",f.x.value.trim()||null]])if(v==null)delete x[k];else x[k]=v;
+  editHins="";openHins=x.id;putBill(x);renderHins();toast("Seguro guardado")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -3634,6 +3672,7 @@ const CARF=[["seguro","Seguro"],["inspecao","Inspeção"],["iuc","IUC"],["revisa
 function deadlines(){const L=[];
   bills.filter(b=>b.kind==="car").forEach(c=>CARF.forEach(([f,n])=>{if(c[f])L.push({date:c[f],t:`${c.name}: ${n}`,m:"Carro",go:"carro",alert:7,past:"Passou"})}));
   bills.filter(b=>b.kind==="doc"&&b.date).forEach(d=>L.push({date:d.date,t:`${d.type} (${d.who})`,m:"Documento termina",go:"docs",alert:30,past:"Caducou"}));
+  bills.filter(b=>b.kind==="hins"&&b.renew).forEach(x=>L.push({date:x.renew,t:`Seguro da casa (${x.name})`,m:"Renovação",go:"casa",alert:60,past:"Renovação passou"}));
   bills.filter(b=>b.kind==="home"&&b.date&&b.war).forEach(h=>{const w=hmWarEnd(h);if(w)L.push({date:w,t:`Garantia: ${h.name}`,m:"Garantia acaba",go:"casa",alert:60,past:"Acabou"})});
   bills.filter(b=>b.kind==="hold"&&b.end).forEach(h=>L.push({date:h.end,t:`${h.type}: ${h.name}`,m:"Poupança vence",go:"poupancas",alert:30,past:"Venceu"}));
   bills.filter(b=>b.kind==="card"&&b.exp).forEach(c=>L.push({date:cardEnd(c),t:`Cartão ${c.name}${c.who?` (${c.who})`:""}`,m:"Cartão termina",go:"cartoes",alert:30,past:"Terminou"}));
@@ -4452,7 +4491,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v116";
+const APPV="casa-v117";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

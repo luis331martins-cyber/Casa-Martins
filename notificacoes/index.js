@@ -213,6 +213,7 @@ async function morning(code, now) {
   for (const b of bills) {
     if (b.kind === "car") for (const [f, n] of CAR) if (b[f]) prazos.push({date: b[f], t: `${b.name}: ${n}`, at: [30, 7, 1, 0], go: "carro"});
     if (b.kind === "doc" && b.date) prazos.push({date: b.date, t: `${b.type} (${b.who})`, at: [90, 30, 7, 0], go: "docs"});
+    if (b.kind === "hins" && b.renew) prazos.push({date: b.renew, t: `Seguro da casa (${b.name})`, at: [60, 30, 7, 0], go: "casa"});
     if (b.kind === "home" && /^\d{4}-\d{2}-\d{2}$/.test(b.date || "") && +b.war > 0) {
       const d = new Date(b.date + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() + Math.round(+b.war * 12));
       prazos.push({date: d.toISOString().slice(0, 10), t: `Garantia: ${b.name}`, at: [60, 30, 0], go: "casa"});
