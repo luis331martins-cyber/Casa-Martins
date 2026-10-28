@@ -2370,7 +2370,7 @@ function renderBills(){
       ${a?`<button class="btn danger wide" type="button" data-delacc="${a.id}">Apagar ${esc(a.name)}</button>`:""}
     </form>`;
   document.getElementById("accounts").innerHTML=accs.map(a=>{const c=bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""}>
-      <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(a.name)}</div><div class="meta"${a.at&&Date.now()-a.at>7*864e5?' style="color:var(--warn)"':""}>Atualizado ${ago(a.at)}${a.by?" por "+esc(a.by):""}</div></button>
+      <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(a.name)}</div></button>
       <div class="amt"${(+a.bal||0)<0&&!c?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
@@ -4902,7 +4902,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v149";
+const APPV="casa-v150";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
