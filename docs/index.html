@@ -2580,9 +2580,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(mk>=START)fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
     const v=eur(monthAmt(b,mk));
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
-    else if(d===td)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto hoje":"Vence hoje"} · ${v}`});});
-  {const mt=tomS.slice(0,7);if(mt>=START&&typeof billsOn==="function")billsOn(tomS).forEach(b=>{if(isPaid(b,mt))return;
-    A.push({o:3,cls:"",dot:"bl",go:"despesas",name:b.dd?`Débito amanhã: ${b.name}`:`Pagar amanhã: ${b.name}`,meta:`${b.dd?"Débito direto":"Vence"} amanhã · ${eur(monthAmt(b,mt))}`})})}
+    /* as contas e débitos de hoje e amanhã já aparecem na Agenda (e no "Confirmar"); aqui só as atrasadas */});
   fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>1||r.left<0)return;
     A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",rd:b.id,rdk:mk,name:`Dar a contagem: ${b.name}`,meta:r.left===0?"Último dia é hoje":"Último dia é amanhã"})});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>1||d<-3)return;const go="despensa";
@@ -4862,7 +4860,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v147";
+const APPV="casa-v148";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
