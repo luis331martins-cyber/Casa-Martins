@@ -1164,6 +1164,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label class="f">Tipo<select id="mCat"><option>Carne</option><option>Peixe</option></select></label>
         <label class="f">Validade<input type="date" id="mExp"></label>
         <label class="f">Quantidade<span class="qty"><input id="mQty" type="number" min="0" step="any" inputmode="decimal" placeholder="1"><select id="mUnit" aria-label="Unidade"><option value="un">un.</option><option value="pacotes">pacotes</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="latas">latas</option><option value="garrafas">garrafas</option><option value="caixas">caixas</option><option value="doses">doses</option><option value="sacos">sacos</option></select></span></label>
+        <label class="f">Cada saco/caixa traz<span class="qty"><input id="mPack" type="number" min="0" step="any" inputmode="decimal" placeholder="ex.: 6"><select id="mPackU" aria-label="Unidade"><option>un.</option><option>g</option><option>kg</option><option>doses</option><option>fatias</option></select></span></label>
         <label class="f">Onde se compra<input id="mShop" list="shopList" placeholder="ex.: Talho" autocapitalize="words"></label>
       </div>
     </form>
@@ -1597,7 +1598,7 @@ function safe(name,fn){try{return fn()}catch(err){showFatal(name+": "+(err&&err.
 const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Fruta","Outros"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
 const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Outros"];
 const MEAT=["Carne","Peixe"];
-const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
+const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Salsichas","Carne"],["Salsichas frescas","Carne"],["Almôndegas","Carne"],["Almôndegas de frango","Carne"],["Espetadas de frango","Carne"],["Espetadas mistas","Carne"],["Hambúrgueres","Carne"],["Febras","Carne"],["Panados","Carne"],["Nuggets","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Douradinhos","Peixe"],["Lulas","Peixe"],["Polvo","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
 const LV=[["Acabou","s0"],["Pouco","s1"],["Tenho","s2"]];
 /* "Pouco" quando a quantidade fica igual ou abaixo deste valor (se não for escolhido no produto) */
 const COUNTU=["un","pacotes","latas","garrafas","caixas","doses","sacos"];
@@ -1663,6 +1664,9 @@ async function seedHabituais(){if(!store||!fb||!houseCode||!navigator.onLine)ret
     const it={id:"hab-"+slug(name),name,cat,exp:"",lvl:2,added:Date.now(),...(shop?{shop}:{})};upsert(it);put(it);n++}
   putBill({id:"habituais-v1",kind:"setting",name:"Produtos habituais juntados"});if(n){render();toast(`${n} produtos habituais juntados`)}}
 const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",doses:"dose",sacos:"saco"};
+/* "saco de 6 un." e o total em casa (ex.: 2 sacos = 12 un.) */
+const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.unit]?SING[i.unit]:"embalagem", pk=`${nm} de ${String(i.packN).replace(".",",")} ${i.packU||"un."}`;
+  const tot=i.qty>0&&i.unit&&i.unit!=="un"&&COUNTU.includes(i.unit)?Math.round(i.qty*i.packN*100)/100:null;return tot!=null?`${pk} (${String(tot).replace(".",",")} ${i.packU||"un."} em casa)`:pk};
 const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
 const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
@@ -1699,6 +1703,7 @@ function render(){
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
       <label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
       <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>
+      <label class="f wide">Cada ${i.unit&&COUNTU.includes(i.unit)&&i.unit!=="un"?(SING[i.unit]||i.unit):"saco/caixa"} traz<span class="qty"><input name="pn" type="number" min="0" step="any" inputmode="decimal" value="${i.packN??""}" placeholder="ex.: 6"><select name="pu">${["un.","g","kg","doses","fatias"].map(u=>`<option${(i.packU||"un.")===u?" selected":""}>${u}</option>`).join("")}</select></span></label>
       <label class="f">“Pouco” quando tiver<input name="lo" type="number" min="0" step="any" inputmode="decimal" value="${i.low??""}" placeholder="${String(unitLow(i.unit)).replace(".",",")}"></label>
       <label class="f">Compro de cada vez<input name="bu" type="number" min="0" step="any" inputmode="decimal" value="${i.buy??""}" placeholder="${String(buyOf({...i,low:i.low})).replace(".",",")}"></label>
       <label class="f">${MEAT.includes(i.cat)?"Tipo":"Categoria"}<select name="c">${(MEAT.includes(i.cat)?MEAT:CATS).map(c=>`<option${c===i.cat?" selected":""}>${c}</option>`).join("")}</select></label>
@@ -1710,7 +1715,7 @@ function render(){
       <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>
     </form>`;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
-  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[i.shop?esc(i.shop):"",e].filter(Boolean).join(" · ");
+  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[packText(i),i.shop?esc(i.shop):"",e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];return `
       <div class="item">
         <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>${m?" · "+m:""}</div></button>
@@ -1736,7 +1741,7 @@ function render(){
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div>
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${i.packN?" · "+packText({...i,qty:0}):""}</div>
       <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
         <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i)})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
       <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
@@ -1747,8 +1752,10 @@ function render(){
 
 /* ---------- eventos ---------- */
 document.getElementById("meatForm").addEventListener("submit",e=>{e.preventDefault();
-  addItem(document.getElementById("mName").value,document.getElementById("mCat").value,document.getElementById("mExp").value,document.getElementById("mQty").value,document.getElementById("mUnit").value,document.getElementById("mShop").value);
-  ["mName","mExp","mQty","mShop"].forEach(i=>document.getElementById(i).value="")});
+  const nm=document.getElementById("mName").value.trim(), pn=parseFloat(String(document.getElementById("mPack").value).replace(",","."));
+  addItem(nm,document.getElementById("mCat").value,document.getElementById("mExp").value,document.getElementById("mQty").value,document.getElementById("mUnit").value,document.getElementById("mShop").value);
+  if(pn>0){const it=items.find(i=>i.name.toLowerCase()===nm.toLowerCase());if(it&&!it.packN){const n={...it,packN:pn,packU:document.getElementById("mPackU").value};upsert(n);render();put(n)}}
+  ["mName","mExp","mQty","mShop","mPack"].forEach(i=>document.getElementById(i).value="")});
 document.getElementById("addForm").addEventListener("submit",e=>{e.preventDefault();
   addItem(document.getElementById("newName").value,document.getElementById("newCat").value,document.getElementById("newExp").value,document.getElementById("newQty").value,document.getElementById("newUnit").value,document.getElementById("newShop").value);
   ["newName","newExp","newQty","newShop"].forEach(i=>document.getElementById(i).value="")});
@@ -1774,6 +1781,7 @@ document.addEventListener("submit",e=>{
   const n={...it,name,cat:f.c.value,exp:f.e.value||""};delete n.qty;delete n.unit;delete n.shop;
   const lo=parseFloat(String(f.lo.value).replace(",",".")), bu=parseFloat(String(f.bu.value).replace(",","."));delete n.low;delete n.buy;
   if(!isNaN(lo))n.low=lo;if(!isNaN(bu)&&bu>0)n.buy=bu;
+  const pn=parseFloat(String(f.pn.value).replace(",","."));delete n.packN;delete n.packU;if(!isNaN(pn)&&pn>0){n.packN=pn;n.packU=f.pu.value}
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
   if(shop)n.shop=shop;
   editItem="";upsert(n);render();put(n);toast("Guardado");
@@ -4594,7 +4602,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v123";
+const APPV="casa-v124";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
