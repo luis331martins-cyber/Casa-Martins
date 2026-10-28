@@ -81,6 +81,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .catg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;padding:6px 0}
 #meat .catg{grid-template-columns:repeat(2,minmax(0,1fr))}
 .addbox{display:flex;flex-direction:column;gap:12px}.addbox[hidden]{display:none}
+.navbar .navback{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 10px;margin-left:0;font-size:16px;font-weight:600}
 .lockb{margin-left:auto;padding:7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-weight:600;font-size:14px}
 .lockb.on{background:var(--accent);color:#fff}
 .lockb.nudge{animation:nudge .5s}@keyframes nudge{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
@@ -90,13 +91,13 @@ body:not(.qopen) #pantry .qrow .qb,body:not(.qopen) #meat .qrow .qb,body:not(.qo
 .cico{position:relative;width:68px;height:68px;border-radius:24%;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.35);outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
 .cico svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 .5px .5px rgba(0,0,0,.2))}
 .capp:active .cico{transform:scale(.94)}
-.sini{color:#fff;font-size:26px;font-weight:700;letter-spacing:.5px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.sini{color:#fff;font-size:26px;font-weight:800;letter-spacing:.5px;-webkit-text-stroke:1px rgba(0,0,0,.35);text-shadow:0 0 4px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4)}
 .capp .lbl{font-size:13px;font-weight:500}.capp .cnt{font-size:11px;color:var(--muted);margin-top:-3px}
 .cathead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cathead h3{margin:0!important;padding:0!important;font-size:20px!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .catback{display:inline-flex;align-items:center;gap:7px;padding:10px 16px 10px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-size:16px;font-weight:600}
 .catback svg{width:10px;height:17px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .lockb{padding:10px 16px!important;font-size:15px!important}
-.rsi{display:block}.rsi .bname{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.rsi{display:block}.rsi .bname{display:block;width:100%}
 .rsctl{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 .usep{padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
 .usep.on{background:#34c759;color:#fff}
@@ -1158,13 +1159,14 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="despensa" hidden></label>
     <button type="button" class="btn addopen" data-addopen="pAdd">＋ Adicionar produto</button>
     <div id="pAdd" class="addbox" hidden>
-    <form class="add" id="addForm" autocomplete="off">
+    <div id="pAddForm"></div>
+    <form class="add" id="addForm" autocomplete="off" hidden>
       <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
       <div class="more">
         <label class="f">Categoria
           <select id="newCat">
-            <option>Frigorífico</option><option>Despensa</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Outros</option>
+            <option>Frigorífico</option><option>Despensa</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Fruta</option>
           </select>
         </label>
         <input type="hidden" id="newExp">
@@ -1186,7 +1188,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="carne" hidden></label>
     <button type="button" class="btn addopen" data-addopen="mAdd">＋ Adicionar produto</button>
     <div id="mAdd" class="addbox" hidden>
-    <form class="add" id="meatForm" autocomplete="off">
+    <div id="mAddForm"></div>
+    <form class="add" id="meatForm" autocomplete="off" hidden>
       <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
       <div class="more">
@@ -1625,8 +1628,9 @@ addEventListener("unhandledrejection",e=>{const r=e.reason;showFatal(r&&(r.code?
 /* Dados incompletos (ex.: sem nome) não podem impedir a app de abrir */
 const fixNames=L=>(Array.isArray(L)?L:[]).filter(x=>x&&typeof x==="object").map(x=>({...x,name:String(x.name??x.title??"").trim()||"Sem nome"}));
 function safe(name,fn){try{return fn()}catch(err){showFatal(name+": "+(err&&err.message||err));console.error(err)}}
-const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Fruta","Outros"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
-const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Outros"];
+const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Bananas","Fruta"],["Maçãs","Fruta"],["Laranjas","Fruta"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
+const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Fruta"];
+const FRUIT=/fruta|banana|ma[cç][aã]s?\b|\bperas?\b|laranja|\buvas?\b|morango|kiwi|anan[aá]s|abacaxi|mel[aã]o|melancia|manga\b|mangas\b|p[eê]ssego|ameixa|cereja|lim[aã]o|lim[oõ]es|tangerina|clementina|framboesa|mirtilo|abacate|\bfigos?\b|rom[aã]|papaia|maracuj|nectarina|alperce|dióspiro|di[oó]spiro|lima\b/i;
 const MEAT=["Carne","Peixe"];
 const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Salsichas","Carne"],["Salsichas frescas","Carne"],["Almôndegas","Carne"],["Almôndegas de frango","Carne"],["Espetadas de frango","Carne"],["Espetadas mistas","Carne"],["Hambúrgueres","Carne"],["Febras","Carne"],["Panados","Carne"],["Nuggets","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Douradinhos","Peixe"],["Lulas","Peixe"],["Polvo","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
 const LV=[["Acabou","s0"],["Pouco","s1"],["Tenho","s2"]];
@@ -1681,7 +1685,7 @@ const HABITUAIS=[
   ["Leite","Frigorífico"],["Ovos","Frigorífico"],["Manteiga","Frigorífico"],["Queijo","Frigorífico"],["Fiambre","Frigorífico"],["Iogurtes","Frigorífico"],
   ["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Óleo","Despensa"],["Açúcar","Despensa"],["Sal","Despensa"],["Farinha","Despensa"],
   ["Café","Despensa"],["Cereais","Despensa"],["Atum","Despensa"],["Feijão","Despensa"],["Grão","Despensa"],["Polpa de tomate","Despensa"],["Batatas","Despensa"],
-  ["Cebolas","Despensa"],["Alhos","Despensa"],["Fruta","Outros"],["Água","Outros"],
+  ["Cebolas","Despensa"],["Alhos","Despensa"],["Fruta","Fruta"],["Água","Despensa"],
   ["Ervilhas","Congelados"],["Douradinhos","Congelados"],
   ["Detergente da loiça","Limpeza"],["Detergente da roupa","Limpeza"],["Lixívia","Limpeza"],["Sacos do lixo","Limpeza"],["Rolo de cozinha","Limpeza"],
   ["Papel higiénico","Higiene"],["Gel de banho","Higiene"],["Champô","Higiene"],["Pasta de dentes","Higiene"]];
@@ -1723,7 +1727,7 @@ function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!
 /* Que produtos usam "em uso + guardados": limpeza, higiene e coisas que se abrem e duram (azeite, café, detergente…).
    Iogurtes, leite, ovos, fruta, congelados, arroz, massa, latas… contam-se à unidade. Escolhido à mão no produto (mchosen), manda isso. */
 const RES_NAME=/azeite|[oó]leo|vinagre|caf[eé]|a[cç][uú]car|\bsal\b|farinha|detergente|amaciador|l[ií]xivia|champ[oô]|\bgel\b|sabonete|pasta de dentes|dent[ií]fric|desodori|papel|guardanapo|\brolo|esponja|sacos? do lixo|ketchup|maionese|mostarda|\bmel\b|compota|molho|tempero|caldo|fermento|\bch[aá]\b|cereais|limpa|ambientador|creme|protetor|cotonete|algod[aã]o|pensos|fraldas|toalhitas|pastilhas|sal fino|especiarias|canela|oregãos|orégãos|pimenta|manteiga de amendoim|nutella|chocolate em p[oó]|cacau/i;
-const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Congelados"].includes(i.cat)&&RES_NAME.test(i.name||""));
+const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Congelados","Fruta"].includes(i.cat)&&RES_NAME.test(i.name||""));
 function resToCnt(n){n.cnt=true;if(n.res!=null){n.qty=(n.use?1:0)+(+n.res||0);n.unit="un";if(n.want!=null)n.low=+n.want;n.lvl=autoLvl(n,n.qty)}["use","res","want"].forEach(k=>delete n[k]);return n}
 function cntToRes(n){delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}return toRes(n,true)}
 function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n))return resToCnt(n);if(!isRes(n))return n;
@@ -1732,31 +1736,46 @@ function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n
   return n}
 let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
+  /* "Outros" passou a "Fruta": fruta vai para lá, medicamentos para Higiene, o resto para Despensa */
+  for(const it of items.filter(i=>i.cat==="Outros")){const n={...it,cat:it.med?"Higiene":FRUIT.test(it.name||"")?"Fruta":"Despensa"};upsert(n);put(n);c++}
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
   /* 2.ª passagem (uma vez): cada produto fica com a forma de contar que faz sentido, se não foi escolhida à mão */
   for(const it of items.filter(i=>!i.rt2&&!i.mchosen&&!i.med&&!MEAT.includes(i.cat))){const n={...it,rt2:1}, want=resDefault(n);
     if(want&&n.cnt)cntToRes(n);else if(!want&&!n.cnt)resToCnt(n);upsert(n);put(n);c++}
   if(c)render()}
 /* "＋ Adicionar produto" abre (e fecha) os campos de adicionar */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-addopen]");if(!b)return;const box=document.getElementById(b.dataset.addopen);if(!box)return;
-  box.hidden=!box.hidden;b.textContent=box.hidden?"＋ Adicionar produto":"Fechar";b.classList.toggle("ghost",!box.hidden);if(!box.hidden){const f=box.querySelector("input");if(f)setTimeout(()=>f.focus(),50)}});
+/* O "adicionar" usa o mesmo formulário do editar (como contar, guardados, quero ter, onde se compra…); fecha ao gravar */
+function paintDraft(k){const el=document.getElementById(k+"AddForm");if(el&&draft[k]&&itemFormFn)el.innerHTML=itemFormFn(draft[k])}
+function syncDraft(k,f){const d=draft[k];if(!d||!f)return;d.name=f.n.value;if(f.c)d.cat=f.c.value;if(f.s)d.shop=f.s.value}
+function openDraft(k){const cat=catSel[k]||(k==="p"?"Frigorífico":"Carne"), d={id:"__new"+k,name:"",cat,lvl:2};
+  if(k==="m"){d.qty=1;d.unit="un"}else if(resDefault(d)){d.use=true;d.res=0}else d.cnt=true;
+  draft[k]=d;paintDraft(k);const box=document.getElementById(k+"Add");box.hidden=false;const b=document.querySelector(`[data-addopen="${k}Add"]`);if(b){b.textContent="Fechar";b.classList.add("ghost")}
+  setTimeout(()=>{const n=box.querySelector("input[name=n]");if(n)n.focus()},50)}
+function closeDraft(k){draft[k]=null;const box=document.getElementById(k+"Add");if(box)box.hidden=true;const el=document.getElementById(k+"AddForm");if(el)el.innerHTML="";
+  const b=document.querySelector(`[data-addopen="${k}Add"]`);if(b){b.textContent="＋ Adicionar produto";b.classList.remove("ghost")}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-addopen]");if(b){const k=b.dataset.addopen[0];if(draft[k])closeDraft(k);else openDraft(k);return}
+  const c=e.target.closest("[data-addclose]");if(c)closeDraft(c.dataset.addclose)});
+/* no novo produto: ao escrever o nome ou mudar a categoria, a forma de contar acompanha (se não foi escolhida à mão) */
+document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemform^='__new']");if(!f||!["n","c"].includes(e.target.name))return;const k=f.dataset.itemform.slice(5), d=draft[k];
+  if(!d||d.mchosen||k==="m")return;syncDraft(k,f);const w=resDefault(d);if(w===!d.cnt)return;if(w){delete d.cnt;d.use=true;d.res=0}else{d.cnt=true;delete d.use;delete d.res}
+  const shop=f.s.value;paintDraft(k);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g){g.s.value=shop;const x=g.querySelector("[name=rv],[name=q]");if(x)x.focus()}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:"",s:""};let qLock=true;
+const catSel={p:"",m:"",s:""};let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
-const SHOPCOL=[[/continente/,"#ef3b3b","#b0121b"],[/pingo/,"#7cc35a","#2e7d32"],[/lidl/,"#2f6fd6","#0b3f8f"],[/mercadona/,"#3cc477","#0f7a43"],[/aldi/,"#3aaee6","#0d4f8f"],
-  [/intermarch/,"#ef4b4b","#9c0012"],[/auchan|jumbo/,"#f05a5a","#b3202a"],[/minipre|dia\b/,"#f04848","#a3161c"],[/carne|talho/,"#c4535b","#7c2129"],[/peix/,"#4f9be0","#1f5a99"],[/farm/,"#4cc39a","#17795a"]];
+const SHOPCOL=[[/continente/,"#e30613","#ffffff"],[/pingo/,"#7ab929","#e2001a"],[/lidl/,"#0050aa","#fff000"],[/mercadona/,"#00a650","#f39200"],[/aldi/,"#00205b","#f39200"],
+  [/intermarch/,"#e2001a","#1d1d1b"],[/auchan|jumbo/,"#e2001a","#00a650"],[/minipre|\bdia\b/,"#e30613","#ffffff"],[/carne|talho/,"#8b1e2b","#e8c39e"],[/peix/,"#1f5a99","#9fd3f5"],[/farm/,"#00a651","#ffffff"]];
 const shopGrid=(names,by)=>`<div class="catg">${names.map(n=>{const L=by[n], k=n||"~", m=SHOPCOL.find(([re])=>re.test(n.toLowerCase())), g1=m?m[1]:"#9aa3ad", g2=m?m[2]:"#5d6670",
   ini=n?n.split(/\s+/).filter(w=>w.length>2||/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||n[0].toUpperCase():"?";
-  return `<button type="button" class="capp" data-catopen="s|${esc(k)}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><b class="sini">${esc(ini)}</b><span class="nbadge">${L.length}</span></span><span class="lbl">${n?esc(n):"Sem loja"}</span><span class="cnt">${L.length} para comprar</span></button>`}).join("")}</div>`;
+  return `<button type="button" class="capp" data-catopen="s|${esc(k)}"><span class="cico" style="background:linear-gradient(135deg,${g1} 0 50%,${g2} 50% 100%)"><b class="sini">${esc(ini)}</b><span class="nbadge">${L.length}</span></span><span class="lbl">${n?esc(n):"Sem loja"}</span><span class="cnt">${L.length} para comprar</span></button>`}).join("")}</div>`;
 const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/>'],
   "Despensa":["#e0a85a","#a8662a",'<path d="M8.5 3h7v3h-7z"/><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"/><path d="M6 11.5h12"/>'],
   "Congelados":["#8fd3f4","#3b8fc9",'<path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8M9.2 4l2.8 2 2.8-2M9.2 20l2.8-2 2.8 2"/>'],
   "Limpeza":["#6fcf97","#2e8b57",'<path d="M9 9h6l1 3.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 20v-7.5z"/><path d="M10 9V5.5h4.5l2.5 1.8M13 5.5V3h-2.5"/>'],
   "Higiene":["#c39bd3","#8e44ad",'<path d="M12 3s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.4 12 3 12 3z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>'],
-  "Outros":["#9aa3ad","#5d6670",'<circle cx="7.5" cy="7.5" r="2.2"/><circle cx="16.5" cy="7.5" r="2.2"/><circle cx="7.5" cy="16.5" r="2.2"/><circle cx="16.5" cy="16.5" r="2.2"/>'],
+  "Fruta":["#ff8f6b","#d83a3a",'<path d="M12 7.5c-1.6-1-4.6-1.3-6.3.8-1.9 2.3-1.3 6.6.9 9.7 1.4 2 3.1 3 4.4 2.5.5-.2.7-.3 1-.3s.5.1 1 .3c1.3.5 3-.5 4.4-2.5 2.2-3.1 2.8-7.4.9-9.7-1.7-2.1-4.7-1.8-6.3-.8z"/><path d="M12 7.5c0-2 .8-3.6 2.4-4.5"/><path d="M13 5.2c1.6-.9 3.4-.6 4.2.4-1.4 1-3.2 1-4.2-.4z"/>'],
   "Carne":["#ff8a7a","#b4424a",'<path d="M12.2 11.8 6.6 17.4"/><path d="M6.6 17.4a1.8 1.8 0 1 0-1.2 2.4 1.8 1.8 0 1 0 2.4-1.2"/><path d="M11.4 7.2a5 5 0 1 1 5.4 5.6l-3.4.9-2.9-2.9z"/>'],
   "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
-const catGrid=(cats,list,k)=>`<div class="catg">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO.Outros;
+const catGrid=(cats,list,k)=>`<div class="catg">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO.Despensa;
   return `<button type="button" class="capp" data-catopen="${k}|${c}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${nb?`<span class="nbadge">${nb}</span>`:""}</span><span class="lbl">${c}</span><span class="cnt">${L.length?L.length+" produto"+(L.length===1?"":"s"):"vazio"}</span></button>`}).join("")}</div>`;
 const catHead=(c,k,lb)=>`<div class="cathead"><button type="button" class="catback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>${lb||"Categorias"}</button><h3>${c}</h3>${k==="s"?"":`<button type="button" class="lockb${qLock?"":" on"}" data-qlock="1">${qLock?"Alterar":"✓ Concluído"}</button>`}</div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-catopen]");if(!b)return;const [k,c]=b.dataset.catopen.split("|");catSel[k]=c;editItem="";qLock=true;
@@ -1791,7 +1810,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const unitOpts=u=>[["un","un."],["pacotes","pacotes"],["kg","kg"],["g","g"],["L","L"],["ml","ml"],["latas","latas"],["garrafas","garrafas"],["caixas","caixas"],["doses","doses"],["sacos","sacos"]].map(([v,l])=>`<option value="${v}"${(u||"un")===v?" selected":""}>${l}</option>`).join("");
   const itemForm=i=>`<form class="bill-edit" data-itemform="${i.id}" autocomplete="off">
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
-      ${MEAT.includes(i.cat)?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
+      ${MEAT.includes(i.cat)&&!String(i.id).startsWith("__new")?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
         <span class="qty"><input name="bagn" type="number" min="1" step="any" inputmode="decimal" placeholder="un. neste saco"><button type="button" class="btn" data-bagadd="${i.id}">+ Juntar saco</button></span>${hasBags(i)?`<button type="button" class="chip" data-bagoff="${i.id}" style="justify-self:start">Deixar de contar por sacos</button>`:""}</label>`:""}
       ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + reserva (guardados)</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
       ${isRes(i)?`<label class="f">Guardados (reserva)<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
@@ -1807,17 +1826,19 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <input type="hidden" name="e" value="${i.exp||""}">
       <label class="f wide">Onde se compra<input name="s" list="shopList" value="${esc(i.shop||"")}" placeholder="ex.: Continente" autocapitalize="words"></label>
       <div class="chips wide">${shopsUsed().slice(0,8).map(n=>`<button type="button" class="chip" data-shop="${esc(n)}">${esc(n)}</button>`).join("")}</div>
-      <button class="btn" type="submit">Guardar</button>
+      ${String(i.id).startsWith("__new")?`<button class="btn" type="submit">Adicionar</button>
+      <button class="btn ghost" type="button" data-addclose="${i.id.slice(5)}">Cancelar</button>`:`<button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-cancelitem="1">Cancelar</button>
-      <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>
+      <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>`}
     </form>`;
+  itemFormFn=itemForm;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
       <div class="item rsi">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><span class="name">${esc(i.name)}</span>${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div>${(i.lvl??2)<2?`<div class="meta"><span class="lvlb ${lc}">${lt}</span></div>`:""}</button>
         <div class="rsctl">
           <button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>
           <div class="qrow" role="group" aria-label="Guardados de ${esc(i.name)}"><span class="bql">Guardados</span>
@@ -1889,9 +1910,9 @@ document.addEventListener("click",e=>{
 /* Guardar um produto editado. Quantidade 0 passa a "Acabou"; voltar a ter quantidade tira-o de "Acabou". */
 document.addEventListener("submit",e=>{
   const id=e.target.dataset.itemform;if(!id)return;e.preventDefault();
-  const it=items.find(x=>x.id===id);if(!it)return;
-  const f=e.target, name=f.n.value.trim();if(!name)return;
-  if(items.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  const nk=id.startsWith("__new")?id.slice(5):"", it=nk?(draft[nk]&&{...draft[nk],id:uid(),added:Date.now(),tidy:1,rtidy:1,rt2:1}):items.find(x=>x.id===id);if(!it)return;
+  const f=e.target, name=f.n.value.trim();if(!name){f.n.focus();return}
+  if(items.some(x=>x.id!==it.id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
   const q=parseFloat(String(f.q.value).replace(",",".")), shop=f.s.value.trim();
   const n={...it,name,cat:f.c.value,exp:f.e.value||"",tidy:1};delete n.qty;delete n.unit;delete n.shop;
   const lo=parseFloat(String(f.lo.value).replace(",",".")), bu=parseFloat(String(f.bu.value).replace(",","."));delete n.low;delete n.buy;
@@ -1902,6 +1923,9 @@ document.addEventListener("submit",e=>{
   if(isRes(n)&&f.rv){const rv=parseInt(f.rv.value), wv=parseInt(f.wv.value);delete n.qty;delete n.low;delete n.want;if(wv>=0)n.want=wv;
     if(f.iu)n.use=f.iu.checked;if(rv>=0)n.res=rv;else if(f.iu&&n.res==null&&!n.use)n.res=0;if(n.res!=null)n.lvl=resLvl(n)}
   if(shop)n.shop=shop;
+  if(nk){/* novo: se a forma de contar não foi escolhida, segue o nome (ex.: iogurtes à unidade, detergente em uso + guardados) */
+    if(!n.mchosen&&!MEAT.includes(n.cat)&&!n.med){const w=resDefault(n);if(w&&n.cnt)cntToRes(n);else if(!w&&!n.cnt)resToCnt(n)}
+    upsert(n);put(n);closeDraft(nk);render();toast(name+" adicionado");return}
   editItem="";upsert(n);render();put(n);toast("Guardado");
 });
 /* Proteção contra toques sem querer na Despensa e na Carne e Peixe: os −/+ e o "Em uso" estão trancados até tocar em "Alterar";
@@ -1932,7 +1956,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(
   const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:""}`);return}
   const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
 /* Mudar a forma de contar (no editar do produto) */
-document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const it=items.find(i=>i.id===sel.closest("form").dataset.itemform);if(!it)return;
+document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const fid=sel.closest("form").dataset.itemform;
+  if(fid.startsWith("__new")){const k=fid.slice(5), d=draft[k];if(!d)return;syncDraft(k,sel.form);d.mchosen=1;if(sel.value==="cnt"){d.cnt=true;delete d.use;delete d.res}else{delete d.cnt;d.use=true;d.res=0}paintDraft(k);return}
+  const it=items.find(i=>i.id===fid);if(!it)return;
   const n={...it,mchosen:1,rt2:1,rtidy:1};if(sel.value==="cnt"){if(n.res==null&&n.qty==null){n.qty=n.lvl>0?1:0;n.unit="un"}resToCnt(n);n.lvl=n.qty!=null?autoLvl(n,n.qty):n.lvl}else cntToRes(n);upsert(n);render();put(n)});
 /* Sacos em casa: juntar, tirar, deixar de contar por sacos (no editar do produto) */
 document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[data-bagdel],[data-bagoff]");if(!a)return;e.preventDefault();e.stopPropagation();
@@ -1998,8 +2024,8 @@ const ING={
   couve:["Couve",["couve","grelos","espinafre"],"Frigorífico"], cenoura:["Cenouras",["cenoura"],"Frigorífico"],
   legumes:["Legumes",["brocolo","courgete","courgette","feijao verde","legume","abobora","ervilha"],"Frigorífico"],
   grao:["Grão",["grao","feijao frade","feijao-frade"],"Despensa"], feijao:["Feijão",["feijao"],"Despensa"],
-  fruta:["Fruta",["fruta","banana","maca","pera","laranja","morango","kiwi"],"Outros"], cereais:["Cereais",["cereais","aveia","granola"],"Despensa"],
-  limao:["Limão",["limao"],"Outros"], milho:["Milho",["milho"],"Despensa"]
+  fruta:["Fruta",["fruta","banana","maca","pera","laranja","morango","kiwi"],"Fruta"], cereais:["Cereais",["cereais","aveia","granola"],"Despensa"],
+  limao:["Limão",["limao"],"Fruta"], milho:["Milho",["milho"],"Despensa"]
 };
 const RECIPES=[
   ["Bacalhau à Brás","refeicao",["bacalhau","ovos","batata","cebola"],[],["Desfia o bacalhau já demolhado.","Aloura a cebola em azeite, junta o bacalhau e a batata palha.","Junta os ovos batidos e mexe em lume brando até ficar cremoso."]],
@@ -2762,7 +2788,7 @@ function medDays(m){if(m.stock==null)return null;const P=medPlan(m,ymd(new Date(
 function medLow(m){if(m.stock==null)return false;const d=medDays(m);return d!=null?d<=(m.warnDays||7):m.stock<=5}
 /* Quando está a acabar, põe nas Compras (loja "Farmácia"); id fixo "med-…" para os dois telemóveis não o porem duas vezes */
 function medShopSync(){meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=>i.id===id), low=medLow(m)&&medActive(m,ymd(now));
-  if(low&&!it){const n={id,name:`${m.name} (${m.who})`,cat:"Outros",lvl:0,shop:"Farmácia",added:Date.now(),med:m.id};upsert(n);put(n)}
+  if(low&&!it){const n={id,name:`${m.name} (${m.who})`,cat:"Higiene",lvl:0,shop:"Farmácia",added:Date.now(),med:m.id};upsert(n);put(n)}
   else if(!low&&it&&it.lvl<2)remove(id)})}
 function medBought(id){const m=meds().find(x=>x.id===id);if(!m)return;const nm={...m,stock:Math.round(((+m.stock||0)+(+m.box||0))*100)/100};
   putBill(nm);if(items.some(i=>i.id==="med-"+id))remove("med-"+id);renderMeds();toast(`${m.name}: +${m.box} · restam ${String(nm.stock).replace(".",",")}`)}
@@ -4643,7 +4669,7 @@ const SC_MEAT=/frango|peru|porco|vaca|novilho|bife|carne|picad|costelet|entrecos
 const SC_CATS=[[/leite|iogur|queijo|manteiga|natas|ovos?\b|sumo|nata|requeij|kefir|tofu|margarin|mozzar|fiambre/,"Frigorífico"],[/congel|gelado|ultracong|douradinho|pizza|ervilha cong/,"Congelados"],
   [/detergent|lix[ií]via|amaciad|esfreg|limpa|sacos? do lixo|desinfet|lava.?lou[cç]a|pastilhas|esponja|guardanapo|rolo de cozinha|papel de cozinha/,"Limpeza"],
   [/champ[oô]|gel de banho|gel banho|pasta de dentes|pasta dent|escova de dentes|papel higi|desodoriz|fralda|toalhit|cotonete|sabonete|creme|penso|tamp[aã]o/,"Higiene"]];
-function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Peixe";if(SC_MEAT.test(t))return"Carne";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
+function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Peixe";if(SC_MEAT.test(t))return"Carne";if(FRUIT.test(t))return"Fruta";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
 const scWords=t=>noAcc(t).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
 function scMatch(name){const W=scWords(name);if(!W.length)return null;let best=null,bs=0;
   for(const it of items){const I=scWords(it.name);if(!I.length)continue;const hit=I.filter(w=>W.some(x=>x.startsWith(w.slice(0,5))||w.startsWith(x.slice(0,5)))).length;const sc=hit/I.length;
@@ -4770,7 +4796,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v136";
+const APPV="casa-v137";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
