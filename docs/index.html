@@ -85,7 +85,11 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lvlb{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;background:var(--fill);color:var(--muted)}
 .lvlb.s9{background:var(--fill);color:var(--muted)}.lvlb.s2{background:#dcf5e3;color:#1d7a3a}.lvlb.s1{background:#fff1d6;color:#9a5b00}.lvlb.s9{background:var(--fill);color:var(--muted)}
 .skipb{color:var(--accent);font-weight:600}
-.skipbtn{flex:none;background:var(--fill);color:var(--muted);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:600}
+.buyrow{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.buyrow .meta{font-size:14px;color:var(--muted)}.buyrow.off{opacity:.7}
+.buybtns{display:flex;flex-direction:column;gap:6px;flex:none}
+.bb{border-radius:10px;padding:8px 10px;font-size:13.5px;font-weight:600;background:var(--fill);color:var(--fg);white-space:nowrap}
+.bb.ok{background:#34c759;color:#fff}.bb.no{background:var(--fill);color:var(--muted)}
 .lvlb.s0{background:#ffe1df;color:#c4271b}
 .item.qty{flex-wrap:wrap;row-gap:8px}
 .x{background:transparent;color:var(--muted);width:32px;height:32px;font-size:1.1rem;line-height:1}
@@ -1466,7 +1470,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-lista" class="group" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
-    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”, separado pela loja onde se compra. Ao marcar como comprado, volta a “tenho”.</p>
+    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”, separado pela loja. <b>✓ Comprei</b> volta a “tenho” (e soma à quantidade); <b>✗ Não comprei</b> passa para o fim, até o voltares a pôr na lista.</p>
     <div id="shop" class="group"></div>
   </section>
 
@@ -1706,9 +1710,9 @@ function render(){
     </form>`;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[i.shop?esc(i.shop):"",e].filter(Boolean).join(" · ");
-    const [lt,lc]=i.skip&&(i.lvl??2)<2?["Não comprei","s9"]:LV[i.lvl??2];return `
+    const [lt,lc]=LV[i.lvl??2];return `
       <div class="item">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>${m?" · "+m:""}${(i.lvl??2)<2?` · <span class="skipb" data-skip="${i.id}" role="button">${i.skip?"voltar às compras":"não comprei"}</span>`:""}</div></button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>${m?" · "+m:""}</div></button>
         <div class="qrow" role="group" aria-label="Quantidade de ${esc(i.name)}">
           <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos ${esc(i.name)}">−</button>
           <span class="qv">${i.qty==null?"—":String(i.qty).replace(".",",")}<small>${i.qty==null?"qtd.":unitShort(i)}</small></span>
@@ -1731,10 +1735,11 @@ function render(){
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <label class="check"><input type="checkbox" data-buy="${i.id}">
-      <div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta" style="font-size:15px;color:var(--muted)">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div></div>
-      <button type="button" class="skipbtn" data-skip="${i.id}">Não comprei</button>
-    </label>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div></div>
+      <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
+  const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
+  if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
+      <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
 }
 
 /* ---------- eventos ---------- */
@@ -1774,13 +1779,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
     setQty(id,it.qty+unitStep(it.unit)*(+d));return}
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
-document.addEventListener("change",e=>{
-  const id=e.target.dataset.buy;if(!id)return;
-  e.target.closest(".check").classList.add("done");
-  setTimeout(()=>{const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
+function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};delete n.skip;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
-    setLevel(id,2);toast("Comprado")},350);
-});
+    setLevel(id,2);toast("Comprado")}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
 function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();if(tab==="cswitch")safe("Color Switch",csOpen);else if(typeof csPause==="function")csPause();
     if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="casa")safe("Casa",renderHome);if(tab==="viagens")safe("Viagens",renderTrips);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
@@ -4524,7 +4526,7 @@ document.getElementById("scanForm").addEventListener("submit",e=>{e.preventDefau
 /* "Não comprei": tira o produto das compras (fica como estava: Acabou/Pouco). Volta às compras ao tocar outra vez ou ao mudar a quantidade. */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if(!b)return;e.preventDefault();e.stopPropagation();
   const it=items.find(i=>i.id===b.dataset.skip);if(!it)return;const n={...it};if(it.skip)delete n.skip;else n.skip=Date.now();
-  upsert(n);render();put(n);toast(n.skip?`${it.name}: não comprei (saiu das compras)`:`${it.name} voltou às compras`)},true);
+  upsert(n);render();put(n);toast(n.skip?`${it.name}: não comprei`:`${it.name} voltou à lista`)},true);
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
 safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);
@@ -4585,7 +4587,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v121";
+const APPV="casa-v122";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
