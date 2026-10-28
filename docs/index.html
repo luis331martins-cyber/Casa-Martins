@@ -78,6 +78,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lvl button[aria-pressed="true"].s0{background:var(--bad-soft);color:var(--bad)}
 .row-actions{display:flex;gap:6px;align-items:center}
 /* Quantidade com − e +; o estado (Tenho/Pouco/Acabou) segue a quantidade */
+.opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
 .qrow .qv{min-width:48px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.1}
@@ -1605,7 +1606,7 @@ const COUNTU=["un","pacotes","latas","garrafas","caixas","doses","sacos"];
 const unitLow=u=>!u||COUNTU.includes(u)?1:u==="kg"||u==="L"?0.5:u==="g"?200:250;
 const unitStep=u=>u==="kg"||u==="L"?0.5:u==="g"||u==="ml"?100:1;
 const lowOf=i=>i.low!=null?+i.low:MEAT.includes(i.cat)?0:unitLow(i.unit);
-const buyOf=i=>i.buy!=null?+i.buy:MEAT.includes(i.cat)?1:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
+const buyOf=i=>i.buy!=null?+i.buy:isRes(i)?Math.max(1,wantOf(i)-(+i.res||0)+(i.use||i.res==null&&i.lvl>0?0:1)):MEAT.includes(i.cat)?1:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
 const autoLvl=(i,q)=>q<=0?0:q<=lowOf(i)?1:2;
 function setQty(id,q){const it=items.find(i=>i.id===id);if(!it)return;q=Math.max(0,Math.round(q*100)/100);
   const n={...it,qty:q,unit:it.unit||"un"};n.lvl=autoLvl(n,q);if(n.lvl===2||q>(+it.qty||0))delete n.skip;if(it.qty===q&&it.lvl===n.lvl)return;upsert(n);render();put(n)}
@@ -1639,7 +1640,7 @@ function addItem(name,cat,exp,qty,unit,shop){
   if(ex){toast(ex.name+" já está na lista");return}
   const q=parseFloat(String(qty??"").replace(",","."));shop=String(shop||"").trim();
   const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),tidy:1,...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
-  items.push(it);render();put(it);toast(name+" adicionado");
+  toRes(it);items.push(it);render();put(it);toast(name+" adicionado");
 }
 /* Produtos habituais da casa: juntados uma vez (marca "habituais-v1" na casa). Ids fixos "hab-…" e nomes já existentes
    são saltados, por isso os dois telemóveis nunca os duplicam. Ficam como "Tenho". */
@@ -1679,6 +1680,24 @@ const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="u
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
 const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
 let editItem="";
+/* Despensa "em uso + reserva": i.use (há um aberto), i.res (guardados), i.want (quero ter de reserva; 1 por defeito).
+   Tenho = em uso e reserva que chega; Pouco = em uso mas falta reserva; Acabou = nada. Sem i.res ainda (não indicado) vale o i.lvl.
+   Produtos contados à unidade (i.cnt), carne/peixe e medicamentos ficam com a quantidade normal. */
+const isRes=i=>!MEAT.includes(i.cat)&&!i.cnt&&!i.med;
+const wantOf=i=>i.want!=null?+i.want:1;
+const resLvl=n=>!n.use&&!(n.res>0)?0:(+n.res||0)>=wantOf(n)?2:1;
+const resText=i=>i.res==null?"":i.use?`1 em uso · ${i.res?`${i.res} guardado${i.res===1?"":"s"}`:"sem reserva"}`:"";
+function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));if(!use&&res>0){use=true;res--}
+  const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
+/* Passa um produto antigo (quantidade) para "em uso + reserva": o "Pouco quando tiver" vira "Quero ter de reserva" (dá o mesmo estado) */
+function toRes(n){n.rtidy=1;if(!isRes(n))return n;
+  if(n.qty!=null){if(!COUNTU.includes(n.unit||"un")){n.cnt=true;return n}
+    const q=Math.max(0,Math.ceil(+n.qty||0));if(n.low!=null&&n.want==null)n.want=Math.max(0,+n.low);n.use=q>0;n.res=Math.max(0,q-1);delete n.qty;delete n.low;delete n.packN;delete n.packU;n.lvl=resLvl(n)}
+  return n}
+let resTidyDone=false;
+function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
+  for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
+  if(c)render()}
 function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};if(lvl===2)delete n.skip;upsert(n);render();put(n)}
 
 /* ---------- datas ---------- */
@@ -1711,10 +1730,14 @@ function render(){
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
       ${MEAT.includes(i.cat)?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
         <span class="qty"><input name="bagn" type="number" min="1" step="any" inputmode="decimal" placeholder="un. neste saco"><button type="button" class="btn" data-bagadd="${i.id}">+ Juntar saco</button></span>${hasBags(i)?`<button type="button" class="chip" data-bagoff="${i.id}" style="justify-self:start">Deixar de contar por sacos</button>`:""}</label>`:""}
-      ${hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
+      ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + reserva (guardados)</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
+      ${isRes(i)?`<label class="f">Guardados (reserva)<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
+      <label class="f">Quero ter de reserva<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
+      <div hidden><input name="q"><input name="u" value="un"><input name="lo"><input name="pn"><input name="pu" value="un."></div>`:
+      hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
       <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>`}
-      <label class="f wide">Cada ${i.unit&&COUNTU.includes(i.unit)&&i.unit!=="un"?(SING[i.unit]||i.unit):"saco/caixa"} traz<span class="qty"><input name="pn" type="number" min="0" step="any" inputmode="decimal" value="${i.packN??""}" placeholder="ex.: 6"><select name="pu">${["un.","g","kg","doses","fatias"].map(u=>`<option${(i.packU||"un.")===u?" selected":""}>${u}</option>`).join("")}</select></span></label>
-      <label class="f">“Pouco” quando tiver<input name="lo" type="number" min="0" step="any" inputmode="decimal" value="${i.low??""}" placeholder="${String(unitLow(i.unit)).replace(".",",")}"></label>
+      ${isRes(i)?"":`<label class="f wide">Cada ${i.unit&&COUNTU.includes(i.unit)&&i.unit!=="un"?(SING[i.unit]||i.unit):"saco/caixa"} traz<span class="qty"><input name="pn" type="number" min="0" step="any" inputmode="decimal" value="${i.packN??""}" placeholder="ex.: 6"><select name="pu">${["un.","g","kg","doses","fatias"].map(u=>`<option${(i.packU||"un.")===u?" selected":""}>${u}</option>`).join("")}</select></span></label>
+      <label class="f">“Pouco” quando tiver<input name="lo" type="number" min="0" step="any" inputmode="decimal" value="${i.low??""}" placeholder="${String(unitLow(i.unit)).replace(".",",")}"></label>`}
       <label class="f">Compro de cada vez<input name="bu" type="number" min="0" step="any" inputmode="decimal" value="${i.buy??""}" placeholder="${String(buyOf({...i,low:i.low})).replace(".",",")}"></label>
       <label class="f">${MEAT.includes(i.cat)?"Tipo":"Categoria"}<select name="c">${(MEAT.includes(i.cat)?MEAT:CATS).map(c=>`<option${c===i.cat?" selected":""}>${c}</option>`).join("")}</select></label>
       <label class="f wide">Validade<input name="e" type="date" value="${i.exp||""}"></label>
@@ -1726,7 +1749,18 @@ function render(){
     </form>`;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
-    const [lt,lc]=LV[i.lvl??2];return `
+    const [lt,lc]=LV[i.lvl??2];
+    if(isRes(i)){const rs=i.res!=null, m2=[resText(i),e].filter(Boolean).join(" · "), ob=rs&&i.use?(i.res?"Abri outro":"Acabou o aberto"):"";return `
+      <div class="item">
+        <div style="min-width:0"><button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${rs?"":`data-cyc="${i.id}" role="button"`}>${lt}</span>${m2?" · "+m2:""}</div></button>
+          ${ob?`<button type="button" class="opn" data-opn="${i.id}">${ob}</button>`:""}</div>
+        <div class="qrow" role="group" aria-label="Reserva de ${esc(i.name)}">
+          <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um guardado de ${esc(i.name)}">−</button>
+          <span class="qv">${rs?i.res:"—"}<small>reserva</small></span>
+          <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais um guardado de ${esc(i.name)}">+</button>
+        </div>
+      </div>`}
+    return `
       <div class="item">
         <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
         <div class="qrow" role="group" aria-label="Quantidade de ${esc(i.name)}">
@@ -1752,9 +1786,9 @@ function render(){
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${hasBags(i)?` · saco de ${String(bagSize(i)).replace(".",",")} un.`:i.packN?" · "+packText({...i,qty:0}):""}</div>
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${isRes(i)&&resText(i)?" · "+resText(i):i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${hasBags(i)?` · saco de ${String(bagSize(i)).replace(".",",")} un.`:i.packN?" · "+packText({...i,qty:0}):""}</div>
       <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
-        <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
+        <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
       <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
@@ -1795,16 +1829,27 @@ document.addEventListener("submit",e=>{
   const pn=parseFloat(String(f.pn.value).replace(",","."));delete n.packN;delete n.packU;if(!isNaN(pn)&&pn>0){n.packN=pn;n.packU=f.pu.value}
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
   if(hasBags(n)){n.qty=bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
+  if(isRes(n)&&f.rv){const rv=parseInt(f.rv.value), wv=parseInt(f.wv.value);delete n.qty;delete n.low;delete n.want;if(wv>=0)n.want=wv;
+    if(rv>=0){n.res=rv;if(n.use==null)n.use=it.lvl>0||rv>0;if(!n.use&&n.res>0){n.use=true;n.res--}}if(n.res!=null)n.lvl=resLvl(n)}
   if(shop)n.shop=shop;
   editItem="";upsert(n);render();put(n);toast("Guardado");
 });
 document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const [id,d]=b.dataset.q.split("|"), it=items.find(i=>i.id===id);if(!it)return;
+    /* em uso + reserva: o −/+ mexe nos guardados */
+    if(isRes(it)){if(it.res==null){setRes(it,it.lvl>0,+d>0?1:0);return}if(+d<0&&!it.res)return;setRes(it,it.use,it.res+(+d));return}
     /* com sacos: tira (ou repõe) 1 un. do saco mais pequeno, que é o que está aberto */
     if(hasBags(it)){const bg=[...it.bags];if(+d<0){if(!bg.length)return;const k=bg.indexOf(Math.min(...bg));bg[k]=Math.round((bg[k]-1)*100)/100;if(bg[k]<=0)bg.splice(k,1)}
       else if(bg.length)bg[bg.indexOf(Math.min(...bg))]+=1;else bg.push(1);setBags(it,bg);return}
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
     setQty(id,it.qty+unitStep(it.unit)*(+d));return}
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
+/* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
+  const r=+it.res||0, n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
+/* Mudar a forma de contar (no editar do produto) */
+document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const it=items.find(i=>i.id===sel.closest("form").dataset.itemform);if(!it)return;
+  if(sel.value==="cnt"){const n={...it,cnt:true,qty:it.res==null?(it.lvl>0?1:0):(it.use?1:0)+(+it.res||0),unit:"un",rtidy:1};if(it.want!=null)n.low=+it.want;["use","res","want"].forEach(k=>delete n[k]);n.lvl=autoLvl(n,n.qty);upsert(n);render();put(n)}
+  else{const n={...it};delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}toRes(n);upsert(n);render();put(n)}});
 /* Sacos em casa: juntar, tirar, deixar de contar por sacos (no editar do produto) */
 document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[data-bagdel],[data-bagoff]");if(!a)return;e.preventDefault();e.stopPropagation();
   const [id,k]=(a.dataset.bagadd||a.dataset.bagdel||a.dataset.bagoff).split("|"), it=items.find(i=>i.id===id);if(!it)return;
@@ -1818,6 +1863,7 @@ const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
   const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
 function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
+    if(it&&isRes(it)){const n=setRes(it,it.use||(it.res==null&&it.lvl>0),(+it.res||0)+Math.ceil(buyAmt(it)),null,["skip","buyNow"]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
@@ -2448,7 +2494,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy)},
     ()=>{store=null;items=local.load();render()});
   store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
@@ -4559,8 +4605,9 @@ document.addEventListener("focusout",e=>{if(e.target.dataset&&(e.target.dataset.
 document.getElementById("scanClose").addEventListener("click",()=>{document.getElementById("scanSheet").hidden=true;scFound=[]});
 document.getElementById("scanForm").addEventListener("submit",e=>{e.preventDefault();let a=0,n=0;
   for(const x of scFound.filter(y=>y.on&&y.name.trim())){const m=scMatch(x.name);
-    if(m){const q=(m.qty!=null?+m.qty:(m.lvl>=2?1:0))+(+x.qty||1);setQty(m.id,q);a++}
-    else{const it={id:uid(),name:x.name.trim(),cat:scCat(x.name,scWhere),exp:"",added:Date.now(),qty:+x.qty||1,unit:x.unit||"un"};it.lvl=autoLvl(it,it.qty);items.push(it);put(it);n++}}
+    if(m&&isRes(m)){setRes(m,m.use||(m.res==null&&m.lvl>0),(+m.res||0)+Math.ceil(+x.qty||1));a++}
+    else if(m){const q=(m.qty!=null?+m.qty:(m.lvl>=2?1:0))+(+x.qty||1);setQty(m.id,q);a++}
+    else{const it={id:uid(),name:x.name.trim(),cat:scCat(x.name,scWhere),exp:"",added:Date.now(),qty:+x.qty||1,unit:x.unit||"un"};it.lvl=autoLvl(it,it.qty);toRes(it);items.push(it);put(it);n++}}
   render();document.getElementById("scanSheet").hidden=true;scFound=[];toast(`${a?a+" atualizado"+(a===1?"":"s"):""}${a&&n?" e ":""}${n?n+" novo"+(n===1?"":"s"):""}`||"Nada juntado")});
 /* "Não comprei": tira o produto das compras (fica como estava: Acabou/Pouco). Volta às compras ao tocar outra vez ou ao mudar a quantidade. */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if(!b)return;e.preventDefault();e.stopPropagation();
@@ -4579,7 +4626,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local"))safe("Carne (acerto)",meatTidy);
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -4637,7 +4684,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v128";
+const APPV="casa-v129";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
