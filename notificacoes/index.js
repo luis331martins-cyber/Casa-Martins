@@ -475,7 +475,7 @@ async function house(code, now) {
     if (mkC >= START && bs.length) {
       for (const b of bs) {
         if ((b.kind && b.kind !== "income") || !b.dd || !b.day || Math.min(b.day, lastC) !== now.d) continue;
-        if ((b.paid && b.paid[mkC] === false) || (b.ok && b.ok[mkC])) continue;
+        if ((b.paid && b.paid[mkC] != null) || (b.ok && b.ok[mkC])) continue; // já respondido (saiu/não saiu ou marcado à mão)
         const key = `b|${b.id}|${now.date}`;
         if (confSent.has(key)) continue;
         confSent.add(key);

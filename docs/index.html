@@ -2201,7 +2201,10 @@ const baseAmt=(b,k)=>{let v=+b.amount||0;if(b.from)for(const m of Object.keys(b.
 const monthAmt=(b,k)=>b.amounts&&b.amounts[k]!=null?+b.amounts[k]:typeof(b.paid&&b.paid[k])==="number"?b.paid[k]:baseAmt(b,k);
 const ymOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 /* Paga (ou recebida): paid[mês]=true/false; com débito direto (dd) fica paga sozinha quando passa o dia */
+/* Débitos diretos (contas) só ficam pagos quando se confirma que saíram (no "Confirmar" do Início ou marcando à mão);
+   meses antes do anterior contam como pagos. As receitas automáticas continuam a contar como recebidas no dia. */
 const isPaid=(b,k)=>{const p=b.paid&&b.paid[k];if(p!=null)return p!==false;if(!b.dd||!b.day)return false;
+  if(!isInc(b)){const pv=ymOf(new Date(now.getFullYear(),now.getMonth()-1,1));return k<pv}
   const cur=ymOf(now);if(k!==cur)return k<cur;return Math.min(b.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())<=now.getDate()};
 const paidAmt=(b,k)=>isPaid(b,k)?monthAmt(b,k):0;
 const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k),spentOf(b,k)):monthAmt(b,k);
@@ -2271,7 +2274,7 @@ function renderBills(){
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
   const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
   const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const overdue=curK<START?0:fixas().filter(b=>b.day&&b.day<=today&&!isPaid(b,curK)).length;
+  const overdue=curK<START?0:fixas().filter(b=>b.day&&b.day<=today&&!b.dd&&!isPaid(b,curK)).length;
   const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
   if(typeof renderCal==="function")renderCal();
   const el=document.getElementById("bills");
@@ -2335,7 +2338,7 @@ function renderBills(){
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:"Sem dia fixo";
-    if(!p&&isCur&&b.day){ if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
+    if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
     when+=only;
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
@@ -2357,7 +2360,7 @@ function renderBills(){
   el.innerHTML=list.length?(unp.map(billRow).join("")||`<div class="empty" style="padding:14px">Está tudo pago este mês ✓</div>`)+
     (pd.length?`<button type="button" class="paidfold" data-paidfold="1" aria-expanded="${pOpen}"><span>✓ Pagas (${pd.length}) · ${eur(pd.reduce((t,b)=>t+monthAmt(b,k),0))}</span><span class="go">${pOpen?"⌃":"›"}</span></button>`+(pOpen?pd.map(billRow).join(""):""):""):`<div class="empty">Ainda não há contas fixas.<br>Toca em <b>＋ Adicionar</b> para juntar a renda, a luz ou a água.</div>`;
   /* Os 3 quadrados (A pagar · Receitas · Gastos) e a linha do tempo do mês, com o que fica nas contas depois de cada dia */
-  {const uB=list.filter(b=>!isPaid(b,k)), uI=inc.filter(b=>!isPaid(b,k)), late=isCur?uB.filter(b=>b.day&&b.day<today).length:0;
+  {const uB=list.filter(b=>!isPaid(b,k)), uI=inc.filter(b=>!isPaid(b,k)), late=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd).length:0;
     const bLeft=buds.reduce((s2,b)=>s2+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), sum=L=>L.reduce((s2,b)=>s2+monthAmt(b,k),0), e0=v=>eur(v).replace(",00","");
     const tile=(id,ic,c1,c2,tn,v,sub,bd)=>`<button type="button" class="ctile" data-ctab="${id}" style="background:linear-gradient(160deg,${c1},${c2})">${bd?`<span class="nbadge">${bd}</span>`:""}<svg viewBox="0 0 24 24" aria-hidden="true">${BICS[ic]}</svg><span class="tn">${tn}</span><b>${v}</b><small>${sub}</small></button>`;
     document.getElementById("ctiles").innerHTML=tile("pagar","euro","#ff6b5e","#c4231b","A pagar",e0(sum(uB)),uB.length?`${uB.length} por pagar`:"tudo pago ✓",late)+
@@ -2365,12 +2368,13 @@ function renderBills(){
       tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0);
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
-    const lateL=isCur?uB.filter(b=>b.day&&b.day<today):[], groups={};
-    [...uB.filter(b=>!lateL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
+    const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
+    [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
     const dlab=d=>{if(d===99)return"Sem dia fixo";const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
       const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
     const rowOf=b=>isInc(b)?incRow(b):billRow(b);
-    let h="";if(lateL.length){run-=sum(lateL);h+=`<div class="tlday bad"><span>${lateL.length===1?"Atrasada":"Atrasadas"}</span><span></span></div><div class="group tlg">${lateL.map(rowOf).join("")}</div>`}
+    let h="";if(confL.length){run-=sum(confL);h+=`<div class="tlday" style="color:var(--warn)"><span>Débitos por confirmar</span><span></span></div><div class="group tlg">${confL.map(rowOf).join("")}</div>`}
+    if(lateL.length){run-=sum(lateL);h+=`<div class="tlday bad"><span>${lateL.length===1?"Atrasada":"Atrasadas"}</span><span></span></div><div class="group tlg">${lateL.map(rowOf).join("")}</div>`}
     Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(d=>{const L=groups[d].sort((a,b)=>isInc(b)-isInc(a)||byName(a,b));L.forEach(b=>{run+=isInc(b)?monthAmt(b,k):-monthAmt(b,k)});
       h+=`<div class="tlday"><span>${dlab(d)}</span><span>${hasBal&&d!==99?"fica "+eur(run):""}</span></div><div class="group tlg">${L.map(rowOf).join("")}</div>`});
     if(!h)h=`<div class="empty">Não há mais nada por pagar nem por receber este mês ✓</div>`;
@@ -2656,7 +2660,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     if(lim&&sp>lim)A.push({o:2,cls:"warn",dot:"bad",go:"despesas",name:`${b.name}: acima do orçamento`,meta:`Gasto ${eur(sp)} de ${eur(lim)}`});});
   if(mk>=START)fixas().forEach(b=>{if(!b.day||isPaid(b,mk))return;const d=Math.min(b.day,last);
     const v=eur(monthAmt(b,mk));
-    if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
+    if(d<td&&!b.dd)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     /* as contas e débitos de hoje e amanhã já aparecem na Agenda (e no "Confirmar"); aqui só as atrasadas */});
   fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>1||r.left<0)return;
     A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",rd:b.id,rdk:mk,name:`Dar a contagem: ${b.name}`,meta:r.left===0?"Último dia é hoje":"Último dia é amanhã"})});
@@ -3619,8 +3623,8 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
    Contas: b.ok[mês]=true quando se confirma; "Não saiu" põe paid[mês]=false (fica por pagar). Marcações: done / skip. */
 function confPending(){const L=[], t=new Date(), td=ymd(t), cur=ymOf(t), prev=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1));
   for(const k of [prev,cur]){if(k<START)continue;const last=new Date(+k.slice(0,4),+k.slice(5),0).getDate();
-    bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day).forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||(b.ok&&b.ok[k]))return;
-      const d=Math.min(b.day,last), ds=`${k}-${String(d).padStart(2,"0")}`;if(ds>td)return;if(p==null&&!isPaid(b,k))return;
+    bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day).forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||p===true||(b.ok&&b.ok[k]))return;
+      const d=Math.min(b.day,last), ds=`${k}-${String(d).padStart(2,"0")}`;if(ds>td)return;
       L.push({type:"bill",b,k,ds,inc:isInc(b)})})}
   const nm=minsNow(), lim=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()-10));
   events.filter(e=>!e.done&&!e.skip&&!/^🎒.*(Férias|Feriado)/.test(e.title||"")).forEach(e=>{const end=evEnd(e);
@@ -4937,7 +4941,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v152";
+const APPV="casa-v153";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
