@@ -1693,9 +1693,10 @@ let editItem="";
    Produtos contados à unidade (i.cnt), carne/peixe e medicamentos ficam com a quantidade normal. */
 const isRes=i=>!MEAT.includes(i.cat)&&!i.cnt&&!i.med;
 const wantOf=i=>i.want!=null?+i.want:1;
-const resLvl=n=>!n.use&&!(n.res>0)?0:(+n.res||0)>=wantOf(n)?2:1;
-const resText=i=>i.res==null?"":i.use?`1 em uso · ${i.res?`${i.res} guardado${i.res===1?"":"s"}`:"sem reserva"}`:"";
-function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));if(!use&&res>0){use=true;res--}
+/* conta o total (aberto + guardados): falta reserva quando o que sobra além de 1 é menos do que "quero ter" */
+const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);return !h?0:h-1>=wantOf(n)?2:1};
+const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} guardado${i.res===1?"":"s"}`:""):`1 em uso · ${i.res?`${i.res} guardado${i.res===1?"":"s"}`:"sem reserva"}`;
+function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
   const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
 /* Passa um produto antigo (quantidade) para "em uso + reserva": o "Pouco quando tiver" vira "Quero ter de reserva" (dá o mesmo estado) */
 function toRes(n){n.rtidy=1;if(!isRes(n))return n;
@@ -1756,6 +1757,7 @@ function render(){
       ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + reserva (guardados)</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
       ${isRes(i)?`<label class="f">Guardados (reserva)<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
       <label class="f">Quero ter de reserva<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
+      <label class="tick wide">Há um em uso (aberto)<input type="checkbox" name="iu"${i.use||(i.use==null&&(i.lvl??2)>0)?" checked":""}></label>
       <div hidden><input name="q"><input name="u" value="un"><input name="lo"><input name="pn"><input name="pu" value="un."></div>`:
       hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
       <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>`}
@@ -1773,7 +1775,7 @@ function render(){
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];
-    if(isRes(i)){const rs=i.res!=null, m2=[resText(i),e].filter(Boolean).join(" · "), ob=rs&&i.use?(i.res?"Abri outro":"Acabou o aberto"):"";return `
+    if(isRes(i)){const rs=i.res!=null, m2=[resText(i),e].filter(Boolean).join(" · "), ob=i.use?(i.res?"Abri outro":"Acabou o aberto"):i.use===false||(i.lvl??2)===0?"Pôr em uso":"";return `
       <div class="item">
         <div style="min-width:0"><button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${rs?"":`data-cyc="${i.id}" role="button"`}>${lt}</span>${m2?" · "+m2:""}</div></button>
           ${ob?`<button type="button" class="opn" data-opn="${i.id}">${ob}</button>`:""}</div>
@@ -1853,7 +1855,7 @@ document.addEventListener("submit",e=>{
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
   if(hasBags(n)){n.qty=bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
   if(isRes(n)&&f.rv){const rv=parseInt(f.rv.value), wv=parseInt(f.wv.value);delete n.qty;delete n.low;delete n.want;if(wv>=0)n.want=wv;
-    if(rv>=0){n.res=rv;if(n.use==null)n.use=it.lvl>0||rv>0;if(!n.use&&n.res>0){n.use=true;n.res--}}if(n.res!=null)n.lvl=resLvl(n)}
+    if(f.iu)n.use=f.iu.checked;if(rv>=0)n.res=rv;else if(f.iu&&n.res==null&&!n.use)n.res=0;if(n.res!=null)n.lvl=resLvl(n)}
   if(shop)n.shop=shop;
   editItem="";upsert(n);render();put(n);toast("Guardado");
 });
@@ -1868,7 +1870,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
 /* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
-  const r=+it.res||0, n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
+  const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:""}`);return}
+  const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
 /* Mudar a forma de contar (no editar do produto) */
 document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const it=items.find(i=>i.id===sel.closest("form").dataset.itemform);if(!it)return;
   if(sel.value==="cnt"){const n={...it,cnt:true,qty:it.res==null?(it.lvl>0?1:0):(it.use?1:0)+(+it.res||0),unit:"un",rtidy:1};if(it.want!=null)n.low=+it.want;["use","res","want"].forEach(k=>delete n[k]);n.lvl=autoLvl(n,n.qty);upsert(n);render();put(n)}
@@ -1886,7 +1889,7 @@ const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
   const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
 function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
-    if(it&&isRes(it)){const n=setRes(it,it.use||(it.res==null&&it.lvl>0),(+it.res||0)+Math.ceil(buyAmt(it)),null,["skip","buyNow"]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
+    if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow"]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
@@ -4707,7 +4710,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v130";
+const APPV="casa-v131";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
