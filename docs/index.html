@@ -80,10 +80,12 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 /* Quantidade com − e +; o estado (Tenho/Pouco/Acabou) segue a quantidade */
 .catg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;padding:6px 0}
 #meat .catg{grid-template-columns:repeat(2,minmax(0,1fr))}
+.addbox{display:flex;flex-direction:column;gap:12px}.addbox[hidden]{display:none}
 .capp{background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;color:var(--fg)}
 .cico{position:relative;width:68px;height:68px;border-radius:24%;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.35);outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
 .cico svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 .5px .5px rgba(0,0,0,.2))}
 .capp:active .cico{transform:scale(.94)}
+.sini{color:#fff;font-size:26px;font-weight:700;letter-spacing:.5px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
 .capp .lbl{font-size:13px;font-weight:500}.capp .cnt{font-size:11px;color:var(--muted);margin-top:-3px}
 .cathead{display:flex;align-items:center;gap:10px}.cathead h3{margin:0}.cathead .navback{position:static}
 .rsi{display:block}.rsi .bname{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
@@ -1146,6 +1148,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <h1 class="large">Despensa</h1>
     <div class="summary" id="summary"></div>
     <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="despensa" hidden></label>
+    <button type="button" class="btn addopen" data-addopen="pAdd">＋ Adicionar produto</button>
+    <div id="pAdd" class="addbox" hidden>
     <form class="add" id="addForm" autocomplete="off">
       <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -1164,6 +1168,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
       <div class="chips" id="chips"></div>
     </div>
+    </div>
     <div id="pantry" class="group"></div>
   </section>
 
@@ -1171,6 +1176,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carne e Peixe</span><span></span></nav>
     <h1 class="large">Carne e Peixe</h1>
     <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="carne" hidden></label>
+    <button type="button" class="btn addopen" data-addopen="mAdd">＋ Adicionar produto</button>
+    <div id="mAdd" class="addbox" hidden>
     <form class="add" id="meatForm" autocomplete="off">
       <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -1186,6 +1193,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <summary>Sugestões para adicionar <span id="meatSugN"></span></summary>
       <div class="chips" id="meatChips"></div>
     </details>
+    </div>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
   </section>
@@ -1486,7 +1494,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-lista" class="group" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
-    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”, separado pela loja. <b>✓ Comprei</b> volta a “tenho” (e soma à quantidade); <b>✗ Não comprei</b> passa para o fim, até o voltares a pôr na lista.</p>
+    <p class="note" style="margin:0">Entra aqui tudo o que marcares como “pouco” ou “acabou”. Toca numa loja para ver a lista, dividida por categoria. <b>✓ Comprei</b> volta a “tenho” (e soma à quantidade); <b>✗ Não comprei</b> passa para o fim, até o voltares a pôr na lista.</p>
     <div id="shop" class="group"></div>
   </section>
 
@@ -1712,8 +1720,17 @@ let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
   if(c)render()}
+/* "＋ Adicionar produto" abre (e fecha) os campos de adicionar */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-addopen]");if(!b)return;const box=document.getElementById(b.dataset.addopen);if(!box)return;
+  box.hidden=!box.hidden;b.textContent=box.hidden?"＋ Adicionar produto":"Fechar";b.classList.toggle("ghost",!box.hidden);if(!box.hidden){const f=box.querySelector("input");if(f)setTimeout(()=>f.focus(),50)}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:""};
+const catSel={p:"",m:"",s:""};
+/* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
+const SHOPCOL=[[/continente/,"#ef3b3b","#b0121b"],[/pingo/,"#7cc35a","#2e7d32"],[/lidl/,"#2f6fd6","#0b3f8f"],[/mercadona/,"#3cc477","#0f7a43"],[/aldi/,"#3aaee6","#0d4f8f"],
+  [/intermarch/,"#ef4b4b","#9c0012"],[/auchan|jumbo/,"#f05a5a","#b3202a"],[/minipre|dia\b/,"#f04848","#a3161c"],[/carne|talho/,"#c4535b","#7c2129"],[/peix/,"#4f9be0","#1f5a99"],[/farm/,"#4cc39a","#17795a"]];
+const shopGrid=(names,by)=>`<div class="catg">${names.map(n=>{const L=by[n], k=n||"~", m=SHOPCOL.find(([re])=>re.test(n.toLowerCase())), g1=m?m[1]:"#9aa3ad", g2=m?m[2]:"#5d6670",
+  ini=n?n.split(/\s+/).filter(w=>w.length>2||/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||n[0].toUpperCase():"?";
+  return `<button type="button" class="capp" data-catopen="s|${esc(k)}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><b class="sini">${esc(ini)}</b><span class="nbadge">${L.length}</span></span><span class="lbl">${n?esc(n):"Sem loja"}</span><span class="cnt">${L.length} para comprar</span></button>`}).join("")}</div>`;
 const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/>'],
   "Despensa":["#e0a85a","#a8662a",'<path d="M8.5 3h7v3h-7z"/><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"/><path d="M6 11.5h12"/>'],
   "Congelados":["#8fd3f4","#3b8fc9",'<path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8M9.2 4l2.8 2 2.8-2M9.2 20l2.8-2 2.8 2"/>'],
@@ -1724,9 +1741,9 @@ const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12
   "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
 const catGrid=(cats,list,k)=>`<div class="catg">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO.Outros;
   return `<button type="button" class="capp" data-catopen="${k}|${c}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${nb?`<span class="nbadge">${nb}</span>`:""}</span><span class="lbl">${c}</span><span class="cnt">${L.length?L.length+" produto"+(L.length===1?"":"s"):"vazio"}</span></button>`}).join("")}</div>`;
-const catHead=(c,k)=>`<div class="cathead"><button type="button" class="navback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><h3>${c}</h3></div>`;
+const catHead=(c,k,lb)=>`<div class="cathead"><button type="button" class="navback" data-catopen="${k}|"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>${lb||"Categorias"}</button><h3>${c}</h3></div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-catopen]");if(!b)return;const [k,c]=b.dataset.catopen.split("|");catSel[k]=c;editItem="";
-  const sel=document.getElementById(k==="p"?"newCat":"mCat");if(c&&sel)sel.value=c;render();(document.getElementById(k==="p"?"pantry":"meat")).scrollIntoView({block:"start",behavior:"smooth"})});
+  const sel=k==="s"?null:document.getElementById(k==="p"?"newCat":"mCat");if(c&&sel)sel.value=c;render();(document.getElementById({p:"pantry",m:"meat",s:"shop"}[k])).scrollIntoView({block:"start",behavior:"smooth"})});
 function setLevel(id,lvl){const it=items.find(i=>i.id===id);if(!it||it.lvl===lvl)return;const n={...it,lvl};if(lvl===2)delete n.skip;upsert(n);render();put(n)}
 
 /* ---------- datas ---------- */
@@ -1817,11 +1834,15 @@ function render(){
   /* Compras separadas pela loja onde se compra; o que não tem loja fica no fim */
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
-  shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${isRes(i)&&resText(i)?" · "+resText(i):i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${hasBags(i)?` · saco de ${String(bagSize(i)).replace(".",",")} un.`:i.packN?" · "+packText({...i,qty:0}):""}</div>
+  const buyRow=i=>`
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${isRes(i)&&resText(i)?" · "+resText(i):i.qty!=null?" · tens "+qtyText(i):""}${hasBags(i)?` · saco de ${String(bagSize(i)).replace(".",",")} un.`:i.packN?" · "+packText({...i,qty:0}):""}</div>
       <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
         <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
-      <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
+      <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`;
+  /* Cada loja é um ícone; lá dentro a lista dividida por categoria */
+  const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
+  shop.innerHTML=!toBuy.length?`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`:
+    catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+[...CATS,...MEAT].map(c=>{const L=inShop.filter(i=>i.cat===c);return L.length?`<h3>${c}</h3>`+L.map(buyRow).join(""):""}).join(""):shopGrid(shopNames,byShop);
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
       <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
@@ -4722,7 +4743,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v132";
+const APPV="casa-v133";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
