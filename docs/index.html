@@ -2542,9 +2542,14 @@ const ALI={euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 1
   gauge:'<path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 15l3.5-4.5"/><circle cx="12" cy="15.5" r="1"/>',cart:'<path d="M3 4h2.5l2 11h10.5l2-8H6.5"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/>',
   clock:'<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',pill:'<rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M10 9.2l4 5.6"/>',
   gift:'<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-5-4-5-1.5S10 9 12 9zM12 9c1.5-3 5-4 5-1.5S14 9 12 9z"/>',plane:'<path d="M2.5 13.5 21 6l-4 13-4.5-5-4 3v-4.5z"/>',
-  chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'};
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',shield:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',house:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/>',
+  car:'<path d="M5 16v-4l2-5h10l2 5v4z"/><path d="M5 12h14"/><circle cx="8" cy="16.5" r="1.5"/><circle cx="16" cy="16.5" r="1.5"/>',idc:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 15.5c.7-1.3 1.6-2 2.5-2s1.8.7 2.5 2M14 10h4M14 13.5h4"/>',
+  card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'};
 function alKind(a){const n=a.name||"";if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
   if(/^Escrever o que entrou|^Atualizar/.test(n))return["pen","#0a84ff"];if(/^Débito/.test(n))return["bank","#0a84ff"];if(a.go==="despesas")return["euro",a.cls==="bad"?"#ff453a":"#ff9f0a"];
+  /* prazos (seguro, garantias, carro, documentos, cartões): vermelho se já passou */
+  const late=a.cls==="bad", dl={casa:[/seguro/i.test(n)?"shield":"house","#a2845e"],carro:["car","#30b0c7"],docs:["idc","#5e5ce6"],cartoes:["card","#af52de"],poupancas:["cash","#34c759"]}[a.go];
+  if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
 function alertsHTML(A){const st=alStyle(), at=a=>`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`;
@@ -4836,7 +4841,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v144";
+const APPV="casa-v145";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
