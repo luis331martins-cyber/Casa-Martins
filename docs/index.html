@@ -86,6 +86,11 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .capp:active .cico{transform:scale(.94)}
 .capp .lbl{font-size:13px;font-weight:500}.capp .cnt{font-size:11px;color:var(--muted);margin-top:-3px}
 .cathead{display:flex;align-items:center;gap:10px}.cathead h3{margin:0}.cathead .navback{position:static}
+.rsi{display:block}.rsi .bname{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.rsctl{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.usep{padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
+.usep.on{background:#34c759;color:#fff}
+.rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
@@ -1150,7 +1155,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
             <option>Frigorífico</option><option>Despensa</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Outros</option>
           </select>
         </label>
-        <label class="f">Validade (opcional)<input type="date" id="newExp"></label>
+        <input type="hidden" id="newExp">
         <label class="f">Quantidade<span class="qty"><input id="newQty" type="number" min="0" step="any" inputmode="decimal" placeholder="1"><select id="newUnit" aria-label="Unidade"><option value="un">un.</option><option value="pacotes">pacotes</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="latas">latas</option><option value="garrafas">garrafas</option><option value="caixas">caixas</option><option value="doses">doses</option><option value="sacos">sacos</option></select></span></label>
         <label class="f">Onde se compra<input id="newShop" list="shopList" placeholder="ex.: Continente" autocapitalize="words"></label>
       </div>
@@ -1171,7 +1176,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <button class="btn" type="submit">Adicionar</button>
       <div class="more">
         <label class="f">Tipo<select id="mCat"><option>Carne</option><option>Peixe</option></select></label>
-        <label class="f">Validade<input type="date" id="mExp"></label>
+        <input type="hidden" id="mExp">
         <label class="f">Quantidade<span class="qty"><input id="mQty" type="number" min="0" step="any" inputmode="decimal" placeholder="1"><select id="mUnit" aria-label="Unidade"><option value="un">un.</option><option value="pacotes">pacotes</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="latas">latas</option><option value="garrafas">garrafas</option><option value="caixas">caixas</option><option value="doses">doses</option><option value="sacos">sacos</option></select></span></label>
         <label class="f">Cada saco/caixa traz<span class="qty"><input id="mPack" type="number" min="0" step="any" inputmode="decimal" placeholder="ex.: 6"><select id="mPackU" aria-label="Unidade"><option>un.</option><option>g</option><option>kg</option><option>doses</option><option>fatias</option></select></span></label>
         <label class="f">Onde se compra<input id="mShop" list="shopList" placeholder="ex.: Talho" autocapitalize="words"></label>
@@ -1765,7 +1770,7 @@ function render(){
       <label class="f">“Pouco” quando tiver<input name="lo" type="number" min="0" step="any" inputmode="decimal" value="${i.low??""}" placeholder="${String(unitLow(i.unit)).replace(".",",")}"></label>`}
       <label class="f">Compro de cada vez<input name="bu" type="number" min="0" step="any" inputmode="decimal" value="${i.buy??""}" placeholder="${String(buyOf({...i,low:i.low})).replace(".",",")}"></label>
       <label class="f">${MEAT.includes(i.cat)?"Tipo":"Categoria"}<select name="c">${(MEAT.includes(i.cat)?MEAT:CATS).map(c=>`<option${c===i.cat?" selected":""}>${c}</option>`).join("")}</select></label>
-      <label class="f wide">Validade<input name="e" type="date" value="${i.exp||""}"></label>
+      <input type="hidden" name="e" value="${i.exp||""}">
       <label class="f wide">Onde se compra<input name="s" list="shopList" value="${esc(i.shop||"")}" placeholder="ex.: Continente" autocapitalize="words"></label>
       <div class="chips wide">${shopsUsed().slice(0,8).map(n=>`<button type="button" class="chip" data-shop="${esc(n)}">${esc(n)}</button>`).join("")}</div>
       <button class="btn" type="submit">Guardar</button>
@@ -1775,14 +1780,16 @@ function render(){
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];
-    if(isRes(i)){const rs=i.res!=null, m2=[resText(i),e].filter(Boolean).join(" · "), ob=i.use?(i.res?"Abri outro":"Acabou o aberto"):i.use===false||(i.lvl??2)===0?"Pôr em uso":"";return `
-      <div class="item">
-        <div style="min-width:0"><button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta"><span class="lvlb ${lc}" ${rs?"":`data-cyc="${i.id}" role="button"`}>${lt}</span>${m2?" · "+m2:""}</div></button>
-          ${ob?`<button type="button" class="opn" data-opn="${i.id}">${ob}</button>`:""}</div>
-        <div class="qrow" role="group" aria-label="Reserva de ${esc(i.name)}">
-          <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um guardado de ${esc(i.name)}">−</button>
-          <span class="qv">${rs?i.res:"—"}<small>reserva</small></span>
-          <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais um guardado de ${esc(i.name)}">+</button>
+    /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
+    if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
+      <div class="item rsi">
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><span class="name">${esc(i.name)}</span>${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</button>
+        <div class="rsctl">
+          <button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>
+          <div class="qrow" role="group" aria-label="Guardados de ${esc(i.name)}"><span class="bql">Guardados</span>
+            <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um guardado de ${esc(i.name)}">−</button>
+            <span class="qv">${rs?i.res:0}</span>
+            <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais um guardado de ${esc(i.name)}">+</button></div>
         </div>
       </div>`}
     return `
@@ -1868,6 +1875,11 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
     setQty(id,it.qty+unitStep(it.unit)*(+d));return}
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
+/* Botão "Em uso": desligar = acabou o aberto; ligar = abriu um (sai dos guardados, se houver) */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.use);if(!it)return;
+  const on=it.use!=null?!!it.use:(it.lvl??2)>0, r=+it.res||0;
+  if(on){setRes(it,false,r);toast(r?`Acabou o aberto · ${r} guardado${r===1?"":"s"}`:"Acabou · vai para as compras")}
+  else{setRes(it,true,r>0?r-1:0);toast(r?"Em uso · saiu 1 dos guardados":"Em uso")}},true);
 /* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
   const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:""}`);return}
@@ -4710,7 +4722,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v131";
+const APPV="casa-v132";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
