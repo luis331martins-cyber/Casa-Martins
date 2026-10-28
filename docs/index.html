@@ -214,12 +214,21 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .rdovl{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .rdsheet{width:100%;max-width:520px;background:var(--surface);color:var(--fg);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
 .rdh{font-size:19px;font-weight:700}.rdm{color:var(--muted);margin-bottom:4px}
-#tab-despesas[data-ct="pagar"] [data-ctp]:not([data-ctp~="pagar"]),#tab-despesas[data-ct="receitas"] [data-ctp]:not([data-ctp~="receitas"]),#tab-despesas[data-ct="gastos"] [data-ctp]:not([data-ctp~="gastos"]){display:none!important}
+#tab-despesas[data-ct="mes"] [data-ctp]:not([data-ctp~="mes"]),#tab-despesas[data-ct="pagar"] [data-ctp]:not([data-ctp~="pagar"]),#tab-despesas[data-ct="receitas"] [data-ctp]:not([data-ctp~="receitas"]),#tab-despesas[data-ct="gastos"] [data-ctp]:not([data-ctp~="gastos"]){display:none!important}
 .chero{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .chero .tot{background:none!important;border:0!important;padding:0!important;box-shadow:none!important}
 .chero .hbig .k{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.chero .hbig .v{font-size:32px;font-weight:700}
 .ctri{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;border-top:1px solid var(--line);padding-top:10px}.ctri .k{font-size:12px;color:var(--muted)}.ctri .v{font-size:14px;font-weight:600;white-space:nowrap}
-.ctabs{display:grid!important;grid-template-columns:repeat(3,1fr)}
+.ctiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ctile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:96px;padding:10px;border-radius:16px;color:#fff;text-align:left;font:inherit;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:opacity .2s}
+.ctile svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-bottom:auto}
+.ctile .tn{font-size:12.5px;font-weight:600}.ctile b{font-size:18px;white-space:nowrap}.ctile small{font-size:11px;opacity:.92}
+.ctile .nbadge{top:-6px;right:-6px}
+#tab-despesas:not([data-ct="mes"]) .ctile{opacity:.5}
+#tab-despesas[data-ct="pagar"] .ctile[data-ctab="pagar"],#tab-despesas[data-ct="receitas"] .ctile[data-ctab="receitas"],#tab-despesas[data-ct="gastos"] .ctile[data-ctab="gastos"]{opacity:1;outline:3px solid #fff;outline-offset:-3px}
+.cttl{display:flex;align-items:center;justify-content:space-between}.cttl h3{margin:0!important;font-size:19px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
+.tlday{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:12px 4px 5px}.tlday span:last-child{font-weight:500;text-transform:none;letter-spacing:0}
+.tlday.bad{color:var(--bad)}.tlg{gap:0!important}
 .bname.wi{display:flex!important;align-items:center;gap:12px;min-width:0}.bname.wi .bt{min-width:0;display:block}
 .bic{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center}.bic svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .paidfold{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--surface);color:var(--muted);font:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--line);text-align:left}
@@ -1564,9 +1573,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
       <p class="note" style="margin:0">Pago <b id="vPaid"></b> · Falta <b id="vDue" style="color:var(--bad)"></b></p>
     </div>
-    <div class="seg ctabs" role="tablist" aria-label="Contas">
-      <button type="button" data-ctab="pagar">A pagar</button><button type="button" data-ctab="receitas">Receitas</button><button type="button" data-ctab="gastos">Gastos</button>
-    </div>
+    <div class="ctiles" id="ctiles" role="tablist" aria-label="Contas"></div>
+    <p class="note" style="margin:-4px 0 0;text-align:center" data-ctp="mes">Toca num quadrado para ver só esse tipo.</p>
+    <div class="cttl" data-ctp="pagar receitas gastos"><h3 id="cttlT"></h3><button type="button" class="back" data-ctab="mes">‹ Ver o mês todo</button></div>
+    <div id="timeline" class="group" data-ctp="mes"></div>
     <div class="sortbar" data-ctp="pagar receitas"><span class="note">Ordenar por</span>
       <div class="seg" role="group" aria-label="Ordenar">
         <button type="button" data-sort="day">Dia</button><button type="button" data-sort="amt">Valor</button><button type="button" data-sort="name">Nome</button>
@@ -2311,7 +2321,7 @@ function renderBills(){
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
-  document.getElementById("incomes").innerHTML=inc.length?inc.map(b=>{if(b.id===editBill)return editRow(b,"Receita");
+  const incRow=b=>{if(b.id===editBill)return editRow(b,"Receita");
     const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
     const cx=isCaixa(b)&&b.caixa&&b.caixa[k];
@@ -2320,7 +2330,8 @@ function renderBills(){
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
       <div class="amt">+${eur(monthAmt(b,k))}</div>
-    </div>`}).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
+    </div>`};
+  document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:"Sem dia fixo";
@@ -2345,6 +2356,28 @@ function renderBills(){
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
   el.innerHTML=list.length?(unp.map(billRow).join("")||`<div class="empty" style="padding:14px">Está tudo pago este mês ✓</div>`)+
     (pd.length?`<button type="button" class="paidfold" data-paidfold="1" aria-expanded="${pOpen}"><span>✓ Pagas (${pd.length}) · ${eur(pd.reduce((t,b)=>t+monthAmt(b,k),0))}</span><span class="go">${pOpen?"⌃":"›"}</span></button>`+(pOpen?pd.map(billRow).join(""):""):""):`<div class="empty">Ainda não há contas fixas.<br>Toca em <b>＋ Adicionar</b> para juntar a renda, a luz ou a água.</div>`;
+  /* Os 3 quadrados (A pagar · Receitas · Gastos) e a linha do tempo do mês, com o que fica nas contas depois de cada dia */
+  {const uB=list.filter(b=>!isPaid(b,k)), uI=inc.filter(b=>!isPaid(b,k)), late=isCur?uB.filter(b=>b.day&&b.day<today).length:0;
+    const bLeft=buds.reduce((s2,b)=>s2+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), sum=L=>L.reduce((s2,b)=>s2+monthAmt(b,k),0), e0=v=>eur(v).replace(",00","");
+    const tile=(id,ic,c1,c2,tn,v,sub,bd)=>`<button type="button" class="ctile" data-ctab="${id}" style="background:linear-gradient(160deg,${c1},${c2})">${bd?`<span class="nbadge">${bd}</span>`:""}<svg viewBox="0 0 24 24" aria-hidden="true">${BICS[ic]}</svg><span class="tn">${tn}</span><b>${v}</b><small>${sub}</small></button>`;
+    document.getElementById("ctiles").innerHTML=tile("pagar","euro","#ff6b5e","#c4231b","A pagar",e0(sum(uB)),uB.length?`${uB.length} por pagar`:"tudo pago ✓",late)+
+      tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(uI)),uI.length?"por receber":"tudo recebido ✓",0)+
+      tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0);
+    const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
+    let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
+    const lateL=isCur?uB.filter(b=>b.day&&b.day<today):[], groups={};
+    [...uB.filter(b=>!lateL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
+    const dlab=d=>{if(d===99)return"Sem dia fixo";const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
+      const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
+    const rowOf=b=>isInc(b)?incRow(b):billRow(b);
+    let h="";if(lateL.length){run-=sum(lateL);h+=`<div class="tlday bad"><span>${lateL.length===1?"Atrasada":"Atrasadas"}</span><span></span></div><div class="group tlg">${lateL.map(rowOf).join("")}</div>`}
+    Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(d=>{const L=groups[d].sort((a,b)=>isInc(b)-isInc(a)||byName(a,b));L.forEach(b=>{run+=isInc(b)?monthAmt(b,k):-monthAmt(b,k)});
+      h+=`<div class="tlday"><span>${dlab(d)}</span><span>${hasBal&&d!==99?"fica "+eur(run):""}</span></div><div class="group tlg">${L.map(rowOf).join("")}</div>`});
+    if(!h)h=`<div class="empty">Não há mais nada por pagar nem por receber este mês ✓</div>`;
+    if(hasBal&&bLeft)h+=`<p class="note" style="margin:8px 4px 0">Depois dos gastos do mês ainda disponíveis (${eur(bLeft)}), fica <b>${eur(run-bLeft)}</b>.</p>`;
+    const pdAll=[...list.filter(b=>isPaid(b,k)),...inc.filter(b=>isPaid(b,k))];
+    if(pdAll.length)h+=`<button type="button" class="paidfold" style="margin-top:10px;border-radius:12px" data-tlpaid="1" aria-expanded="${tlPaidOpen}"><span>✓ Pagas e recebidas (${pdAll.length})</span><span class="go">${tlPaidOpen?"⌃":"›"}</span></button>`+(tlPaidOpen?`<div class="group tlg" style="margin-top:6px">${pdAll.map(rowOf).join("")}</div>`:"");
+    document.getElementById("timeline").innerHTML=h}
   const unpaid=list.filter(b=>!isPaid(b,k)).length, pa=document.getElementById("payAll");
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>String(b.name||"").toLowerCase()));
@@ -2394,15 +2427,17 @@ document.getElementById("bType").addEventListener("change",e=>{const t=e.target.
   document.getElementById("bDay").disabled=t==="budget";renderBills()});
 /* As caixas Entra e Sai levam às receitas e às despesas */
 /* Contas em três separadores (A pagar · Receitas · Gastos); cada telemóvel lembra-se do último */
-let cTab=(()=>{try{return localStorage.getItem("casa-ctab")||"pagar"}catch(e){return"pagar"}})(), paidOpen=false;
+let cTab="mes", paidOpen=false, tlPaidOpen=false;
 function applyCTab(){const sec=document.getElementById("tab-despesas");if(sec)sec.dataset.ct=cTab;document.querySelectorAll(".ctabs [data-ctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ctab===cTab));
-  const ab=document.getElementById("billAddOpen");if(ab&&document.getElementById("billAddBox").hidden)ab.textContent={pagar:"＋ Adicionar conta a pagar",receitas:"＋ Adicionar receita",gastos:"＋ Adicionar gastos do mês"}[cTab]}
-document.addEventListener("click",e=>{const t=e.target.closest("[data-ctab]");if(!t)return;cTab=t.dataset.ctab;try{localStorage.setItem("casa-ctab",cTab)}catch(err){}applyCTab();
-  if(t.closest(".ctri"))document.querySelector(".ctabs").scrollIntoView({behavior:"smooth",block:"start"})});
+  const t=document.getElementById("cttlT");if(t)t.textContent={pagar:"A pagar",receitas:"Receitas",gastos:"Gastos do mês"}[cTab]||"";
+  const ab=document.getElementById("billAddOpen");if(ab&&document.getElementById("billAddBox").hidden)ab.textContent={pagar:"＋ Adicionar conta a pagar",receitas:"＋ Adicionar receita",gastos:"＋ Adicionar gastos do mês"}[cTab]||"＋ Adicionar"}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-ctab]");if(!t)return;const v=t.dataset.ctab;cTab=t.classList.contains("ctile")&&cTab===v?"mes":v;applyCTab();
+  if(t.closest(".ctri"))document.getElementById("ctiles").scrollIntoView({behavior:"smooth",block:"start"})});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-tlpaid]");if(!t)return;tlPaidOpen=!tlPaidOpen;renderBills()});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-paidfold]");if(!t)return;paidOpen=!paidOpen;renderBills()});
 document.getElementById("billAddOpen").addEventListener("click",()=>{const box=document.getElementById("billAddBox"), b=document.getElementById("billAddOpen");box.hidden=!box.hidden;
   if(box.hidden){applyCTab();b.classList.remove("ghost");return}b.textContent="Fechar";b.classList.add("ghost");
-  document.getElementById("bType").value={pagar:"fixa",receitas:"income",gastos:"budget"}[cTab];document.getElementById("bType").dispatchEvent(new Event("change"));setTimeout(()=>document.getElementById("bName").focus(),50)});
+  document.getElementById("bType").value={pagar:"fixa",receitas:"income",gastos:"budget"}[cTab]||"fixa";document.getElementById("bType").dispatchEvent(new Event("change"));setTimeout(()=>document.getElementById("bName").focus(),50)});
 document.getElementById("billForm").addEventListener("submit",()=>setTimeout(()=>{if(!document.getElementById("bName").value){document.getElementById("billAddBox").hidden=true;document.getElementById("billAddOpen").classList.remove("ghost");applyCTab()}},0));
 applyCTab();
 document.addEventListener("click",e=>{const t=e.target.closest("[data-scroll]");if(t)document.getElementById(t.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});
@@ -4902,7 +4937,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v151";
+const APPV="casa-v152";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
