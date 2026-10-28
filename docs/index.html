@@ -1168,10 +1168,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label class="f">Onde se compra<input id="mShop" list="shopList" placeholder="ex.: Talho" autocapitalize="words"></label>
       </div>
     </form>
-    <div>
-      <p class="note" style="margin:0 0 6px">Adicionar rápido</p>
+    <details class="import" id="meatSug">
+      <summary>Sugestões para adicionar <span id="meatSugN"></span></summary>
       <div class="chips" id="meatChips"></div>
-    </div>
+    </details>
     <div id="meat" class="group"></div>
     <p class="note" style="margin:0">O que marcares como “Pouco” ou “Acabou” entra também na lista de compras.</p>
   </section>
@@ -1742,7 +1742,8 @@ function render(){
 
   const meat=document.getElementById("meat");
   meat.innerHTML=sorted.some(i=>MEAT.includes(i.cat))?groups(MEAT):`<div class="empty">Ainda não tens carne nem peixe registados.<br>Adiciona acima ou toca num dos atalhos.</div>`;
-  document.getElementById("meatChips").innerHTML=MQUICK.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
+  const mSug=MQUICK.filter(([n])=>!have.has(n.toLowerCase()));document.getElementById("meatSugN").textContent=mSug.length?`(${mSug.length})`:"";
+  document.getElementById("meatChips").innerHTML=mSug.map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os atalhos na lista.</span>`;
   const mExp=items.filter(i=>MEAT.includes(i.cat)&&(d=>d!==null&&d<=3)(daysLeft(i.exp)));
   const mb=document.getElementById("meatBadge");mb.hidden=!mExp.length;mb.textContent=mExp.length;
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
@@ -4636,7 +4637,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v127";
+const APPV="casa-v128";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
