@@ -224,8 +224,8 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .bic{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center}.bic svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .paidfold{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--surface);color:var(--muted);font:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--line);text-align:left}
 #accounts:not(:has(form)):has(.bill.acc){display:flex!important;flex-direction:row;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#accounts:not(:has(form))>.bill.acc{flex:0 0 72%;scroll-snap-align:start;grid-template-columns:1fr;gap:6px;min-height:84px}#accounts:not(:has(form))>.bill.acc:only-child{flex-basis:100%}
-#accounts:not(:has(form))>.bill.acc .amt{font-size:21px}
+#accounts:not(:has(form))>.bill.acc{flex:0 0 calc(50% - 5px);scroll-snap-align:start;grid-template-columns:1fr;gap:2px;min-height:0;padding:10px 12px!important}
+#accounts:not(:has(form))>.bill.acc .name{font-size:14px}#accounts:not(:has(form))>.bill.acc .amt{font-size:17px}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -4902,7 +4902,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v150";
+const APPV="casa-v151";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
