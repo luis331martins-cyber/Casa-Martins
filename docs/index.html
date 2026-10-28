@@ -88,6 +88,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .buyrow{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .buyrow .meta{font-size:14px;color:var(--muted)}.buyrow.off{opacity:.7}
 .buybtns{display:flex;flex-direction:column;gap:6px;flex:none}
+.buyq{margin-top:6px;justify-content:flex-start;gap:8px}.buyq .bql{font-size:13px;color:var(--muted);font-weight:600}
 .bb{border-radius:10px;padding:8px 10px;font-size:13.5px;font-weight:600;background:var(--fill);color:var(--fg);white-space:nowrap}
 .bb.ok{background:#34c759;color:#fff}.bb.no{background:var(--fill);color:var(--muted)}
 .lvlb.s0{background:#ffe1df;color:#c4271b}
@@ -1735,7 +1736,9 @@ function render(){
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div></div>
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}</div>
+      <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
+        <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i)})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
       <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
@@ -1779,8 +1782,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
     setQty(id,it.qty+unitStep(it.unit)*(+d));return}
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
+/* Quanto comprar: escolhido nas Compras (fica em i.buyNow), senão o habitual do produto */
+const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
+document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
+  const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
 function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
-    if(it&&it.qty!=null){const q=Math.max(0,it.qty)+buyOf(it);const n={...it,qty:q,lvl:Math.max(2,autoLvl(it,q))};delete n.skip;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
+    if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
 function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
@@ -4587,7 +4594,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v122";
+const APPV="casa-v123";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

@@ -1,6 +1,6 @@
 /* Service worker: guarda a app para funcionar sem rede e mostra as notificações push.
    Ao mudar ficheiros da app, sobe a versão para os telemóveis irem buscar a nova. */
-const VERSION="casa-v122";
+const VERSION="casa-v123";
 const SHELL=["./","index.html","casa-firebase.js","firebase-config.js","manifest.json",
   "icons/casam.svg","icons/casam-180.png","icons/casam-192.png","icons/casam-512.png",
   ...["despensa","carne","lista","comer","plano","despesas","creditos","cartoes","poupancas","docs","meds","saude","carro","videos","jogos","gear","anos","escola","viagens","casa"].map(n=>`icons/3d/${n}.webp`)];
