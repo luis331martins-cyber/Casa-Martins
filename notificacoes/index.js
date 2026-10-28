@@ -186,6 +186,18 @@ async function morning(code, now) {
     }
   }
 
+  /* Acerto com a Mãe (ou outra pessoa): a dia 5 lembra quanto passa (metade das contas "half" do mês menos as "all" do mês anterior) */
+  if (now.d === 5 && mk >= START) {
+    const pk = now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${String(now.m - 1).padStart(2, "0")}`;
+    const AC = bills.filter((b) => !b.kind && b.ac && b.acm);
+    for (const w of [...new Set(AC.map((b) => b.ac))]) {
+      const rec = bills.find((x) => x.kind === "acerto" && x.who === w);
+      if (rec && rec.done && rec.done[mk]) continue;
+      const tot = AC.filter((b) => b.ac === w).reduce((t, b) => t + (b.acm === "half" ? monthAmt(b, mk) / 2 : -monthAmt(b, pk)), 0);
+      partes.push({title: `🤝 Acerto com ${w} hoje`, body: tot >= 0 ? `${w} passa-te ${eur(tot)}` : `Passas a ${w} ${eur(-tot)}`, go: "despesas", tag: "acerto-" + mk});
+    }
+  }
+
   /* Valores que mudam todos os meses (cartões, água, luz…): pede cada um no dia em que se fica a saber o valor
      (b.askDay; por defeito CGD Gold 11, WiZink 17, ActivoBank 1, Galp/Luz 25, Água/SMAS 2, Vodafone 25), igual à app. */
   {

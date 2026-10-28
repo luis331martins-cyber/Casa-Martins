@@ -2389,7 +2389,7 @@ function renderBills(){
       const rows=L.map(b=>{if(b.id===editBill)return editRow(b,"Despesa");const half=b.acm==="half", kk=half?k:pk, v=half?monthAmt(b,k)/2:monthAmt(b,kk), cf=half||(b.conf&&b.conf[kk]);
         return {v:half?v:-v,h:`<div class="bill"><button type="button" class="bname wi" data-editbill="${b.id}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}${half?" (metade)":` de ${pName}`}</div><div class="meta">${half?`${esc(w)} paga metade · dia ${b.day||1}`:`pago por ${esc(w)} · ${cf?'<span class="ok">valor confirmado ✓</span>':`<span class="loanlink" data-acval="${b.id}|${kk}" role="button">confirmar o valor ›</span>`}`}</div></span></button><div class="amt"${half?' style="color:var(--good)"':""}>${half?"+":"−"}${eur(v)}</div></div>`}});
       const tot=rows.reduce((t,x)=>t+(x.v||0),0);acL.push({w,tot,dn:!!dn});
-      return `<div class="acbox"><div class="ach">🤝 Acerto com ${esc(w)} · início de ${mName}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
+      return `<div class="acbox"><div class="ach">🤝 Acerto com ${esc(w)} · dia ${AC_DAY} de ${mName}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
         <div class="act"><span>${tot>=0?`${esc(w)} passa-te`:`Passas a ${esc(w)}`}</span><b>${eur(Math.abs(tot))}</b></div>
         ${dn?`<button type="button" class="back" data-acdone="${esc(w)}|${k}|0">✓ Acertado${rec.done[k].at?" a "+new Date(rec.done[k].at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"}):""} · desfazer</button>`:`<button type="button" class="btn" data-acdone="${esc(w)}|${k}|1">✓ Já acertámos</button>`}</div>`}).join("")}
   /* Os 3 quadrados (A pagar · Receitas · Gastos) e a linha do tempo do mês, com o que fica nas contas depois de cada dia */
@@ -2403,10 +2403,10 @@ function renderBills(){
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
     const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
     [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
-    acL.filter(x=>!x.dn).forEach(x=>{const d=isCur?Math.max(1,today):1;(groups[d]=groups[d]||[]).push({acerto:x,name:"Acerto com "+x.w})});
+    acL.filter(x=>!x.dn).forEach(x=>{const d=isCur?Math.max(AC_DAY,today):AC_DAY;(groups[d]=groups[d]||[]).push({acerto:x,name:"Acerto com "+x.w})});
     const dlab=d=>{if(d===99)return"Sem dia fixo";const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
       const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
-    const rowOf=b=>b.acerto?`<div class="bill"><button type="button" class="bname wi" data-ctab="receitas"><span class="bic" style="background:#34c759" aria-hidden="true"><svg viewBox="0 0 24 24">${BICS.cash}</svg></span><span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">metade da Medicare − água · toca para ver</div></span></button><div class="amt" style="color:${b.acerto.tot>=0?"var(--good)":"var(--bad)"}">${b.acerto.tot>=0?"+":"−"}${eur(Math.abs(b.acerto.tot))}</div></div>`:isInc(b)?incRow(b):billRow(b);
+    const rowOf=b=>b.acerto?`<div class="bill"><button type="button" class="bname wi" data-ctab="receitas"><span class="bic" style="background:#34c759" aria-hidden="true"><svg viewBox="0 0 24 24">${BICS.cash}</svg></span><span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${isCur&&today>AC_DAY?`<span class="warn">era dia ${AC_DAY}</span> · `:""}metade da Medicare − água · toca para ver</div></span></button><div class="amt" style="color:${b.acerto.tot>=0?"var(--good)":"var(--bad)"}">${b.acerto.tot>=0?"+":"−"}${eur(Math.abs(b.acerto.tot))}</div></div>`:isInc(b)?incRow(b):billRow(b);
     let h="";if(confL.length){run-=sum(confL);h+=`<div class="tlday" style="color:var(--warn)"><span>Débitos por confirmar</span><span></span></div><div class="group tlg">${confL.map(rowOf).join("")}</div>`}
     if(lateL.length){run-=sum(lateL);h+=`<div class="tlday bad"><span>${lateL.length===1?"Atrasada":"Atrasadas"}</span><span></span></div><div class="group tlg">${lateL.map(rowOf).join("")}</div>`}
     Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(d=>{const L=groups[d].sort((a,b)=>isInc(b)-isInc(a)||byName(a,b));L.forEach(b=>{run+=b.acerto?b.acerto.tot:isInc(b)?monthAmt(b,k):-monthAmt(b,k)});
@@ -2471,6 +2471,12 @@ function applyCTab(){const sec=document.getElementById("tab-despesas");if(sec)se
   const ab=document.getElementById("billAddOpen");if(ab&&document.getElementById("billAddBox").hidden)ab.textContent={pagar:"＋ Adicionar conta a pagar",receitas:"＋ Adicionar receita",gastos:"＋ Adicionar gastos do mês"}[cTab]||"＋ Adicionar"}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-ctab]");if(!t)return;const v=t.dataset.ctab;cTab=t.classList.contains("ctile")&&cTab===v?"mes":v;applyCTab();
   if(t.closest(".ctri"))document.getElementById("ctiles").scrollIntoView({behavior:"smooth",block:"start"})});
+/* Dia do acerto com a outra pessoa (ex.: a Mãe passa o dinheiro a dia 5) */
+const AC_DAY=5;
+/* Acerto do mês k para o Início e notificações: {w, tot} por pessoa (metade das contas "half" de k menos as "all" do mês anterior) */
+function acertoTotals(k){const pk=ymOf(new Date(+k.slice(0,4),+k.slice(5)-2,1)), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm);
+  return [...new Set(AC.map(b=>b.ac))].map(w=>{const rec=bills.find(x=>x.kind==="acerto"&&x.who===w);
+    return {w,done:!!(rec&&rec.done&&rec.done[k]),tot:AC.filter(b=>b.ac===w).reduce((t,b)=>t+(b.acm==="half"?monthAmt(b,k)/2:-monthAmt(b,pk)),0)}})}
 /* Acerto: confirmar o valor da conta paga pela outra pessoa, e marcar o mês como acertado */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-acval]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.acval.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
   const v=prompt(`Valor da ${b.name} de ${mFull(k).split(" de ")[0]} (€):`,String(Math.round(monthAmt(b,k)*100)/100).replace(".",","));if(v===null)return;
@@ -2682,14 +2688,14 @@ const ALI={euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 1
   chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',shield:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',house:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/>',
   car:'<path d="M5 16v-4l2-5h10l2 5v4z"/><path d="M5 12h14"/><circle cx="8" cy="16.5" r="1.5"/><circle cx="16" cy="16.5" r="1.5"/>',idc:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 15.5c.7-1.3 1.6-2 2.5-2s1.8.7 2.5 2M14 10h4M14 13.5h4"/>',
   card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',bag:'<path d="M7 8a5 5 0 0 1 10 0v12H7z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0M7 13h10M10 16h4"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'};
-function alKind(a){const n=a.name||"";if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
+function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
   if(/^Escrever o que entrou|^Atualizar/.test(n))return["pen","#0a84ff"];if(/^Débito/.test(n))return["bank","#0a84ff"];if(a.go==="despesas")return["euro",a.cls==="bad"?"#ff453a":"#ff9f0a"];
   /* prazos (seguro, garantias, carro, documentos, cartões): vermelho se já passou */
   const late=a.cls==="bad", dl={casa:[/seguro/i.test(n)?"shield":"house","#a2845e"],carro:["car","#30b0c7"],docs:["idc","#5e5ce6"],cartoes:["card","#af52de"],poupancas:["cash","#34c759"]}[a.go];
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
-function alertsHTML(A){const st=alStyle(), at=a=>a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`;
+function alertsHTML(A){const st=alStyle(), at=a=>a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
   return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
@@ -2721,6 +2727,9 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
   if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>1)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
     A.push({o:d<=1?1:3,cls:d<=1&&n?"warn":"",dot:"bl",go:"viagens",name:`✈️ ${t.name} ${d===0?"é hoje":d===1?"é amanhã":`daqui a ${d} dias`}`,meta:P.length?(n?`Falta arrumar ${n} de ${P.length} coisas na mala`:"Mala pronta ✓"):"Sem lista da mala"})});
+  /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
+  if(td>=AC_DAY-1&&mk>=START)acertoTotals(mk).filter(x=>!x.done).forEach(x=>A.push({o:td>=AC_DAY?1:3,cls:td>AC_DAY?"warn":"",dot:"bl",go:"despesas",acr:1,
+    name:`Acerto com ${x.w}${td<AC_DAY?" amanhã":td===AC_DAY?" hoje":""}`,meta:x.tot>=0?`${x.w} passa-te ${eur(x.tot)}`:`Passas a ${x.w} ${eur(-x.tot)}`}));
   /* Escola: hoje/amanhã sem aulas (férias ou feriado marcados na Escola) */
   [[todayS,"Hoje"],[tomS,"Amanhã"]].forEach(([ds,lb])=>{const wd=new Date(ds+"T12:00").getDay();if(wd===0||wd===6)return;
     const e=events.find(e=>/^🎒.*(Férias|Feriado)/.test(e.title||"")&&e.date<=ds&&evEnd(e)>=ds);
@@ -4994,7 +5003,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v158";
+const APPV="casa-v159";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
