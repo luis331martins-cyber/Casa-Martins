@@ -211,6 +211,15 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .alert .go{color:var(--muted)}
 .alert.bad{border-color:var(--bad);background:var(--bad-soft)}
 .alert.warn{border-color:transparent;background:var(--warn-soft)}
+.algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
+.alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
+.alic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}.alic svg,.altile svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.alt{min-width:0;display:flex;flex-direction:column}.alt .name{font-size:16px;overflow-wrap:anywhere}.alt .meta{font-size:13px;color:var(--muted)}.alrow .go{color:var(--muted);font-size:20px}
+.altiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.altile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:104px;padding:12px;border-radius:18px;color:#fff;text-align:left;font:inherit;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 75%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 75%,#000));box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.altile svg{width:26px;height:26px;margin-bottom:auto}.altile .atn{font-size:15px;font-weight:600;line-height:1.2}.altile .atm{font-size:12.5px;opacity:.92;line-height:1.2}
 .adot{width:10px;height:10px;border-radius:50%}
 .adot.ev{background:var(--accent)}.adot.bl{background:#2d5bb0}.adot.ex{background:var(--warn)}.adot.bad{background:var(--bad)}
 /* Casa partilhada: código e notificações */
@@ -1035,6 +1044,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="name">Estilo dos ícones</div>
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
+      </div>
+      <div class="name">Estilo dos alertas</div>
+      <div class="seg" role="group" aria-label="Estilo dos alertas" style="display:grid;grid-template-columns:1fr 1fr 1fr">
+        <button type="button" data-alstyle="A">Lista</button><button type="button" data-alstyle="B">Com ícones</button><button type="button" data-alstyle="C">Quadrados</button>
       </div>
       <div class="name">Cor das letras e dos rebordos do Início</div>
       <div class="hdrcols" role="group" aria-label="Cor das letras do Início">
@@ -2523,6 +2536,20 @@ function renderCal(){
   document.getElementById("dayList").innerHTML=rows||`<p class="note" style="margin:0">Nada marcado para este dia.</p>`;
   renderAlerts();
 }
+/* Estilo dos alertas no Início (cada telemóvel escolhe na ⚙️): A lista de cartões, B um só cartão estilo iPhone, C quadrados */
+const alStyle=()=>{try{return localStorage.getItem("casa-alertas")||"A"}catch(e){return"A"}};
+const ALI={euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 13.5h8"/>',bank:'<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3.5 19.5h17"/>',
+  gauge:'<path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 15l3.5-4.5"/><circle cx="12" cy="15.5" r="1"/>',cart:'<path d="M3 4h2.5l2 11h10.5l2-8H6.5"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/>',
+  clock:'<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',pill:'<rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M10 9.2l4 5.6"/>',
+  gift:'<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-5-4-5-1.5S10 9 12 9zM12 9c1.5-3 5-4 5-1.5S14 9 12 9z"/>',plane:'<path d="M2.5 13.5 21 6l-4 13-4.5-5-4 3v-4.5z"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'};
+function alKind(a){const n=a.name||"";if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
+  if(/^Escrever o que entrou|^Atualizar/.test(n))return["pen","#0a84ff"];if(/^Débito/.test(n))return["bank","#0a84ff"];if(a.go==="despesas")return["euro",a.cls==="bad"?"#ff453a":"#ff9f0a"];
+  return {meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
+const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
+function alertsHTML(A){const st=alStyle(), at=a=>`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`;
+  if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
+  return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
   const todayS=ymd(now), tm=new Date(now); tm.setDate(tm.getDate()+1); const tomS=ymd(tm);
   const A=[];
@@ -2559,7 +2586,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alertSec").hidden=!A.length;
-  document.getElementById("alerts").innerHTML=A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
+  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
   const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
   safe("Agenda",renderAgenda);
@@ -4778,6 +4805,10 @@ function iconStyle(){try{return localStorage.getItem("casa-icones")==="3d"?"3d":
 function applyIcons(){const st=iconStyle();root.dataset.icons=st;
   document.querySelectorAll("[data-icostyle]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.icostyle===st))}
 applyIcons();
+function applyAlStyle(){const st=alStyle();document.querySelectorAll("[data-alstyle]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.alstyle===st))}
+applyAlStyle();
+document.addEventListener("click",e=>{const t=e.target.closest("[data-alstyle]");if(!t)return;try{localStorage.setItem("casa-alertas",t.dataset.alstyle)}catch(err){}applyAlStyle();safe("Alertas",renderAlerts);
+  toast({A:"Alertas em lista",B:"Alertas com ícones",C:"Alertas em quadrados"}[t.dataset.alstyle])});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-icostyle]");if(!t)return;try{localStorage.setItem("casa-icones",t.dataset.icostyle)}catch(err){}applyIcons();
   toast(t.dataset.icostyle==="ios"?"Ícones como as apps do iPhone":"Ícones 3D")});
 document.getElementById("wallColorsBtn").addEventListener("click",()=>{const f=document.getElementById("wallColors");f.hidden=!f.hidden});
@@ -4805,7 +4836,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v140";
+const APPV="casa-v141";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
