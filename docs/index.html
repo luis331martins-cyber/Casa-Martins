@@ -1668,7 +1668,13 @@ const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",dose
 const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.unit]?SING[i.unit]:packBuy(i)?"saco":"embalagem", pk=`${nm} de ${String(i.packN).replace(".",",")} ${i.packU||"un."}`;
   const tot=i.qty>0&&i.unit&&i.unit!=="un"&&COUNTU.includes(i.unit)?Math.round(i.qty*i.packN*100)/100:null;return tot!=null?`${pk} (${String(tot).replace(".",",")} ${i.packU||"un."} em casa)`:pk};
 /* Carne/peixe contado à unidade mas comprado ao saco (ex.: sacos com 6 e com 2) */
-const packBuy=i=>MEAT.includes(i.cat)&&i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un.");
+const packBuy=i=>MEAT.includes(i.cat)&&(Array.isArray(i.bags)||i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un."));
+/* Sacos em casa com quantidades diferentes (ex.: bags:[6,2]): a quantidade é a soma, em un. */
+const hasBags=i=>MEAT.includes(i.cat)&&Array.isArray(i.bags);
+const bagSum=b=>Math.round(b.reduce((s,x)=>s+(+x||0),0)*100)/100;
+const bagSize=i=>+i.packN||+i.bagSz||(i.bags&&i.bags.length?Math.max(...i.bags):1);
+const bagText=i=>i.bags.length?`${i.bags.length} ${i.bags.length===1?"saco":"sacos"}: ${i.bags.map(x=>String(x).replace(".",",")).join(" + ")} un.`:"";
+function setBags(it,bags,extra){const n={...it,...extra,bags,qty:bagSum(bags),unit:"un",tidy:1};n.lvl=autoLvl(n,n.qty);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
 const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
 const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
@@ -1703,8 +1709,10 @@ function render(){
   const unitOpts=u=>[["un","un."],["pacotes","pacotes"],["kg","kg"],["g","g"],["L","L"],["ml","ml"],["latas","latas"],["garrafas","garrafas"],["caixas","caixas"],["doses","doses"],["sacos","sacos"]].map(([v,l])=>`<option value="${v}"${(u||"un")===v?" selected":""}>${l}</option>`).join("");
   const itemForm=i=>`<form class="bill-edit" data-itemform="${i.id}" autocomplete="off">
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
-      <label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
-      <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>
+      ${MEAT.includes(i.cat)?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
+        <span class="qty"><input name="bagn" type="number" min="1" step="any" inputmode="decimal" placeholder="un. neste saco"><button type="button" class="btn" data-bagadd="${i.id}">+ Juntar saco</button></span>${hasBags(i)?`<button type="button" class="chip" data-bagoff="${i.id}" style="justify-self:start">Deixar de contar por sacos</button>`:""}</label>`:""}
+      ${hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
+      <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>`}
       <label class="f wide">Cada ${i.unit&&COUNTU.includes(i.unit)&&i.unit!=="un"?(SING[i.unit]||i.unit):"saco/caixa"} traz<span class="qty"><input name="pn" type="number" min="0" step="any" inputmode="decimal" value="${i.packN??""}" placeholder="ex.: 6"><select name="pu">${["un.","g","kg","doses","fatias"].map(u=>`<option${(i.packU||"un.")===u?" selected":""}>${u}</option>`).join("")}</select></span></label>
       <label class="f">“Pouco” quando tiver<input name="lo" type="number" min="0" step="any" inputmode="decimal" value="${i.low??""}" placeholder="${String(unitLow(i.unit)).replace(".",",")}"></label>
       <label class="f">Compro de cada vez<input name="bu" type="number" min="0" step="any" inputmode="decimal" value="${i.buy??""}" placeholder="${String(buyOf({...i,low:i.low})).replace(".",",")}"></label>
@@ -1717,7 +1725,7 @@ function render(){
       <button class="btn danger wide" type="button" data-delitem="${i.id}">Apagar ${esc(i.name)}</button>
     </form>`;
   const unitShort=i=>!i.unit||i.unit==="un"?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit;
-  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[packText(i),e].filter(Boolean).join(" · ");
+  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];return `
       <div class="item">
         <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
@@ -1743,7 +1751,7 @@ function render(){
   const byShop={};toBuy.forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
-    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${i.packN?" · "+packText({...i,qty:0}):""}</div>
+    <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${hasBags(i)?` · saco de ${String(bagSize(i)).replace(".",",")} un.`:i.packN?" · "+packText({...i,qty:0}):""}</div>
       <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
         <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
       <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
@@ -1785,18 +1793,31 @@ document.addEventListener("submit",e=>{
   if(!isNaN(lo))n.low=lo;if(!isNaN(bu)&&bu>0)n.buy=bu;
   const pn=parseFloat(String(f.pn.value).replace(",","."));delete n.packN;delete n.packU;if(!isNaN(pn)&&pn>0){n.packN=pn;n.packU=f.pu.value}
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
+  if(hasBags(n)){n.qty=bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
   if(shop)n.shop=shop;
   editItem="";upsert(n);render();put(n);toast("Guardado");
 });
 document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const [id,d]=b.dataset.q.split("|"), it=items.find(i=>i.id===id);if(!it)return;
+    /* com sacos: tira (ou repõe) 1 un. do saco mais pequeno, que é o que está aberto */
+    if(hasBags(it)){const bg=[...it.bags];if(+d<0){if(!bg.length)return;const k=bg.indexOf(Math.min(...bg));bg[k]=Math.round((bg[k]-1)*100)/100;if(bg[k]<=0)bg.splice(k,1)}
+      else if(bg.length)bg[bg.indexOf(Math.min(...bg))]+=1;else bg.push(1);setBags(it,bg);return}
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
     setQty(id,it.qty+unitStep(it.unit)*(+d));return}
   const c=e.target.closest("[data-cyc]");if(c){e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===c.dataset.cyc);if(it)setLevel(it.id,((it.lvl??2)+2)%3)}},true);
+/* Sacos em casa: juntar, tirar, deixar de contar por sacos (no editar do produto) */
+document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[data-bagdel],[data-bagoff]");if(!a)return;e.preventDefault();e.stopPropagation();
+  const [id,k]=(a.dataset.bagadd||a.dataset.bagdel||a.dataset.bagoff).split("|"), it=items.find(i=>i.id===id);if(!it)return;
+  if(a.dataset.bagoff!=null){const n={...it,tidy:1};delete n.bags;upsert(n);render();put(n);return}
+  if(a.dataset.bagdel!=null){const bg=[...(it.bags||[])];bg.splice(+k,1);setBags(it,bg);return}
+  const inp=a.closest("form").bagn, v=parseFloat(String(inp.value).replace(",","."));if(!(v>0)){inp.focus();toast("Escreve quantas un. tem o saco");return}
+  const base=hasBags(it)?it.bags:it.unit==="sacos"&&it.packN?Array(Math.max(0,Math.round(+it.qty||0))).fill(+it.packN):[];
+  setBags(it,[...base,v],{bagSz:Math.max(+it.bagSz||0,v)});toast(`Saco de ${String(v).replace(".",",")} un. junto`)},true);
 /* Quanto comprar: escolhido nas Compras (fica em i.buyNow), senão o habitual do produto */
 const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
   const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
 function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
+    if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
@@ -4615,7 +4636,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v126";
+const APPV="casa-v127";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
