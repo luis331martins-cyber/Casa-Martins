@@ -107,7 +107,7 @@ async function morning(code, now) {
   /* Contagem da água, luz, gás: avisa nos 3 dias antes do dia limite (b.rd) e no próprio dia, até ser marcada como dada */
   const leit = [];
   for (const b of bills) {
-    if (mk < START || b.kind || !b.rd || (b.rdone && b.rdone[mk])) continue;
+    if (b.kind || !b.rd || (b.rdone && b.rdone[mk])) continue;
     const d = Math.min(b.rd, last), falta = d - now.d;
     if (falta < 0 || falta > 3) continue;
     leit.push({o: falta, t: `${b.name}: ${falta === 0 ? "último dia é hoje" : falta === 1 ? "até amanhã" : `até dia ${d}`}`});

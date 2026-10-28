@@ -2073,8 +2073,10 @@ function renderBills(){
     if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
     const cd=typeof cards==="function"&&cards().find(c=>c.bill===b.id);
     if(cd)when+=` · <span class="loanlink" data-gocard="${cd.id}" role="link">Cartão${cd.limit?` · livre ${eur(cardFree(cd))}`:""} ›</span>`;
-    const r=rdState(b,k);
-    if(r)when+=`<br><span class="rdlink${r.done?" ok":r.left<0&&isCur?" bad":r.left<=3&&isCur?" warn":""}" data-rd="${b.id}" role="button">${r.done?"📟 Contagem dada ✓":`📟 Contagem até dia ${r.d}${isCur&&r.left<=3?" · tocar quando der":""}`}</span>`;
+    /* antes de a app começar a contar (START), a contagem do mês verdadeiro aparece no primeiro mês */
+    const nk=ymOf(now), rk=k===START&&nk<START&&rdState(b,nk)&&!rdState(b,nk).done&&rdState(b,nk).left>=-3?nk:k, rCur=isCur||rk===nk;
+    const r=rdState(b,rk);
+    if(r)when+=`<br><span class="rdlink${r.done?" ok":r.left<0&&rCur?" bad":r.left<=3&&rCur?" warn":""}" data-rd="${b.id}" data-rdk="${rk}" role="button">${r.done?"📟 Contagem dada ✓":`📟 Contagem até dia ${r.d}${rk!==k?" de "+mFull(rk).split(" de ")[0]:""}${rCur&&r.left<=3?" · tocar quando der":""}`}</span>`;
     if(b.id===editBill)return editRow(b,"Despesa");
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
@@ -2173,7 +2175,7 @@ function bankColor(a){if(a.color==="none")return"";if(a.color)return ["#5fae2e",
 function rdState(b,mk){if(!b.rd||b.kind)return null;const [y,m]=mk.split("-").map(Number), d=Math.min(b.rd,new Date(y,m,0).getDate());
   return {d,done:!!(b.rdone&&b.rdone[mk]),left:Math.round((new Date(y,m-1,d)-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5)}}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-rd]");if(!t)return;e.preventDefault();e.stopPropagation();
-  const b=bills.find(x=>x.id===t.dataset.rd);if(!b)return;const k=mKey(), done=!(b.rdone&&b.rdone[k]);
+  const b=bills.find(x=>x.id===t.dataset.rd);if(!b)return;const k=t.dataset.rdk||mKey(), done=!(b.rdone&&b.rdone[k]);
   const rdone={...(b.rdone||{})};if(done)rdone[k]=true;else delete rdone[k];putBill({...b,rdone});
   toast(done?`Contagem de ${b.name} dada`:`Contagem de ${b.name} por dar`)},true);
 /* Corrigir um gasto já registado */
@@ -2314,7 +2316,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     const v=eur(monthAmt(b,mk));
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     else if(d===td)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto hoje":"Vence hoje"} · ${v}`});});
-  if(mk>=START)fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>3||r.left<-3)return;
+  fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>3||r.left<-3)return;
     A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",name:`Dar a contagem: ${b.name}`,meta:r.left<0?`O prazo era dia ${r.d}`:r.left===0?"Último dia é hoje":`Até dia ${r.d} · faltam ${r.left} dia${r.left===1?"":"s"}`})});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go=MEAT.includes(i.cat)?"carne":"despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
@@ -4524,7 +4526,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v118";
+const APPV="casa-v119";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
