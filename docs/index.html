@@ -1638,7 +1638,7 @@ function addItem(name,cat,exp,qty,unit,shop){
   const ex=items.find(i=>i.name.toLowerCase()===name.toLowerCase());
   if(ex){toast(ex.name+" já está na lista");return}
   const q=parseFloat(String(qty??"").replace(",","."));shop=String(shop||"").trim();
-  const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
+  const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),tidy:1,...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
   items.push(it);render();put(it);toast(name+" adicionado");
 }
 /* Produtos habituais da casa: juntados uma vez (marca "habituais-v1" na casa). Ids fixos "hab-…" e nomes já existentes
@@ -1665,8 +1665,10 @@ async function seedHabituais(){if(!store||!fb||!houseCode||!navigator.onLine)ret
   putBill({id:"habituais-v1",kind:"setting",name:"Produtos habituais juntados"});if(n){render();toast(`${n} produtos habituais juntados`)}}
 const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",doses:"dose",sacos:"saco"};
 /* "saco de 6 un." e o total em casa (ex.: 2 sacos = 12 un.) */
-const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.unit]?SING[i.unit]:"embalagem", pk=`${nm} de ${String(i.packN).replace(".",",")} ${i.packU||"un."}`;
+const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.unit]?SING[i.unit]:packBuy(i)?"saco":"embalagem", pk=`${nm} de ${String(i.packN).replace(".",",")} ${i.packU||"un."}`;
   const tot=i.qty>0&&i.unit&&i.unit!=="un"&&COUNTU.includes(i.unit)?Math.round(i.qty*i.packN*100)/100:null;return tot!=null?`${pk} (${String(tot).replace(".",",")} ${i.packU||"un."} em casa)`:pk};
+/* Carne/peixe contado à unidade mas comprado ao saco (ex.: sacos com 6 e com 2) */
+const packBuy=i=>MEAT.includes(i.cat)&&i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un.");
 const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
 const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
@@ -1743,7 +1745,7 @@ function render(){
   shop.innerHTML=toBuy.length?shopNames.map(n=>`<h3>${n?esc(n):"Sem loja definida"}</h3>`+byShop[n].map(i=>`
     <div class="buyrow"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.lvl===0?"Acabou":"Está a acabar"}${i.qty!=null?" · tens "+qtyText(i):""} · ${i.cat}${i.packN?" · "+packText({...i,qty:0}):""}</div>
       <div class="qrow buyq" role="group" aria-label="Quantos comprar de ${esc(i.name)}"><span class="bql">Comprar</span><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button>
-        <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i)})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
+        <span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>
       <div class="buybtns"><button type="button" class="bb ok" data-bought="${i.id}">✓ Comprei</button><button type="button" class="bb no" data-skip="${i.id}">✗ Não comprei</button></div></div>`).join("")).join(""):`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`;
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
@@ -1778,7 +1780,7 @@ document.addEventListener("submit",e=>{
   const f=e.target, name=f.n.value.trim();if(!name)return;
   if(items.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
   const q=parseFloat(String(f.q.value).replace(",",".")), shop=f.s.value.trim();
-  const n={...it,name,cat:f.c.value,exp:f.e.value||""};delete n.qty;delete n.unit;delete n.shop;
+  const n={...it,name,cat:f.c.value,exp:f.e.value||"",tidy:1};delete n.qty;delete n.unit;delete n.shop;
   const lo=parseFloat(String(f.lo.value).replace(",",".")), bu=parseFloat(String(f.bu.value).replace(",","."));delete n.low;delete n.buy;
   if(!isNaN(lo))n.low=lo;if(!isNaN(bu)&&bu>0)n.buy=bu;
   const pn=parseFloat(String(f.pn.value).replace(",","."));delete n.packN;delete n.packU;if(!isNaN(pn)&&pn>0){n.packN=pn;n.packU=f.pu.value}
@@ -1795,7 +1797,7 @@ const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
   const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
 function buyDone(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
-    if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
+    if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
 function show(tab){["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
@@ -4546,11 +4548,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if
    o estado acompanha a quantidade ("Pouco" só se for escolhido no produto). Só grava o que muda. */
 let meatTidyDone=false;
 function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
-  for(const it of items.filter(i=>MEAT.includes(i.cat))){const n={...it};
+  /* só uma vez por produto: depois respeita a unidade escolhida (ex.: un. com sacos de tamanhos diferentes) */
+  for(const it of items.filter(i=>MEAT.includes(i.cat)&&!i.tidy)){const n={...it,tidy:1};
     if(n.qty==null){n.qty=(n.lvl??2)===0?0:1;n.unit=n.packN?"sacos":(n.unit||"un")}
     if(n.packN&&(!n.unit||n.unit==="un"))n.unit="sacos";
     n.lvl=autoLvl(n,+n.qty||0);
-    if(n.qty!==it.qty||n.unit!==it.unit||n.lvl!==it.lvl){upsert(n);put(n)}}
+    upsert(n);put(n)}
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
@@ -4612,7 +4615,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v125";
+const APPV="casa-v126";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
