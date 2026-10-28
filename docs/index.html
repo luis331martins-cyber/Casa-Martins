@@ -1114,7 +1114,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Despensa</span><span></span></nav>
     <h1 class="large">Despensa</h1>
     <div class="summary" id="summary"></div>
-    <label class="btn ghost scanbtn">📷 Ler fotografia (talão ou etiquetas)<input type="file" accept="image/*" data-scan="despensa" hidden></label>
+    <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="despensa" hidden></label>
     <form class="add" id="addForm" autocomplete="off">
       <input id="newName" placeholder="Adicionar produto (ex.: Leite)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -1139,7 +1139,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-carne" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Carne e Peixe</span><span></span></nav>
     <h1 class="large">Carne e Peixe</h1>
-    <label class="btn ghost scanbtn">📷 Ler fotografia (talão ou etiquetas)<input type="file" accept="image/*" data-scan="carne" hidden></label>
+    <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="carne" hidden></label>
     <form class="add" id="meatForm" autocomplete="off">
       <input id="mName" placeholder="Adicionar (ex.: Peito de frango)" aria-label="Nome do produto" required>
       <button class="btn" type="submit">Adicionar</button>
@@ -4358,6 +4358,9 @@ function scParse(text){const out=[];
       .replace(/\b\d+[.,]\d{2}\b/g,"").replace(/\s{2,}/g," ").trim();
     let qty=1,unit="un";const mk=name.match(/(\d+[.,]\d+)\s*kg\b/i);if(mk){qty=parseFloat(mk[1].replace(",","."));unit="kg";name=name.replace(mk[0],"").trim()}
     const letters=(name.match(/\p{L}/gu)||[]).length;if(letters<4||letters/name.length<.55)continue;
+    /* lixo do leitor (fotografias que não são talões): palavras sem vogais, misturas de maiúsculas, poucas palavras reais */
+    const ws=name.split(/\s+/).filter(w=>w.length>=3&&/^\p{L}+$/u.test(w)), good=ws.filter(w=>/[aeiouáéíóúâêôãõà]/i.test(w)&&!/[a-zà-ú][A-ZÀ-Ú]/.test(w));
+    if(!ws.length||good.length/ws.length<.7||!good.some(w=>w.length>=4))continue;
     name=scTitle(name.replace(/\s+\d+\s*$/,"").trim()).slice(0,40);if(!name)continue;
     const prev=out.find(x=>noAcc(x.name)===noAcc(name));if(prev){prev.qty+=qty;continue}
     out.push({name,qty,unit})}
@@ -4368,7 +4371,7 @@ async function scImage(file){const url=URL.createObjectURL(file), img=new Image(
 let scWhere="despensa", scFound=[];
 function scRender(){const L=document.getElementById("scanList");
   L.innerHTML=scFound.map((x,i)=>{const m=x.match;return`<div class="sc-row"><input type="checkbox" data-sci="${i}"${x.on?" checked":""} aria-label="Juntar"><input type="text" data-scn="${i}" value="${esc(x.name)}"><input type="number" step="any" min="0" inputmode="decimal" data-scq="${i}" value="${x.qty}">
-    <small>${m?`Já tens <b>${esc(m.name)}</b>${m.qty!=null?` (${String(m.qty).replace(".",",")} ${m.unit||"un"})`:""}: soma ${String(x.qty).replace(".",",")} ${x.unit}`:`Novo em <b style="color:var(--accent)">${esc(scCat(x.name,scWhere))}</b> · ${String(x.qty).replace(".",",")} ${x.unit}`}</small></div>`}).join("")||`<p class="note">Não consegui ler nenhum produto. Tenta outra vez com mais luz, o talão direito e a ocupar a foto toda.</p>`;
+    <small>${m?`Já tens <b>${esc(m.name)}</b>${m.qty!=null?` (${String(m.qty).replace(".",",")} ${m.unit||"un"})`:""}: soma ${String(x.qty).replace(".",",")} ${x.unit}`:`Novo em <b style="color:var(--accent)">${esc(scCat(x.name,scWhere))}</b> · ${String(x.qty).replace(".",",")} ${x.unit}`}</small></div>`}).join("")||`<p class="note">Não consegui ler nenhum produto.<br><br>Esta opção lê <b>texto</b>: funciona com o <b>talão das compras</b> (direito, com boa luz e a ocupar a foto toda). Uma foto ao frigorífico ou à prateleira não dá, porque o telemóvel não consegue reconhecer os produtos pela imagem.</p>`;
   const n=scFound.filter(x=>x.on).length;document.getElementById("scanOk").textContent=n?`Juntar ${n} produto${n===1?"":"s"}`:"Nada para juntar";document.getElementById("scanOk").disabled=!n}
 document.addEventListener("change",async e=>{const t=e.target;
   if(t.dataset&&t.dataset.scan){const file=t.files&&t.files[0];t.value="";if(!file)return;scWhere=t.dataset.scan;
@@ -4449,7 +4452,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v115";
+const APPV="casa-v116";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
