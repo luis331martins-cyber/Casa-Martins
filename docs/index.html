@@ -1669,7 +1669,7 @@ function addItem(name,cat,exp,qty,unit,shop){
   if(ex){toast(ex.name+" já está na lista");return}
   const q=parseFloat(String(qty??"").replace(",","."));shop=String(shop||"").trim();
   const it={id:uid(),name,cat,exp:exp||"",lvl:2,added:Date.now(),tidy:1,...(isNaN(q)?{}:{qty:q,unit:unit||"un"}),...(shop?{shop}:{})};
-  toRes(it);items.push(it);render();put(it);toast(name+" adicionado");
+  it.rt2=1;toRes(it);items.push(it);render();put(it);toast(name+" adicionado");
 }
 /* Produtos habituais da casa: juntados uma vez (marca "habituais-v1" na casa). Ids fixos "hab-…" e nomes já existentes
    são saltados, por isso os dois telemóveis nunca os duplicam. Ficam como "Tenho". */
@@ -1720,13 +1720,22 @@ const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} guardad
 function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
   const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
 /* Passa um produto antigo (quantidade) para "em uso + reserva": o "Pouco quando tiver" vira "Quero ter de reserva" (dá o mesmo estado) */
-function toRes(n){n.rtidy=1;if(!isRes(n))return n;
+/* Que produtos usam "em uso + guardados": limpeza, higiene e coisas que se abrem e duram (azeite, café, detergente…).
+   Iogurtes, leite, ovos, fruta, congelados, arroz, massa, latas… contam-se à unidade. Escolhido à mão no produto (mchosen), manda isso. */
+const RES_NAME=/azeite|[oó]leo|vinagre|caf[eé]|a[cç][uú]car|\bsal\b|farinha|detergente|amaciador|l[ií]xivia|champ[oô]|\bgel\b|sabonete|pasta de dentes|dent[ií]fric|desodori|papel|guardanapo|\brolo|esponja|sacos? do lixo|ketchup|maionese|mostarda|\bmel\b|compota|molho|tempero|caldo|fermento|\bch[aá]\b|cereais|limpa|ambientador|creme|protetor|cotonete|algod[aã]o|pensos|fraldas|toalhitas|pastilhas|sal fino|especiarias|canela|oregãos|orégãos|pimenta|manteiga de amendoim|nutella|chocolate em p[oó]|cacau/i;
+const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Congelados"].includes(i.cat)&&RES_NAME.test(i.name||""));
+function resToCnt(n){n.cnt=true;if(n.res!=null){n.qty=(n.use?1:0)+(+n.res||0);n.unit="un";if(n.want!=null)n.low=+n.want;n.lvl=autoLvl(n,n.qty)}["use","res","want"].forEach(k=>delete n[k]);return n}
+function cntToRes(n){delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}return toRes(n,true)}
+function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n))return resToCnt(n);if(!isRes(n))return n;
   if(n.qty!=null){if(!COUNTU.includes(n.unit||"un")){n.cnt=true;return n}
     const q=Math.max(0,Math.ceil(+n.qty||0));if(n.low!=null&&n.want==null)n.want=Math.max(0,+n.low);n.use=q>0;n.res=Math.max(0,q-1);delete n.qty;delete n.low;delete n.packN;delete n.packU;n.lvl=resLvl(n)}
   return n}
 let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
+  /* 2.ª passagem (uma vez): cada produto fica com a forma de contar que faz sentido, se não foi escolhida à mão */
+  for(const it of items.filter(i=>!i.rt2&&!i.mchosen&&!i.med&&!MEAT.includes(i.cat))){const n={...it,rt2:1}, want=resDefault(n);
+    if(want&&n.cnt)cntToRes(n);else if(!want&&!n.cnt)resToCnt(n);upsert(n);put(n);c++}
   if(c)render()}
 /* "＋ Adicionar produto" abre (e fecha) os campos de adicionar */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-addopen]");if(!b)return;const box=document.getElementById(b.dataset.addopen);if(!box)return;
@@ -1924,8 +1933,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(
   const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
 /* Mudar a forma de contar (no editar do produto) */
 document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const it=items.find(i=>i.id===sel.closest("form").dataset.itemform);if(!it)return;
-  if(sel.value==="cnt"){const n={...it,cnt:true,qty:it.res==null?(it.lvl>0?1:0):(it.use?1:0)+(+it.res||0),unit:"un",rtidy:1};if(it.want!=null)n.low=+it.want;["use","res","want"].forEach(k=>delete n[k]);n.lvl=autoLvl(n,n.qty);upsert(n);render();put(n)}
-  else{const n={...it};delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}toRes(n);upsert(n);render();put(n)}});
+  const n={...it,mchosen:1,rt2:1,rtidy:1};if(sel.value==="cnt"){if(n.res==null&&n.qty==null){n.qty=n.lvl>0?1:0;n.unit="un"}resToCnt(n);n.lvl=n.qty!=null?autoLvl(n,n.qty):n.lvl}else cntToRes(n);upsert(n);render();put(n)});
 /* Sacos em casa: juntar, tirar, deixar de contar por sacos (no editar do produto) */
 document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[data-bagdel],[data-bagoff]");if(!a)return;e.preventDefault();e.stopPropagation();
   const [id,k]=(a.dataset.bagadd||a.dataset.bagdel||a.dataset.bagoff).split("|"), it=items.find(i=>i.id===id);if(!it)return;
@@ -4685,7 +4693,7 @@ document.getElementById("scanForm").addEventListener("submit",e=>{e.preventDefau
   for(const x of scFound.filter(y=>y.on&&y.name.trim())){const m=scMatch(x.name);
     if(m&&isRes(m)){setRes(m,m.use||(m.res==null&&m.lvl>0),(+m.res||0)+Math.ceil(+x.qty||1));a++}
     else if(m){const q=(m.qty!=null?+m.qty:(m.lvl>=2?1:0))+(+x.qty||1);setQty(m.id,q);a++}
-    else{const it={id:uid(),name:x.name.trim(),cat:scCat(x.name,scWhere),exp:"",added:Date.now(),qty:+x.qty||1,unit:x.unit||"un"};it.lvl=autoLvl(it,it.qty);toRes(it);items.push(it);put(it);n++}}
+    else{const it={id:uid(),name:x.name.trim(),cat:scCat(x.name,scWhere),exp:"",added:Date.now(),qty:+x.qty||1,unit:x.unit||"un",rt2:1};it.lvl=autoLvl(it,it.qty);toRes(it);items.push(it);put(it);n++}}
   render();document.getElementById("scanSheet").hidden=true;scFound=[];toast(`${a?a+" atualizado"+(a===1?"":"s"):""}${a&&n?" e ":""}${n?n+" novo"+(n===1?"":"s"):""}`||"Nada juntado")});
 /* "Não comprei": tira o produto das compras (fica como estava: Acabou/Pouco). Volta às compras ao tocar outra vez ou ao mudar a quantidade. */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if(!b)return;e.preventDefault();e.stopPropagation();
@@ -4762,7 +4770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v135";
+const APPV="casa-v136";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
