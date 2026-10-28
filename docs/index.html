@@ -211,6 +211,9 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .alert .go{color:var(--muted)}
 .alert.bad{border-color:var(--bad);background:var(--bad-soft)}
 .alert.warn{border-color:transparent;background:var(--warn-soft)}
+.rdovl{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.rdsheet{width:100%;max-width:520px;background:var(--surface);color:var(--fg);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.rdh{font-size:19px;font-weight:700}.rdm{color:var(--muted);margin-bottom:4px}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -2407,6 +2410,17 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rd]");if(!
   const b=bills.find(x=>x.id===t.dataset.rd);if(!b)return;const k=t.dataset.rdk||mKey(), done=!(b.rdone&&b.rdone[k]);
   const rdone={...(b.rdone||{})};if(done)rdone[k]=true;else delete rdone[k];putBill({...b,rdone});
   toast(done?`Contagem de ${b.name} dada`:`Contagem de ${b.name} por dar`)},true);
+/* Alerta "Dar a contagem": abre uma janela para marcar como dada (em vez de ir para as Contas) */
+function rdAsk(id,k){const b=bills.find(x=>x.id===id);if(!b)return;const r=rdState(b,k)||{d:b.rd,left:0};
+  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" aria-label="Contagem de ${esc(b.name)}">
+    <div class="rdh">📟 Contagem: ${esc(b.name)}</div><div class="rdm">${r.left<0?`O prazo era dia ${r.d}`:r.left===0?"Hoje é o último dia":`Até dia ${r.d} · faltam ${r.left} dia${r.left===1?"":"s"}`}</div>
+    <button type="button" class="btn" data-rdok="1">✓ Já dei a contagem</button>
+    <button type="button" class="btn ghost" data-rdgo="1">Ver a conta</button>
+    <button type="button" class="btn ghost" data-rdx="1">Fechar</button></div>`;
+  const close=()=>o.remove();o.addEventListener("click",e=>{if(e.target===o||e.target.closest("[data-rdx]"))return close();
+    if(e.target.closest("[data-rdok]")){putBill({...b,rdone:{...(b.rdone||{}),[k]:true}});close();toast(`Contagem de ${b.name} dada ✓`);safe("Alertas",renderAlerts)}
+    else if(e.target.closest("[data-rdgo]")){close();show("despesas")}});document.body.appendChild(o)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.rdask.split("|");rdAsk(id,k)},true);
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
@@ -2552,7 +2566,7 @@ function alKind(a){const n=a.name||"";if(/^Dar a contagem/.test(n))return["gauge
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
-function alertsHTML(A){const st=alStyle(), at=a=>`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`;
+function alertsHTML(A){const st=alStyle(), at=a=>a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
   return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
@@ -2567,7 +2581,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     if(d<td)A.push({o:0,cls:"bad",dot:"bad",go:"despesas",name:`${b.name} por pagar`,meta:`Atrasada desde dia ${d} · ${v}`});
     else if(d===td)A.push({o:2,cls:"warn",dot:"bl",go:"despesas",name:b.dd?`Débito: ${b.name}`:`Pagar ${b.name}`,meta:`${b.dd?"Débito direto hoje":"Vence hoje"} · ${v}`});});
   fixas().forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>3||r.left<-3)return;
-    A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",name:`Dar a contagem: ${b.name}`,meta:r.left<0?`O prazo era dia ${r.d}`:r.left===0?"Último dia é hoje":`Até dia ${r.d} · faltam ${r.left} dia${r.left===1?"":"s"}`})});
+    A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",rd:b.id,rdk:mk,name:`Dar a contagem: ${b.name}`,meta:r.left<0?`O prazo era dia ${r.d}`:r.left===0?"Último dia é hoje":`Até dia ${r.d} · faltam ${r.left} dia${r.left===1?"":"s"}`})});
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>3)return;const go="despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
@@ -2591,7 +2605,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alertSec").hidden=!A.length;
-  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
+  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" ${a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
   const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
   safe("Agenda",renderAgenda);
@@ -4841,7 +4855,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v145";
+const APPV="casa-v146";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
