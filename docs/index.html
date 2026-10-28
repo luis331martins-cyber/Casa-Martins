@@ -85,7 +85,6 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lockb{margin-left:auto;padding:7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-weight:600;font-size:14px}
 .lockb.on{background:var(--accent);color:#fff}
 .lockb.nudge{animation:nudge .5s}@keyframes nudge{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-body:not(.qopen) #pantry .qrow .qb,body:not(.qopen) #meat .qrow .qb,body:not(.qopen) #pantry .usep{opacity:.45}
 .toast .tundo{margin-left:12px;background:none;color:#4da3ff;font-weight:700;padding:0;font-size:inherit}
 .capp{background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;color:var(--fg)}
 .cico{position:relative;width:68px;height:68px;border-radius:24%;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.35);outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
@@ -100,7 +99,8 @@ body:not(.qopen) #pantry .qrow .qb,body:not(.qopen) #meat .qrow .qb,body:not(.qo
 .rsi{display:block}.rsi .bname{display:block;width:100%}
 .rsctl{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 .usep{padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
-.usep.on{background:#34c759;color:#fff}
+.usep.on{background:#34c759;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.15),0 2px 8px rgba(52,199,89,.45)}
+.rsl{display:flex;align-items:center;gap:6px;min-width:0}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
@@ -1720,7 +1720,7 @@ const isRes=i=>!MEAT.includes(i.cat)&&!i.cnt&&!i.med;
 const wantOf=i=>i.want!=null?+i.want:1;
 /* conta o total (aberto + guardados): falta reserva quando o que sobra além de 1 é menos do que "quero ter" */
 const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);return !h?0:h-1>=wantOf(n)?2:1};
-const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} guardado${i.res===1?"":"s"}`:""):`1 em uso · ${i.res?`${i.res} guardado${i.res===1?"":"s"}`:"sem reserva"}`;
+const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} em stock`:""):`1 em uso · ${i.res?`${i.res} em stock`:"sem stock"}`;
 function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
   const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
 /* Passa um produto antigo (quantidade) para "em uso + reserva": o "Pouco quando tiver" vira "Quero ter de reserva" (dá o mesmo estado) */
@@ -1812,9 +1812,9 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
       ${MEAT.includes(i.cat)&&!String(i.id).startsWith("__new")?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
         <span class="qty"><input name="bagn" type="number" min="1" step="any" inputmode="decimal" placeholder="un. neste saco"><button type="button" class="btn" data-bagadd="${i.id}">+ Juntar saco</button></span>${hasBags(i)?`<button type="button" class="chip" data-bagoff="${i.id}" style="justify-self:start">Deixar de contar por sacos</button>`:""}</label>`:""}
-      ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + reserva (guardados)</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
-      ${isRes(i)?`<label class="f">Guardados (reserva)<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
-      <label class="f">Quero ter de reserva<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
+      ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + stock</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
+      ${isRes(i)?`<label class="f">Stock<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
+      <label class="f">Quero ter em stock<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
       <label class="tick wide">Há um em uso (aberto)<input type="checkbox" name="iu"${i.use||(i.use==null&&(i.lvl??2)>0)?" checked":""}></label>
       <div hidden><input name="q"><input name="u" value="un"><input name="lo"><input name="pn"><input name="pu" value="un."></div>`:
       hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
@@ -1838,13 +1838,13 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
       <div class="item rsi">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div>${(i.lvl??2)<2?`<div class="meta"><span class="lvlb ${lc}">${lt}</span></div>`:""}</button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div></button>
         <div class="rsctl">
-          <button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>
-          <div class="qrow" role="group" aria-label="Guardados de ${esc(i.name)}"><span class="bql">Guardados</span>
-            <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um guardado de ${esc(i.name)}">−</button>
+          <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
+          <div class="qrow" role="group" aria-label="Stock de ${esc(i.name)}"><span class="bql">Stock</span>
+            <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um em stock de ${esc(i.name)}">−</button>
             <span class="qv">${rs?i.res:0}</span>
-            <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais um guardado de ${esc(i.name)}">+</button></div>
+            <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais um em stock de ${esc(i.name)}">+</button></div>
         </div>
       </div>`}
     return `
@@ -1934,7 +1934,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q],[data-u
   if(qLock){e.preventDefault();e.stopImmediatePropagation();toast("Toca em “Alterar” para mudar as quantidades");const l=document.querySelector(".lockb");if(l){l.classList.remove("nudge");void l.offsetWidth;l.classList.add("nudge")}return}
   const id=(b.dataset.q||"").split("|")[0]||b.dataset.use||b.dataset.opn, prev=items.find(i=>i.id===id);if(!prev)return;const snap={...prev};
   setTimeout(()=>{const now=items.find(i=>i.id===id);if(!now||JSON.stringify(now)===JSON.stringify(snap))return;
-    const t=isRes(now)?`${now.use?"Em uso":"Nenhum em uso"} · ${+now.res||0} guardado${(+now.res||0)===1?"":"s"}`:hasBags(now)&&now.bags.length?bagText(now):qtyText(now);
+    const t=isRes(now)?`${now.use?"Em uso":"Nenhum em uso"} · ${+now.res||0} em stock`:hasBags(now)&&now.bags.length?bagText(now):qtyText(now);
     undoToast(`${now.name}: ${t}`,()=>{upsert(snap);render();put(snap);toast("Desfeito")})},0)},true);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-qlock]");if(!b)return;qLock=!qLock;render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const [id,d]=b.dataset.q.split("|"), it=items.find(i=>i.id===id);if(!it)return;
@@ -1949,12 +1949,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
 /* Botão "Em uso": desligar = acabou o aberto; ligar = abriu um (sai dos guardados, se houver) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.use);if(!it)return;
   const on=it.use!=null?!!it.use:(it.lvl??2)>0, r=+it.res||0;
-  if(on){setRes(it,false,r);toast(r?`Acabou o aberto · ${r} guardado${r===1?"":"s"}`:"Acabou · vai para as compras")}
-  else{setRes(it,true,r>0?r-1:0);toast(r?"Em uso · saiu 1 dos guardados":"Em uso")}},true);
+  if(on){setRes(it,false,r);toast(r?`Acabou o aberto · ${r} em stock`:"Acabou · vai para as compras")}
+  else{setRes(it,true,r>0?r-1:0);toast(r?"Em uso · saiu 1 do stock":"Em uso")}},true);
 /* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
-  const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:""}`);return}
-  const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" guardado"+(n.res===1?"":"s"):"sem reserva"}`:"Acabou · vai para as compras")},true);
+  const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" em stock":"sem stock"}`:""}`);return}
+  const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" em stock":"sem stock"}`:"Acabou · vai para as compras")},true);
 /* Mudar a forma de contar (no editar do produto) */
 document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const fid=sel.closest("form").dataset.itemform;
   if(fid.startsWith("__new")){const k=fid.slice(5), d=draft[k];if(!d)return;syncDraft(k,sel.form);d.mchosen=1;if(sel.value==="cnt"){d.cnt=true;delete d.use;delete d.res}else{delete d.cnt;d.use=true;d.res=0}paintDraft(k);return}
@@ -4796,7 +4796,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v137";
+const APPV="casa-v138";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
