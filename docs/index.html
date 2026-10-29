@@ -230,11 +230,12 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .acbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 4px 12px;display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 .acbox .ach{font-weight:700;font-size:15px;padding:0 12px}.acbox .bill{background:transparent!important}.acbox .act{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 0;border-top:1px solid var(--line);font-size:15px}
 .acbox .act b{font-size:19px}.acbox .btn,.acbox .back{margin:0 12px}
+.cxs{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cxsb{background:none;color:var(--muted);font:inherit;font-size:14px;padding:2px 0;text-align:left}.cxsb b{color:var(--fg);font-weight:600;margin-right:4px}.cxsb .go{color:var(--accent)}
 .cxls{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-top:4px}
-.cxl{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 8px;align-items:end;background:var(--fill);border-radius:10px;padding:8px 10px}
+.cxl{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:4px 8px;align-items:end;background:var(--fill);border-radius:10px;padding:8px 10px}
 .cxl .cxm{grid-row:span 2;align-self:center;font-size:13px;font-weight:600;color:var(--muted);min-width:62px}
 .cxl label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.cxl input{width:100%;box-sizing:border-box;padding:7px 8px;font-size:16px;border-radius:8px}
-.cxl .cxr{grid-column:2/-1;font-size:13px;color:var(--muted)}
+.cxl .cxok{padding:8px 12px;align-self:end}.cxl .cxr{grid-column:2/-1;font-size:13px;color:var(--muted)}
 .tlday{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:12px 4px 5px}.tlday span:last-child{font-weight:500;text-transform:none;letter-spacing:0}
 .tlday.bad{color:var(--bad)}.tlg{gap:0!important}
 .bname.wi{display:flex!important;align-items:center;gap:12px;min-width:0}.bname.wi .bt{min-width:0;display:block}
@@ -2359,9 +2360,14 @@ function renderBills(){
     /* Caixa: total e empresa escrevem-se aqui mesmo (apagar os dois tira o valor); aparecem também os meses com dinheiro por levantar */
     const cxM=isCaixa(b)?[k,...Object.keys(b.caixa||{}).filter(m=>m!==k&&b.caixa[m]&&b.caixa[m].e>0&&!(b.lev&&b.lev[m]))].sort():[];
     const vv=v=>v!=null&&v!==""?(Math.round(+v*100)/100).toFixed(2).replace(".",","):"";
-    const cxl=cxM.map(m=>{const c=(b.caixa||{})[m], mn=mFull(m).split(" de ")[0];return `<div class="cxl"><span class="cxm">${m===k?"Este mês":mn[0].toUpperCase()+mn.slice(1)}</span>
+    const cxl=cxM.map(m=>{const c=(b.caixa||{})[m], mn=mFull(m).split(" de ")[0], lbm=m===k?"Este mês":mn[0].toUpperCase()+mn.slice(1);
+      /* fechado: uma linha com o resumo (ou "escrever"); toca para abrir os campos */
+      if(!cxOpen.has(b.id+"|"+m))return c?`<div class="cxs"><button type="button" class="cxsb" data-cxtog="${b.id}|${m}"><b>${lbm}</b> Total ${eur(c.t)} · empresa ${eur(c.e)} · casa ${eur(c.t-c.e)} <span class="go">✎</span></button>${c.e>0?`<span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-lev="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":"levantar ›"}</span>`:""}</div>`
+        :`<div class="cxs"><button type="button" class="cxsb" data-cxtog="${b.id}|${m}"><span class="loanlink">✎ Escrever o total e a empresa de ${m===k?mName:mn}</span></button></div>`;
+      return `<div class="cxl"><span class="cxm">${m===k?"Este mês":mn[0].toUpperCase()+mn.slice(1)}</span>
       <label>Total<input data-cxin="${b.id}|${m}|t" type="text" inputmode="decimal" value="${c?vv(c.t):""}" placeholder="0,00"></label>
       <label>Empresa<input data-cxin="${b.id}|${m}|e" type="text" inputmode="decimal" value="${c?vv(c.e):""}" placeholder="${+b.emp?vv(+b.emp):"0,00"}"></label>
+      <button type="button" class="btn cxok" data-cxok="1">OK</button>
       ${c?`<span class="cxr">Casa <b>${eur(c.t-c.e)}</b>${c.e>0?` · <span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-lev="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":"levantar ›"}</span>`:""}</span>`:`<span class="cxr">escreve o total</span>`}</div>`}).join("");
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
@@ -4796,15 +4802,22 @@ function incAskList(k){return bills.filter(b=>askInc(b)&&!(b.iconf&&b.iconf[k]))
 const isCaixa=b=>isInc(b)&&/caixa/.test(noAcc(b.name||""));
 /* Abre-se sozinho no último dia útil; o botão nas Receitas abre-o em qualquer dia, para o mês que se está a ver */
 let incForce="";
-let cxEdit="";
+let cxEdit="";const cxOpen=new Set();
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cxtog]");if(!t)return;e.preventDefault();e.stopPropagation();const key=t.dataset.cxtog;cxOpen.has(key)?cxOpen.delete(key):cxOpen.add(key);renderBills();
+  setTimeout(()=>{const f=document.querySelector(`#incomes [data-cxin="${key}|t"]`);if(f)f.focus()},50)},true);
 /* Guardar a caixa escrita na própria linha: total e empresa; apagar os dois tira o valor desse mês */
-document.addEventListener("change",e=>{const t=e.target.closest("[data-cxin]");if(!t)return;const save=nb=>setTimeout(()=>putBill(nb),0);const [id,m]=t.dataset.cxin.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
-  const row=t.closest(".cxl"), tv=numIn(row.querySelector('[data-cxin$="|t"]').value), ev0=numIn(row.querySelector('[data-cxin$="|e"]').value), ev=isNaN(ev0)?(+b.emp||0):ev0;
+/* grava quando se sai da linha (os dois campos), ao tocar em OK ou com Enter */
+document.addEventListener("keydown",e=>{const t=e.target.closest&&e.target.closest("[data-cxin]");if(t&&e.key==="Enter"){e.preventDefault();cxSave(t.closest(".cxl"))}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cxok]");if(!t)return;e.preventDefault();e.stopPropagation();cxSave(t.closest(".cxl"))},true);
+document.addEventListener("focusout",e=>{const t=e.target.closest&&e.target.closest("[data-cxin]");if(!t)return;const row=t.closest(".cxl");if(e.relatedTarget&&row.contains(e.relatedTarget))return;cxSave(row)});
+function cxSave(row){if(!row||row.dataset.saved)return;row.dataset.saved=1;const t=row.querySelector("[data-cxin]"), save=nb=>setTimeout(()=>putBill(nb),0);const [id,m]=t.dataset.cxin.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
+  const tv=numIn(row.querySelector('[data-cxin$="|t"]').value), ev0=numIn(row.querySelector('[data-cxin$="|e"]').value), ev=isNaN(ev0)?(+b.emp||0):ev0;
   const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})}};
+  cxOpen.delete(id+"|"+m);
   if(isNaN(tv)){delete nb.caixa[m];delete nb.amounts[m];delete nb.paid[m];delete nb.iconf[m];delete nb.lev[m];save(nb);toast(`${b.name}: valor de ${mFull(m).split(" de ")[0]} apagado`);return}
-  if(ev>tv){toast("A parte da empresa é maior do que o total.");return}
+  if(ev>tv){delete row.dataset.saved;toast("A parte da empresa é maior do que o total.");return}
   const net=Math.round((tv-ev)*100)/100;nb.caixa[m]={t:tv,e:ev};delete nb.amounts[m];if(Math.abs(net-baseAmt(nb,m))>.004)nb.amounts[m]=net;nb.paid[m]=true;nb.iconf[m]=true;
-  save(nb);toast(`Para casa ${eur(net)}${ev>0?` · levantar ${eur(ev)} para a empresa`:""}`)});
+  save(nb);toast(`Para casa ${eur(net)}${ev>0?` · levantar ${eur(ev)} para a empresa`:""}`)}
 function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const ce=cxEdit&&cxEdit.split("|"), cb=ce&&bills.find(x=>x.id===ce[0]);
   const k=ce?ce[1]:incForce||incAskMonth(), L=cb?[cb]:k?incAskList(k):[];
   const ob=document.getElementById("incAskOpen");if(ob){const vk=mKey();ob.hidden=!!L.length&&k===vk||!incAskList(vk).length||vk<START}
@@ -5044,7 +5057,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v165";
+const APPV="casa-v166";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
