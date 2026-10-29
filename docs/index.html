@@ -245,6 +245,14 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 #accounts:not(:has(form))>.bill.acc{flex:0 0 calc(50% - 5px);scroll-snap-align:start;grid-template-columns:1fr;gap:2px;min-height:0;padding:10px 12px!important}
 #accounts:not(:has(form))>.bill.acc .name{font-size:14px}#accounts:not(:has(form))>.bill.acc .amt{font-size:17px}
 .app[hidden]{display:none!important}
+#tab-definicoes .item .btn.ghost{background:transparent!important;border:0!important;box-shadow:none!important;color:var(--accent);font-weight:500;font-size:16px;padding:6px 2px;min-height:0;white-space:nowrap}
+#tab-definicoes .item .btn.ghost::after{content:" ›";color:var(--muted)}
+#tab-definicoes #logoutBtn{color:var(--bad)!important}#tab-definicoes #logoutBtn::after{content:""}
+#tab-definicoes [data-histrep]{padding:8px 0!important;text-align:left}
+:root[data-hdrfont] header.hdr :is(#today,#hello,#clock){font-family:var(--hdrfont),-apple-system,system-ui,sans-serif!important;letter-spacing:0}
+.hfonts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.hfont{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;background:var(--fill);color:var(--fg);border:2px solid transparent}
+.hfont b{font-size:19px;font-weight:700;line-height:1.1}.hfont small{font-family:-apple-system,system-ui,sans-serif;font-size:10.5px;color:var(--muted)}.hfont[aria-pressed="true"]{border-color:var(--accent)}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1082,13 +1090,15 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
       </div>
-      <div class="name">Apps no Início</div>
-      <p class="note" style="margin:0">Escolhe as apps que aparecem neste telemóvel. As que desligas ficam guardadas (não se perde nada) e podes voltar a ligá-las.</p>
-      <div id="appsOnList" class="group" style="gap:0"></div>
+      <details class="import" id="appsOnBox"><summary>Apps no Início ›</summary>
+        <p class="note" style="margin:0">Escolhe as apps que aparecem neste telemóvel. As que desligas ficam guardadas (não se perde nada) e podes voltar a ligá-las.</p>
+        <div id="appsOnList" class="group" style="gap:0"></div></details>
       <div class="name">Estilo dos alertas</div>
       <div class="seg" role="group" aria-label="Estilo dos alertas" style="display:grid;grid-template-columns:1fr 1fr 1fr">
         <button type="button" data-alstyle="A">Lista</button><button type="button" data-alstyle="B">Com ícones</button><button type="button" data-alstyle="C">Quadrados</button>
       </div>
+      <div class="name">Letra da data, saudação e hora</div>
+      <div class="hfonts" id="hdrFonts" role="group" aria-label="Letra do Início"></div>
       <div class="name">Cor das letras e dos rebordos do Início</div>
       <div class="hdrcols" role="group" aria-label="Cor das letras do Início">
         <button type="button" data-hdrcol="ouro" style="--c:linear-gradient(135deg,#f5dc95,#b8892f)" aria-label="Dourado"></button>
@@ -1151,7 +1161,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <div style="min-width:0"><div class="name">Notificações</div><div class="meta" id="pushMeta"></div></div>
         <button class="btn" type="button" id="pushBtn" hidden>Ativar</button>
       </div>
-      <button class="back" type="button" id="leaveHouse" style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
+      <button class="back" type="button" id="leaveHouse" hidden style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
     <div class="item" style="flex-wrap:wrap;row-gap:8px">
       <div style="min-width:0;flex:1 1 100%"><div class="name">Cópia de segurança</div><div class="meta" id="bkMeta">Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega.</div></div>
@@ -1160,17 +1170,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:8px">
       <div style="min-width:0"><div class="name">Produtos de outro dia</div><div class="meta">Este telemóvel guarda sozinho uma cópia dos produtos do "Em casa" (de hora a hora, até 14 dias). Se algo desaparecer, repõe daqui.</div></div>
       <select id="histSel" aria-label="Cópia de que dia" style="width:100%"></select>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" type="button" data-histrep="meat">Repor só Carne e Peixe</button><button class="btn ghost" type="button" data-histrep="all">Repor todos os produtos</button></div>
-    </div>
-    <div class="item">
-      <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
-      <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" type="button" data-histrep="meat">Repor só Carne e Congelados</button><button class="btn ghost" type="button" data-histrep="all">Repor todos os produtos</button></div>
     </div>
     <div id="accBox" class="group" hidden>
-      <div class="item">
-        <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
-        <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
-      </div>
       <div class="item" id="bioItem" hidden><div style="min-width:0"><div class="name">Face ID</div><div class="meta">Pede o Face ID (ou Touch ID) ao abrir a app neste telemóvel</div></div><label class="tick" style="margin:0"><input type="checkbox" class="switch" id="bioSw" aria-label="Bloquear com Face ID"></label></div>
       <div class="item"><div style="min-width:0"><div class="name">PIN</div><div class="meta">Muda o teu PIN de 6 números</div></div><button class="btn ghost" type="button" id="pinBtn">Mudar PIN</button></div>
       <form class="bill-edit" id="pinForm" hidden autocomplete="off">
@@ -1179,6 +1181,16 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label class="f">Repete<input name="r" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="new-password" required></label>
         <button class="btn" type="submit">Guardar PIN</button><button class="btn ghost" type="button" id="pinCancel">Cancelar</button>
       </form>
+    </div>
+    <div class="item">
+      <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
+      <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
+    </div>
+    <div id="accEnd" class="group" hidden>
+      <div class="item">
+        <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
+        <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
+      </div>
     </div>
     <div id="houseLocal" class="item" hidden>
       <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
@@ -2977,7 +2989,7 @@ function renderHouse(){if(typeof chatFabState==="function")chatFabState();
   document.getElementById("houseShared").hidden=!houseCode;
   document.getElementById("houseLocal").hidden=!!houseCode;
   if(houseCode){document.getElementById("houseCode").textContent=fmtCode(houseCode);renderPush()}
-  const ab=document.getElementById("accBox");ab.hidden=!(acct&&acct.email);if(acct)document.getElementById("accEmail").textContent="Utilizador: "+userOf(acct.email);
+  const ab=document.getElementById("accBox");ab.hidden=!(acct&&acct.email);document.getElementById("accEnd").hidden=ab.hidden;if(acct)document.getElementById("accEmail").textContent="Utilizador: "+userOf(acct.email);
 }
 async function renderPush(){
   const meta=document.getElementById("pushMeta"), btn=document.getElementById("pushBtn");
@@ -4594,9 +4606,9 @@ function histSave(){if(!items.length)return;const H=histLoad(), now0=Date.now(),
   H.push({at:now0,items:items.map(x=>({...x}))});const keep=H.filter(h=>now0-h.at<14*864e5).slice(-120);
   for(let i=0;i<5;i++){try{localStorage.setItem("casa-hist-items",JSON.stringify(keep));break}catch(e){keep.splice(0,Math.ceil(keep.length/4))}}histMenu()}
 function histMenu(){const sel=document.getElementById("histSel");if(!sel)return;const H=histLoad().slice().reverse();
-  sel.innerHTML=H.length?H.map((h,i)=>{const d=new Date(h.at), m=h.items.filter(x=>MEAT.includes(x.cat)).length;return `<option value="${h.at}">${d.toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"})} ${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})} · ${h.items.length} produtos (${m} carne/peixe)</option>`}).join(""):`<option value="">Ainda não há cópias (a primeira fica daqui a pouco)</option>`}
+  sel.innerHTML=H.length?H.map((h,i)=>{const d=new Date(h.at), m=h.items.filter(x=>BAGC.includes(x.cat)).length;return `<option value="${h.at}">${d.toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"})} ${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})} · ${h.items.length} produtos (${m} carne/congelados)</option>`}).join(""):`<option value="">Ainda não há cópias (a primeira fica daqui a pouco)</option>`}
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-histrep]");if(!b)return;const at=+document.getElementById("histSel").value, h=histLoad().find(x=>x.at===at);if(!h){toast("Escolhe uma cópia.");return}
-  const L=h.items.filter(x=>b.dataset.histrep==="all"||MEAT.includes(x.cat));
+  const L=h.items.filter(x=>b.dataset.histrep==="all"||BAGC.includes(x.cat));
   if(!confirm(`Repor ${L.length} produtos como estavam a ${new Date(at).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}? Os produtos criados depois ficam como estão.`))return;
   for(const it of L){upsert(it);await put(it)}render();toast(`${L.length} produtos repostos`)});
 setInterval(()=>safe("Cópia automática",histSave),10*60000);
@@ -4996,6 +5008,18 @@ document.addEventListener("click",e=>{const f=e.target.closest("[data-openfold]"
   const o=document.getElementById("folderOpen");if(!o.hidden){if(e.target.closest("#folderPanel .app"))setTimeout(closeFold,0);else if(!e.target.closest("#folderPanel"))closeFold()}
   const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast(t.dataset.homelay==="pastas"?"Início em pastas":"Início com tudo à vista")}});
 renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidden&&!openFold)safe("Pastas",renderFolders)},3000);
+/* Letra da data, saudação e hora do Início (cada telemóvel escolhe; letras gratuitas do Google Fonts) */
+const HFONTS=[["","Atual (iPhone)"],["Playfair Display","Playfair"],["Cormorant Garamond","Cormorant"],["DM Serif Display","DM Serif"],["Montserrat","Montserrat"],["Poppins","Poppins"],["Outfit","Outfit"],["Nunito","Nunito"],["Bebas Neue","Bebas"],["Josefin Sans","Josefin"]];
+const hfUrl=L=>"https://fonts.googleapis.com/css2?"+L.map(f=>"family="+f.replace(/ /g,"+")+(/Bebas|DM Serif/.test(f)?"":":wght@600;700")).join("&")+"&display=swap";
+function hfLoad(L,id){if(!L.length||document.getElementById(id))return;const l=document.createElement("link");l.id=id;l.rel="stylesheet";l.href=hfUrl(L);document.head.appendChild(l)}
+function hdrFont(){try{return localStorage.getItem("casa-hdrfont")||""}catch(e){return""}}
+function applyHdrFont(){const root=document.documentElement, f=hdrFont();if(f){hfLoad([f],"hfOne-"+f.replace(/ /g,""));root.style.setProperty("--hdrfont",`"${f}"`);root.dataset.hdrfont=f}else{root.style.removeProperty("--hdrfont");delete root.dataset.hdrfont}
+  const el=document.getElementById("hdrFonts");if(el)el.querySelectorAll("[data-hfont]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfont===f))}
+function buildHdrFonts(){const el=document.getElementById("hdrFonts");if(!el||el.dataset.built)return;el.dataset.built=1;hfLoad(HFONTS.map(x=>x[0]).filter(Boolean),"hfAll");
+  el.innerHTML=HFONTS.map(([f,n])=>`<button type="button" class="hfont" data-hfont="${f}" style="${f?`font-family:'${f}'`:""}"><b>08:26</b><small>${n}</small></button>`).join("");applyHdrFont()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hfont]");if(!b)return;try{localStorage.setItem("casa-hdrfont",b.dataset.hfont)}catch(err){}applyHdrFont();toast("Letra do Início: "+(HFONTS.find(x=>x[0]===b.dataset.hfont)||[,""])[1])});
+applyHdrFont();
+document.addEventListener("click",e=>{if(e.target.closest('[data-go="definicoes"]'))setTimeout(buildHdrFonts,50)});
 /* Cor das letras do Início: "ouro" (por defeito, dourado conforme o tema), "auto" (branco/preto) ou uma cor */
 function hdrCol(){try{return localStorage.getItem("casa-letras")||"ouro"}catch(e){return"ouro"}}
 function applyHdr(){const v=hdrCol(), r=document.documentElement;
@@ -5149,7 +5173,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v174";
+const APPV="casa-v175";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
