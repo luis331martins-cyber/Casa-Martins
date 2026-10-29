@@ -2270,6 +2270,12 @@ const BICS={bolt:'<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>',drop:'<path d="M12
   heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',play:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
   bolt2:'<path d="M4 12h3M17 12h3M7 8v8M17 8v8M7 12h10"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 13.5h8"/>'};
 const billIc=b=>{const m=BIC.find(([re])=>re.test(b.name||"")), [k,c]=m?[m[1],m[2]]:[isInc(b)?"cash":"euro",isInc(b)?"#34c759":"#0a84ff"];return `<span class="bic" style="background:${c}" aria-hidden="true"><svg viewBox="0 0 24 24">${BICS[k]}</svg></span>`};
+/* Pedido de 29/10/2026: apagar uma vez os produtos da categoria Despensa (do "Em casa"); fica marcado na casa (flag-desp-1)
+   para não voltar a acontecer, e o que for criado depois nunca é apagado */
+let despWiped=false;const DESP_CUT=1793301693745;
+function despWipe(){if(despWiped||!items.length||!bills.length)return;despWiped=true;if(bills.some(b=>b.id==="flag-desp-1"))return;
+  const L=items.filter(i=>i.cat==="Despensa"&&!i.med&&!(+i.added>DESP_CUT));L.forEach(i=>remove(i.id));
+  putBill({id:"flag-desp-1",kind:"flag",at:Date.now(),n:L.length});if(L.length)toast(`Despensa limpa: ${L.length} produto${L.length===1?"":"s"} apagado${L.length===1?"":"s"}`)}
 /* Gás em bilha (Galp): uma vez, passa de conta fixa para "gastos do mês" (junta-se cada bilha com o valor) e sem contagem */
 let gasTidyDone=false;
 function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
@@ -2841,9 +2847,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -5035,7 +5041,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy)}
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5097,7 +5103,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v168";
+const APPV="casa-v169";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
