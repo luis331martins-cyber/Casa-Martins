@@ -1374,7 +1374,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="tot"><div class="k">Na garantia</div><div class="v" id="vHmWar"></div></div>
     </div>
     <div class="sortbar"><span class="note">Ver</span>
-      <div class="seg" role="group" aria-label="Ordenar" id="hmSort"><button type="button" data-hmsort="div">Divisão</button><button type="button" data-hmsort="new">Recentes</button><button type="button" data-hmsort="val">Valor</button><button type="button" data-hmsort="war">Garantia</button></div></div>
+      <div class="seg" role="group" aria-label="Ordenar" id="hmSort"><button type="button" data-hmsort="grp">Grupo</button><button type="button" data-hmsort="div">Divisão</button><button type="button" data-hmsort="new">Recentes</button><button type="button" data-hmsort="val">Valor</button><button type="button" data-hmsort="war">Garantia</button></div></div>
     <button class="btn ghost" type="button" id="addHm">+ Juntar compra</button>
     <div id="hmNew"></div>
     <div id="hmList"></div>
@@ -2049,7 +2049,14 @@ setInterval(()=>{let h="";try{h=localStorage.getItem("casa-pendente")||""}catch(
   const ready=typeof hasFb!=="undefined"&&(store||!hasFb||ls.get("casa-local"));if(!ready||!document.getElementById("tab-login").hidden)return;
   try{localStorage.removeItem("casa-pendente")}catch(e){}linkAdd(h).catch(e=>console.error(e))},1000);
 async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)), P=raw.split("|").map(x=>x.trim()).filter(Boolean);
-  await new Promise(r=>setTimeout(r,800));show("escola");
+  await new Promise(r=>setTimeout(r,800));
+  /* #juntar-casa:grupo~nome~divisão~tipo~loja~parcelas;… (parcelas "272.69+17.49-66.15") → compras da Casa; o que já existe (mesmo nome e valor) é saltado */
+  if(h.startsWith("#juntar-casa:")){show("casa");const L=raw.split(";").map(x=>x.split("~")).filter(x=>x[1]);if(!L.length||!confirm(`Juntar ${L.length} compras à Casa?`))return;
+    const have=new Set(homes().map(x=>noAcc(x.name)+"|"+(+x.value||0).toFixed(2)));let n=0;
+    L.forEach(([g,name,room,type,shop,pp])=>{const parts=hmParts(pp), value=Math.round(parts.reduce((t,x)=>t+x,0)*100)/100, key=noAcc(name)+"|"+value.toFixed(2);if(have.has(key))return;have.add(key);
+      putBill({id:uid(),kind:"home",name,grp:g,room:HM_ROOMS.includes(room)?room:"Toda a casa",type:HM_TYPES.some(x=>x[0]===type)?type:"Outros",value,...(parts.length>1?{parts}:{}),...(shop?{shop}:{})});n++});
+    hmSort="grp";try{localStorage.setItem("casa-hmsort","grp")}catch(e){}renderHome();toast(`${n} compra${n===1?"":"s"} juntada${n===1?"":"s"}`);return}
+  show("escola");
   if(h.startsWith("#juntar-aula:")){const [name,from,to,who]=P;if(!name||!/^\d{1,2}:\d{2}$/.test(from||""))return;
     if(!confirm(`Juntar "${name}" das ${from}${to?" às "+to:""}, de segunda a sexta${who?" ("+who+")":""}?`))return;let n=0;
     [0,1,2,3,4].forEach(w=>{if(escOf("aula").some(a=>+a.wd===w&&a.from===from&&noAcc(a.name)===noAcc(name)))return;putBill({id:uid(),kind:"esc",t:"aula",name,wd:w,from,...(to?{to}:{}),who:who||""});n++});
@@ -2058,7 +2065,7 @@ async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)
     const have=new Set(escOf("mat").map(m=>noAcc(m.name)));let n=0;P.forEach(t=>{if(have.has(noAcc(t)))return;have.add(noAcc(t));putBill({id:uid(),kind:"esc",t:"mat",name:t,done:true});n++});
     renderEscola();toast(`${n} juntado${n===1?"":"s"}`)}}
 /* Guarda o pedido até a app estar pronta (por exemplo, depois de entrar com o PIN) */
-function route(h){if(/^#juntar-(aula|material):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
+function route(h){if(/^#juntar-(aula|material|casa):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
   if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
   if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
@@ -3784,15 +3791,23 @@ const homes=()=>bills.filter(b=>b.kind==="home");
 const HM_ROOMS=["Cozinha","Sala","Quarto","Quarto da Maria","Casa de banho","Escritório","Lavandaria","Entrada","Exterior","Toda a casa"];
 const HM_TYPES=[["Eletrodoméstico","🔌"],["Móveis","🛋️"],["Camas e colchões","🛏️"],["Cortinados e têxteis","🪟"],["Janelas e obras","🔨"],["Iluminação","💡"],["Eletrónica","📺"],["Decoração","🖼️"],["Outros","📦"]];
 const hmEmo=t=>(HM_TYPES.find(x=>x[0]===t)||HM_TYPES[HM_TYPES.length-1])[1];
-let editHm="", openHm="", hmSort=(()=>{try{return localStorage.getItem("casa-hmsort")||"div"}catch(e){return"div"}})();
+let editHm="", openHm="", hmSort=(()=>{try{return localStorage.getItem("casa-hmsort")||"grp"}catch(e){return"grp"}})();
+/* Grupos das compras da casa (h.grp); os antigos sem grupo vão pelo tipo */
+const HM_GRPS=["Obras","Mobílias e Decoração","Eletrodomésticos e eletrónica","Outros"];
+const hmGrp=h=>h.grp||(h.type==="Janelas e obras"?"Obras":["Móveis","Camas e colchões","Cortinados e têxteis","Iluminação","Decoração"].includes(h.type)?"Mobílias e Decoração":["Eletrodoméstico","Eletrónica"].includes(h.type)?"Eletrodomésticos e eletrónica":"Outros");
+/* "272,69€ + 17,49€ − 66,15€" → [272.69, 17.49, -66.15] */
+const hmParts=t=>{t=String(t||"").replace(/[€\u200e\s]/g,"").replace(/−/g,"-");if(t.includes(","))t=t.replace(/\./g,"");
+  return (t.match(/[+-]?\d+(?:[.,]\d+)?/g)||[]).map(x=>Math.round(parseFloat(x.replace(",","."))*100)/100).filter(x=>!isNaN(x)&&x!==0)};
 function hmWarEnd(h){if(!h.date||!h.war)return null;const d=new Date(h.date+"T12:00");d.setMonth(d.getMonth()+Math.round(+h.war*12));return ymd(d)}
 function hmAge(ds){if(!ds)return"";const d=-daysTo(ds);if(d<0)return"";if(d<31)return d===0?"hoje":`há ${d} dia${d===1?"":"s"}`;const m=Math.floor(d/30.44);if(m<12)return`há ${m} ${m===1?"mês":"meses"}`;const y=Math.floor(m/12), r=m%12;return`há ${y} ano${y===1?"":"s"}${r?` e ${r} ${r===1?"mês":"meses"}`:""}`}
 function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form class="bill-edit" data-hmform="${h?h.id:"new"}" autocomplete="off">
     <label class="f wide">O quê<input name="n" required value="${h?esc(h.name):""}" placeholder="ex.: Máquina de lavar roupa" autocapitalize="sentences"></label>
     <label class="f">Divisão<select name="r">${HM_ROOMS.map(r=>`<option${h&&h.room===r?" selected":""}>${r}</option>`).join("")}</select></label>
+    <label class="f wide">Grupo<select name="g">${HM_GRPS.map(g=>`<option${h&&hmGrp(h)===g?" selected":""}>${g}</option>`).join("")}</select></label>
     <label class="f">Tipo<select name="t">${HM_TYPES.map(([t,e])=>`<option value="${t}"${h&&h.type===t?" selected":""}>${e} ${t}</option>`).join("")}</select></label>
     <label class="f">Data da compra<input name="d" type="date" value="${h?v(h.date):ymd(new Date())}"></label>
     <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.value):""}" placeholder="0,00"></label>
+    <label class="f wide">Parcelas (opcional, ex.: 272,69 + 17,49 − 66,15)<input name="p" value="${h&&h.parts?esc(h.parts.map((x,i)=>(i&&x>=0?"+ ":x<0?"− ":"")+String(Math.abs(x)).replace(".",",")).join(" ")):""}" placeholder="o valor fica a soma"></label>
     <label class="f">Onde comprei<input name="s" list="shopList" value="${h?v(h.shop):""}" placeholder="ex.: IKEA, Worten" autocapitalize="words"></label>
     <label class="f">Garantia<select name="w">${[["0","Sem garantia"],["1","1 ano"],["2","2 anos"],["3","3 anos"],["5","5 anos"],["10","10 anos"]].map(([k,t])=>`<option value="${k}"${String(war||0)===k?" selected":""}>${t}</option>`).join("")}</select></label>
     <label class="f wide">Marca e modelo<input name="b" value="${h?v(h.brand):""}" placeholder="opcional (ex.: Bosch Serie 4 WAN28)"></label>
@@ -3802,9 +3817,10 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
 function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.id;
   const war=we?(d<0?`<span class="due bad">Garantia acabou</span>`:d<=60?`<span class="due warn">Garantia: ${d} dias</span>`:`<span class="due ok">Na garantia ✓</span>`):"";
   return`<div class="hm"><button type="button" class="hh" data-openhm="${h.id}"><span class="he">${hmEmo(h.type)}</span>
-      <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hmm">${[hmSort!=="div"?h.room:"",h.date?fmtD(h.date):"",hmAge(h.date)].filter(Boolean).map(esc).join(" · ")}${(h.files||[]).length?" · 📎":""}</span></span>
+      <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hmm">${[hmSort!=="div"&&h.room!=="Toda a casa"?h.room:"",h.parts&&h.parts.length>1?h.parts.length+" parcelas":"",h.date?fmtD(h.date):"",hmAge(h.date)].filter(Boolean).map(esc).join(" · ")}${(h.files||[]).length?" · 📎":""}</span></span>
       <span class="hv">${h.value?eur(+h.value):""}${war?`<span style="display:block;margin-top:3px">${war}</span>`:""}</span></button>
     ${open?`<div class="hb">
+      ${h.parts&&h.parts.length>1?`<div class="row"><span>Parcelas</span><b style="text-align:right">${h.parts.map((x,i)=>(i?(x<0?" − ":" + "):x<0?"− ":"")+eur(Math.abs(x))).join("")}</b></div>`:""}
       ${h.shop?`<div class="row"><span>Comprado em</span><b>${esc(h.shop)}</b></div>`:""}
       ${we?`<div class="row"><span>Garantia até</span><b>${fmtD(we)}</b></div>`:""}
       ${h.brand?`<div class="row"><span>Marca e modelo</span><b>${esc(h.brand)}</b></div>`:""}
@@ -3816,7 +3832,9 @@ function renderHome(){const el=document.getElementById("hmList");if(!el)return;c
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
-  if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
+  if(hmSort==="grp"){HM_GRPS.forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
+      html+=`<div class="hmdiv"><h2>${esc(g)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
+  else if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
   else{const S=[...L];if(hmSort==="new")S.sort((a,b)=>(b.date||"").localeCompare(a.date||""));else if(hmSort==="val")S.sort((a,b)=>(+b.value||0)-(+a.value||0));
     else S.sort((a,b)=>{const x=hmWarEnd(a), y=hmWarEnd(b), xa=x&&x>=ymd(new Date()), ya=y&&y>=ymd(new Date());return(ya-xa)||(x||"9").localeCompare(y||"9")});html=S.map(card).join("")}
@@ -3832,6 +3850,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   else if(t.dataset.delhm){const h=homes().find(x=>x.id===t.dataset.delhm);if(h&&confirm(`Apagar "${h.name}"?`)){(h.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editHm="";delBill(h.id);renderHome();toast("Apagado")}}});
 document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)return;e.preventDefault();const f=e.target;const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
   const old=id==="new"?null:homes().find(x=>x.id===id);const h={...(old||{}),id:old?old.id:uid(),kind:"home",name:f.n.value.trim(),room:f.r.value,type:f.t.value};
+  h.grp=f.g.value;delete h.parts;{const P=hmParts(f.p.value);if(P.length>1||(P.length===1&&f.p.value.trim())){h.parts=P;f.v.value=String(Math.round(P.reduce((t,x)=>t+x,0)*100)/100)}}
   for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
   editHm="";openHm=h.id;putBill(h);renderHome();toast(old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
 /* ---------- Seguro da casa (kind:"hins") ----------
@@ -5057,7 +5076,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v166";
+const APPV="casa-v167";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
