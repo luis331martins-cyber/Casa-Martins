@@ -1691,7 +1691,7 @@ function safe(name,fn){try{return fn()}catch(err){showFatal(name+": "+(err&&err.
 const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Bananas","Fruta"],["Maçãs","Fruta"],["Laranjas","Fruta"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
 const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Fruta"];
 /* "Em casa": todas as categorias num só separador (a carne e o peixe também) */
-const PCATS=["Frigorífico","Despensa","Congelados","Fruta","Carne","Peixe","Limpeza","Higiene"];
+const PCATS=["Frigorífico","Despensa","Congelados","Fruta","Carne","Limpeza","Higiene"];
 const FRUIT=/fruta|banana|ma[cç][aã]s?\b|\bperas?\b|laranja|\buvas?\b|morango|kiwi|anan[aá]s|abacaxi|mel[aã]o|melancia|manga\b|mangas\b|p[eê]ssego|ameixa|cereja|lim[aã]o|lim[oõ]es|tangerina|clementina|framboesa|mirtilo|abacate|\bfigos?\b|rom[aã]|papaia|maracuj|nectarina|alperce|dióspiro|di[oó]spiro|lima\b/i;
 const MEAT=["Carne","Peixe"];
 const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Salsichas","Carne"],["Salsichas frescas","Carne"],["Almôndegas","Carne"],["Almôndegas de frango","Carne"],["Espetadas de frango","Carne"],["Espetadas mistas","Carne"],["Hambúrgueres","Carne"],["Febras","Carne"],["Panados","Carne"],["Nuggets","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Douradinhos","Peixe"],["Lulas","Peixe"],["Polvo","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
@@ -1764,13 +1764,15 @@ const SING={pacotes:"pacote",latas:"lata",garrafas:"garrafa",caixas:"caixa",dose
 const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.unit]?SING[i.unit]:packBuy(i)?"saco":"embalagem", pk=`${nm} de ${String(i.packN).replace(".",",")} ${i.packU||"un."}`;
   const tot=i.qty>0&&i.unit&&i.unit!=="un"&&COUNTU.includes(i.unit)?Math.round(i.qty*i.packN*100)/100:null;return tot!=null?`${pk} (${String(tot).replace(".",",")} ${i.packU||"un."} em casa)`:pk};
 /* Carne/peixe contado à unidade mas comprado ao saco (ex.: sacos com 6 e com 2) */
-const packBuy=i=>MEAT.includes(i.cat)&&(Array.isArray(i.bags)||i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un."));
+/* Sacos com quantidades diferentes: carne, peixe e congelados */
+const BAGC=["Carne","Peixe","Congelados"];
+const packBuy=i=>BAGC.includes(i.cat)&&(Array.isArray(i.bags)||i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un."));
 /* Sacos em casa com quantidades diferentes (ex.: bags:[6,2]): a quantidade é a soma, em un. */
-const hasBags=i=>MEAT.includes(i.cat)&&Array.isArray(i.bags);
+const hasBags=i=>BAGC.includes(i.cat)&&Array.isArray(i.bags);
 const bagSum=b=>Math.round(b.reduce((s,x)=>s+(+x||0),0)*100)/100;
 const bagSize=i=>+i.packN||+i.bagSz||(i.bags&&i.bags.length?Math.max(...i.bags):1);
 const bagText=i=>i.bags.length?`${i.bags.length} ${i.bags.length===1?"saco":"sacos"}: ${i.bags.map(x=>String(x).replace(".",",")).join(" + ")} un.`:"";
-function setBags(it,bags,extra){const n={...it,...extra,bags,qty:bagSum(bags),unit:"un",tidy:1};n.lvl=autoLvl(n,n.qty);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
+function setBags(it,bags,extra){const n={...it,...extra,bags,qty:bagSum(bags),unit:"un",tidy:1};if(!MEAT.includes(n.cat)){n.cnt=true;n.rtidy=1;n.rt2=1;["use","res","want"].forEach(k=>delete n[k])}n.lvl=autoLvl(n,n.qty);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
 const qtyText=i=>i.qty==null?"":`${String(i.qty).replace(".",",")} ${i.unit==="un"||!i.unit?"un.":i.qty===1&&SING[i.unit]?SING[i.unit]:i.unit}`;
 const PSHOPS=["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Talho","Peixaria","Frutaria","Padaria","Mercado"];
 const shopsUsed=()=>{const c={};items.forEach(i=>{if(i.shop)c[i.shop]=(c[i.shop]||0)+1});return[...new Set([...Object.keys(c).sort((a,b)=>c[b]-c[a]),...PSHOPS])]};
@@ -1798,6 +1800,8 @@ function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n
   return n}
 let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
+  /* o separador Peixe saiu: o peixe passa para Congelados (conta-se à unidade, com sacos se tiver) */
+  for(const it of items.filter(i=>i.cat==="Peixe")){const n={...it,cat:"Congelados",cnt:true,rtidy:1,rt2:1};["use","res","want"].forEach(k=>delete n[k]);upsert(n);put(n);c++}
   /* "Outros" passou a "Fruta": fruta vai para lá, medicamentos para Higiene, o resto para Despensa */
   for(const it of items.filter(i=>i.cat==="Outros")){const n={...it,cat:it.med?"Higiene":FRUIT.test(it.name||"")?"Fruta":"Despensa"};upsert(n);put(n);c++}
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
@@ -1871,14 +1875,14 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   if(typeof renderCal==="function")renderCal();
 
   const have=new Set(items.map(i=>i.name.toLowerCase()));
-  const qsrc=MEAT.includes(catSel.p)?MQUICK.filter(([,c])=>c===catSel.p):catSel.p?QUICK.filter(([,c])=>c===catSel.p):QUICK;
+  const qsrc=MEAT.includes(catSel.p)?MQUICK.filter(([,c])=>c===catSel.p):catSel.p==="Congelados"?[...QUICK.filter(([,c])=>c==="Congelados"),...MQUICK.filter(([,c])=>c==="Peixe").map(([n])=>[n,"Congelados"])]:catSel.p?QUICK.filter(([,c])=>c===catSel.p):QUICK;
   document.getElementById("chips").innerHTML=qsrc.filter(([n])=>!have.has(n.toLowerCase())).map(([n,c])=>`<button type="button" class="chip" data-n="${esc(n)}" data-c="${c}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens todos os básicos na lista.</span>`;
 
   document.getElementById("shopList").innerHTML=shopsUsed().map(n=>`<option value="${esc(n)}">`).join("");
   const unitOpts=u=>[["un","un."],["pacotes","pacotes"],["kg","kg"],["g","g"],["L","L"],["ml","ml"],["latas","latas"],["garrafas","garrafas"],["caixas","caixas"],["doses","doses"],["sacos","sacos"]].map(([v,l])=>`<option value="${v}"${(u||"un")===v?" selected":""}>${l}</option>`).join("");
   const itemForm=i=>`<form class="bill-edit" data-itemform="${i.id}" autocomplete="off">
       <label class="f wide">Produto<input name="n" value="${esc(i.name)}" required></label>
-      ${MEAT.includes(i.cat)&&!String(i.id).startsWith("__new")?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
+      ${BAGC.includes(i.cat)?`<label class="f wide">Sacos em casa<span class="chips">${(i.bags||[]).map((x,k)=>`<button type="button" class="chip" data-bagdel="${i.id}|${k}" aria-label="Tirar saco de ${x} un.">Saco de ${String(x).replace(".",",")} un. ✕</button>`).join("")||`<span class="note" style="text-transform:none">Sacos com quantidades diferentes (ex.: um com 6 e outro com 2)? Junta-os aqui.</span>`}</span>
         <span class="qty"><input name="bagn" type="number" min="1" step="any" inputmode="decimal" placeholder="un. neste saco"><button type="button" class="btn" data-bagadd="${i.id}">+ Juntar saco</button></span>${hasBags(i)?`<button type="button" class="chip" data-bagoff="${i.id}" style="justify-self:start">Deixar de contar por sacos</button>`:""}</label>`:""}
       ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + stock</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
       ${isRes(i)?`<label class="f">Stock<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
@@ -1965,7 +1969,10 @@ document.getElementById("addForm").addEventListener("submit",e=>{e.preventDefaul
   ["newName","newExp","newQty","newShop"].forEach(i=>document.getElementById(i).value="")});
 document.addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
-  if(t.dataset.n)addItem(t.dataset.n,t.dataset.c,"");
+  if(t.dataset.n&&t.closest("#pAdd")&&draft.p){const d=draft.p, f=document.querySelector('form[data-itemform="__newp"]');if(f)syncDraft("p",f);d.name=t.dataset.n;if(PCATS.includes(t.dataset.c))d.cat=t.dataset.c;
+    if(!MEAT.includes(d.cat)&&!d.mchosen&&!d.bags){if(resDefault(d)){delete d.cnt;d.use=true;d.res=0}else{d.cnt=true;delete d.use;delete d.res}}paintDraft("p");
+    const g=document.querySelector('form[data-itemform="__newp"]');if(g){const q=g.querySelector("[name=q],[name=rv]");if(q)q.focus()}}
+  else if(t.dataset.n)addItem(t.dataset.n,t.dataset.c,"");
   else if(t.dataset.l!==undefined)setLevel(t.dataset.id,+t.dataset.l);
   else if(t.dataset.del)remove(t.dataset.del);
   else if(t.dataset.edititem){editItem=t.dataset.edititem;render()}
@@ -2030,7 +2037,13 @@ document.addEventListener("change",e=>{const sel=e.target.closest("select[name=m
   const n={...it,mchosen:1,rt2:1,rtidy:1};if(sel.value==="cnt"){if(n.res==null&&n.qty==null){n.qty=n.lvl>0?1:0;n.unit="un"}resToCnt(n);n.lvl=n.qty!=null?autoLvl(n,n.qty):n.lvl}else cntToRes(n);upsert(n);render();put(n)});
 /* Sacos em casa: juntar, tirar, deixar de contar por sacos (no editar do produto) */
 document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[data-bagdel],[data-bagoff]");if(!a)return;e.preventDefault();e.stopPropagation();
-  const [id,k]=(a.dataset.bagadd||a.dataset.bagdel||a.dataset.bagoff).split("|"), it=items.find(i=>i.id===id);if(!it)return;
+  const [id,k]=(a.dataset.bagadd||a.dataset.bagdel||a.dataset.bagoff).split("|");
+  /* no produto novo (ainda por gravar) os sacos ficam no rascunho */
+  if(id.startsWith("__new")){const dk=id.slice(5), d=draft[dk], f=a.closest("form");if(!d)return;syncDraft(dk,f);const bg=[...(d.bags||[])];
+    if(a.dataset.bagoff!=null)delete d.bags;else if(a.dataset.bagdel!=null){bg.splice(+k,1);d.bags=bg}
+    else{const v=parseFloat(String(f.bagn.value).replace(",","."));if(!(v>0)){f.bagn.focus();toast("Escreve quantas un. tem o saco");return}bg.push(v);d.bags=bg;d.bagSz=Math.max(+d.bagSz||0,v)}
+    if(d.bags){d.qty=bagSum(d.bags);d.unit="un";if(!MEAT.includes(d.cat)){d.cnt=true;delete d.use;delete d.res}}const shop=f.s.value;paintDraft(dk);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g)g.s.value=shop;return}
+  const it=items.find(i=>i.id===id);if(!it)return;
   if(a.dataset.bagoff!=null){const n={...it,tidy:1};delete n.bags;upsert(n);render();put(n);return}
   if(a.dataset.bagdel!=null){const bg=[...(it.bags||[])];bg.splice(+k,1);setBags(it,bg);return}
   const inp=a.closest("form").bagn, v=parseFloat(String(inp.value).replace(",","."));if(!(v>0)){inp.focus();toast("Escreve quantas un. tem o saco");return}
@@ -4990,7 +5003,7 @@ const SC_MEAT=/frango|peru|porco|vaca|novilho|bife|carne|picad|costelet|entrecos
 const SC_CATS=[[/leite|iogur|queijo|manteiga|natas|ovos?\b|sumo|nata|requeij|kefir|tofu|margarin|mozzar|fiambre/,"Frigorífico"],[/congel|gelado|ultracong|douradinho|pizza|ervilha cong/,"Congelados"],
   [/detergent|lix[ií]via|amaciad|esfreg|limpa|sacos? do lixo|desinfet|lava.?lou[cç]a|pastilhas|esponja|guardanapo|rolo de cozinha|papel de cozinha/,"Limpeza"],
   [/champ[oô]|gel de banho|gel banho|pasta de dentes|pasta dent|escova de dentes|papel higi|desodoriz|fralda|toalhit|cotonete|sabonete|creme|penso|tamp[aã]o/,"Higiene"]];
-function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Peixe";if(SC_MEAT.test(t))return"Carne";if(FRUIT.test(t))return"Fruta";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
+function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Congelados";if(SC_MEAT.test(t))return"Carne";if(FRUIT.test(t))return"Fruta";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
 const scWords=t=>noAcc(t).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
 function scMatch(name){const W=scWords(name);if(!W.length)return null;let best=null,bs=0;
   for(const it of items){const I=scWords(it.name);if(!I.length)continue;const hit=I.filter(w=>W.some(x=>x.startsWith(w.slice(0,5))||w.startsWith(x.slice(0,5)))).length;const sc=hit/I.length;
@@ -5121,7 +5134,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v170";
+const APPV="casa-v171";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
