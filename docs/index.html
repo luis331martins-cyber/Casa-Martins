@@ -230,6 +230,11 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .acbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 4px 12px;display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 .acbox .ach{font-weight:700;font-size:15px;padding:0 12px}.acbox .bill{background:transparent!important}.acbox .act{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 0;border-top:1px solid var(--line);font-size:15px}
 .acbox .act b{font-size:19px}.acbox .btn,.acbox .back{margin:0 12px}
+.cxls{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.cxl{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 8px;align-items:end;background:var(--fill);border-radius:10px;padding:8px 10px}
+.cxl .cxm{grid-row:span 2;align-self:center;font-size:13px;font-weight:600;color:var(--muted);min-width:62px}
+.cxl label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.cxl input{width:100%;box-sizing:border-box;padding:7px 8px;font-size:16px;border-radius:8px}
+.cxl .cxr{grid-column:2/-1;font-size:13px;color:var(--muted)}
 .tlday{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:12px 4px 5px}.tlday span:last-child{font-weight:500;text-transform:none;letter-spacing:0}
 .tlday.bad{color:var(--bad)}.tlg{gap:0!important}
 .bname.wi{display:flex!important;align-items:center;gap:12px;min-width:0}.bname.wi .bt{min-width:0;display:block}
@@ -2351,12 +2356,17 @@ function renderBills(){
     const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
     const cx=isCaixa(b)&&b.caixa&&b.caixa[k];
-    if(cx)meta+=`<br>Total ${eur(cx.t)} · empresa ${eur(cx.e)} · <span class="loanlink" data-cxedit="${b.id}|${k}" role="button">corrigir ›</span>${cx.e>0?` · <span class="${b.lev&&b.lev[k]?"ok":"loanlink"}" data-lev="${b.id}|${k}" role="button">${b.lev&&b.lev[k]?"levantado ✓":"levantar ›"}</span>`:""}`;
-    else if(isCaixa(b))meta+=`<br>${+b.emp?`Empresa ${eur(+b.emp)} (habitual) · `:""}<span class="loanlink" data-cxopen="${k}" role="button">escrever total e empresa ›</span>`;
+    /* Caixa: total e empresa escrevem-se aqui mesmo (apagar os dois tira o valor); aparecem também os meses com dinheiro por levantar */
+    const cxM=isCaixa(b)?[k,...Object.keys(b.caixa||{}).filter(m=>m!==k&&b.caixa[m]&&b.caixa[m].e>0&&!(b.lev&&b.lev[m]))].sort():[];
+    const vv=v=>v!=null&&v!==""?(Math.round(+v*100)/100).toFixed(2).replace(".",","):"";
+    const cxl=cxM.map(m=>{const c=(b.caixa||{})[m], mn=mFull(m).split(" de ")[0];return `<div class="cxl"><span class="cxm">${m===k?"Este mês":mn[0].toUpperCase()+mn.slice(1)}</span>
+      <label>Total<input data-cxin="${b.id}|${m}|t" type="text" inputmode="decimal" value="${c?vv(c.t):""}" placeholder="0,00"></label>
+      <label>Empresa<input data-cxin="${b.id}|${m}|e" type="text" inputmode="decimal" value="${c?vv(c.e):""}" placeholder="${+b.emp?vv(+b.emp):"0,00"}"></label>
+      ${c?`<span class="cxr">Casa <b>${eur(c.t-c.e)}</b>${c.e>0?` · <span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-lev="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":"levantar ›"}</span>`:""}</span>`:`<span class="cxr">escreve o total</span>`}</div>`}).join("");
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
-      <div class="amt">+${eur(monthAmt(b,k))}</div>
+      <div class="amt">+${eur(monthAmt(b,k))}</div>${cxl?`<div class="cxls">${cxl}</div>`:""}
     </div>`};
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
@@ -2725,7 +2735,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>1||d<-30)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":"Termina amanhã"})});
-  if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",name:`Levantar ${eur(x.v)} para a empresa`,meta:`${x.b.name} de ${mFull(x.k).split(" de ")[0]} · toca em “levantar” nas Contas quando estiver feito`}));
+  if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",acr:1,name:`Levantar ${eur(x.v)} para a empresa`,meta:`${x.b.name} de ${mFull(x.k).split(" de ")[0]} · toca para ver`}));
   if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>1)return;
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
   if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>1)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
@@ -4775,6 +4785,14 @@ const isCaixa=b=>isInc(b)&&/caixa/.test(noAcc(b.name||""));
 /* Abre-se sozinho no último dia útil; o botão nas Receitas abre-o em qualquer dia, para o mês que se está a ver */
 let incForce="";
 let cxEdit="";
+/* Guardar a caixa escrita na própria linha: total e empresa; apagar os dois tira o valor desse mês */
+document.addEventListener("change",e=>{const t=e.target.closest("[data-cxin]");if(!t)return;const save=nb=>setTimeout(()=>putBill(nb),0);const [id,m]=t.dataset.cxin.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
+  const row=t.closest(".cxl"), tv=numIn(row.querySelector('[data-cxin$="|t"]').value), ev0=numIn(row.querySelector('[data-cxin$="|e"]').value), ev=isNaN(ev0)?(+b.emp||0):ev0;
+  const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})}};
+  if(isNaN(tv)){delete nb.caixa[m];delete nb.amounts[m];delete nb.paid[m];delete nb.iconf[m];delete nb.lev[m];save(nb);toast(`${b.name}: valor de ${mFull(m).split(" de ")[0]} apagado`);return}
+  if(ev>tv){toast("A parte da empresa é maior do que o total.");return}
+  const net=Math.round((tv-ev)*100)/100;nb.caixa[m]={t:tv,e:ev};delete nb.amounts[m];if(Math.abs(net-baseAmt(nb,m))>.004)nb.amounts[m]=net;nb.paid[m]=true;nb.iconf[m]=true;
+  save(nb);toast(`Para casa ${eur(net)}${ev>0?` · levantar ${eur(ev)} para a empresa`:""}`)});
 function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const ce=cxEdit&&cxEdit.split("|"), cb=ce&&bills.find(x=>x.id===ce[0]);
   const k=ce?ce[1]:incForce||incAskMonth(), L=cb?[cb]:k?incAskList(k):[];
   const ob=document.getElementById("incAskOpen");if(ob){const vk=mKey();ob.hidden=!!L.length&&k===vk||!incAskList(vk).length||vk<START}
@@ -4791,7 +4809,7 @@ function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)r
 function incSave(id,k,v,cx){const b=bills.find(x=>x.id===id);if(!b)return;const amounts={...(b.amounts||{})};delete amounts[k];
   if(Math.abs(v-baseAmt(b,k))>.004)amounts[k]=v;
   const nb={...b,amounts,paid:{...(b.paid||{}),[k]:true},iconf:{...(b.iconf||{}),[k]:true}};if(cx)nb.caixa={...(b.caixa||{}),[k]:cx};
-  putBill(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
+  save(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
 const numIn=t=>{t=String(t||"").trim().replace(/\s/g,"");if(!t)return NaN;if(/,/.test(t))t=t.replace(/\./g,"").replace(",",".");return parseFloat(t)};
 document.addEventListener("submit",e=>{const a=e.target.dataset&&e.target.dataset.incask;if(!a)return;e.preventDefault();const [id,k]=a.split("|"), f=e.target;
   if(f.t){const bb=bills.find(x=>x.id===id), t=numIn(f.t.value), e0=numIn(f.e.value), em=isNaN(e0)?(+(bb&&bb.emp)||0):e0;if(isNaN(t)){toast("Escreve o total da caixa.");return}if(em>t){toast("A parte da empresa é maior do que o total.");return}
@@ -5014,7 +5032,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v162";
+const APPV="casa-v163";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
