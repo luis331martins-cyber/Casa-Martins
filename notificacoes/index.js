@@ -133,7 +133,7 @@ async function morning(code, now) {
     while ([0, 6].includes(new Date(ult + "T12:00:00Z").getUTCDay()) || feriado(ult)) ult = addDays(ult, -1);
     const k = now.date >= ult ? mk : now.d <= 5 ? (now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${pad(now.m - 1)}`) : null;
     const sem = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const faltam = k && k >= START ? bills.filter((b) => b.kind === "income" && (b.ask != null ? !!b.ask : /ordenado|salario|vencimento|break|caixa/.test(sem(b.name))) && !(b.iconf && b.iconf[k])) : [];
+    const faltam = k && k >= "2026-10" ? bills.filter((b) => b.kind === "income" && (b.ask != null ? !!b.ask : /ordenado|salario|vencimento|break|caixa/.test(sem(b.name))) && !(b.iconf && b.iconf[k])) : [];
     if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
   }
 

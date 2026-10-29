@@ -4764,9 +4764,11 @@ function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=
 function feriado(d){const md=ymd(d).slice(5);if(PT_FIXOS.includes(md))return true;const e=easter(d.getFullYear());
   return[-2,0,60].some(n=>{const x=new Date(e);x.setDate(x.getDate()+n);return ymd(x)===ymd(d)})}
 function lastBizDay(y,m){const d=new Date(y,m+1,0);while(d.getDay()===0||d.getDay()===6||feriado(d))d.setDate(d.getDate()-1);return d}
+/* As receitas (o que entrou: ordenados, Break, caixa) já se pedem em outubro de 2026, para novembro começar completo */
+const INC_START="2026-10";
 function incAskMonth(){const t=new Date(), lb=lastBizDay(t.getFullYear(),t.getMonth());let k=null;
   if(ymd(t)>=ymd(lb))k=ymOf(t);else if(t.getDate()<=5){k=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1))}
-  return k&&k>=START?k:null}
+  return k&&k>=INC_START?k:null}
 function incAskList(k){return bills.filter(b=>askInc(b)&&!(b.iconf&&b.iconf[k]))}
 /* Caixa: escreve-se o total e o que fica para a empresa; nas contas da casa só entra o resto. b.caixa[mês]={t,e}, b.lev[mês]=true quando já levantou */
 const isCaixa=b=>isInc(b)&&/caixa/.test(noAcc(b.name||""));
@@ -4801,7 +4803,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cxopen]");
   const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})},true);
 document.getElementById("incAskOpen").addEventListener("click",()=>{incForce=mKey();safe("Fim do mês",renderIncAsk);
   const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})});
-function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=START)L.push({b,k,v:c.e})}));return L}
+function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=INC_START)L.push({b,k,v:c.e})}));return L}
 /* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
    Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
    É um cadeado do ecrã: a sessão continua a ser a da conta com PIN, e "Entrar com o PIN" termina a sessão para entrar de novo. */
@@ -5008,7 +5010,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v160";
+const APPV="casa-v161";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
