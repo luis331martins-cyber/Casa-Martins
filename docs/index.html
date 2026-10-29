@@ -244,6 +244,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 #accounts:not(:has(form)):has(.bill.acc){display:flex!important;flex-direction:row;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #accounts:not(:has(form))>.bill.acc{flex:0 0 calc(50% - 5px);scroll-snap-align:start;grid-template-columns:1fr;gap:2px;min-height:0;padding:10px 12px!important}
 #accounts:not(:has(form))>.bill.acc .name{font-size:14px}#accounts:not(:has(form))>.bill.acc .amt{font-size:17px}
+.app[hidden]{display:none!important}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1054,8 +1055,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <button class="app" data-go="casa"><span class="ico i-casa ios" style="--g1:#f3e3cf;--g2:#d6a77a;--v1:#8a6a4a;--v2:#5a412b"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mSofa" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="7" y="9" width="10" height="4.5" rx="1" fill="#000"/></mask></defs><path mask="url(#mSofa)" d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5V10a2.5 2.5 0 0 1 2 2.4V17a1.5 1.5 0 0 1-1.5 1.5H20v1.2a.8.8 0 0 1-1.6 0v-1.2H5.6v1.2a.8.8 0 0 1-1.6 0v-1.2h-.5A1.5 1.5 0 0 1 2 17v-4.6A2.5 2.5 0 0 1 4 10V7.5A2.5 2.5 0 0 1 6.5 5z"/></svg><img class="e3d" src="icons/3d/casa.webp" alt="" draggable="false"><span class="nbadge" id="casaBadge" hidden></span></span><span class="lbl">Casa</span></button>
         <button class="app" data-go="viagens"><span class="ico i-trip ios" style="--g1:#d3ecff;--g2:#6cb8ff;--v1:#3d97e0;--v2:#1d5fa3"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 3.1c.8.8.6 2.1-.3 3l-3.6 3.5 2 8.7c.1.4 0 .8-.3 1.1l-.9.9c-.4.4-1.1.3-1.4-.2l-3.6-6.5-3.4 3.3.4 2.7c0 .3 0 .6-.3.8l-.7.7c-.4.4-1 .3-1.3-.2l-1.6-3-3-1.6c-.5-.3-.6-.9-.2-1.3l.7-.7c.2-.2.5-.3.8-.3l2.7.4 3.3-3.4-6.5-3.6c-.5-.3-.6-1-.2-1.4l.9-.9c.3-.3.7-.4 1.1-.3l8.7 2 3.5-3.6c.9-.9 2.2-1.1 3-.3z"/></svg><img class="e3d" src="icons/3d/viagens.webp" alt="" draggable="false"><span class="nbadge" id="viagensBadge" hidden></span></span><span class="lbl">Viagens</span></button>
       </div>
-      <!-- Jogos e Vídeos guardados "em memória": não aparecem no Início, mas o código continua (#jogos, #videos) -->
-      <div hidden id="lazerMem">
+      <h3 data-fh="lazer">Lazer</h3>
+      <div class="apps" data-fold="lazer" data-fname="Lazer">
         <button class="app" data-go="videos"><span class="ico i-vid ios" style="--g1:#ffd2d2;--g2:#ff6161;--v1:#c43a3a;--v2:#8a1d1d"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPlay" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M10 8.9v6.2l5.4-3.1z" fill="#000"/></mask></defs><rect mask="url(#mPlay)" x="2.4" y="5.4" width="19.2" height="13.2" rx="3.6"/></svg><img class="e3d" src="icons/3d/videos.webp" alt="" draggable="false"></span><span class="lbl">Vídeos</span></button>
         <button class="app" data-go="jogos"><span class="ico i-games ios" style="--g1:#e3dcff;--g2:#8e7bff;--v1:#3e6a8a;--v2:#22435c"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mPad" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="5.8" y="10.4" width="4.4" height="1.5" rx=".6" fill="#000"/><rect x="7.25" y="8.95" width="1.5" height="4.4" rx=".6" fill="#000"/><circle cx="15.6" cy="10" r="1" fill="#000"/><circle cx="17.6" cy="12.2" r="1" fill="#000"/></mask></defs><path mask="url(#mPad)" d="M7.4 6.4h9.2c3.1 0 5.1 2.7 5.6 6.6l.4 3.2c.3 2.3-2.4 3.6-4 1.9l-2.2-2.4H7.6l-2.2 2.4c-1.6 1.7-4.3.4-4-1.9l.4-3.2c.5-3.9 2.5-6.6 5.6-6.6z"/></svg><img class="e3d" src="icons/3d/jogos.webp" alt="" draggable="false"></span><span class="lbl">Jogos</span></button>
       </div>
@@ -1078,6 +1079,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
       </div>
+      <div class="name">Apps no Início</div>
+      <p class="note" style="margin:0">Escolhe as apps que aparecem neste telemóvel. As que desligas ficam guardadas (não se perde nada) e podes voltar a ligá-las.</p>
+      <div id="appsOnList" class="group" style="gap:0"></div>
       <div class="name">Estilo dos alertas</div>
       <div class="seg" role="group" aria-label="Estilo dos alertas" style="display:grid;grid-template-columns:1fr 1fr 1fr">
         <button type="button" data-alstyle="A">Lista</button><button type="button" data-alstyle="B">Com ícones</button><button type="button" data-alstyle="C">Quadrados</button>
@@ -4959,14 +4963,22 @@ if(bioId()){bioShow();bioUnlock()}
 /* ---------- Início em pastas (como no iPhone) ou com tudo à vista; cada telemóvel escolhe ---------- */
 function homeLay(){try{return localStorage.getItem("casa-inicio")==="tudo"?"tudo":"pastas"}catch(e){return"pastas"}}
 let openFold="", foldUid=0;
-function renderFolders(){const row=document.getElementById("folderRow");if(!row)return;const L=homeLay()==="pastas", groups=[...document.querySelectorAll("#appGroups .apps[data-fold], #folderPanel .apps[data-fold]")];
+/* Apps escondidas neste telemóvel (por defeito, Jogos e Vídeos) */
+function appsOff(){try{const v=localStorage.getItem("casa-apps-off");return new Set(v?JSON.parse(v):["videos","jogos"])}catch(e){return new Set(["videos","jogos"])}}
+function applyAppsOff(){const off=appsOff();document.querySelectorAll("#appGroups .app[data-go], #folderPanel .app[data-go]").forEach(b=>b.hidden=off.has(b.dataset.go));
+  const L=document.getElementById("appsOnList");if(L&&!L.dataset.built){L.dataset.built=1;L.innerHTML=[...document.querySelectorAll("#appGroups .app[data-go]")].map(b=>{const n=(b.querySelector(".lbl")||{}).textContent||b.dataset.go;
+      return `<label class="tick"><span>${esc(n)}</span><input type="checkbox" class="switch" data-appon="${b.dataset.go}"></label>`}).join("")}
+  document.querySelectorAll("[data-appon]").forEach(c=>c.checked=!off.has(c.dataset.appon))}
+document.addEventListener("change",e=>{const c=e.target.closest("[data-appon]");if(!c)return;const off=appsOff();if(c.checked)off.delete(c.dataset.appon);else off.add(c.dataset.appon);
+  try{localStorage.setItem("casa-apps-off",JSON.stringify([...off]))}catch(err){}applyAppsOff();safe("Pastas",renderFolders)});
+function renderFolders(){applyAppsOff();const row=document.getElementById("folderRow");if(!row)return;const L=homeLay()==="pastas", groups=[...document.querySelectorAll("#appGroups .apps[data-fold], #folderPanel .apps[data-fold]")];
   row.hidden=!L;document.querySelectorAll("#appGroups [data-fh]").forEach(h=>h.hidden=L);
-  document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>a.hidden=L);
+  document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>{const none=!a.querySelector(".app:not([hidden])");a.hidden=L||none;const h=document.querySelector(`#appGroups [data-fh="${a.dataset.fold}"]`);if(h)h.hidden=L||none});
   document.querySelectorAll("[data-homelay]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.homelay===homeLay()));
   if(!L){if(openFold)closeFold();return}
   if(!document.getElementById("folderOpen").hidden)return;
-  row.innerHTML=groups.sort((a,b)=>["comida","dinheiro","familia","lazer"].indexOf(a.dataset.fold)-["comida","dinheiro","familia","lazer"].indexOf(b.dataset.fold)).map(a=>{
-    const minis=[...a.querySelectorAll(".ico")].slice(0,9).map(ic=>{const c=ic.cloneNode(true);c.removeAttribute("id");c.querySelectorAll(".nbadge").forEach(x=>x.remove());
+  row.innerHTML=groups.filter(a=>a.querySelector(".app:not([hidden])")).sort((a,b)=>["comida","dinheiro","familia","lazer"].indexOf(a.dataset.fold)-["comida","dinheiro","familia","lazer"].indexOf(b.dataset.fold)).map(a=>{
+    const minis=[...a.querySelectorAll(".app:not([hidden]) .ico")].slice(0,9).map(ic=>{const c=ic.cloneNode(true);c.removeAttribute("id");c.querySelectorAll(".nbadge").forEach(x=>x.remove());
       /* ids próprios para as máscaras e gradientes da miniatura (os originais podem estar escondidos) */
       c.querySelectorAll("[id]").forEach(x=>{const o=x.id, n=o+"-f"+(++foldUid);x.id=n;c.querySelectorAll("[mask],[fill]").forEach(y=>["mask","fill"].forEach(at=>{const v=y.getAttribute(at);if(v==="url(#"+o+")")y.setAttribute(at,"url(#"+n+")")}))});return c.outerHTML}).join("");
     const n=[...a.querySelectorAll(".nbadge")].filter(b=>!b.hidden).reduce((t,b)=>t+(parseInt(b.textContent)||0),0);
@@ -5134,7 +5146,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v172";
+const APPV="casa-v173";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
