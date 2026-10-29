@@ -249,6 +249,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 #tab-definicoes .item .btn.ghost::after{content:" ›";color:var(--muted)}
 #tab-definicoes #logoutBtn{color:var(--bad)!important}#tab-definicoes #logoutBtn::after{content:""}
 #tab-definicoes [data-histrep]{padding:8px 0!important;text-align:left}
+:root[data-hdrfont][data-hfwhere="all"] :is(h1.large,.fold .lbl,.navtitle,#folderName){font-family:var(--hdrfont),-apple-system,system-ui,sans-serif!important;letter-spacing:0}
 :root[data-hdrfont] header.hdr :is(#today,#hello,#clock){font-family:var(--hdrfont),-apple-system,system-ui,sans-serif!important;letter-spacing:0}
 .hfonts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .hfont{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;background:var(--fill);color:var(--fg);border:2px solid transparent}
@@ -1107,6 +1108,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       </div>
       <div class="name">Letra da data, saudação e hora</div>
       <div class="hfonts" id="hdrFonts" role="group" aria-label="Letra do Início"></div>
+      <div class="seg" role="group" aria-label="Onde usar a letra" style="display:grid;grid-template-columns:1fr 1fr"><button type="button" data-hfwhere="hdr">Só no Início</button><button type="button" data-hfwhere="all">Início e títulos</button></div>
       <div class="name">Cor das letras e dos rebordos do Início</div>
       <div class="hdrcols" role="group" aria-label="Cor das letras do Início">
         <button type="button" data-hdrcol="ouro" style="--c:linear-gradient(135deg,#f5dc95,#b8892f)" aria-label="Dourado"></button>
@@ -5034,7 +5036,9 @@ const HFONTS=[["","Atual (iPhone)"],["Playfair Display","Playfair"],["Cormorant 
 const hfUrl=L=>"https://fonts.googleapis.com/css2?"+L.map(f=>"family="+f.replace(/ /g,"+")+(/Bebas|DM Serif/.test(f)?"":":wght@600;700")).join("&")+"&display=swap";
 function hfLoad(L,id){if(!L.length||document.getElementById(id))return;const l=document.createElement("link");l.id=id;l.rel="stylesheet";l.href=hfUrl(L);document.head.appendChild(l)}
 function hdrFont(){try{return localStorage.getItem("casa-hdrfont")||""}catch(e){return""}}
-function applyHdrFont(){const root=document.documentElement, f=hdrFont();if(f){hfLoad([f],"hfOne-"+f.replace(/ /g,""));root.style.setProperty("--hdrfont",`"${f}"`);root.dataset.hdrfont=f}else{root.style.removeProperty("--hdrfont");delete root.dataset.hdrfont}
+function hfWhere(){try{return localStorage.getItem("casa-hfwhere")||"all"}catch(e){return"all"}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hfwhere]");if(!b)return;try{localStorage.setItem("casa-hfwhere",b.dataset.hfwhere)}catch(err){}applyHdrFont();toast(b.dataset.hfwhere==="all"?"Letra no Início e nos títulos":"Letra só no Início")});
+function applyHdrFont(){const root=document.documentElement, f=hdrFont();root.dataset.hfwhere=hfWhere();document.querySelectorAll("[data-hfwhere]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfwhere===hfWhere()));if(f){hfLoad([f],"hfOne-"+f.replace(/ /g,""));root.style.setProperty("--hdrfont",`"${f}"`);root.dataset.hdrfont=f}else{root.style.removeProperty("--hdrfont");delete root.dataset.hdrfont}
   const el=document.getElementById("hdrFonts");if(el)el.querySelectorAll("[data-hfont]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfont===f))}
 function buildHdrFonts(){const el=document.getElementById("hdrFonts");if(!el||el.dataset.built)return;el.dataset.built=1;hfLoad(HFONTS.map(x=>x[0]).filter(Boolean),"hfAll");
   el.innerHTML=HFONTS.map(([f,n])=>`<button type="button" class="hfont" data-hfont="${f}" style="${f?`font-family:'${f}'`:""}"><b>08:26</b><small>${n}</small></button>`).join("");applyHdrFont()}
@@ -5194,7 +5198,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v177";
+const APPV="casa-v178";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
