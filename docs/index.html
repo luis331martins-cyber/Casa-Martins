@@ -1376,6 +1376,11 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="sortbar"><span class="note">Ver</span>
       <div class="seg" role="group" aria-label="Ordenar" id="hmSort"><button type="button" data-hmsort="grp">Grupo</button><button type="button" data-hmsort="div">Divisão</button><button type="button" data-hmsort="new">Recentes</button><button type="button" data-hmsort="val">Valor</button><button type="button" data-hmsort="war">Garantia</button></div></div>
     <button class="btn ghost" type="button" id="addHm">+ Juntar compra</button>
+    <details class="import" id="hmImportBox"><summary>📋 Colar uma lista de compras</summary>
+      <p class="note" style="margin:0">Cola a lista como a escreves: um título por grupo (ex.: <b>Obras:</b>) e uma linha por compra (ex.: <b>- Sanita: 437,65€</b> ou <b>- Tintas: 272,69€ + 17,49€ − 66,15€ = 224,03€</b>). O que já existe não se repete.</p>
+      <textarea id="hmImport" rows="8" placeholder="Obras:&#10;- Janelas: 6.416,81€&#10;Mobílias e Decoração:&#10;- Sapateira: 299,00€" aria-label="Lista de compras"></textarea>
+      <button class="btn" type="button" id="hmImportBtn">Juntar à Casa</button>
+    </details>
     <div id="hmNew"></div>
     <div id="hmList"></div>
     <p class="note" style="margin:0">Guarda o que compraste para a casa, com a data, o valor e a fatura. A app avisa 60 e 30 dias antes de acabar a garantia (em Portugal, normalmente 3 anos para compras desde 2022).</p>
@@ -3832,7 +3837,7 @@ function renderHome(){const el=document.getElementById("hmList");if(!el)return;c
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
-  if(hmSort==="grp"){HM_GRPS.forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
+  if(hmSort==="grp"){[...new Set([...HM_GRPS.slice(0,3),...L.map(hmGrp),"Outros"])].forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(g)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
   else if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
@@ -3841,6 +3846,22 @@ function renderHome(){const el=document.getElementById("hmList");if(!el)return;c
   el.innerHTML=html||(editHm==="new"?"":`<div class="empty">Ainda não há compras.<br>Junta os eletrodomésticos, móveis, colchões, cortinados…</div>`);
   document.getElementById("hmNew").innerHTML=editHm==="new"?hmForm(null):"";document.getElementById("addHm").hidden=editHm==="new";
   const bb=document.getElementById("casaBadge");if(bb){const n=L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0&&daysTo(w)<=30}).length;bb.hidden=!n;bb.textContent=n}}
+/* Colar lista: "Grupo:" e "- Nome: 272,69€ + 17,49€ − 66,15€ = …" (conta-se a soma das parcelas antes do "=") */
+function hmGuess(name,grp){const n=noAcc(name), room=/sanita|bide|banho|duche|lavatorio/.test(n)?"Casa de banho":/solteiro|maria/.test(n)?"Quarto da Maria":/casal|cabeceira|roupeiro|comoda|moldura/.test(n)?"Quarto":/sala|corredor/.test(n)?"Sala":/sapateira|entrada|hall/.test(n)?"Entrada":/cozinha/.test(n)?"Cozinha":"Toda a casa";
+  const type=/janela|tinta|obra|sanita|bide|azulejo|piso|porta/.test(n)?"Janelas e obras":/cortin|tapete|estore/.test(n)?"Cortinados e têxteis":/cama|colchao/.test(n)?"Camas e colchões":/candeeir|luz|lampad/.test(n)?"Iluminação":/decora|moldura|quadro/.test(n)?"Decoração":/maquina|frigor|forno|fogao|micro|aspirador/.test(n)?"Eletrodoméstico":/tv|televis/.test(n)&&!/movel/.test(n)?"Eletrónica":/obra/.test(noAcc(grp))?"Janelas e obras":"Móveis";return{room,type}}
+document.getElementById("hmImportBtn").addEventListener("click",()=>{const ta=document.getElementById("hmImport"), lines=ta.value.split(/\n/).map(x=>x.replace(/[\u200e\u200f]/g,"").trim()).filter(Boolean);
+  let grp="Outros";const out=[];
+  lines.forEach(l=>{const it=l.match(/^[-•*·]\s*(.+?)\s*:\s*(.+)$/);if(it){const parts=hmParts(it[2].split("=")[0]);if(!parts.length)return;
+      const value=Math.round(parts.reduce((t,x)=>t+x,0)*100)/100, sh=/ikea/i.test(it[1])?"IKEA":/bestwindow/i.test(it[1])?"Bestwindow":/\bjom\b/i.test(it[1])?"JOM":"";out.push({name:it[1],grp,value,parts,shop:sh});return}
+    const g=l.match(/^(.+?):\s*$/);if(g)grp=/^obras?$/i.test(g[1].trim())?"Obras":/mob[ií]lia|decora/i.test(g[1])?"Mobílias e Decoração":g[1].trim()});
+  if(!out.length){toast("Não encontrei compras. Cada compra numa linha a começar por “-”.");return}
+  const have=new Set(homes().map(x=>noAcc(x.name)+"|"+(+x.value||0).toFixed(2)));let n=0, tot=0;
+  let ctx="";/* os móveis de quarto que vêm a seguir a "Cama Solteiro" são do quarto da Maria; a seguir a "casal", do quarto de casal */
+  out.forEach(o=>{const nn=noAcc(o.name);if(/solteiro/.test(nn))ctx="Quarto da Maria";else if(/casal/.test(nn))ctx="Quarto";
+    const key=nn+"|"+o.value.toFixed(2);if(have.has(key))return;have.add(key);const gs=hmGuess(o.name,o.grp);if(ctx&&gs.room==="Quarto"&&/roupeiro|comoda|cabeceira|moldura/.test(nn))gs.room=ctx;
+    putBill({id:uid(),kind:"home",name:o.name,grp:o.grp,room:gs.room,type:gs.type,value:o.value,...(o.parts.length>1?{parts:o.parts}:{}),...(o.shop?{shop:o.shop}:{})});n++;tot+=o.value});
+  ta.value="";document.getElementById("hmImportBox").open=false;hmSort="grp";try{localStorage.setItem("casa-hmsort","grp")}catch(e){}renderHome();
+  toast(n?`${n} compra${n===1?"":"s"} juntada${n===1?"":"s"} · ${eur(tot)}`:"Essas compras já lá estavam")});
 document.getElementById("addHm").addEventListener("click",()=>{editHm="new";renderHome();const f=document.querySelector('[data-hmform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
 document.getElementById("hmSort").addEventListener("click",e=>{const b=e.target.closest("[data-hmsort]");if(!b)return;hmSort=b.dataset.hmsort;try{localStorage.setItem("casa-hmsort",hmSort)}catch(err){}renderHome()});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
@@ -5076,7 +5097,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v167";
+const APPV="casa-v168";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
