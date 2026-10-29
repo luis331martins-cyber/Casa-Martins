@@ -5194,7 +5194,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v176";
+const APPV="casa-v177";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
@@ -5202,7 +5202,7 @@ async function checkUpdate(force){if(!navigator.onLine||(!force&&Date.now()-updC
   try{const t=await(await fetch("sw.js?v="+Date.now(),{cache:"no-store"})).text();const v=(t.match(/VERSION="([^"]+)"/)||[])[1];
     const nova=v&&v!==APPV;document.getElementById("updBar").hidden=!nova;return nova}catch(e){return null}}
 async function doUpdate(){toast("A atualizar…");
-  try{const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update().catch(()=>{});await reg.unregister().catch(()=>{})}
+  try{const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update().catch(()=>{});
     for(const k of await caches.keys())await caches.delete(k)}catch(e){}
   location.replace(location.pathname+"?v="+Date.now()+location.hash)}
 document.getElementById("updBar").addEventListener("click",doUpdate);
