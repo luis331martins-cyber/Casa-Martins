@@ -1150,6 +1150,11 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div style="min-width:0;flex:1 1 100%"><div class="name">Cópia de segurança</div><div class="meta" id="bkMeta">Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega.</div></div>
       <div style="display:flex;gap:8px;margin-left:auto"><button class="btn ghost" type="button" id="bkExport">Exportar</button><label class="btn ghost" role="button">Repor<input type="file" id="bkImport" accept="application/json,.json" hidden></label></div>
     </div>
+    <div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:8px">
+      <div style="min-width:0"><div class="name">Produtos de outro dia</div><div class="meta">Este telemóvel guarda sozinho uma cópia dos produtos do "Em casa" (de hora a hora, até 14 dias). Se algo desaparecer, repõe daqui.</div></div>
+      <select id="histSel" aria-label="Cópia de que dia" style="width:100%"></select>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" type="button" data-histrep="meat">Repor só Carne e Peixe</button><button class="btn ghost" type="button" data-histrep="all">Repor todos os produtos</button></div>
+    </div>
     <div class="item">
       <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
       <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
@@ -2847,7 +2852,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);setTimeout(()=>safe("Cópia automática",histSave),3000)},
     ()=>{store=null;items=local.load();render()});
   store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
@@ -4563,6 +4568,19 @@ document.getElementById("planShop").addEventListener("click",()=>{const ws=weekS
   need.forEach(g=>{const ex=findIngr(g,true);if(ex){if(ex.lvl!==0)setLevel(ex.id,0)}else{const it={id:uid(),name:g.label,cat:g.cat,exp:"",lvl:0,added:Date.now()};items.push(it);put(it)}});
   render();renderPlan();toast(`${need.size} ingrediente${need.size===1?"":"s"} nas compras: ${[...need.values()].map(g=>g.label).join(", ")}`)});
 
+/* ---------- Cópia automática dos produtos neste telemóvel (de hora a hora, 14 dias) ---------- */
+function histLoad(){try{return JSON.parse(localStorage.getItem("casa-hist-items")||"[]")}catch(e){return[]}}
+function histSave(){if(!items.length)return;const H=histLoad(), now0=Date.now(), last=H[H.length-1];if(last&&now0-last.at<36e5)return;
+  H.push({at:now0,items:items.map(x=>({...x}))});const keep=H.filter(h=>now0-h.at<14*864e5).slice(-120);
+  for(let i=0;i<5;i++){try{localStorage.setItem("casa-hist-items",JSON.stringify(keep));break}catch(e){keep.splice(0,Math.ceil(keep.length/4))}}histMenu()}
+function histMenu(){const sel=document.getElementById("histSel");if(!sel)return;const H=histLoad().slice().reverse();
+  sel.innerHTML=H.length?H.map((h,i)=>{const d=new Date(h.at), m=h.items.filter(x=>MEAT.includes(x.cat)).length;return `<option value="${h.at}">${d.toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"})} ${d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})} · ${h.items.length} produtos (${m} carne/peixe)</option>`}).join(""):`<option value="">Ainda não há cópias (a primeira fica daqui a pouco)</option>`}
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-histrep]");if(!b)return;const at=+document.getElementById("histSel").value, h=histLoad().find(x=>x.at===at);if(!h){toast("Escolhe uma cópia.");return}
+  const L=h.items.filter(x=>b.dataset.histrep==="all"||MEAT.includes(x.cat));
+  if(!confirm(`Repor ${L.length} produtos como estavam a ${new Date(at).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}? Os produtos criados depois ficam como estão.`))return;
+  for(const it of L){upsert(it);await put(it)}render();toast(`${L.length} produtos repostos`)});
+setInterval(()=>safe("Cópia automática",histSave),10*60000);
+safe("Cópias (menu)",histMenu);setTimeout(()=>safe("Cópia automática",histSave),4000);
 /* ---------- Cópia de segurança e PIN ---------- */
 document.getElementById("bkExport").addEventListener("click",()=>{
   const data={app:"casa-martins",version:APPV,at:new Date().toISOString(),by:myName(),items,bills,events};
@@ -5103,7 +5121,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v169";
+const APPV="casa-v170";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
