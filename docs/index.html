@@ -253,6 +253,12 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .hfonts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .hfont{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;background:var(--fill);color:var(--fg);border:2px solid transparent}
 .hfont b{font-size:19px;font-weight:700;line-height:1.1}.hfont small{font-family:-apple-system,system-ui,sans-serif;font-size:10.5px;color:var(--muted)}.hfont[aria-pressed="true"]{border-color:var(--accent)}
+#tab-definicoes[data-sp="ecra"] #spMenu,#tab-definicoes[data-sp="apps"] #spMenu,#tab-definicoes[data-sp="geral"] #spMenu,#tab-definicoes:is([data-sp="ecra"],[data-sp="apps"],[data-sp="geral"]) :is(#nameForm,#accEnd),#tab-definicoes:is([data-sp="ecra"],[data-sp="apps"],[data-sp="geral"]) > .item{display:none!important}
+#tab-definicoes .sp{display:none!important}#tab-definicoes[data-sp="ecra"] [data-spp="ecra"],#tab-definicoes[data-sp="apps"] [data-spp="apps"],#tab-definicoes[data-sp="geral"] [data-spp="geral"]{display:flex!important;flex-direction:column;gap:12px}
+.spmenu{background:var(--surface);border-radius:12px;overflow:hidden}.sprow{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;background:none;color:var(--fg);font:inherit;font-size:17px;text-align:left;position:relative}
+.sprow+.sprow::before{content:"";position:absolute;top:0;left:58px;right:0;border-top:1px solid var(--line)}.sprow .spgo{margin-left:auto;color:var(--muted);font-size:20px}
+.spic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}.spic svg,.icbtn svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);flex:none;padding:0}.icbtn.off{background:#ff453a}.icbtn svg{width:22px;height:22px;stroke-width:2.4}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1081,7 +1087,12 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <label class="f" style="min-width:0">O teu nome neste telemóvel<input id="myName" placeholder="ex.: Luís" autocapitalize="words" maxlength="30" autocomplete="given-name"></label>
       <button class="btn" type="submit">Guardar</button>
     </form></div>
-    <div><div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:10px">
+    <div class="spmenu" id="spMenu">
+      <button type="button" class="sprow" data-sp="ecra"><span class="spic" style="background:#5e5ce6"><svg viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6"/></svg></span><span>Papel de Parede e Ecrã</span><span class="spgo">›</span></button>
+      <button type="button" class="sprow" data-sp="apps"><span class="spic" style="background:#0a84ff"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></span><span>Aplicações</span><span class="spgo">›</span></button>
+      <button type="button" class="sprow" data-sp="geral"><span class="spic" style="background:#8e8e93"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></span><span>Geral</span><span class="spgo">›</span></button>
+    </div>
+    <div class="sp" data-spp="ecra" hidden><div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:10px">
       <div class="name">Aspeto</div>
       <div class="seg" role="group" aria-label="Aspeto" style="display:grid;grid-template-columns:1fr 1fr 1fr">
         <button type="button" data-tema="light">Claro</button><button type="button" data-tema="auto">Automático</button><button type="button" data-tema="dark">Escuro</button>
@@ -1090,9 +1101,6 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="seg" role="group" aria-label="Estilo dos ícones" style="display:grid;grid-template-columns:1fr 1fr">
         <button type="button" data-icostyle="ios">iPhone</button><button type="button" data-icostyle="3d">3D</button>
       </div>
-      <details class="import" id="appsOnBox"><summary>Apps no Início ›</summary>
-        <p class="note" style="margin:0">Escolhe as apps que aparecem neste telemóvel. As que desligas ficam guardadas (não se perde nada) e podes voltar a ligá-las.</p>
-        <div id="appsOnList" class="group" style="gap:0"></div></details>
       <div class="name">Estilo dos alertas</div>
       <div class="seg" role="group" aria-label="Estilo dos alertas" style="display:grid;grid-template-columns:1fr 1fr 1fr">
         <button type="button" data-alstyle="A">Lista</button><button type="button" data-alstyle="B">Com ícones</button><button type="button" data-alstyle="C">Quadrados</button>
@@ -1152,6 +1160,12 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       </form>
       <p class="note" style="margin:0">O fundo fica guardado só neste telemóvel.</p>
     </div></div>
+    <div class="sp" data-spp="apps" hidden><div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:10px">
+      <div id="appsOnBox">
+        <p class="note" style="margin:0">Escolhe as apps que aparecem neste telemóvel. As que desligas ficam guardadas (não se perde nada) e podes voltar a ligá-las.</p>
+        <div id="appsOnList" class="group" style="gap:0"></div></div>
+    </div></div>
+    <div class="sp" data-spp="geral" hidden>
     <div id="houseShared" class="group" hidden>
       <div class="item">
         <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
@@ -1163,14 +1177,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       </div>
       <button class="back" type="button" id="leaveHouse" hidden style="align-self:flex-start;color:var(--muted);font-weight:500">Sair desta casa neste telemóvel</button>
     </div>
-    <div class="item" style="flex-wrap:wrap;row-gap:8px">
-      <div style="min-width:0;flex:1 1 100%"><div class="name">Cópia de segurança</div><div class="meta" id="bkMeta">Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega.</div></div>
-      <div style="display:flex;gap:8px;margin-left:auto"><button class="btn ghost" type="button" id="bkExport">Exportar</button><label class="btn ghost" role="button">Repor<input type="file" id="bkImport" accept="application/json,.json" hidden></label></div>
-    </div>
     <div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:8px">
-      <div style="min-width:0"><div class="name">Produtos de outro dia</div><div class="meta">Este telemóvel guarda sozinho uma cópia dos produtos do "Em casa" (de hora a hora, até 14 dias). Se algo desaparecer, repõe daqui.</div></div>
-      <select id="histSel" aria-label="Cópia de que dia" style="width:100%"></select>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" type="button" data-histrep="meat">Repor só Carne e Congelados</button><button class="btn ghost" type="button" data-histrep="all">Repor todos os produtos</button></div>
+      <div style="min-width:0"><div class="name">Cópia de segurança</div><div class="seg" role="group" aria-label="Lembrar" style="display:grid;grid-template-columns:repeat(3,1fr);margin:6px 0"><button type="button" data-bkper="7">Semanal</button><button type="button" data-bkper="30">Mensal</button><button type="button" data-bkper="0">Não lembrar</button></div><div class="meta" id="bkMeta">Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega.</div></div>
+      <div style="display:flex;gap:18px"><button class="btn ghost" type="button" id="bkExport">Exportar</button><label class="btn ghost" role="button">Repor<input type="file" id="bkImport" accept="application/json,.json" hidden></label></div>
     </div>
     <div id="accBox" class="group" hidden>
       <div class="item" id="bioItem" hidden><div style="min-width:0"><div class="name">Face ID</div><div class="meta">Pede o Face ID (ou Touch ID) ao abrir a app neste telemóvel</div></div><label class="tick" style="margin:0"><input type="checkbox" class="switch" id="bioSw" aria-label="Bloquear com Face ID"></label></div>
@@ -1182,19 +1191,20 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <button class="btn" type="submit">Guardar PIN</button><button class="btn ghost" type="button" id="pinCancel">Cancelar</button>
       </form>
     </div>
-    <div class="item">
-      <div style="min-width:0"><div class="name">Versão da app</div><div class="meta" id="appVer"></div></div>
-      <button class="btn ghost" type="button" id="updBtn">Atualizar a app</button>
-    </div>
-    <div id="accEnd" class="group" hidden>
-      <div class="item">
-        <div style="min-width:0"><div class="name">Conta</div><div class="meta" id="accEmail"></div></div>
-        <button class="btn ghost" type="button" id="logoutBtn">Terminar sessão</button>
-      </div>
-    </div>
     <div id="houseLocal" class="item" hidden>
       <div style="min-width:0"><div class="name">Só neste aparelho</div><div class="meta">Partilha com a família para verem e mudarem tudo nos dois telemóveis.</div></div>
       <button class="btn" type="button" data-go="login">Partilhar</button>
+    </div>
+    </div>
+    <div class="item">
+      <div style="min-width:0"><div class="name">Atualizar a app</div><div class="meta" id="appVer"></div></div>
+      <button class="icbtn" type="button" id="updBtn" aria-label="Atualizar a app"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></svg></button>
+    </div>
+    <div id="accEnd" class="group" hidden>
+      <div class="item">
+        <div style="min-width:0"><div class="name">Terminar sessão</div><div class="meta" id="accEmail"></div></div>
+        <button class="icbtn off" type="button" id="logoutBtn" aria-label="Terminar sessão"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg></button>
+      </div>
     </div>
   </section>
 
@@ -2774,14 +2784,14 @@ const ALI={euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 1
   chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',shield:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',house:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/>',
   car:'<path d="M5 16v-4l2-5h10l2 5v4z"/><path d="M5 12h14"/><circle cx="8" cy="16.5" r="1.5"/><circle cx="16" cy="16.5" r="1.5"/>',idc:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 15.5c.7-1.3 1.6-2 2.5-2s1.8.7 2.5 2M14 10h4M14 13.5h4"/>',
   card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',bag:'<path d="M7 8a5 5 0 0 1 10 0v12H7z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0M7 13h10M10 16h4"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'};
-function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
+function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(a.bk)return["shield","#8e8e93"];if(/^Dar a contagem/.test(n))return["gauge","#30b0c7"];if(/acima do orçamento/.test(n))return["chart","#ff9f0a"];if(/^Levantar/.test(n))return["cash","#34c759"];
   if(/^Escrever o que entrou|^Atualizar/.test(n))return["pen","#0a84ff"];if(/^Débito/.test(n))return["bank","#0a84ff"];if(a.go==="despesas")return["euro",a.cls==="bad"?"#ff453a":"#ff9f0a"];
   /* prazos (seguro, garantias, carro, documentos, cartões): vermelho se já passou */
   const late=a.cls==="bad", dl={casa:[/seguro/i.test(n)?"shield":"house","#a2845e"],carro:["car","#30b0c7"],docs:["idc","#5e5ce6"],cartoes:["card","#af52de"],poupancas:["cash","#34c759"]}[a.go];
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
-function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.day?` data-alday="${a.day}"`:""}`;
+function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
   return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
@@ -2816,6 +2826,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
   if(td>=AC_DAY-1&&mk>=START)acertoTotals(mk).filter(x=>!x.done).forEach(x=>A.push({o:td>=AC_DAY?1:3,cls:td>AC_DAY?"warn":"",dot:"bl",go:"despesas",acr:1,
     name:`Acerto com ${x.w}${td<AC_DAY?" amanhã":td===AC_DAY?" hoje":""}`,meta:x.tot>=0?`${x.w} passa-te ${eur(x.tot)}`:`Passas a ${x.w} ${eur(-x.tot)}`}));
+  if(typeof bkDue==="function"&&bkDue()&&store)A.push({o:5,cls:"",dot:"bl",go:"definicoes",bk:1,name:"Fazer a cópia de segurança",meta:"⚙️ Geral → Exportar"});
   /* Escola: hoje/amanhã sem aulas (férias ou feriado marcados na Escola) */
   [[todayS,"Hoje"],[tomS,"Amanhã"]].forEach(([ds,lb])=>{const wd=new Date(ds+"T12:00").getDay();if(wd===0||wd===6)return;
     const e=events.find(e=>/^🎒.*(Férias|Feriado)/.test(e.title||"")&&e.date<=ds&&evEnd(e)>=ds);
@@ -2884,7 +2895,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);setTimeout(()=>safe("Cópia automática",histSave),3000)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;items=local.load();render()});
   store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
@@ -4611,8 +4622,7 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-hist
   const L=h.items.filter(x=>b.dataset.histrep==="all"||BAGC.includes(x.cat));
   if(!confirm(`Repor ${L.length} produtos como estavam a ${new Date(at).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}? Os produtos criados depois ficam como estão.`))return;
   for(const it of L){upsert(it);await put(it)}render();toast(`${L.length} produtos repostos`)});
-setInterval(()=>safe("Cópia automática",histSave),10*60000);
-safe("Cópias (menu)",histMenu);setTimeout(()=>safe("Cópia automática",histSave),4000);
+try{localStorage.removeItem("casa-hist-items")}catch(e){}
 /* ---------- Cópia de segurança e PIN ---------- */
 document.getElementById("bkExport").addEventListener("click",()=>{
   const data={app:"casa-martins",version:APPV,at:new Date().toISOString(),by:myName(),items,bills,events};
@@ -4631,7 +4641,11 @@ document.getElementById("bkImport").addEventListener("change",async e=>{const f=
   for(const ev of d.events)if(ev&&ev.id){events=events.filter(x=>x.id!==ev.id);await putEv(ev);n++}
   render();renderBills();toast(`Cópia reposta: ${n} registos`)});
 function bkMeta(){let l="";try{l=localStorage.getItem("casa-copia")||""}catch(e){}const el=document.getElementById("bkMeta");if(!el)return;
-  const d=l?dDiff(l,ymd(new Date())):null;el.textContent=l?`Última cópia neste telemóvel: ${fmtD(l)}${d>31?" · já passou um mês, faz outra":""}`:"Guarda tudo num ficheiro (ex.: no iCloud). Uma vez por mês chega."}
+  const per=bkPer(), d=l?dDiff(l,ymd(new Date())):null;document.querySelectorAll("[data-bkper]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.bkper===per));
+  el.textContent=(l?`Última cópia: ${fmtD(l)}${per&&d>=per?" · está na altura de fazer outra":""}`:"Ainda não fizeste nenhuma cópia.")+" Guarda o ficheiro no iCloud (Ficheiros)."}
+function bkPer(){try{const v=localStorage.getItem("casa-bkper");return v==null?30:+v}catch(e){return 30}}
+function bkDue(){const per=bkPer();if(!per)return false;let l="";try{l=localStorage.getItem("casa-copia")||""}catch(e){}return !l||dDiff(l,ymd(new Date()))>=per}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-bkper]");if(!b)return;try{localStorage.setItem("casa-bkper",b.dataset.bkper)}catch(err){}bkMeta();safe("Alertas",renderAlerts);toast(+b.dataset.bkper?"Vou lembrar-te de fazer a cópia":"Sem lembrete")});
 setTimeout(()=>safe("Cópia",bkMeta),0);
 document.getElementById("pinBtn").addEventListener("click",()=>{document.getElementById("pinForm").hidden=false;document.getElementById("pinBtn").hidden=true});
 document.getElementById("pinCancel").addEventListener("click",()=>{const f=document.getElementById("pinForm");f.reset();f.hidden=true;document.getElementById("pinBtn").hidden=false});
@@ -5008,6 +5022,13 @@ document.addEventListener("click",e=>{const f=e.target.closest("[data-openfold]"
   const o=document.getElementById("folderOpen");if(!o.hidden){if(e.target.closest("#folderPanel .app"))setTimeout(closeFold,0);else if(!e.target.closest("#folderPanel"))closeFold()}
   const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast(t.dataset.homelay==="pastas"?"Início em pastas":"Início com tudo à vista")}});
 renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidden&&!openFold)safe("Pastas",renderFolders)},3000);
+/* Definições em separadores (como no iPhone): menu → Papel de Parede e Ecrã, Aplicações, Geral */
+function spOpen(k){const sec=document.getElementById("tab-definicoes");sec.dataset.sp=k||"";const t={ecra:"Papel de Parede e Ecrã",apps:"Aplicações",geral:"Geral"}[k];
+  sec.querySelector("h1.large").textContent=t||"Esta casa";const nb=sec.querySelector(".navback");nb.lastChild.textContent=k?"Definições":"Início";
+  if(k==="ecra")buildHdrFonts();if(k==="apps")applyAppsOff();if(k==="geral")safe("Cópia",bkMeta);scrollTo(0,0)}
+document.addEventListener("click",e=>{const r=e.target.closest("button[data-sp]");if(r){if(r.dataset.go){e.stopPropagation();show(r.dataset.go)}spOpen(r.dataset.sp);return}
+  const nb=e.target.closest("#tab-definicoes .navback");if(nb&&document.getElementById("tab-definicoes").dataset.sp){e.preventDefault();e.stopPropagation();spOpen("")}},true);
+document.addEventListener("click",e=>{const g=e.target.closest('[data-go="definicoes"]');if(g&&!g.dataset.sp)setTimeout(()=>spOpen(""),0)});
 /* Letra da data, saudação e hora do Início (cada telemóvel escolhe; letras gratuitas do Google Fonts) */
 const HFONTS=[["","Atual (iPhone)"],["Playfair Display","Playfair"],["Cormorant Garamond","Cormorant"],["DM Serif Display","DM Serif"],["Montserrat","Montserrat"],["Poppins","Poppins"],["Outfit","Outfit"],["Nunito","Nunito"],["Bebas Neue","Bebas"],["Josefin Sans","Josefin"]];
 const hfUrl=L=>"https://fonts.googleapis.com/css2?"+L.map(f=>"family="+f.replace(/ /g,"+")+(/Bebas|DM Serif/.test(f)?"":":wght@600;700")).join("&")+"&display=swap";
@@ -5173,7 +5194,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v175";
+const APPV="casa-v176";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
@@ -5181,7 +5202,7 @@ async function checkUpdate(force){if(!navigator.onLine||(!force&&Date.now()-updC
   try{const t=await(await fetch("sw.js?v="+Date.now(),{cache:"no-store"})).text();const v=(t.match(/VERSION="([^"]+)"/)||[])[1];
     const nova=v&&v!==APPV;document.getElementById("updBar").hidden=!nova;return nova}catch(e){return null}}
 async function doUpdate(){toast("A atualizar…");
-  try{const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update().catch(()=>{});
+  try{const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update().catch(()=>{});await reg.unregister().catch(()=>{})}
     for(const k of await caches.keys())await caches.delete(k)}catch(e){}
   location.replace(location.pathname+"?v="+Date.now()+location.hash)}
 document.getElementById("updBar").addEventListener("click",doUpdate);
