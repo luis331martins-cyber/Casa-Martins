@@ -2423,7 +2423,7 @@ function renderBills(){
     </div>`}).join("");
   const incRow=b=>{if(b.id===editBill)return editRow(b,"Receita");
     const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
-    let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
+    let meta=(g?`<span class="ok">Recebida</span>`:(b.day?"Dia "+b.day:askInc(b)?`Último dia útil · dia ${lastBizDay(viewY,viewM).getDate()}`:"Sem dia fixo"))+(b.dd&&!g?" · automática":"")+only;
     const cx=isCaixa(b)&&b.caixa&&b.caixa[k];
     /* Caixa: total e empresa escrevem-se aqui mesmo (apagar os dois tira o valor); aparecem também os meses com dinheiro por levantar */
     const cxM=isCaixa(b)?[k,...Object.keys(b.caixa||{}).filter(m=>m!==k&&b.caixa[m]&&b.caixa[m].e>0&&!(b.lev&&b.lev[m]))].sort():[];
@@ -2488,7 +2488,8 @@ function renderBills(){
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
     const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
-    [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):99;(groups[d]=groups[d]||[]).push(b)});
+    const lbd=lastBizDay(viewY,viewM).getDate();
+    [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):isInc(b)&&askInc(b)?lbd:99;(groups[d]=groups[d]||[]).push(b)});
     acL.filter(x=>!x.dn).forEach(x=>{const d=isCur?Math.max(AC_DAY,today):AC_DAY;(groups[d]=groups[d]||[]).push({acerto:x,name:"Acerto com "+x.w})});
     const dlab=d=>{if(d===99)return"Sem dia fixo";const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
       const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
@@ -5228,7 +5229,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v182";
+const APPV="casa-v183";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
