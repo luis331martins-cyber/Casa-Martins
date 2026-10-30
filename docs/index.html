@@ -2465,13 +2465,13 @@ function renderBills(){
     const vv=v=>v!=null&&v!==""?(Math.round(+v*100)/100).toFixed(2).replace(".",","):"";
     const cxl=cxM.map(m=>{const c=(b.caixa||{})[m], mn=mFull(m).split(" de ")[0], lbm="Fim de "+mFull(prevK(m)).split(" de ")[0];
       /* fechado: uma linha com o resumo (ou "escrever"); toca para abrir os campos */
-      if(!cxOpen.has(b.id+"|"+m))return c?`<div class="cxs"><button type="button" class="cxsb" data-cxtog="${b.id}|${m}"><b>${lbm}</b> Total ${eur(c.t)} · empresa ${eur(c.e)} · casa ${eur(c.t-c.e)} <span class="go">✎</span></button>${c.e>0?`<span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-lev="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":"levantar ›"}</span>`:""}</div>`
+      if(!cxOpen.has(b.id+"|"+m))return c?`<div class="cxs"><button type="button" class="cxsb" data-cxtog="${b.id}|${m}"><b>${lbm}</b> Total ${eur(c.t)} · empresa ${eur(c.e)} · casa ${eur(c.t-c.e)} <span class="go">✎</span></button>${c.e>0?`<span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-levask="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":levDone(b,m)>0?`levantado ${eur(levDone(b,m))} de ${eur(c.e)} ›`:"levantar ›"}</span>`:""}</div>`
         :`<div class="cxs"><button type="button" class="cxsb" data-cxtog="${b.id}|${m}"><span class="loanlink">✎ Escrever o total e a empresa (fim de ${mFull(prevK(m)).split(" de ")[0]})</span></button></div>`;
       return `<div class="cxl"><span class="cxm">${"Fim de "+mFull(prevK(m)).split(" de ")[0]}</span>
       <label>Total<input data-cxin="${b.id}|${m}|t" type="text" inputmode="decimal" value="${c?vv(c.t):""}" placeholder="0,00"></label>
       <label>Empresa<input data-cxin="${b.id}|${m}|e" type="text" inputmode="decimal" value="${c?vv(c.e):""}" placeholder="${+b.emp?vv(+b.emp):"0,00"}"></label>
       <button type="button" class="btn cxok" data-cxok="1">OK</button>
-      ${c?`<span class="cxr">Casa <b>${eur(c.t-c.e)}</b>${c.e>0?` · <span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-lev="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":"levantar ›"}</span>`:""}</span>`:`<span class="cxr">escreve o total</span>`}</div>`}).join("");
+      ${c?`<span class="cxr">Casa <b>${eur(c.t-c.e)}</b>${c.e>0?` · <span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-levask="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":levDone(b,m)>0?`levantado ${eur(levDone(b,m))} de ${eur(c.e)} ›`:"levantar ›"}</span>`:""}</span>`:`<span class="cxr">escreve o total</span>`}</div>`}).join("");
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
@@ -2662,14 +2662,21 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rd]");if(!
   toast(done?`Contagem de ${b.name} dada`:`Contagem de ${b.name} por dar`)},true);
 /* Alerta "Levantar X para a empresa": janela para marcar como levantado ou apagar o valor da caixa desse mês */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.levask.split("|"), b=bills.find(x=>x.id===id), c=b&&b.caixa&&b.caixa[k];if(!c)return;
-  const mn=mFull(k).split(" de ")[0], o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" aria-label="Levantar para a empresa">
-    <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · total ${eur(c.t)} · para casa ${eur(c.t-c.e)}</div>
-    <button type="button" class="btn" data-lv="ok">✓ Já levantei</button>
+  const mn="fim de "+mFull(prevK(k)).split(" de ")[0], dn=levDone(b,k), falta=Math.max(0,Math.round((c.e-dn)*100)/100), o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" aria-label="Levantar para a empresa">
+    <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · já levantaste <b>${eur(dn)}</b> · falta <b>${eur(falta)}</b></div>
+    <label class="f">Quanto levantaste agora (€)<input id="lvAmt" type="text" inputmode="decimal" placeholder="ex.: 500,00"></label>
+    <button type="button" class="btn" data-lv="part">Juntar ao levantado</button>
+    <button type="button" class="btn ghost" data-lv="ok">✓ Já levantei tudo (${eur(c.e)})</button>
+    ${dn>0?`<button type="button" class="btn ghost" data-lv="zero">Pôr o levantado a zero</button>`:""}
     <button type="button" class="btn danger" data-lv="del">Apagar este valor de ${mn}</button>
     <button type="button" class="btn ghost" data-lv="x">Fechar</button></div>`;
-  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-lv]");if(ev.target!==o&&!q)return;const a=q?q.dataset.lv:"x";o.remove();if(a==="x")return;
-    const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})}};
-    if(a==="ok"){nb.lev[k]=true;putBill(nb);toast("Marcado como levantado ✓")}
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-lv]");if(ev.target!==o&&!q)return;const a=q?q.dataset.lv:"x";
+    const v=a==="part"?numIn(o.querySelector("#lvAmt").value):0;if(a==="part"&&!(v>0)){o.querySelector("#lvAmt").focus();toast("Escreve quanto levantaste");return}
+    o.remove();if(a==="x")return;
+    const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})},levv:{...(b.levv||{})}};
+    if(a==="part"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;if(tot>=c.e-0.004)nb.lev[k]=true;putBill(nb);toast(tot>=c.e-0.004?"Levantado tudo ✓":`Levantado ${eur(tot)} · falta ${eur(c.e-tot)}`)}
+    else if(a==="zero"){delete nb.levv[k];delete nb.lev[k];putBill(nb);toast("Levantado a zero")}
+    else if(a==="ok"){nb.lev[k]=true;nb.levv[k]=c.e;putBill(nb);toast("Marcado como levantado ✓")}
     else{delete nb.caixa[k];delete nb.amounts[k];delete nb.paid[k];delete nb.iconf[k];delete nb.lev[k];putBill(nb);toast(`Valor da ${b.name} de ${mn} apagado`)}
     safe("Alertas",renderAlerts)});document.body.appendChild(o)},true);
 /* Alerta "Dar a contagem": abre uma janela para marcar como dada (em vez de ir para as Contas) */
@@ -2858,7 +2865,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>1||d<-30)return;
     A.push({o:d<0?0:2,cls:d<0?"bad":"warn",dot:d<0?"bad":"ex",go:x.go,name:x.t,meta:d<0?`${x.past} há ${-d} dia${d===-1?"":"s"}`:d===0?"Termina hoje":"Termina amanhã"})});
-  if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",acr:1,lev:x.b.id+"|"+x.k,name:`Levantar ${eur(x.v)}`,meta:`Para a empresa · ${x.b.name} de fim de ${mFull(prevK(x.k)).split(" de ")[0]}`}));
+  if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",acr:1,lev:x.b.id+"|"+x.k,name:`Levantar ${eur(x.v)}`,meta:`${x.v<x.tot-0.004?`Falta de ${eur(x.tot)} · `:"Para a empresa · "}${x.b.name} de fim de ${mFull(prevK(x.k)).split(" de ")[0]}`}));
   if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>1)return;
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
   if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>1)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
@@ -5031,7 +5038,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cxopen]");
   const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})},true);
 document.getElementById("incAskOpen").addEventListener("click",()=>{incForce=mKey();safe("Fim do mês",renderIncAsk);
   const box=document.getElementById("incAskBox");if(!box.hidden)box.scrollIntoView({block:"start",behavior:"smooth"})});
-function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(c&&c.e>0&&!(b.lev&&b.lev[k])&&k>=INC_START)L.push({b,k,v:c.e})}));return L}
+/* Já levantado (b.levv[mês] = valor; b.lev[mês]=true quando está tudo) */
+const levDone=(b,k)=>b.lev&&b.lev[k]?(b.caixa&&b.caixa[k]?b.caixa[k].e:0):+((b.levv||{})[k]||0);
+function levPending(){const L=[];bills.filter(isCaixa).forEach(b=>Object.entries(b.caixa||{}).forEach(([k,c])=>{if(!c||!(c.e>0)||(b.lev&&b.lev[k])||k<INC_START)return;const f=Math.round((c.e-levDone(b,k))*100)/100;if(f>0.004)L.push({b,k,v:f,tot:c.e})}));return L}
 /* ---------- Face ID / Touch ID (WebAuthn do próprio telemóvel) ----------
    Opcional e só neste aparelho: guarda o id de uma chave do iPhone; ao abrir a app (ou ao voltar depois de 3 min) pede o Face ID.
    É um cadeado do ecrã: a sessão continua a ser a da conta com PIN, e "Entrar com o PIN" termina a sessão para entrar de novo. */
@@ -5292,7 +5301,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v188";
+const APPV="casa-v189";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
