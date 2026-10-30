@@ -2674,7 +2674,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rd]");if(!
 /* Alerta "Levantar X para a empresa": janela para marcar como levantado ou apagar o valor da caixa desse mês */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.levask.split("|"), b=bills.find(x=>x.id===id), c=b&&b.caixa&&b.caixa[k];if(!c)return;
   const mn="fim de "+mFull(prevK(k)).split(" de ")[0], dn=levDone(b,k), falta=Math.max(0,Math.round((c.e-dn)*100)/100), o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" aria-label="Levantar para a empresa">
-    <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · já levantaste <b>${eur(dn)}</b> · falta <b>${eur(falta)}</b></div>
+    <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · já levantaste <b>${eur(dn)}</b> · falta <b>${eur(falta)}</b>${(b.levb||{})[k]?` · descontado no banco: ${eur(b.levb[k])}`:dn>0?" · (o já levantado ainda não foi descontado no banco)":""}</div>
     <label class="f">Quanto levantaste agora (€)<input id="lvAmt" type="text" inputmode="decimal" placeholder="ex.: 500,00"></label>
     ${accounts().length?`<label class="f">Levantado de (desconta no saldo)<select id="lvAcc"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${(b.acc||(/activo/i.test(a.name)?a.id:""))===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
     <button type="button" class="btn" data-lv="part">Juntar ao levantado</button>
@@ -2689,10 +2689,11 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");
     const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})},levv:{...(b.levv||{})}};
     /* o banco escolhido fica guardado na caixa (o que já estava recebido não volta a contar) */
     if(accId&&nb.acc!==accId){nb.acc=accId;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}
-    const levBank=d=>{if(!accId||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===accId);if(!a)return;const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),900)};
-    if(a==="part"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;if(tot>=c.e-0.004)nb.lev[k]=true;putBill(nb);levBank(v);toast(tot>=c.e-0.004?"Levantado tudo ✓":`Levantado ${eur(tot)} · falta ${eur(c.e-tot)}`)}
-    else if(a==="zero"){delete nb.levv[k];delete nb.lev[k];putBill(nb);levBank(-dn);toast("Levantado a zero")}
-    else if(a==="ok"){nb.lev[k]=true;nb.levv[k]=c.e;putBill(nb);levBank(falta);toast("Marcado como levantado ✓")}
+    nb.levb={...(b.levb||{})};
+    const levBank=d=>{if(!accId||Math.abs(d)<0.005)return;nb.levb[k]=Math.round(((+nb.levb[k]||0)+d)*100)/100;if(nb.levb[k]<=0.004)delete nb.levb[k];const a=bills.find(x=>x.id===accId);if(!a)return;const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),900)};
+    if(a==="part"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;if(tot>=c.e-0.004)nb.lev[k]=true;levBank(v);putBill(nb);toast(tot>=c.e-0.004?"Levantado tudo ✓":`Levantado ${eur(tot)} · falta ${eur(c.e-tot)}`)}
+    else if(a==="zero"){const back=+(b.levb||{})[k]||0;delete nb.levv[k];delete nb.lev[k];levBank(-back);putBill(nb);toast(back?`Levantado a zero · ${eur(back)} voltou ao saldo`:"Levantado a zero")}
+    else if(a==="ok"){nb.lev[k]=true;nb.levv[k]=c.e;levBank(falta);putBill(nb);toast("Marcado como levantado ✓")}
     else{delete nb.caixa[k];delete nb.amounts[k];delete nb.paid[k];delete nb.iconf[k];delete nb.lev[k];putBill(nb);toast(`Valor da ${b.name} de ${mn} apagado`)}
     safe("Alertas",renderAlerts)});document.body.appendChild(o)},true);
 /* Alerta "Dar a contagem": abre uma janela para marcar como dada (em vez de ir para as Contas) */
@@ -5318,7 +5319,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v191";
+const APPV="casa-v192";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
