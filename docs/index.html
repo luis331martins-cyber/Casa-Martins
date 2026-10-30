@@ -2492,7 +2492,8 @@ function renderBills(){
     const bLeft=buds.reduce((s2,b)=>s2+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), sum=L=>L.reduce((s2,b)=>s2+monthAmt(b,k),0), e0=v=>eur(v).replace(",00","");
     const tile=(id,ic,c1,c2,tn,v,sub,bd)=>`<button type="button" class="ctile" data-ctab="${id}" style="background:linear-gradient(160deg,${c1},${c2})">${bd?`<span class="nbadge">${bd}</span>`:""}<svg viewBox="0 0 24 24" aria-hidden="true">${BICS[ic]}</svg><span class="tn">${tn}</span><b>${v}</b><small>${sub}</small></button>`;
     document.getElementById("ctiles").innerHTML=tile("pagar","euro","#ff6b5e","#c4231b","A pagar",e0(sum(uB)),uB.length?`${uB.length} por pagar`:"tudo pago ✓",late)+
-      tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(uI)+acL.filter(x=>!x.dn&&x.tot>0).reduce((t,x)=>t+x.tot,0)),uI.length||acL.some(x=>!x.dn)?"por receber":"tudo recebido ✓",0)+
+      /* Receitas: tudo o que entra no mês (recebido + por receber + acerto) */
+      tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(inc)+acL.reduce((t,x)=>t+Math.max(0,x.tot),0)),(()=>{const fl=sum(uI)+acL.filter(x=>!x.dn).reduce((t,x)=>t+Math.max(0,x.tot),0);return fl>0.004?`falta receber ${e0(fl)}`:"tudo recebido ✓"})(),0)+
       tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0);
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
@@ -5240,7 +5241,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v184";
+const APPV="casa-v185";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
