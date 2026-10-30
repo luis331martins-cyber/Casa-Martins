@@ -3013,8 +3013,8 @@ async function renderPush(){
     :!window.FIREBASE_VAPID_KEY?"Ainda não estão configuradas.":"Este navegador não suporta notificações.";return}
   const p=Notification.permission;
   if(p==="denied"){meta.textContent="Bloqueadas. Ativa em Definições → Notificações → Casa.";return}
-  if(p==="granted"&&ls.get("casa-push")===houseCode){meta.textContent="Ativas neste telemóvel: marcações, contas, validades e resumo às 9h.";return}
-  meta.textContent="Lembretes de marcações, contas a pagar e validades, e um resumo às 9h.";btn.hidden=false;
+  if(p==="granted"&&ls.get("casa-push")===houseCode){meta.textContent="Ativas neste telemóvel: marcações, contas, validades e resumo às 8h30.";return}
+  meta.textContent="Lembretes de marcações, contas a pagar e validades, e um resumo às 8h30.";btn.hidden=false;
 }
 
 document.getElementById("joinForm").addEventListener("submit",async e=>{e.preventDefault();
@@ -5228,7 +5228,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v179";
+const APPV="casa-v180";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

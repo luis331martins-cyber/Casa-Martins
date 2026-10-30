@@ -1,7 +1,7 @@
 /* Notificações da casa (Firebase Cloud Messaging), enviadas pelo GitHub Actions de 15 em 15 minutos.
    Assim o Firebase fica no plano gratuito (Spark), sem cartão.
    Em cada execução, para cada casa:
-   - Resumo às 9h (hora de Lisboa), uma vez por dia: contas a pagar, validades a terminar e marcações/compras.
+   - Resumo às 8h30 (hora de Lisboa), uma vez por dia: contas a pagar, validades a terminar e marcações/compras.
    - Lembrete cerca de 1 hora antes das marcações com hora.
    - "Nova marcação" quando alguém marca algo (avisa os outros telemóveis, não quem marcou).
    - Mensagens do chat da casa (avisa os outros telemóveis, não quem escreveu).
@@ -519,9 +519,9 @@ async function house(code, now) {
     }
   }
 
-  /* Resumo diário: a partir das 9h, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
+  /* Resumo diário: a partir das 8h30, uma vez por dia (até às 21h, se o GitHub tiver falhado de manhã). */
   let resumo = st.resumo;
-  if (resumo !== now.date && now.min >= 9 * 60 && now.min < 21 * 60) {
+  if (resumo !== now.date && now.min >= 8 * 60 + 30 && now.min < 21 * 60) {
     resumo = now.date;
     jobs.push(() => morning(code, now));
   }
