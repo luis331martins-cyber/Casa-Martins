@@ -2425,7 +2425,7 @@ function renderBills(){
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o confirmar</label>
       <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
-      ${isBud(b)||!accounts().length?"":`<label class="f wide">${isInc(b)?"Entra na conta":"Sai da conta"} (o saldo atualiza-se ao marcar)<select name="acc"><option value="">Não atualizar o saldo</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`}
+      ${!accounts().length?"":`<label class="f wide">${isInc(b)?"Entra na conta":isBud(b)?"Os gastos saem da conta":"Sai da conta"} (o saldo atualiza-se ${isBud(b)?"a cada gasto":"ao marcar"})<select name="acc"><option value="">Não atualizar o saldo</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`}
       ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
@@ -2640,7 +2640,7 @@ document.addEventListener("click",e=>{
   else if(t.dataset.spend){openBud=t.dataset.spend;renderBills();const f=document.querySelector(`[data-spendform="${openBud}"] [name=v]`);if(f)f.focus()}
   else if(t.dataset.delspend){const [id,i]=t.dataset.delspend.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
     const L=[...spends(b,k)], x=L[+i];if(!x||!confirm(`Apagar o gasto de ${eur(+x.v||0)}${x.n?" ("+x.n+")":""}?`))return;
-    L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});toast("Gasto apagado")}
+    L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});spendBank(b,-(+x.ab||0));toast("Gasto apagado")}
 });
 /* Contas bancárias: juntar, atualizar o saldo, apagar */
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
@@ -2707,13 +2707,16 @@ function rdAsk(id,k){const b=bills.find(x=>x.id===id);if(!b)return;const r=rdSta
     if(e.target.closest("[data-rdok]")){putBill({...b,rdone:{...(b.rdone||{}),[k]:true}});close();toast(`Contagem de ${b.name} dada ✓`);safe("Alertas",renderAlerts)}
     else if(e.target.closest("[data-rdgo]")){close();show("despesas")}});document.body.appendChild(o)}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.rdask.split("|");rdAsk(id,k)},true);
+/* Gastos do mês com banco escolhido: cada gasto desconta no saldo (s.ab = valor descontado) */
+function spendBank(b,d){if(!b.acc||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===b.acc&&x.kind==="account");if(!a)return;
+  const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),1200)}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
   const [id,i]=ref.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
-  const L=[...spends(b,k)];L[+i]={v,d,...(n?{n}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});toast("Gasto corrigido");
+  const L=[...spends(b,k)], old=L[+i]||{}, had=+old.ab||0, ab=b.acc?v:had;L[+i]={v,d,...(n?{n}:{}),...(ab?{ab}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});if(b.acc)spendBank(b,v-had);toast("Gasto corrigido");
 });
 /* Juntar um gasto a uma despesa de "vários gastos" */
 document.addEventListener("submit",e=>{
@@ -2721,8 +2724,8 @@ document.addEventListener("submit",e=>{
   const b=bills.find(x=>x.id===id);if(!b)return;
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
-  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{})}]}});
-  toast(`${eur(v)} em ${b.name}`);
+  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{}),...(b.acc?{ab:v}:{})}]}});
+  toast(`${eur(v)} em ${b.name}`);if(b.acc)spendBank(b,v);
 });
 document.getElementById("payAll").addEventListener("click",()=>{
   const k=mKey(), todo=fixas().filter(b=>!isPaid(b,k));
@@ -2745,7 +2748,7 @@ document.addEventListener("submit",e=>{
   if(e.target.askd){const ad=parseInt(e.target.askd.value)||0;nb.askDay=ad>0?Math.min(ad,31):0}
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
-  if(e.target.acc){const a=e.target.acc.value;if(a!==(b.acc||"")){if(a){nb.acc=a;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}else{delete nb.acc;delete nb.accd}}}
+  if(e.target.acc){const a=e.target.acc.value;if(a!==(b.acc||"")){if(a&&isBud(nb)){nb.acc=a}else if(a){nb.acc=a;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}else{delete nb.acc;delete nb.accd}}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
   const amounts={...(b.amounts||{})};
@@ -5319,7 +5322,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v192";
+const APPV="casa-v193";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
