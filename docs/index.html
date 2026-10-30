@@ -267,6 +267,16 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .hlrow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 16px;background:none;color:var(--fg);font:inherit;font-size:16px;text-align:left;border-top:1px solid var(--line)}
 .hlrow .ico{width:34px!important;height:34px!important;border-radius:9px!important;flex:none}.hlrow .ico svg{width:20px!important;height:20px!important}.hlrow .hlb{margin-left:auto}.hlrow .hlgo{margin-left:auto;color:var(--muted)}.hlrow .hlb+.hlgo{margin-left:8px}
 :root[data-hdrfont][data-hfwhere="all"] .hlhead{font-family:var(--hdrfont),-apple-system,system-ui,sans-serif}
+/* Início transparente (vidro fosco), para se ver a foto do fundo */
+#tab-inicio .agenda,.hlgrp,#tab-inicio .altile,#tab-inicio .algrp,#tab-inicio .alert{-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}
+#tab-inicio .agenda,.hlgrp{background:rgba(28,28,30,.42)!important}#tab-inicio .acard{background:rgba(255,255,255,.12)!important}
+#tab-inicio .altile{background:color-mix(in srgb,var(--c) 62%,transparent)!important}
+:root[data-theme="light"] #tab-inicio .agenda,:root[data-theme="light"] .hlgrp{background:rgba(255,255,255,.55)!important}
+.appsbtn{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:5;padding:12px 28px;border-radius:999px;background:rgba(28,28,30,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-weight:700;font-size:16px;outline:2px solid var(--icoRing);outline-offset:-2px}
+.sheetwrap{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.25);display:flex;align-items:flex-end}.sheetwrap[hidden]{display:none}
+.sheetpanel{width:100%;max-height:72%;overflow:auto;padding:10px 14px calc(24px + env(safe-area-inset-bottom,0px));border-radius:24px 24px 0 0;background:rgba(28,28,30,.55);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);display:flex;flex-direction:column;gap:10px;animation:shup .22s ease-out}
+@keyframes shup{from{transform:translateY(40%);opacity:.4}to{transform:none;opacity:1}}
+.sheetpanel .grab{width:42px;height:5px;border-radius:3px;background:#ffffff77;margin:2px auto 6px;flex:none;cursor:pointer}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1043,15 +1053,18 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div id="clock" aria-label="Hora"></div>
       <p class="sub" id="sub"></p>
     </header>
-    <div class="agenda" id="agenda" role="region" aria-label="Agenda"></div>
-    <div class="rcard confbox" id="confSec" hidden></div>
     <div class="group" style="gap:8px" id="alertSec">
       <h2>Alertas</h2>
       <div id="alerts" class="group"></div>
     </div>
+    <div class="agenda" id="agenda" role="region" aria-label="Agenda"></div>
+    <div class="rcard confbox" id="confSec" hidden></div>
+
     <div class="group" style="gap:10px" id="appGroups">
       <div class="frow" id="folderRow" hidden></div>
       <div class="hlist" id="homeList" hidden></div>
+      <button type="button" id="appsBtn" class="appsbtn" hidden>⌃ Apps</button>
+      <div id="homeSheet" class="sheetwrap" hidden><div class="sheetpanel"><div class="grab" aria-label="Fechar"></div></div></div>
       <h3 data-fh="comida">Dia a dia</h3>
       <div class="apps" data-fold="comida" data-fname="Dia a dia">
         <button class="app" data-go="despensa"><span class="ico i-desp ios" style="--g1:#b8f0c8;--g2:#4cc774;--v1:#3d8f5f;--v2:#215a3a"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mDesp" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="11.4" y="5" width="1.2" height="14" fill="#000"/><rect x="8.6" y="10" width="1.3" height="4" rx=".65" fill="#000"/><rect x="14.1" y="10" width="1.3" height="4" rx=".65" fill="#000"/></mask></defs><g mask="url(#mDesp)"><rect x="4.5" y="3" width="15" height="17" rx="2.4"/></g><rect x="5.5" y="20.4" width="2.4" height="1.3" rx=".5"/><rect x="16.1" y="20.4" width="2.4" height="1.3" rx=".5"/></svg><img class="e3d" src="icons/3d/despensa.webp" alt="" draggable="false"><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Em casa</span></button>
@@ -1131,8 +1144,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label aria-label="Outra cor"><input type="color" id="hdrPick" value="#e7c46e"></label>
       </div>
       <div class="name">Início</div>
-      <div class="seg" role="group" aria-label="Organização do Início" style="display:grid;grid-template-columns:1fr 1fr 1fr">
-        <button type="button" data-homelay="pastas">Em pastas</button><button type="button" data-homelay="lista">Em lista</button><button type="button" data-homelay="tudo">Tudo à vista</button>
+      <div class="seg" role="group" aria-label="Organização do Início" style="display:grid;grid-template-columns:repeat(4,1fr)">
+        <button type="button" data-homelay="gaveta">Gaveta</button><button type="button" data-homelay="lista">Em lista</button><button type="button" data-homelay="pastas">Em pastas</button><button type="button" data-homelay="tudo">Tudo à vista</button>
       </div>
       <div class="name">Fundo da app</div>
       <div class="walls" role="group" aria-label="Fundo da app">
@@ -5042,10 +5055,22 @@ document.addEventListener("visibilitychange",()=>{if(!bioId())return;if(document
 document.getElementById("bioItem").hidden=!window.PublicKeyCredential;document.getElementById("bioSw").checked=!!bioId();
 if(bioId()){bioShow();bioUnlock()}
 /* ---------- Início em pastas (como no iPhone) ou com tudo à vista; cada telemóvel escolhe ---------- */
-function homeLay(){try{const v=localStorage.getItem("casa-inicio");return v==="tudo"||v==="lista"?v:"pastas"}catch(e){return"pastas"}}
+/* Pedido (30/10): passa uma vez para a gaveta */
+try{if(!localStorage.getItem("casa-inicio-v2")){localStorage.setItem("casa-inicio","gaveta");localStorage.setItem("casa-inicio-v2","1")}}catch(e){}
+function homeLay(){try{const v=localStorage.getItem("casa-inicio");return v==="tudo"||v==="lista"||v==="gaveta"?v:"pastas"}catch(e){return"pastas"}}
+/* Gaveta: botão "Apps" em baixo abre uma folha com a lista dos separadores */
+function sheetOpen(on){const sh=document.getElementById("homeSheet");if(!sh)return;sh.hidden=!on;document.getElementById("appsBtn").hidden=on||homeLay()!=="gaveta";if(on)renderHomeList()}
+document.addEventListener("click",e=>{if(e.target.closest("#appsBtn")){sheetOpen(true);return}const sh=document.getElementById("homeSheet");if(!sh||sh.hidden)return;
+  if(e.target.id==="homeSheet"||e.target.closest(".grab"))sheetOpen(false);else if(e.target.closest(".hlrow"))setTimeout(()=>sheetOpen(false),0)});
+{let y0=null;document.addEventListener("touchstart",e=>{const p=e.target.closest&&e.target.closest(".sheetpanel");y0=p&&p.scrollTop<=0?e.touches[0].clientY:null},{passive:true});
+ document.addEventListener("touchend",e=>{if(y0!=null&&e.changedTouches[0].clientY-y0>70)sheetOpen(false);y0=null},{passive:true})}
 /* Início em lista: as 4 pastas em linhas; tocar abre as apps dessa pasta por baixo (fica aberta a última) */
 let listOpen=(()=>{try{return localStorage.getItem("casa-lista-open")||""}catch(e){return""}})();
-function renderHomeList(){const box=document.getElementById("homeList");if(!box)return;const on=homeLay()==="lista";box.hidden=!on;if(!on){box.innerHTML="";return}
+function renderHomeList(){const box=document.getElementById("homeList");if(!box)return;const lay=homeLay(), on=lay==="lista"||lay==="gaveta";
+  const sp=document.querySelector("#homeSheet .sheetpanel"), ab=document.getElementById("appsBtn");
+  if(lay==="gaveta"){if(box.parentNode!==sp)sp.appendChild(box)}else{const fr=document.getElementById("folderRow");if(box.parentNode!==fr.parentNode)fr.after(box);document.getElementById("homeSheet").hidden=true}
+  if(ab)ab.hidden=lay!=="gaveta"||!document.getElementById("homeSheet").hidden||document.getElementById("tab-inicio").hidden;
+  box.hidden=!on;if(!on){box.innerHTML="";return}
   const groups=[...document.querySelectorAll("#appGroups .apps[data-fold]")].filter(a=>a.querySelector(".app:not([hidden])"));
   box.innerHTML=groups.map(a=>{const id=a.dataset.fold, open=listOpen===id, apps=[...a.querySelectorAll(".app:not([hidden])")];
     const n=apps.reduce((t,b)=>{const x=b.querySelector(".nbadge");return t+(x&&!x.hidden?parseInt(x.textContent)||0:0)},0);
@@ -5064,7 +5089,7 @@ function applyAppsOff(){const off=appsOff();document.querySelectorAll("#appGroup
 document.addEventListener("change",e=>{const c=e.target.closest("[data-appon]");if(!c)return;const off=appsOff();if(c.checked)off.delete(c.dataset.appon);else off.add(c.dataset.appon);
   try{localStorage.setItem("casa-apps-off",JSON.stringify([...off]))}catch(err){}applyAppsOff();safe("Pastas",renderFolders)});
 function renderFolders(){applyAppsOff();const row=document.getElementById("folderRow");if(!row)return;const L=homeLay()==="pastas", groups=[...document.querySelectorAll("#appGroups .apps[data-fold], #folderPanel .apps[data-fold]")];
-  const LI=homeLay()==="lista", HID=L||LI;
+  const LI=homeLay()==="lista"||homeLay()==="gaveta", HID=L||LI;
   row.hidden=!L;document.querySelectorAll("#appGroups [data-fh]").forEach(h=>h.hidden=HID);
   document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>{const none=!a.querySelector(".app:not([hidden])");a.hidden=HID||none;const h=document.querySelector(`#appGroups [data-fh="${a.dataset.fold}"]`);if(h)h.hidden=HID||none});
   document.querySelectorAll("[data-homelay]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.homelay===homeLay()));
@@ -5085,7 +5110,7 @@ function closeFold(){const o=document.getElementById("folderOpen"), a=document.q
   o.hidden=true;openFold=""}
 document.addEventListener("click",e=>{const f=e.target.closest("[data-openfold]");if(f){openFolder(f.dataset.openfold);return}
   const o=document.getElementById("folderOpen");if(!o.hidden){if(e.target.closest("#folderPanel .app"))setTimeout(closeFold,0);else if(!e.target.closest("#folderPanel"))closeFold()}
-  const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast({pastas:"Início em pastas",lista:"Início em lista",tudo:"Início com tudo à vista"}[t.dataset.homelay])}});
+  const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast({gaveta:"Apps na gaveta",pastas:"Início em pastas",lista:"Início em lista",tudo:"Início com tudo à vista"}[t.dataset.homelay])}});
 renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidden&&!openFold)safe("Pastas",renderFolders)},3000);
 /* Definições em separadores (como no iPhone): menu → Papel de Parede e Ecrã, Aplicações, Geral */
 function spOpen(k){const sec=document.getElementById("tab-definicoes");sec.dataset.sp=k||"";const t={ecra:"Papel de Parede e Ecrã",apps:"Aplicações",geral:"Geral"}[k];
@@ -5261,7 +5286,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v186";
+const APPV="casa-v187";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
