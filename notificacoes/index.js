@@ -75,6 +75,24 @@ async function load(code, name) {
 }
 
 /* ---------- 9h: contas, validades e resumo do dia ---------- */
+/* Fim do mês: no último dia útil (e até dia 5 do mês seguinte, se ficou por fazer) faltam escrever estas receitas
+   (ordenados, cartão Break, caixa…), como a janela da app. Devolve {k, faltam}. */
+function entradasFaltam(bills, now) {
+  const mk = now.date.slice(0, 7), last = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
+    const pad = (n) => String(n).padStart(2, "0");
+    const fixos = ["01-01", "04-25", "05-01", "06-10", "08-15", "10-05", "11-01", "12-01", "12-08", "12-25"];
+    const pascoa = (y) => { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mo = Math.floor((h + l - 7 * m + 114) / 31), da = (h + l - 7 * m + 114) % 31 + 1; return `${y}-${pad(mo)}-${pad(da)}`; };
+    const feriado = (ds) => fixos.includes(ds.slice(5)) || [-2, 0, 60].some((n) => addDays(pascoa(+ds.slice(0, 4)), n) === ds);
+    let ult = `${now.y}-${pad(now.m)}-${pad(last)}`;
+    while ([0, 6].includes(new Date(ult + "T12:00:00Z").getUTCDay()) || feriado(ult)) ult = addDays(ult, -1);
+    const k = now.date >= ult ? mk : now.d <= 5 ? (now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${pad(now.m - 1)}`) : null;
+    const sem = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const faltam = k && k >= "2026-10" ? bills.filter((b) => b.kind === "income" && (b.ask != null ? !!b.ask : /ordenado|salario|vencimento|break|caixa/.test(sem(b.name))) && !(b.iconf && b.iconf[k])) : [];
+  return {k, faltam};
+}
+
 async function morning(code, now) {
   /* Tudo o que sai às 9h vai numa só notificação "Bom dia" (contas, valores, validades, prazos e o resumo do dia) */
   const partes = [];
@@ -120,21 +138,10 @@ async function morning(code, now) {
       body: leit.map((x) => x.t).join("\n") + "\nToca para marcar como dada.", go: "despesas", tag: "contagem"});
   }
 
-  /* Fim do mês: no último dia útil (e até dia 5 do mês seguinte, se ficou por fazer) lembra de escrever o que entrou
-     (receitas marcadas: ordenados, cartão Break, caixa…), como a janela da app */
+  /* Fim do mês: o que entrou (ordenados, Break, caixa) — notificação própria às 9h e outra às 19h se ainda faltar */
   {
-    const pad = (n) => String(n).padStart(2, "0");
-    const fixos = ["01-01", "04-25", "05-01", "06-10", "08-15", "10-05", "11-01", "12-01", "12-08", "12-25"];
-    const pascoa = (y) => { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
-      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
-      mo = Math.floor((h + l - 7 * m + 114) / 31), da = (h + l - 7 * m + 114) % 31 + 1; return `${y}-${pad(mo)}-${pad(da)}`; };
-    const feriado = (ds) => fixos.includes(ds.slice(5)) || [-2, 0, 60].some((n) => addDays(pascoa(+ds.slice(0, 4)), n) === ds);
-    let ult = `${now.y}-${pad(now.m)}-${pad(last)}`;
-    while ([0, 6].includes(new Date(ult + "T12:00:00Z").getUTCDay()) || feriado(ult)) ult = addDays(ult, -1);
-    const k = now.date >= ult ? mk : now.d <= 5 ? (now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${pad(now.m - 1)}`) : null;
-    const sem = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const faltam = k && k >= "2026-10" ? bills.filter((b) => b.kind === "income" && (b.ask != null ? !!b.ask : /ordenado|salario|vencimento|break|caixa/.test(sem(b.name))) && !(b.iconf && b.iconf[k])) : [];
-    if (faltam.length) partes.push({title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", "), go: "despesas", tag: "entradas-" + k});
+    const {k, faltam} = entradasFaltam(bills, now);
+    if (faltam.length) await send(code, {title: "💶 Escreve o que entrou", body: faltam.map((b) => b.name).join(", ") + "\nToca para escrever os valores.", go: "despesas", tag: "entradas-" + k});
   }
 
   /* Por confirmar: débitos diretos / entradas automáticas deste mês que já passaram e marcações dos últimos 7 dias */
@@ -484,6 +491,12 @@ async function house(code, now) {
     }
     const mkC = now.date.slice(0, 7), lastC = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
     const bs = now.min >= 18 * 60 && now.min < 22 * 60 ? (await db.collection(`households/${code}/bills`).get()).docs.map((x) => ({...x.data(), id: x.id})) : [];
+    /* O que entrou: lembra outra vez às 19h se ainda faltar */
+    if (now.min >= 19 * 60 && bs.length) {
+      const {k: kI, faltam: fI} = entradasFaltam(bs, now), key = `in|${kI}|${now.date}`;
+      if (fI.length && !confSent.has(key)) { confSent.add(key);
+        jobs.push(() => send(code, {title: "💶 Ainda falta escrever o que entrou", body: fI.map((b) => b.name).join(", "), go: "despesas", tag: "entradas2-" + kI})); }
+    }
     /* Contagem: no último dia, se ainda não foi marcada como dada, lembra outra vez ao fim do dia (a partir das 19h) */
     if (now.min >= 19 * 60) for (const b of bs) {
       if (b.kind || !b.rd || Math.min(b.rd, lastC) !== now.d || (b.rdone && b.rdone[mkC])) continue;
