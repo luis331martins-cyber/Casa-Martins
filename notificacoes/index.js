@@ -285,6 +285,9 @@ async function morning(code, now) {
     const perDay = (hoje.times || []).length * (+hoje.per || 1);
     const dias = perDay ? Math.floor(m.stock / perDay) : null;
     if (dias !== null && dias <= (m.warnDays || 7)) linhas.push(`💊 Comprar ${m.name} (${m.who}) — dá para ${dias} dia${dias === 1 ? "" : "s"}`);
+    /* no penúltimo dia (e no último) vai também numa notificação própria, para não passar despercebido */
+    if (dias !== null && dias <= 2) await send(code, {title: `💊 ${m.name} (${m.who}) está a acabar`,
+      body: dias <= 0 ? "Já não há para amanhã. Compra hoje." : dias === 1 ? "Só dá para hoje. Compra hoje." : "Só dá para 2 dias. Compra até amanhã.", go: "medicamentos", tag: "medfim-" + m.id});
   }
   if (toBuy) linhas.push(`${plural(toBuy, "produto", "produtos")} para comprar`);
   if (linhas.length) {

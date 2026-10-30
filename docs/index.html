@@ -2816,7 +2816,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
   let medLate=0;if(typeof dosesToday==="function"){const nm=minsNow();
     dosesToday("").forEach(({m,t,done})=>{if(!done&&tMin(t)<nm){medLate++;A.push({o:1,cls:"warn",dot:"bad",go:"meds",name:`${m.who}: ${m.name}`,meta:`Toma das ${t} por tomar${m.dose?" · "+m.dose:""}`})}});
-    meds().filter(m=>medLow(m)&&medActive(m,todayS)).forEach(m=>{const dl=medDays(m);if(dl!=null&&dl>1)return;A.push({o:dl<=1?1:3,cls:dl<=1?"warn":"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`${m.who} · restam ${String(m.stock).replace(".",",")}${dl!=null?` · dá para ${dl} dia${dl===1?"":"s"}`:""}`})})}
+    meds().filter(m=>medLow(m)&&medActive(m,todayS)).forEach(m=>{const dl=medDays(m);if(dl!=null&&dl>2)return;A.push({o:dl<=1?1:3,cls:dl<=1?"warn":"",dot:"ex",go:"meds",name:`Comprar ${m.name}`,meta:`${m.who} · restam ${String(m.stock).replace(".",",")}${dl!=null?` · dá para ${dl} dia${dl===1?"":"s"}`:""}`})})}
   const mdb=document.getElementById("medBadge");if(mdb){mdb.hidden=!medLate;mdb.textContent=medLate}
   /* Carro (até 7 dias) e documentos (até 30 dias, ou já caducados) */
   deadlines().forEach(x=>{const d=dDiff(todayS,x.date);if(d>1||d<-30)return;
@@ -5228,7 +5228,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v180";
+const APPV="casa-v181";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
