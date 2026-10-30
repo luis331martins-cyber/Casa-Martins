@@ -261,6 +261,12 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .spic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}.spic svg,.icbtn svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);flex:none;padding:0}.icbtn.off{background:#ff453a}.icbtn svg{width:22px;height:22px;stroke-width:2.4}
 .clits{display:flex;flex-direction:column;gap:2px;background:var(--fill);border-radius:10px;padding:8px 10px}.clits div{display:flex;justify-content:space-between;gap:10px}.clits b{white-space:nowrap}
+.hlist{display:flex;flex-direction:column;gap:10px}.hlgrp{background:var(--surface);border-radius:16px;overflow:hidden;outline:2px solid var(--icoRing);outline-offset:-2px}
+.hlhead{display:flex;align-items:center;gap:10px;width:100%;padding:14px 16px;background:none;color:var(--hdrc,var(--fg));font:inherit;font-size:19px;font-weight:700;text-align:left}
+.hlhead .hlch{margin-left:auto;color:var(--muted);font-size:18px}.hlb{background:#ff3b30;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 7px}
+.hlrow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 16px;background:none;color:var(--fg);font:inherit;font-size:16px;text-align:left;border-top:1px solid var(--line)}
+.hlrow .ico{width:34px!important;height:34px!important;border-radius:9px!important;flex:none}.hlrow .ico svg{width:20px!important;height:20px!important}.hlrow .hlb{margin-left:auto}.hlrow .hlgo{margin-left:auto;color:var(--muted)}.hlrow .hlb+.hlgo{margin-left:8px}
+:root[data-hdrfont][data-hfwhere="all"] .hlhead{font-family:var(--hdrfont),-apple-system,system-ui,sans-serif}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1045,6 +1051,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     </div>
     <div class="group" style="gap:10px" id="appGroups">
       <div class="frow" id="folderRow" hidden></div>
+      <div class="hlist" id="homeList" hidden></div>
       <h3 data-fh="comida">Dia a dia</h3>
       <div class="apps" data-fold="comida" data-fname="Dia a dia">
         <button class="app" data-go="despensa"><span class="ico i-desp ios" style="--g1:#b8f0c8;--g2:#4cc774;--v1:#3d8f5f;--v2:#215a3a"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mDesp" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="11.4" y="5" width="1.2" height="14" fill="#000"/><rect x="8.6" y="10" width="1.3" height="4" rx=".65" fill="#000"/><rect x="14.1" y="10" width="1.3" height="4" rx=".65" fill="#000"/></mask></defs><g mask="url(#mDesp)"><rect x="4.5" y="3" width="15" height="17" rx="2.4"/></g><rect x="5.5" y="20.4" width="2.4" height="1.3" rx=".5"/><rect x="16.1" y="20.4" width="2.4" height="1.3" rx=".5"/></svg><img class="e3d" src="icons/3d/despensa.webp" alt="" draggable="false"><span class="nbadge" id="pantryBadge" hidden></span></span><span class="lbl">Em casa</span></button>
@@ -1124,8 +1131,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <label aria-label="Outra cor"><input type="color" id="hdrPick" value="#e7c46e"></label>
       </div>
       <div class="name">Início</div>
-      <div class="seg" role="group" aria-label="Organização do Início" style="display:grid;grid-template-columns:1fr 1fr">
-        <button type="button" data-homelay="pastas">Em pastas</button><button type="button" data-homelay="tudo">Tudo à vista</button>
+      <div class="seg" role="group" aria-label="Organização do Início" style="display:grid;grid-template-columns:1fr 1fr 1fr">
+        <button type="button" data-homelay="pastas">Em pastas</button><button type="button" data-homelay="lista">Em lista</button><button type="button" data-homelay="tudo">Tudo à vista</button>
       </div>
       <div class="name">Fundo da app</div>
       <div class="walls" role="group" aria-label="Fundo da app">
@@ -5035,7 +5042,18 @@ document.addEventListener("visibilitychange",()=>{if(!bioId())return;if(document
 document.getElementById("bioItem").hidden=!window.PublicKeyCredential;document.getElementById("bioSw").checked=!!bioId();
 if(bioId()){bioShow();bioUnlock()}
 /* ---------- Início em pastas (como no iPhone) ou com tudo à vista; cada telemóvel escolhe ---------- */
-function homeLay(){try{return localStorage.getItem("casa-inicio")==="tudo"?"tudo":"pastas"}catch(e){return"pastas"}}
+function homeLay(){try{const v=localStorage.getItem("casa-inicio");return v==="tudo"||v==="lista"?v:"pastas"}catch(e){return"pastas"}}
+/* Início em lista: as 4 pastas em linhas; tocar abre as apps dessa pasta por baixo (fica aberta a última) */
+let listOpen=(()=>{try{return localStorage.getItem("casa-lista-open")||""}catch(e){return""}})();
+function renderHomeList(){const box=document.getElementById("homeList");if(!box)return;const on=homeLay()==="lista";box.hidden=!on;if(!on){box.innerHTML="";return}
+  const groups=[...document.querySelectorAll("#appGroups .apps[data-fold]")].filter(a=>a.querySelector(".app:not([hidden])"));
+  box.innerHTML=groups.map(a=>{const id=a.dataset.fold, open=listOpen===id, apps=[...a.querySelectorAll(".app:not([hidden])")];
+    const n=apps.reduce((t,b)=>{const x=b.querySelector(".nbadge");return t+(x&&!x.hidden?parseInt(x.textContent)||0:0)},0);
+    const rows=open?apps.map(b=>{const ic=b.querySelector(".ico").cloneNode(true);ic.removeAttribute("id");const bd=ic.querySelector(".nbadge"), k=bd&&!bd.hidden?bd.textContent:"";ic.querySelectorAll(".nbadge").forEach(x=>x.remove());
+      ic.querySelectorAll("[id]").forEach(x=>{const o=x.id,nn=o+"-l"+(++foldUid);x.id=nn;ic.querySelectorAll("[mask],[fill]").forEach(y=>["mask","fill"].forEach(at=>{if(y.getAttribute(at)==="url(#"+o+")")y.setAttribute(at,"url(#"+nn+")")}))});
+      return `<button type="button" class="hlrow" data-go="${b.dataset.go}">${ic.outerHTML}<span>${esc((b.querySelector(".lbl")||{}).textContent||"")}</span>${k?`<span class="hlb">${esc(k)}</span>`:""}<span class="hlgo">›</span></button>`}).join(""):"";
+    return `<div class="hlgrp${open?" open":""}"><button type="button" class="hlhead" data-hlopen="${id}"><span>${esc(a.dataset.fname)}</span>${n&&!open?`<span class="hlb">${n}</span>`:""}<span class="hlch">${open?"⌃":"⌄"}</span></button>${rows}</div>`}).join("")}
+document.addEventListener("click",e=>{const h=e.target.closest("[data-hlopen]");if(!h)return;listOpen=listOpen===h.dataset.hlopen?"":h.dataset.hlopen;try{localStorage.setItem("casa-lista-open",listOpen)}catch(err){}renderHomeList()});
 let openFold="", foldUid=0;
 /* Apps escondidas neste telemóvel (por defeito, Jogos e Vídeos) */
 function appsOff(){try{const v=localStorage.getItem("casa-apps-off");return new Set(v?JSON.parse(v):["videos","jogos"])}catch(e){return new Set(["videos","jogos"])}}
@@ -5046,9 +5064,11 @@ function applyAppsOff(){const off=appsOff();document.querySelectorAll("#appGroup
 document.addEventListener("change",e=>{const c=e.target.closest("[data-appon]");if(!c)return;const off=appsOff();if(c.checked)off.delete(c.dataset.appon);else off.add(c.dataset.appon);
   try{localStorage.setItem("casa-apps-off",JSON.stringify([...off]))}catch(err){}applyAppsOff();safe("Pastas",renderFolders)});
 function renderFolders(){applyAppsOff();const row=document.getElementById("folderRow");if(!row)return;const L=homeLay()==="pastas", groups=[...document.querySelectorAll("#appGroups .apps[data-fold], #folderPanel .apps[data-fold]")];
-  row.hidden=!L;document.querySelectorAll("#appGroups [data-fh]").forEach(h=>h.hidden=L);
-  document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>{const none=!a.querySelector(".app:not([hidden])");a.hidden=L||none;const h=document.querySelector(`#appGroups [data-fh="${a.dataset.fold}"]`);if(h)h.hidden=L||none});
+  const LI=homeLay()==="lista", HID=L||LI;
+  row.hidden=!L;document.querySelectorAll("#appGroups [data-fh]").forEach(h=>h.hidden=HID);
+  document.querySelectorAll("#appGroups > .apps[data-fold]").forEach(a=>{const none=!a.querySelector(".app:not([hidden])");a.hidden=HID||none;const h=document.querySelector(`#appGroups [data-fh="${a.dataset.fold}"]`);if(h)h.hidden=HID||none});
   document.querySelectorAll("[data-homelay]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.homelay===homeLay()));
+  renderHomeList();
   if(!L){if(openFold)closeFold();return}
   if(!document.getElementById("folderOpen").hidden)return;
   row.innerHTML=groups.filter(a=>a.querySelector(".app:not([hidden])")).sort((a,b)=>["comida","dinheiro","familia","patrimonio","lazer"].indexOf(a.dataset.fold)-["comida","dinheiro","familia","patrimonio","lazer"].indexOf(b.dataset.fold)).map(a=>{
@@ -5065,7 +5085,7 @@ function closeFold(){const o=document.getElementById("folderOpen"), a=document.q
   o.hidden=true;openFold=""}
 document.addEventListener("click",e=>{const f=e.target.closest("[data-openfold]");if(f){openFolder(f.dataset.openfold);return}
   const o=document.getElementById("folderOpen");if(!o.hidden){if(e.target.closest("#folderPanel .app"))setTimeout(closeFold,0);else if(!e.target.closest("#folderPanel"))closeFold()}
-  const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast(t.dataset.homelay==="pastas"?"Início em pastas":"Início com tudo à vista")}});
+  const t=e.target.closest("[data-homelay]");if(t){try{localStorage.setItem("casa-inicio",t.dataset.homelay)}catch(err){}renderFolders();toast({pastas:"Início em pastas",lista:"Início em lista",tudo:"Início com tudo à vista"}[t.dataset.homelay])}});
 renderFolders();setInterval(()=>{if(!document.getElementById("tab-inicio").hidden&&!openFold)safe("Pastas",renderFolders)},3000);
 /* Definições em separadores (como no iPhone): menu → Papel de Parede e Ecrã, Aplicações, Geral */
 function spOpen(k){const sec=document.getElementById("tab-definicoes");sec.dataset.sp=k||"";const t={ecra:"Papel de Parede e Ecrã",apps:"Aplicações",geral:"Geral"}[k];
@@ -5241,7 +5261,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v185";
+const APPV="casa-v186";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
