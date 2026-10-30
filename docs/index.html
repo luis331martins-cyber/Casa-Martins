@@ -4976,7 +4976,7 @@ function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)r
 function incSave(id,k,v,cx){const b=bills.find(x=>x.id===id);if(!b)return;const amounts={...(b.amounts||{})};delete amounts[k];
   if(Math.abs(v-baseAmt(b,k))>.004)amounts[k]=v;
   const nb={...b,amounts,paid:{...(b.paid||{}),[k]:true},iconf:{...(b.iconf||{}),[k]:true}};if(cx)nb.caixa={...(b.caixa||{}),[k]:cx};
-  save(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
+  putBill(nb);toast(cx?`Para casa ${eur(v)} · levantar ${eur(cx.e)} para a empresa`:`${b.name}: ${eur(v)}`)}
 const numIn=t=>{t=String(t||"").trim().replace(/\s/g,"");if(!t)return NaN;if(/,/.test(t))t=t.replace(/\./g,"").replace(",",".");return parseFloat(t)};
 document.addEventListener("submit",e=>{const a=e.target.dataset&&e.target.dataset.incask;if(!a)return;e.preventDefault();const [id,k]=a.split("|"), f=e.target;
   if(f.t){const bb=bills.find(x=>x.id===id), t=numIn(f.t.value), e0=numIn(f.e.value), em=isNaN(e0)?(+(bb&&bb.emp)||0):e0;if(isNaN(t)){toast("Escreve o total da caixa.");return}if(em>t){toast("A parte da empresa é maior do que o total.");return}
@@ -5228,7 +5228,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v181";
+const APPV="casa-v182";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
