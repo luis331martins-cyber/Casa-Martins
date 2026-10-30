@@ -1,10 +1,13 @@
-# Envia as notificações da casa de 15 em 15 minutos (resumo às 9h, lembretes e novas marcações).
+# Envia as notificações da casa de 5 em 5 minutos (resumo às 9h, lembretes e novas marcações).
 # Precisa do segredo FIREBASE_SERVICE_ACCOUNT (ver README). Sem ele, não faz nada.
 name: Notificações
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # de 5 em 5 minutos (o GitHub pode atrasar em horas de muito movimento)
+    - cron: "*/5 * * * *"
+    # e uma corrida certa perto das 8h30 de Lisboa (7h29 UTC no verão, 8h29 UTC no inverno), fora do minuto 0 que é o mais atrasado
+    - cron: "29 7,8 * * *"
   workflow_dispatch:
 
 permissions:
