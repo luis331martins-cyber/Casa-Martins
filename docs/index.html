@@ -2361,6 +2361,12 @@ function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
 /* Correção (30/10/2026): o que se escreveu em "O que entrou" ficou no mês em que entrou; passa para o mês seguinte (o mês a que se destina) */
 let incShiftDone=false;
 function incShift(){if(incShiftDone)return;incShiftDone=true;
+  /* Correção 2: o que entra no fim do mês só pode ser do mês seguinte ao atual (ou deste); apaga cópias de meses mais à frente (ex.: caixa repetida em dezembro) */
+  {const td=new Date(), cur=ymOf(td), lim=ymd(td)>=ymd(lastBizDay(td.getFullYear(),td.getMonth()))?nextK(cur):cur;
+    bills.filter(b=>isInc(b)&&askInc(b)).forEach(b=>{const bad=[...new Set([...Object.keys(b.paid||{}),...Object.keys(b.caixa||{}),...Object.keys(b.lev||{})])].filter(k=>k>nextK(cur)||(k>lim&&!(b.paid&&b.paid[k])));
+      const badI=Object.keys(b.iconf||{}).filter(k=>k>=lim&&k>cur);if(!bad.length&&!badI.length)return;
+      const n={...b,amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},caixa:{...(b.caixa||{})},lev:{...(b.lev||{})},iconf:{...(b.iconf||{})}};
+      bad.forEach(k=>{delete n.amounts[k];delete n.paid[k];delete n.caixa[k];delete n.lev[k]});badI.forEach(k=>delete n.iconf[k]);putBill(n)})}
   bills.filter(b=>isInc(b)&&askInc(b)&&!b.incShift&&b.iconf).forEach(b=>{const n={...b,incShift:1,amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},caixa:{...(b.caixa||{})},lev:{...(b.lev||{})}};
     Object.keys(b.iconf).forEach(k=>{const t=nextK(k);if(n.paid[t]!=null)return;
       if(n.amounts[k]!=null){n.amounts[t]=n.amounts[k];delete n.amounts[k]}if(n.paid[k]){n.paid[t]=true;delete n.paid[k]}
@@ -4987,9 +4993,9 @@ function cxSave(row){if(!row||row.dataset.saved)return;row.dataset.saved=1;const
   const tv=numIn(row.querySelector('[data-cxin$="|t"]').value), ev0=numIn(row.querySelector('[data-cxin$="|e"]').value), ev=isNaN(ev0)?(+b.emp||0):ev0;
   const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})}};
   cxOpen.delete(id+"|"+m);
-  if(isNaN(tv)){delete nb.caixa[m];delete nb.amounts[m];delete nb.paid[m];delete nb.iconf[m];delete nb.lev[m];save(nb);toast(`${b.name}: valor de ${mFull(m).split(" de ")[0]} apagado`);return}
+  if(isNaN(tv)){delete nb.caixa[m];delete nb.amounts[m];delete nb.paid[m];delete nb.iconf[prevK(m)];delete nb.lev[m];save(nb);toast(`${b.name}: valor de ${mFull(m).split(" de ")[0]} apagado`);return}
   if(ev>tv){delete row.dataset.saved;toast("A parte da empresa é maior do que o total.");return}
-  const net=Math.round((tv-ev)*100)/100;nb.caixa[m]={t:tv,e:ev};delete nb.amounts[m];if(Math.abs(net-baseAmt(nb,m))>.004)nb.amounts[m]=net;nb.paid[m]=true;nb.iconf[m]=true;
+  const net=Math.round((tv-ev)*100)/100;nb.caixa[m]={t:tv,e:ev};delete nb.amounts[m];if(Math.abs(net-baseAmt(nb,m))>.004)nb.amounts[m]=net;nb.paid[m]=true;nb.iconf[prevK(m)]=true;
   save(nb);toast(`Para casa ${eur(net)}${ev>0?` · levantar ${eur(ev)} para a empresa`:""}`)}
 function renderIncAsk(){const box=document.getElementById("incAskBox");if(!box)return;const ce=cxEdit&&cxEdit.split("|"), cb=ce&&bills.find(x=>x.id===ce[0]);
   const k=ce?ce[1]:incForce||incAskMonth(), L=cb?[cb]:k?incAskList(k):[];
@@ -5286,7 +5292,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v187";
+const APPV="casa-v188";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
