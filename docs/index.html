@@ -2448,6 +2448,7 @@ function renderBills(){
         <label class="f">Valor (€)<input name="v" type="number" min="0" step="0.01" inputmode="decimal" placeholder="35,90" value="${mode==="edit"?x.v:""}" required></label>
         <label class="f">Dia<input name="d" type="number" min="1" max="31" inputmode="numeric" value="${x.d||""}"></label>
         <label class="f wide">Onde / o quê (opcional)<input name="n" maxlength="40" placeholder="ex.: Continente" value="${mode==="edit"?esc(x.n||""):""}"></label>
+        ${accounts().length?`<label class="f wide">Pago com (desconta no saldo)<select name="bk"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${((mode==="edit"?x.abk||(x.ab?b.acc:""):b.acc)||"")===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
         ${suggest(b).length?`<div class="chips wide">${suggest(b).map(n=>`<button type="button" class="chip" data-note="${esc(n)}">${esc(n)}</button>`).join("")}</div>`:""}
         ${mode==="add"?`<button class="btn wide" type="submit">Juntar gasto</button>`:`<button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelspend="1">Cancelar</button><button class="btn danger wide" type="button" data-delspend="${b.id}|${x.i}">Apagar este gasto</button>`}
       </form>`;
@@ -2462,7 +2463,7 @@ function renderBills(){
         <div class="amt">${left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${left>=0?"disponível":"acima"}</small></div>
       </div>
       <div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>
-      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
+      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
@@ -2640,7 +2641,7 @@ document.addEventListener("click",e=>{
   else if(t.dataset.spend){openBud=t.dataset.spend;renderBills();const f=document.querySelector(`[data-spendform="${openBud}"] [name=v]`);if(f)f.focus()}
   else if(t.dataset.delspend){const [id,i]=t.dataset.delspend.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
     const L=[...spends(b,k)], x=L[+i];if(!x||!confirm(`Apagar o gasto de ${eur(+x.v||0)}${x.n?" ("+x.n+")":""}?`))return;
-    L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});spendBank(b,-(+x.ab||0));toast("Gasto apagado")}
+    L.splice(+i,1);editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});spendBank(b,-(+x.ab||0),x.abk||b.acc);toast("Gasto apagado")}
 });
 /* Contas bancárias: juntar, atualizar o saldo, apagar */
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
@@ -2708,7 +2709,7 @@ function rdAsk(id,k){const b=bills.find(x=>x.id===id);if(!b)return;const r=rdSta
     else if(e.target.closest("[data-rdgo]")){close();show("despesas")}});document.body.appendChild(o)}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.rdask.split("|");rdAsk(id,k)},true);
 /* Gastos do mês com banco escolhido: cada gasto desconta no saldo (s.ab = valor descontado) */
-function spendBank(b,d){if(!b.acc||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===b.acc&&x.kind==="account");if(!a)return;
+function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===accId&&x.kind==="account");if(!a)return;
   const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),1200)}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
@@ -2716,7 +2717,9 @@ document.addEventListener("submit",e=>{
   const [id,i]=ref.split("|"), b=bills.find(x=>x.id===id), k=mKey();if(!b)return;
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
-  const L=[...spends(b,k)], old=L[+i]||{}, had=+old.ab||0, ab=b.acc?v:had;L[+i]={v,d,...(n?{n}:{}),...(ab?{ab}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});if(b.acc)spendBank(b,v-had);toast("Gasto corrigido");
+  const L=[...spends(b,k)], old=L[+i]||{}, had=+old.ab||0, oldK=old.abk||(had?b.acc:""), bk=e.target.bk?e.target.bk.value:oldK;
+  L[+i]={v,d,...(n?{n}:{}),...(bk?{ab:v,abk:bk}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
+  if(oldK===bk)spendBank(b,v-had,bk);else{if(had)spendBank(b,-had,oldK);if(bk)spendBank(b,v,bk)}toast("Gasto corrigido");
 });
 /* Juntar um gasto a uma despesa de "vários gastos" */
 document.addEventListener("submit",e=>{
@@ -2724,8 +2727,9 @@ document.addEventListener("submit",e=>{
   const b=bills.find(x=>x.id===id);if(!b)return;
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
-  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{}),...(b.acc?{ab:v}:{})}]}});
-  toast(`${eur(v)} em ${b.name}`);if(b.acc)spendBank(b,v);
+  const bk=e.target.bk?e.target.bk.value:(b.acc||"");
+  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{}),...(bk?{ab:v,abk:bk}:{})}]}});
+  toast(`${eur(v)} em ${b.name}`);if(bk)spendBank(b,v,bk);
 });
 document.getElementById("payAll").addEventListener("click",()=>{
   const k=mKey(), todo=fixas().filter(b=>!isPaid(b,k));
@@ -5322,7 +5326,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v193";
+const APPV="casa-v194";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
