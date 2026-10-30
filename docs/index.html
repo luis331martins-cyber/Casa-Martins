@@ -2316,7 +2316,17 @@ if(`${viewY}-${String(viewM+1).padStart(2,"0")}`<START){viewY=+START.slice(0,4);
 const mKey=()=>`${viewY}-${String(viewM+1).padStart(2,"0")}`;
 /* 3.589,57 € — ponto nos milhares e vírgula nos cêntimos (o formato do sistema não separa números de 4 algarismos) */
 const eur=v=>{v=Math.round((+v||0)*100)/100;const [i,d]=Math.abs(v).toFixed(2).split(".");return(v<0?"−":"")+i.replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+d+"\u00a0€"};
-async function putBill(b){
+/* Saldos que se atualizam: quando uma conta (ou receita) com banco escolhido (b.acc) fica paga/recebida num mês, desconta (ou soma)
+   o valor ao saldo desse banco; se se desmarcar, repõe. b.accd[mês] = valor já aplicado (0 = já estava no saldo quando se escolheu o banco). */
+function accSync(b){if(!b||!b.acc||b.kind==="account"||isBud(b))return b;const a=bills.find(x=>x.id===b.acc&&x.kind==="account");if(!a)return b;
+  const accd={...(b.accd||{})};let d=0;
+  Object.keys(b.paid||{}).forEach(k=>{if(b.paid[k]===true&&accd[k]==null&&k>=START){const v=Math.round(monthAmt(b,k)*100)/100;accd[k]=v;d+=isInc(b)?v:-v}});
+  Object.keys(accd).forEach(k=>{if(!(b.paid&&b.paid[k]===true)){d-=isInc(b)?accd[k]:-accd[k];delete accd[k]}});
+  if(Math.abs(d)>0.004){const na={...a,bal:Math.round(((+a.bal||0)+d)*100)/100,at:Date.now()};const ia=bills.findIndex(x=>x.id===a.id);bills[ia]=na;
+    if(store){stampLb(na);store.collection("bills").doc(na.id).set(na).catch(()=>{})}
+    setTimeout(()=>toast(`${a.name}: ${d>0?"+":"−"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),350)}
+  return {...b,accd}}
+async function putBill(b){if(b&&b.acc)b=accSync(b);
   const i=bills.findIndex(x=>x.id===b.id); if(i>=0)bills[i]=b; else bills.push(b); renderBills();
   if(store){stampLb(b);try{await store.collection("bills").doc(b.id).set(b)}catch(e){toast("Não foi possível guardar. Tenta outra vez.")}} else billLocal.save();
 }
@@ -2415,6 +2425,7 @@ function renderBills(){
       ${isInc(b)?"":`<label class="tick wide"><input type="checkbox" class="switch" name="t" ${isBud(b)?"checked":""}> Vários gastos ao longo do mês (ex.: supermercado)</label>`}
       ${isBud(b)?"":isInc(b)?`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askInc(b)?"checked":""}> O valor muda todos os meses: perguntar no último dia útil do mês</label>`:`<label class="tick wide"><input type="checkbox" class="switch" name="ask" ${askBill(b)?"checked":""}> O valor muda todos os meses: pedir para o confirmar</label>
       <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
+      ${isBud(b)||!accounts().length?"":`<label class="f wide">${isInc(b)?"Entra na conta":"Sai da conta"} (o saldo atualiza-se ao marcar)<select name="acc"><option value="">Não atualizar o saldo</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`}
       ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
@@ -2728,6 +2739,7 @@ document.addEventListener("submit",e=>{
   if(e.target.askd){const ad=parseInt(e.target.askd.value)||0;nb.askDay=ad>0?Math.min(ad,31):0}
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
+  if(e.target.acc){const a=e.target.acc.value;if(a!==(b.acc||"")){if(a){nb.acc=a;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}else{delete nb.acc;delete nb.accd}}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
   const amounts={...(b.amounts||{})};
@@ -5301,7 +5313,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v189";
+const APPV="casa-v190";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
