@@ -284,6 +284,9 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .catr .cico{width:40px!important;height:40px!important;flex:none;border-radius:10px}.catr .cico svg{width:22px!important;height:22px!important}
 .catr .ct{display:flex;flex-direction:column;min-width:0}.catr .ct b{font-size:17px;font-weight:600}.catr .ct small{font-size:13px;color:var(--muted)}
 .catr .hlb{margin-left:auto}.catr .hlgo{margin-left:auto;color:var(--muted);font-size:20px}.catr .hlb+.hlgo{margin-left:10px}
+#shop .hlgrp{margin-bottom:10px}#shop .hlhead{font-size:17px;padding:10px 14px}#shop .hlhead .hlb{margin-left:auto}#shop .hlhead .hlch{margin-left:10px}
+.shopits .buyrow{background:transparent!important;border:0!important;border-top:1px solid rgba(255,255,255,.12)!important;border-radius:0!important}
+#tab-lista > .note{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -1888,7 +1891,8 @@ document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemf
   if(d.mchosen||MEAT.includes(d.cat))return;const w=resDefault(d);if(w===!d.cnt)return;if(w){delete d.cnt;d.use=true;d.res=0}else{d.cnt=true;delete d.use;delete d.res}
   const shop=f.s.value;paintDraft(k);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g){g.s.value=shop;const x=g.querySelector("[name=rv],[name=q]");if(x)x.focus()}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:"",s:""};let qLock=true, itemFormFn=null;const draft={p:null,m:null};
+const catSel={p:"",m:"",s:""};const shopFold=new Set();
+document.addEventListener("click",e=>{const b=e.target.closest("[data-shopfold]");if(!b)return;const c=b.dataset.shopfold;shopFold.has(c)?shopFold.delete(c):shopFold.add(c);render()});let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
 const SHOPCOL=[[/continente.*lidl|lidl.*continente/,"#e30613","#0050aa","#fff"],[/continente/,"#e30613","#e30613","#fff"],[/lidl/,"#0050aa","#0050aa","#ffe500"],
   [/armaz/,"#8e8e93","#8e8e93","#fff"],[/mercado da carne/,"#ffffff","#ffffff","#d0101b"],
@@ -2014,7 +2018,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   /* Cada loja é um ícone; lá dentro a lista dividida por categoria */
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   shop.innerHTML=!toBuy.length?`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`:
-    catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+[...CATS,...MEAT].map(c=>{const L=inShop.filter(i=>i.cat===c);return L.length?`<h3>${c}</h3>`+L.map(buyRow).join(""):""}).join(""):shopGrid(shopNames,byShop);
+    catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+[...new Set([...PCATS,...CATS,...MEAT])].map(c=>{const L=inShop.filter(i=>i.cat===c);if(!L.length)return"";const [g1,g2,ic]=CATICO[c]||CATICO.Despensa, shut=shopFold.has(c);
+      return `<div class="hlgrp${shut?"":" open"}"><button type="button" class="hlhead" data-shopfold="${c}"><span class="cico" style="width:34px;height:34px;border-radius:9px;background:linear-gradient(180deg,${g1},${g2});display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round">${ic}</svg></span><span>${c}</span><span class="hlb">${L.length}</span><span class="hlch">${shut?"⌄":"⌃"}</span></button>${shut?"":`<div class="shopits">${L.map(buyRow).join("")}</div>`}</div>`}).join(""):shopGrid(shopNames,byShop);
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
       <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
@@ -5336,7 +5341,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v196";
+const APPV="casa-v197";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
