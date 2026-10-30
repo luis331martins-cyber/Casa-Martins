@@ -260,6 +260,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .sprow+.sprow::before{content:"";position:absolute;top:0;left:58px;right:0;border-top:1px solid var(--line)}.sprow .spgo{margin-left:auto;color:var(--muted);font-size:20px}
 .spic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}.spic svg,.icbtn svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);flex:none;padding:0}.icbtn.off{background:#ff453a}.icbtn svg{width:22px;height:22px;stroke-width:2.4}
+.clits{display:flex;flex-direction:column;gap:2px;background:var(--fill);border-radius:10px;padding:8px 10px}.clits div{display:flex;justify-content:space-between;gap:10px}.clits b{white-space:nowrap}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -4005,13 +4006,17 @@ function clGuess(w){const t=noAcc(w);return t.match(/pastilh|disco|trav/)?CL_TYP
   t.match(/colet|escape|catalis|panela/)?"Escape / coletor":t.match(/embraiag/)?"Embraiagem":t.match(/amortec|suspens|rotula|braco/)?"Suspensão":t.match(/ar condic|a\/c|climatiz/)?"Ar condicionado":t.match(/lampad|farol|luz/)?"Luzes":t.match(/pintur|chapa|risco|amolg/)?"Chapa e pintura":t.match(/vidro|para-?brisas|escova/)?"Vidros":t.match(/lavag|limpez/)?"Limpeza":"Outra"}
 const carLogs=id=>bills.filter(b=>b.kind==="carlog"&&b.car===id).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 let editCl="", clAll="";
+const clItemsTxt=L=>(L||[]).map(i=>i.t+(i.v!=null?" — "+String(i.v.toFixed(2)).replace(".",","):"")).join("\n");
 function clForm(car,x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" data-clform="${car.id}|${x?x.id:"new"}" autocomplete="off" style="margin-top:6px">
+    <label class="btn ghost wide" role="button" style="text-align:center">📄 Ler a fatura (PDF ou foto)<input type="file" data-clfat="1" accept="application/pdf,.pdf,image/*" hidden></label>
+    <p class="note wide" data-clsay hidden style="margin:0"></p>
     <label class="f wide">O que foi feito<input name="w" required value="${x?esc(x.what):""}" placeholder="ex.: Pastilhas da frente, bateria nova" autocapitalize="sentences"></label>
     <label class="f">Tipo<select name="t">${CL_TYPES.map(([t,e])=>`<option value="${t}"${x&&x.type===t?" selected":""}>${e} ${t}</option>`).join("")}</select></label>
     <label class="f">Data<input name="d" type="date" value="${x?v(x.date):ymd(new Date())}"></label>
     <label class="f">Km<input name="k" type="number" min="0" inputmode="numeric" value="${x?v(x.km):car.km!=null?Math.round(car.km):""}" placeholder="opcional"></label>
     <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${x?v(x.value):""}" placeholder="opcional"></label>
     <label class="f wide">Oficina<input name="s" value="${x?v(x.shop):""}" placeholder="opcional" autocapitalize="words"></label>
+    <label class="f wide">Peças e trabalhos (um por linha, com o valor no fim se quiseres)<textarea name="it" rows="4" placeholder="ex.: Pastilhas de travão frente — 45,90&#10;Mão de obra — 30,00">${x?esc(clItemsTxt(x.items)):""}</textarea></label>
     <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: garantia 2 anos, peças originais"></label>
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-clcancel="1">Cancelar</button>
     ${x?`<button class="btn danger wide" type="button" data-cldel="${x.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Com data futura fica como marcada e vai para o calendário. Depois de guardar, podes juntar a fatura.</p>`}</form>`}
@@ -4020,12 +4025,12 @@ function carLogBlock(c){const L=carLogs(c.id), td=ymd(new Date()), y=String(new 
   return`<div class="clog"><div class="ch"><b>🔧 Manutenções e reparações</b><span>${spent?`${y}: ${eur(spent)}`:""}</span></div>
     ${show.map(x=>{if(x.id===editCl)return clForm(c,x);const plan=x.date&&x.date>td, open=clAll==="o"+x.id;
       return`<button type="button" class="cl${plan?" plan":""}" data-clopen="${x.id}"><span class="ce">${clEmo(x.type)}</span><span style="min-width:0"><b>${esc(x.what)}</b><small>${[plan?"📅 Marcada "+(daysTo(x.date)===1?"para amanhã":"para "+fmtD(x.date)):x.date?fmtD(x.date):"",x.km!=null?fmtN(x.km)+" km":"",x.shop?esc(x.shop):"",(x.files||[]).length?"📎":""].filter(Boolean).join(" · ")}</small></span><span class="cv">${x.value?eur(+x.value):""}</span></button>
-        ${open?`<div style="padding:0 0 8px 50px;display:flex;flex-direction:column;gap:6px;font-size:14px">${x.notes?`<div>📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}<div style="display:flex;gap:8px">${plan?`<button class="btn ghost" type="button" data-cldone="${x.id}">✓ Já está feito</button>`:""}<button class="btn ghost" type="button" data-cledit="${x.id}">Editar</button></div></div>`:""}`}).join("")}
+        ${open?`<div style="padding:0 0 8px 50px;display:flex;flex-direction:column;gap:6px;font-size:14px">${(x.items||[]).length?`<div class="clits">${x.items.map(i=>`<div><span>${esc(i.t)}</span>${i.v!=null?`<b>${eur(i.v)}</b>`:""}</div>`).join("")}</div>`:""}${x.notes?`<div>📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}<div style="display:flex;gap:8px">${plan?`<button class="btn ghost" type="button" data-cldone="${x.id}">✓ Já está feito</button>`:""}<button class="btn ghost" type="button" data-cledit="${x.id}">Editar</button></div></div>`:""}`}).join("")}
     ${L.length>5&&clAll!==c.id?`<button class="back" type="button" data-clall="${c.id}" style="align-self:flex-start">Ver todas (${L.length}) ›</button>`:""}
     ${editCl==="new|"+c.id?clForm(c,null):`<button class="back" type="button" data-cladd="${c.id}" style="align-self:flex-start">+ Juntar manutenção ou reparação</button>`}</div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const ds=t.dataset;
   if(ds.cladd){editCl="new|"+ds.cladd;renderCars();setTimeout(()=>{const f=document.querySelector(`[data-clform="${ds.cladd}|new"] [name=w]`);if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}},40)}
-  else if(ds.clcancel){editCl="";renderCars()}
+  else if(ds.clcancel){editCl="";clKeep=null;renderCars()}
   else if(ds.clall){clAll=ds.clall;renderCars()}
   else if(ds.clopen){clAll=clAll==="o"+ds.clopen?"":"o"+ds.clopen;renderCars()}
   else if(ds.cledit){editCl=ds.cledit;renderCars()}
@@ -4037,11 +4042,36 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.clform;if(!ref
   const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(/\s/g,"").replace(",","."))};
   const old=id==="new"?null:bills.find(b=>b.id===id);const x={...(old||{}),id:old?old.id:uid(),kind:"carlog",car:carId,name:`${car.name}: ${f.w.value.trim()}`,what:f.w.value.trim(),type:f.t.value};
   for(const [k,v] of [["date",f.d.value||null],["km",num(f.k.value)],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete x[k];else x[k]=v;
+  {const its=f.it.value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const m=l.match(/^(.*?)[\s—–-]+(-?\d+(?:[.,]\d{1,2})?)\s*€?$/);return m&&/[a-zà-ú]/i.test(m[1])?{t:m[1].trim(),v:parseFloat(m[2].replace(",","."))}:{t:l}}).slice(0,25);
+    if(its.length)x.items=its;else delete x.items}
+  if(clKeep&&id==="new"){const file=clKeep;clKeep=null;setTimeout(()=>attachFile(x.id,file),400)}else if(clKeep&&old){const file=clKeep;clKeep=null;setTimeout(()=>attachFile(old.id,file),400)}
   /* marcada no futuro: vai para o calendário (com lembrete); feita: atualiza os km do carro se forem maiores */
   if(x.date&&x.date>ymd(new Date())){const evId=x.ev||"cl-"+x.id;x.ev=evId;events=events.filter(y=>y.id!==evId);putEv({id:evId,date:x.date,time:"",title:`🔧 ${car.name}: ${x.what}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})})}
   else if(x.ev){delEv(x.ev);delete x.ev}
   if(x.km!=null&&(car.km==null||x.km>car.km)&&(!x.date||x.date<=ymd(new Date())))putBill({...car,km:x.km,kmAt:Date.now()});
   editCl="";clAll="o"+x.id;putBill(x);renderCars();toast(x.ev?"Marcada e posta no calendário":"Guardada. Toca nela para juntar a fatura.")});
+/* Fatura da oficina: tira as linhas com peças/trabalhos e valor, o total, os km, a data e a oficina */
+var clKeep=null;
+function parseFatura(txt){const L=String(txt||"").split(/\n/).map(l=>l.replace(/\s+/g," ").trim()).filter(Boolean), money=t=>{t=t.replace(/\s/g,"");if(/,\d{2}$/.test(t))t=t.replace(/\./g,"").replace(",",".");return parseFloat(t)};
+  const SKIP=/total|subtotal|iva|base|incid[eê]ncia|nif|contribuinte|saldo|pagamento|multibanco|troco|desconto global|taxa|valor a pagar|n\.?º|fatura|recibo|data|cliente|matr[ií]cula|telef|morada|c[oó]digo postal|iban|capital social|conservat[oó]ria|p[aá]gina/i;
+  const items=[];let total=null;
+  L.forEach(l=>{const m=l.match(/(-?\d{1,3}(?:[ .]\d{3})*,\d{2}|-?\d+\.\d{2})\s*€?\s*$/);if(!m)return;const v=money(m[1]);if(isNaN(v))return;
+    if(/total/i.test(l)&&!/sub/i.test(l)){if(/pagar|geral|documento|fatura|^total\s/i.test(l)||total==null)total=v;return}
+    if(SKIP.test(l))return;let t=l.slice(0,m.index).replace(/^[\d\s.,x×*-]+/,"").replace(/(\s+\d+(?:[.,]\d+)?(?:\s*(?:un|uni|un\.|l|lt|h|%))?)+\s*$/i,"").replace(/\s*[|€]+\s*$/,"").trim();
+    t=t.replace(/^(?:[A-Z0-9./-]*\d[A-Z0-9./-]*|[A-Z]{1,5})\s+(?=\S+\s)/,"");if(t.length<3||!/[a-zà-ú]{3}/i.test(t))return;items.push({t:t[0].toUpperCase()+t.slice(1).toLowerCase(),v})});
+  const km=(String(txt).match(/(?:km|quil[oó]metros)[^\d]{0,12}(\d{1,3}(?:[ .]?\d{3})+)|(\d{1,3}(?:[ .]\d{3})+)\s*km/i)||[]), kmv=km[1]||km[2];
+  const dm=String(txt).match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})/), date=dm?`${dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`:null;
+  const shop=(L.slice(0,6).find(l=>/lda|unipessoal|s\.?a\.?$|auto|oficina|garag|motor|pneus|servi[cç]os/i.test(l)&&!/\d{5,}/.test(l))||"").slice(0,40);
+  return {items:items.slice(0,25),total:total!=null?total:items.length?Math.round(items.reduce((t,i)=>t+i.v,0)*100)/100:null,km:kmv?parseInt(kmv.replace(/\D/g,"")):null,date,shop}}
+document.addEventListener("change",async e=>{const inp=e.target.closest&&e.target.closest("[data-clfat]");if(!inp)return;const file=inp.files&&inp.files[0];inp.value="";if(!file)return;
+  const form=inp.closest("form"), say=t=>{const p=form.querySelector("[data-clsay]");p.hidden=!t;p.textContent=t};const pdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name);let txt="";
+  try{if(pdf){say("A ler o PDF…");txt=await pdfText(file);if(txt.replace(/\s/g,"").length<30){say("Este PDF não tem texto (é uma digitalização): tira-lhe uma foto e escolhe a foto.");return}}
+    else{say("A ler a fotografia… (da primeira vez demora mais)");txt=await ocrImage(await shrinkDoc(file))}}catch(err){say("Não foi possível ler o ficheiro. Verifica a internet e tenta outra vez.");return}
+  const f=parseFatura(txt);clKeep=file;
+  const set=(k,v)=>{const el=form[k];if(!el||v==null||v==="")return;el.value=v;const l=el.closest("label");if(l){l.style.outline="2px solid #34c759";l.style.borderRadius="10px"}};
+  if(f.items.length){set("it",clItemsTxt(f.items));if(!form.w.value.trim()){const w=f.items.slice(0,3).map(i=>i.t).join(", ");set("w",w);if(!form.dataset.typed)form.t.value=clGuess(f.items.map(i=>i.t).join(" "))}}
+  set("v",f.total);set("k",f.km);set("d",f.date);if(!form.s.value.trim())set("s",f.shop);
+  say(f.items.length?`📄 Encontrei ${f.items.length} linha${f.items.length===1?"":"s"}${f.total?" · total "+eur(f.total):""}. Confirma, corrige o que for preciso e toca em Guardar. A fatura fica nos anexos.`:"Não encontrei as linhas da fatura. Escreve as peças e trabalhos à mão; a fatura fica nos anexos.")});
 /* ---------- Jogos: recordes partilhados (kind:"game") ----------
    lower=true quando menos é melhor (tempo do Sudoku, jogadas da Memória) */
 function recGet(id){const x=bills.find(b=>b.id===id);return x?{best:+x.best,by:x.by||""}:null}
@@ -5198,7 +5228,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v178";
+const APPV="casa-v179";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
