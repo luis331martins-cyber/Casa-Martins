@@ -2457,7 +2457,7 @@ function renderBills(){
       <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
       ${!accounts().length?"":`<label class="f wide">${isInc(b)?"Entra na conta":isBud(b)?"Os gastos saem da conta":"Sai da conta"} (o saldo atualiza-se ${isBud(b)?"a cada gasto":"ao marcar"})<select name="acc"><option value="">Não atualizar o saldo</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`}
       ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
-      ${isInc(b)||isBud(b)?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
+      ${isInc(b)||isBud(b)||!b.acm?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
@@ -5399,7 +5399,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v203";
+const APPV="casa-v204";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
