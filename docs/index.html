@@ -291,7 +291,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .clrows{display:flex;flex-direction:column;gap:6px}.clrow{display:grid;grid-template-columns:1fr 78px;grid-template-areas:"n n" "v g";gap:6px;align-items:center;background:var(--fill);border-radius:10px;padding:8px;position:relative}
 .clrow [data-it="n"]{grid-area:n;padding-right:30px}.clrow [data-it="v"]{grid-area:v;text-align:right}.clrow [data-it="g"]{grid-area:g;grid-column:1/-1}
 .clrow{grid-template-columns:96px 1fr;grid-template-areas:"n n" "v g"}.clrow [data-it="g"]{grid-column:auto}
-.clrow input,.clrow select{min-width:0;font-size:16px;padding:8px;border-radius:8px}.clx{position:absolute;top:12px;right:12px;background:none;color:var(--muted);font-size:15px;padding:0}
+.clrow input,.clrow select{min-width:0;font-size:16px;padding:8px;border-radius:8px}.clx{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:#ff453a;color:#fff;font-size:13px;font-weight:700;padding:0;display:grid;place-items:center}
 .clits small.clw{display:block;font-size:12px;font-weight:600}.clw.ok{color:var(--good)}.clw.warn{color:var(--warn)}.clw.bad{color:var(--bad)}
 #mLabel .mrange{display:block;font-size:13px;font-weight:500;color:var(--muted);text-align:center;margin-top:2px}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -4142,7 +4142,7 @@ function clForm(car,x){const v=y=>y==null?"":esc(y);return`<form class="bill-edi
     <label class="f">Km<input name="k" type="number" min="0" inputmode="numeric" value="${x?v(x.km):car.km!=null?Math.round(car.km):""}" placeholder="opcional"></label>
     <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${x?v(x.value):""}" placeholder="opcional"></label>
     <label class="f wide">Oficina<input name="s" value="${x?v(x.shop):""}" placeholder="opcional" autocapitalize="words"></label>
-    <div class="wide clitwrap"><div class="clt">Peças e trabalhos <small>(com a garantia de cada peça)</small></div><div class="clrows" data-clrows>${clRowsHTML(x&&x.items)}</div>
+    <div class="wide clitwrap"><div class="clt">Peças e trabalhos <small>(✕ tira a linha; a fatura continua guardada nos anexos)</small></div><div class="clrows" data-clrows>${clRowsHTML(x&&x.items)}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="chip" data-claddit="1">+ Peça ou trabalho</button><button type="button" class="chip" data-clg2="1">🛡️ Peças com 2 anos de garantia</button></div></div>
     <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: garantia 2 anos, peças originais"></label>
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-clcancel="1">Cancelar</button>
@@ -5399,7 +5399,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v202";
+const APPV="casa-v203";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
