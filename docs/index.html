@@ -292,6 +292,8 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .clrow [data-it="n"]{grid-area:n;padding-right:30px}.clrow [data-it="v"]{grid-area:v;text-align:right}.clrow [data-it="g"]{grid-area:g;grid-column:1/-1}
 .clrow{grid-template-columns:96px 1fr;grid-template-areas:"n n" "v g"}.clrow [data-it="g"]{grid-column:auto}
 .clrow input,.clrow select{min-width:0;font-size:16px;padding:8px;border-radius:8px}.clx{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:#ff453a;color:#fff;font-size:13px;font-weight:700;padding:0;display:grid;place-items:center}
+.clv{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap}.clv b{font-size:15px}.clv small{font-size:11.5px;color:var(--muted);font-weight:400}
+.cltot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid rgba(255,255,255,.15);margin-top:6px;padding-top:8px}.cltot span{font-weight:600}.cltot b{font-size:19px;font-weight:800}
 .clits small.clw{display:block;font-size:12px;font-weight:600}.clw.ok{color:var(--good)}.clw.warn{color:var(--warn)}.clw.bad{color:var(--bad)}
 #mLabel .mrange{display:block;font-size:13px;font-weight:500;color:var(--muted);text-align:center;margin-top:2px}
 .bill .amt:has(.paybtn){display:flex;flex-direction:column;align-items:flex-end}.paybtn{margin-top:6px;white-space:nowrap;padding:6px 14px;border-radius:999px;background:#34c759;color:#fff;font-weight:600;font-size:14px;box-shadow:0 2px 6px rgba(52,199,89,.35)}
@@ -4127,7 +4129,7 @@ const carLogs=id=>bills.filter(b=>b.kind==="carlog"&&b.car===id).sort((a,b)=>(b.
 let editCl="", clAll="";
 /* Peças e trabalhos da reparação: linhas com nome, valor e garantia (anos) */
 const CLG=[["","Sem garantia"],["0.5","6 meses"],["1","1 ano"],["2","2 anos"],["3","3 anos"],["5","5 anos"]];
-const clRow=i=>`<div class="clrow"><input data-it="n" value="${esc(i&&i.t||"")}" placeholder="Peça ou trabalho"><input data-it="v" inputmode="decimal" value="${i&&i.v!=null?String((+i.v).toFixed(2)).replace(".",","):""}" placeholder="€"><select data-it="g">${CLG.map(([v,t])=>`<option value="${v}"${String(i&&i.g||"")===v?" selected":""}>${t}</option>`).join("")}</select><button type="button" class="clx" data-clxit="1" aria-label="Tirar">✕</button></div>`;
+const clRow=i=>`<div class="clrow"><input data-it="n" value="${esc(i&&i.t||"")}" placeholder="Peça ou trabalho"><input data-it="v" inputmode="decimal" value="${i&&i.v!=null?String((+i.v).toFixed(2)).replace(".",","):""}" placeholder="€ c/ IVA"><select data-it="g">${CLG.map(([v,t])=>`<option value="${v}"${String(i&&i.g||"")===v?" selected":""}>${t}</option>`).join("")}</select><button type="button" class="clx" data-clxit="1" aria-label="Tirar">✕</button></div>`;
 const clRowsHTML=L=>(L&&L.length?L:[null]).map(clRow).join("");
 const clWarEnd=(date,g)=>{if(!date||!g)return null;const d=new Date(date+"T12:00");d.setMonth(d.getMonth()+Math.round(+g*12));return ymd(d)};
 document.addEventListener("click",e=>{const a=e.target.closest("[data-claddit],[data-clxit],[data-clg2]");if(!a)return;e.preventDefault();const box=a.closest("form").querySelector("[data-clrows]");
@@ -4154,7 +4156,7 @@ function carLogBlock(c){const L=carLogs(c.id), td=ymd(new Date()), y=String(new 
   return`<div class="clog"><div class="ch"><b>🔧 Manutenções e reparações</b><span>${spent?`${y}: ${eur(spent)}`:""}</span></div>
     ${show.map(x=>{if(x.id===editCl)return clForm(c,x);const plan=x.date&&x.date>td, open=clAll==="o"+x.id;
       return`<button type="button" class="cl${plan?" plan":""}" data-clopen="${x.id}"><span class="ce">${clEmo(x.type)}</span><span style="min-width:0"><b>${esc(x.what)}</b><small>${[plan?"📅 Marcada "+(daysTo(x.date)===1?"para amanhã":"para "+fmtD(x.date)):x.date?fmtD(x.date):"",x.km!=null?fmtN(x.km)+" km":"",x.shop?esc(x.shop):"",(x.files||[]).length?"📎":""].filter(Boolean).join(" · ")}</small></span><span class="cv">${x.value?eur(+x.value):""}</span></button>
-        ${open?`<div style="padding:0 0 8px 50px;display:flex;flex-direction:column;gap:6px;font-size:14px">${(x.items||[]).length?`<div class="clits">${x.items.map(i=>{const we=clWarEnd(x.date,i.g), dd=we?daysTo(we):null;return `<div><span>${esc(i.t)}${we?`<small class="clw ${dd<0?"bad":dd<=30?"warn":"ok"}">🛡️ ${dd<0?"garantia acabou":"garantia até "+fmtD(we)}</small>`:""}</span>${i.v!=null?`<b>${eur(i.v)}</b>`:""}</div>`}).join("")}</div>`:""}${x.notes?`<div>📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}<div style="display:flex;gap:8px">${plan?`<button class="btn ghost" type="button" data-cldone="${x.id}">✓ Já está feito</button>`:""}<button class="btn ghost" type="button" data-cledit="${x.id}">Editar</button></div></div>`:""}`}).join("")}
+        ${open?`<div style="padding:0 0 8px 50px;display:flex;flex-direction:column;gap:6px;font-size:14px">${(x.items||[]).length?`<div class="clits">${x.items.map(i=>{const we=clWarEnd(x.date,i.g), dd=we?daysTo(we):null;return `<div><span>${esc(i.t)}${we?`<small class="clw ${dd<0?"bad":dd<=30?"warn":"ok"}">🛡️ ${dd<0?"garantia acabou":"garantia até "+fmtD(we)}</small>`:""}</span>${i.v!=null?`<span class="clv"><b>${eur(i.v)}</b><small>s/ IVA ${eur(Math.round(i.v/1.23*100)/100)}</small></span>`:""}</div>`}).join("")}${x.value?`<div class="cltot"><span>Total da fatura</span><b>${eur(+x.value)}</b></div>`:""}</div>`:""}${x.notes?`<div>📝 ${esc(x.notes)}</div>`:""}${attBlock(x)}<div style="display:flex;gap:8px">${plan?`<button class="btn ghost" type="button" data-cldone="${x.id}">✓ Já está feito</button>`:""}<button class="btn ghost" type="button" data-cledit="${x.id}">Editar</button></div></div>`:""}`}).join("")}
     ${L.length>5&&clAll!==c.id?`<button class="back" type="button" data-clall="${c.id}" style="align-self:flex-start">Ver todas (${L.length}) ›</button>`:""}
     ${editCl==="new|"+c.id?clForm(c,null):`<button class="back" type="button" data-cladd="${c.id}" style="align-self:flex-start">+ Juntar manutenção ou reparação</button>`}</div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const ds=t.dataset;
@@ -5401,7 +5403,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v208";
+const APPV="casa-v209";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
