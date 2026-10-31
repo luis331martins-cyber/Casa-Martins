@@ -2525,7 +2525,7 @@ function renderBills(){
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.askPay?"Uma vez por mês · marca quando comprares":b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
-    when+=only;
+    when+=only;if(!p&&!isInc(b))when+=` · <span class="loanlink" data-payask="${b.id}" role="button">✓ Já paguei ›</span>`;
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
     if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
     const cd=typeof cards==="function"&&cards().find(c=>c.bill===b.id);
@@ -2741,9 +2741,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");i
 /* Gastos do mês com banco escolhido: cada gasto desconta no saldo (s.ab = valor descontado) */
 function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===accId&&x.kind==="account");if(!a)return;
   const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),1200)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-payask]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.payask);if(b)payAsk(b,mKey())},true);
 /* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
 function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
-  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: comprei</div><div class="rdm">${esc(mFull(k))}</div>
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: ${b.askPay?"comprei":"já paguei"}</div><div class="rdm">${esc(mFull(k))}${b.dd?" · fica paga já; a app deixa de esperar o débito este mês":""}</div>
     <label class="f">Quanto pagaste (€)<input id="paV" type="text" inputmode="decimal" value="${v0}"></label>
     ${accounts().length?`<label class="f">Pago com (desconta no saldo)<select id="paA"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
     <button type="button" class="btn" data-pa="ok">✓ Guardar</button><button type="button" class="btn ghost" data-pa="x">Cancelar</button></div>`;
@@ -2830,7 +2831,7 @@ document.addEventListener("change",e=>{
   const b=bills.find(x=>x.id===id); if(!b)return;
   const paid={...(b.paid||{})}; const k=mKey(), nb={...b};
   /* contas confirmadas na compra (ex.: bilha de gás): pede o valor pago */
-  if(e.target.checked&&b.askPay){e.target.checked=false;payAsk(b,k);return}
+  if(e.target.checked&&!isInc(b)){e.target.checked=false;payAsk(b,k);return}
   /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   if(!e.target.checked&&b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}
@@ -5399,7 +5400,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v204";
+const APPV="casa-v205";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
