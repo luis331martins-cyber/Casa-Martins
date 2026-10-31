@@ -2741,8 +2741,9 @@ function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";c
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-pa]");if(ev.target!==o&&!q)return;if(!q||q.dataset.pa==="x"){o.remove();renderBills();return}
     const n=numIn(o.querySelector("#paV").value);if(isNaN(n)||n<0){toast("Escreve o valor");return}const sel=o.querySelector("#paA"), acc=sel?sel.value:"";o.remove();
     const nb={...b,amounts:{...(b.amounts||{})},paid:{...(b.paid||{}),[k]:true}};if(Math.abs(n-baseAmt(b,k))>.004)nb.amounts[k]=n;else delete nb.amounts[k];
-    if(acc&&acc!==b.acc){nb.acc=acc;const accd={...(b.accd||{})};Object.keys(nb.paid).forEach(m=>{if(m!==k&&nb.paid[m]===true&&accd[m]==null)accd[m]=0});nb.accd=accd}
-    else if(!acc&&b.acc){nb.accd={...(b.accd||{}),[k]:0}}
+    /* este mês desconta sempre no banco escolhido (apaga marcas antigas de "já estava no saldo") */
+    {const accd={...(b.accd||{})};delete accd[k];if(acc){if(acc!==b.acc)Object.keys(nb.paid).forEach(m=>{if(m!==k&&nb.paid[m]===true&&accd[m]==null)accd[m]=0});nb.acc=acc;nb.accd=accd}
+     else{nb.accd={...accd,[k]:0}}}
     putBill(nb);if(!acc)toast(`${b.name}: ${eur(n)} pago`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#paV");if(i){i.focus();i.select()}},50)}
 /* Corrigir um gasto já registado */
@@ -2824,6 +2825,7 @@ document.addEventListener("change",e=>{
   /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   if(!e.target.checked&&b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}
+  if(!e.target.checked&&!b.acc&&nb.accd&&nb.accd[k]!=null){nb.accd={...nb.accd};delete nb.accd[k]}
   nb.paid=paid;putBill(nb);
 });
 document.getElementById("mPrev").onclick=()=>{if(mKey()<=START)return;viewM--;if(viewM<0){viewM=11;viewY--}editBill="";editSpend="";renderBills()};
@@ -5363,7 +5365,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v199";
+const APPV="casa-v200";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
