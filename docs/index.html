@@ -2380,6 +2380,8 @@ function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
   bills.filter(b=>b.gasMig&&!b.fix2).forEach(b=>{const n={...b,fix2:1};
     if(/luz|eletric/i.test(b.name||"")){delete n.kind;delete n.gasMig;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;n.dd=true;if(!n.day)n.needDay=1}
     else n.name="Galp Gás";putBill(n)});
+  /* Pedido (31/10): a bilha é uma conta do mês (sem dia), confirmada com o valor quando se compra */
+  bills.filter(b=>b.kind==="budget"&&b.gasMig&&!b.gas3).forEach(b=>{const n={...b,gas3:1,askPay:1,day:0};delete n.kind;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;putBill(n)});
   /* acerto com a Mãe: Água (SMAS) paga pelos pais e Medicare com metade paga pela Mãe, se ainda não estiver ligado */
   if(!bills.some(b=>b.ac||b.acAuto)){const ag=bills.find(b=>!b.kind&&/smas|[aá]gua/i.test(b.name||"")), md=bills.find(b=>!b.kind&&/medicare/i.test(b.name||""));
     if(ag&&md){putBill({...ag,acm:"all",ac:"Mãe",acAuto:1});putBill({...md,acm:"half",ac:"Mãe",acAuto:1})}}}
@@ -2507,7 +2509,7 @@ function renderBills(){
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
-    let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
+    let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.askPay?"Uma vez por mês · marca quando comprares":b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
     when+=only;
@@ -2799,10 +2801,15 @@ document.getElementById("bImportBtn").addEventListener("click",()=>{
 document.addEventListener("change",e=>{
   const id=e.target.dataset.pay; if(!id)return;
   const b=bills.find(x=>x.id===id); if(!b)return;
-  const paid={...(b.paid||{})}; const k=mKey();
+  const paid={...(b.paid||{})}; const k=mKey(), nb={...b};
+  /* contas confirmadas na compra (ex.: bilha de gás): pede o valor pago */
+  if(e.target.checked&&b.askPay){const v=prompt(`Quanto pagaste (${b.name})? €`,String(Math.round(monthAmt(b,k)*100)/100).replace(".",","));
+    if(v===null){e.target.checked=false;return}const n=numIn(v);if(isNaN(n)||n<0){e.target.checked=false;toast("Valor inválido");return}
+    nb.amounts={...(b.amounts||{})};if(Math.abs(n-baseAmt(b,k))>.004)nb.amounts[k]=n;else delete nb.amounts[k]}
   /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
-  putBill({...b,paid});
+  if(!e.target.checked&&b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}
+  nb.paid=paid;putBill(nb);
 });
 document.getElementById("mPrev").onclick=()=>{if(mKey()<=START)return;viewM--;if(viewM<0){viewM=11;viewY--}editBill="";editSpend="";renderBills()};
 document.getElementById("mNext").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}editBill="";editSpend="";renderBills()};
@@ -5341,7 +5348,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v197";
+const APPV="casa-v198";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
