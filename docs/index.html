@@ -294,6 +294,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .clrow input,.clrow select{min-width:0;font-size:16px;padding:8px;border-radius:8px}.clx{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:#ff453a;color:#fff;font-size:13px;font-weight:700;padding:0;display:grid;place-items:center}
 .clits small.clw{display:block;font-size:12px;font-weight:600}.clw.ok{color:var(--good)}.clw.warn{color:var(--warn)}.clw.bad{color:var(--bad)}
 #mLabel .mrange{display:block;font-size:13px;font-weight:500;color:var(--muted);text-align:center;margin-top:2px}
+.bill .amt:has(.paybtn){display:flex;flex-direction:column;align-items:flex-end}.paybtn{margin-top:6px;white-space:nowrap;padding:6px 14px;border-radius:999px;background:#34c759;color:#fff;font-weight:600;font-size:14px;box-shadow:0 2px 6px rgba(52,199,89,.35)}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -2525,7 +2526,7 @@ function renderBills(){
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.askPay?"Uma vez por mês · marca quando comprares":b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
-    when+=only;if(!p&&!isInc(b))when+=` · <span class="loanlink" data-payask="${b.id}" role="button">✓ Já paguei ›</span>`;
+    when+=only;
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
     if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
     const cd=typeof cards==="function"&&cards().find(c=>c.bill===b.id);
@@ -2538,7 +2539,7 @@ function renderBills(){
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></span></button>
-      <div class="amt">${eur(monthAmt(b,k))}</div>
+      <div class="amt">${eur(monthAmt(b,k))}${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Já paguei</button>`:""}</div>
     </div>`};
   /* por pagar à vista; as pagas recolhidas numa linha que abre */
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
@@ -5400,7 +5401,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v205";
+const APPV="casa-v206";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
