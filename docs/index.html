@@ -2539,7 +2539,7 @@ function renderBills(){
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></span></button>
-      <div class="amt">${eur(monthAmt(b,k))}${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Liquidado</button>`:""}</div>
+      <div class="amt">${eur(monthAmt(b,k))}${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Pago</button>`:""}</div>
     </div>`};
   /* por pagar à vista; as pagas recolhidas numa linha que abre */
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
@@ -2745,7 +2745,7 @@ function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)re
 document.addEventListener("click",e=>{const t=e.target.closest("[data-payask]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.payask);if(b)payAsk(b,mKey())},true);
 /* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
 function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
-  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: ${b.askPay?"comprei":"liquidado"}</div><div class="rdm">${esc(mFull(k))}${b.dd?" · fica paga já; a app deixa de esperar o débito este mês":""}</div>
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: ${b.askPay?"comprei":"pago"}</div><div class="rdm">${esc(mFull(k))}${b.dd?" · fica paga já; a app deixa de esperar o débito este mês":""}</div>
     <label class="f">Quanto pagaste (€)<input id="paV" type="text" inputmode="decimal" value="${v0}"></label>
     ${accounts().length?`<label class="f">Pago com (desconta no saldo)<select id="paA"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
     <button type="button" class="btn" data-pa="ok">✓ Guardar</button><button type="button" class="btn ghost" data-pa="x">Cancelar</button></div>`;
@@ -5401,7 +5401,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v207";
+const APPV="casa-v208";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
