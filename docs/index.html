@@ -2381,7 +2381,11 @@ function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
     if(/luz|eletric/i.test(b.name||"")){delete n.kind;delete n.gasMig;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;n.dd=true;if(!n.day)n.needDay=1}
     else n.name="Galp Gás";putBill(n)});
   /* Pedido (31/10): a bilha é uma conta do mês (sem dia), confirmada com o valor quando se compra */
-  bills.filter(b=>b.kind==="budget"&&b.gasMig&&!b.gas3).forEach(b=>{const n={...b,gas3:1,askPay:1,day:0};delete n.kind;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;putBill(n)});
+  bills.filter(b=>b.gas3&&!b.gas4&&!b.kind).forEach(b=>{const n={...b,gas4:1,paid:{...(b.paid||{})},amounts:{...(b.amounts||{})},accd:{...(b.accd||{})}};
+    Object.entries(b.spent||{}).forEach(([k,L])=>{if(!L||!L.length||n.paid[k])return;const v=L.reduce((t,x)=>t+(+x.v||0),0), ab=L.reduce((t,x)=>t+(+x.ab||0),0), bk=(L.find(x=>x.abk)||{}).abk;
+      n.paid[k]=true;n.amounts[k]=Math.round(v*100)/100;if(bk&&!n.acc)n.acc=bk;if(ab>0)n.accd[k]=Math.round(ab*100)/100;else if(!n.acc)n.accd[k]=0});
+    delete n.spent;putBill(n)});
+  bills.filter(b=>b.kind==="budget"&&b.gasMig&&!b.gas3).forEach(b=>{const n={...b,gas3:1,askPay:1,day:0};delete n.kind;if(!Object.values(n.spent||{}).some(L=>L&&L.length))delete n.spent;else{const L=Object.values(n.spent).flat().find(x=>x&&x.abk);if(L&&!n.acc)n.acc=L.abk}putBill(n)});
   /* acerto com a Mãe: Água (SMAS) paga pelos pais e Medicare com metade paga pela Mãe, se ainda não estiver ligado */
   if(!bills.some(b=>b.ac||b.acAuto)){const ag=bills.find(b=>!b.kind&&/smas|[aá]gua/i.test(b.name||"")), md=bills.find(b=>!b.kind&&/medicare/i.test(b.name||""));
     if(ag&&md){putBill({...ag,acm:"all",ac:"Mãe",acAuto:1});putBill({...md,acm:"half",ac:"Mãe",acAuto:1})}}}
@@ -2728,6 +2732,19 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");i
 /* Gastos do mês com banco escolhido: cada gasto desconta no saldo (s.ab = valor descontado) */
 function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===accId&&x.kind==="account");if(!a)return;
   const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),1200)}
+/* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
+function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: comprei</div><div class="rdm">${esc(mFull(k))}</div>
+    <label class="f">Quanto pagaste (€)<input id="paV" type="text" inputmode="decimal" value="${v0}"></label>
+    ${accounts().length?`<label class="f">Pago com (desconta no saldo)<select id="paA"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
+    <button type="button" class="btn" data-pa="ok">✓ Guardar</button><button type="button" class="btn ghost" data-pa="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-pa]");if(ev.target!==o&&!q)return;if(!q||q.dataset.pa==="x"){o.remove();renderBills();return}
+    const n=numIn(o.querySelector("#paV").value);if(isNaN(n)||n<0){toast("Escreve o valor");return}const sel=o.querySelector("#paA"), acc=sel?sel.value:"";o.remove();
+    const nb={...b,amounts:{...(b.amounts||{})},paid:{...(b.paid||{}),[k]:true}};if(Math.abs(n-baseAmt(b,k))>.004)nb.amounts[k]=n;else delete nb.amounts[k];
+    if(acc&&acc!==b.acc){nb.acc=acc;const accd={...(b.accd||{})};Object.keys(nb.paid).forEach(m=>{if(m!==k&&nb.paid[m]===true&&accd[m]==null)accd[m]=0});nb.accd=accd}
+    else if(!acc&&b.acc){nb.accd={...(b.accd||{}),[k]:0}}
+    putBill(nb);if(!acc)toast(`${b.name}: ${eur(n)} pago`)});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#paV");if(i){i.focus();i.select()}},50)}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
   const ref=e.target.dataset.spendedit;if(!ref)return;e.preventDefault();
@@ -2803,9 +2820,7 @@ document.addEventListener("change",e=>{
   const b=bills.find(x=>x.id===id); if(!b)return;
   const paid={...(b.paid||{})}; const k=mKey(), nb={...b};
   /* contas confirmadas na compra (ex.: bilha de gás): pede o valor pago */
-  if(e.target.checked&&b.askPay){const v=prompt(`Quanto pagaste (${b.name})? €`,String(Math.round(monthAmt(b,k)*100)/100).replace(".",","));
-    if(v===null){e.target.checked=false;return}const n=numIn(v);if(isNaN(n)||n<0){e.target.checked=false;toast("Valor inválido");return}
-    nb.amounts={...(b.amounts||{})};if(Math.abs(n-baseAmt(b,k))>.004)nb.amounts[k]=n;else delete nb.amounts[k]}
+  if(e.target.checked&&b.askPay){e.target.checked=false;payAsk(b,k);return}
   /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   if(!e.target.checked&&b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}
@@ -5348,7 +5363,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v198";
+const APPV="casa-v199";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
