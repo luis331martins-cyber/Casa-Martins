@@ -293,6 +293,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .clrow{grid-template-columns:96px 1fr;grid-template-areas:"n n" "v g"}.clrow [data-it="g"]{grid-column:auto}
 .clrow input,.clrow select{min-width:0;font-size:16px;padding:8px;border-radius:8px}.clx{position:absolute;top:12px;right:12px;background:none;color:var(--muted);font-size:15px;padding:0}
 .clits small.clw{display:block;font-size:12px;font-weight:600}.clw.ok{color:var(--good)}.clw.warn{color:var(--warn)}.clw.bad{color:var(--bad)}
+#mLabel .mrange{display:block;font-size:13px;font-weight:500;color:var(--muted);text-align:center;margin-top:2px}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -2414,7 +2415,8 @@ const bankLabel=n=>/^\s*cgd\s*$/i.test(n||"")?"C. Geral de Depósitos":n;
 function renderBills(){
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
-  document.getElementById("mLabel").textContent=label[0].toUpperCase()+label.slice(1);
+  {const [a,b]=houseRange(mKey()), f=d=>`${d.getDate()} ${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
+   document.getElementById("mLabel").innerHTML=`${label[0].toUpperCase()+label.slice(1)}<small class="mrange">${f(a)} – ${f(b)}</small>`}
   const byName=(a,b)=>a.name.localeCompare(b.name,"pt");
   const order=sortBy==="name"?byName:sortBy==="amt"?(a,b)=>planned(b,k)-planned(a,k)||byName(a,b):(a,b)=>(a.day||99)-(b.day||99)||byName(a,b);
   const all=contas(), list=fixas().sort(order), buds=all.filter(isBud).sort(sortBy==="day"?byName:order);
@@ -2436,7 +2438,8 @@ function renderBills(){
   document.getElementById("vPaid").textContent=eur(paid);
   document.getElementById("vDue").textContent=eur(tot-paid);
   document.getElementById("barFill").style.width=tot?(paid/tot*100)+"%":"0";
-  const isCur=viewY===now.getFullYear()&&viewM===now.getMonth(), today=now.getDate();
+  /* mês da casa: vai do dia do ordenado (último dia útil do mês anterior) ao penúltimo dia útil */
+  const isCur=mKey()===houseKey(now), today=ymOf(now)===mKey()?now.getDate():ymOf(now)<mKey()?0:99;
   const curK=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const overdue=curK<START?0:fixas().filter(b=>b.day&&b.day<=today&&!b.dd&&!isPaid(b,curK)).length;
   const bb=document.getElementById("billBadge"); bb.hidden=!overdue; bb.textContent=overdue;
@@ -2583,14 +2586,14 @@ function renderBills(){
   const have=new Set(bills.map(b=>String(b.name||"").toLowerCase()));
   /* Saldo das contas e previsão para o fim do mês (só para o mês atual, ou novembro de 2026 antes de começar) */
   const accs=accounts().sort((a,b)=>a.name.localeCompare(b.name,"pt")), bal=accs.reduce((s,a)=>s+(+a.bal||0),0);
-  const fk=ymOf(now)<START?START:ymOf(now);
+  const fk=houseKey(now)<START?START:houseKey(now);
   document.getElementById("vBal").textContent=accs.length?eur(bal):"—";
   document.getElementById("vBal").style.color=bal<0?"var(--bad)":"";
   const fcBox=document.getElementById("fcBox");fcBox.hidden=!accs.length||k!==fk;
   if(!fcBox.hidden){
     const recv=inc.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0)+acL.filter(x=>!x.dn).reduce((t,x)=>t+x.tot,0), pay=list.reduce((s,b)=>s+(isPaid(b,k)?0:monthAmt(b,k)),0);
     const budLeft=buds.reduce((s,b)=>s+Math.max(0,monthAmt(b,k)-spentOf(b,k)),0), fc=bal+recv-pay-budLeft;
-    document.getElementById("fcLabel").textContent="Fim de "+mName+" (previsto)";
+    {const e=lastBizDay(viewY,viewM);document.getElementById("fcLabel").textContent=`Até ao ordenado · ${e.getDate()} ${e.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")} (previsto)`}
     const v=document.getElementById("vFc");v.textContent=eur(fc);v.style.color=fc<0?"var(--bad)":"var(--good)";
   }
   const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
@@ -5068,7 +5071,11 @@ const PT_FIXOS=["01-01","04-25","05-01","06-10","08-15","10-05","11-01","12-01",
 function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=(h+l-7*m+114)%31+1;return new Date(y,mo-1,da)}
 function feriado(d){const md=ymd(d).slice(5);if(PT_FIXOS.includes(md))return true;const e=easter(d.getFullYear());
   return[-2,0,60].some(n=>{const x=new Date(e);x.setDate(x.getDate()+n);return ymd(x)===ymd(d)})}
+/* Mês da casa (k "AAAA-MM"): começa no último dia útil do mês anterior (entra o ordenado) e acaba no penúltimo dia útil do mês */
+function houseRange(k){const y=+k.slice(0,4), m=+k.slice(5)-1, a=lastBizDay(y,m-1), b=lastBizDay(y,m);b.setDate(b.getDate()-1);while(b.getDay()===0||b.getDay()===6||feriado(b))b.setDate(b.getDate()-1);return[a,b]}
+function houseKey(d){const lb=lastBizDay(d.getFullYear(),d.getMonth()), t=new Date(d.getFullYear(),d.getMonth(),d.getDate());return t>=new Date(lb.getFullYear(),lb.getMonth(),lb.getDate())?ymOf(new Date(d.getFullYear(),d.getMonth()+1,1)):ymOf(d)}
 function lastBizDay(y,m){const d=new Date(y,m+1,0);while(d.getDay()===0||d.getDay()===6||feriado(d))d.setDate(d.getDate()-1);return d}
+{const hk=houseKey(now);if(hk>mKey()&&!editBill){viewY=+hk.slice(0,4);viewM=+hk.slice(5)-1;setTimeout(()=>safe("Contas",renderBills),0)}}
 /* As receitas (o que entrou: ordenados, Break, caixa) já se pedem em outubro de 2026, para novembro começar completo */
 const INC_START="2026-10";
 function incAskMonth(){const t=new Date(), lb=lastBizDay(t.getFullYear(),t.getMonth());let k=null;
@@ -5392,7 +5399,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v201";
+const APPV="casa-v202";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
