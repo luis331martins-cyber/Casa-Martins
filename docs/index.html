@@ -3797,8 +3797,12 @@ const CAKEF=[["massa","Massa","ex.: Pão de ló normal"],["recheio","Recheio","e
 /* Opções da pastelaria Moinho d'Água (dos prints das encomendas): toca-se para escolher; a massa é uma só, recheios e crocantes podem ser vários */
 const CAKEOPT={massa:["Chocolate","Pão de ló","Red velvet","Laranja","Limão","Iogurte","Amêndoa","Cenoura","Framboesa","Nozes","Maracujá"],
   recheio:["Mousse de chocolate","Creme mascarpone","Mousse doce de leite","Creme de pistáchio","Mousse de coco","Creme de limão","Mousse de limão","Mousse de avelã","Mousse de Oreo","Mousse de frutos vermelhos","Mousse de morango","Creme de avelã","Chantilly","Creme russo","Cheesecake","Nutella","Coulis de framboesa","Doce de leite","Doce de ovo","Brigadeiro branco","Brigadeiro preto","Beijinho de coco"],
-  croc:["Chocolate","Caramelo salgado","Frutos vermelhos"],
+  croc:["Chocolate","Caramelo salgado","Frutos vermelhos","Kinder"],
+  cobertura:["Chantilly","Chocolate derretido (escorrido)","Chocolate branco escorrido","Caramelo salgado escorrido","Calda de maracujá","Calda de frutos vermelhos","Cobertura total de chocolate","Granulado de chocolate nos lados","Naked (camadas à vista)"],
+  deco:["Frutos vermelhos","Morangos","Framboesas","Mirtilos","Amoras","Cerejas","Fruta tropical (kiwi, maracujá, manga)","Rodelas de laranja","Kinder","Oreo","Maltesers","Ferrero Rocher","Toblerone","Milka","Macarons","Bolachas","Flores comestíveis","Folhas verdes","Coco","Cone de bolacha","Chupa de bolo (cakesicle)","Placa Parabéns","Laço"],
   forma:["Redondo","Retangular"],peso:["1 kg","1,5 kg","2 kg","2,5 kg","3 kg","4 kg","5 kg"]};
+/* Combinações mais pedidas do Moinho d'Água: um toque preenche */
+const CAKEPRE=[["Red velvet",{massa:"Red velvet",recheio:"Chantilly",cobertura:"Chantilly",deco:"Frutos vermelhos"}],["Kinder",{massa:"Chocolate",recheio:"Mousse de chocolate",croc:"Kinder",cobertura:"Chocolate derretido (escorrido)",deco:"Kinder"}],["Caramelo salgado",{massa:"Chocolate",recheio:"Mousse de chocolate",croc:"Caramelo salgado",cobertura:"Caramelo salgado escorrido"}]];
 const CAKE1=k=>["massa","forma","peso"].includes(k);
 const cakeLines=v=>String(v||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const cakeChips=(k,val)=>CAKEOPT[k]?`<div class="cchips">${CAKEOPT[k].map(o=>`<button type="button" class="chip${(CAKE1(k)?String(val||"").toLowerCase()===o.toLowerCase():cakeLines(val).some(x=>x.toLowerCase()===o.toLowerCase()))?" on":""}" data-cchip="${k}|${esc(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip other" data-cother="${k}">✏️ Outro</button></div>`:"";
@@ -3810,6 +3814,7 @@ function cakeText(c){c=c||{};const L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l
   return L.filter(Boolean).join("\n")}
 function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco|croc/.test(k), key=b.id+"|"+cid;
   return`<form class="bill-edit cakef" data-cakeform="${key}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 ${cid==="new"?"Novo bolo":esc(c.nome||"Bolo")} · ${esc(b.name)}</h3>
+    <div class="f wide">⭐ Mais pedidos<div class="cchips">${CAKEPRE.map(([n])=>`<button type="button" class="chip" data-cpre="${esc(n)}">${esc(n)}</button>`).join("")}</div></div>
     <label class="f wide">Nome do bolo<input name="nome" value="${v(c.nome)}" placeholder="opcional · ex.: Festa da família, Escola" autocapitalize="sentences"></label>
     ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||CAKE1(k)?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>`).join("")}
     <div class="f wide">Imagem para o bolo${c.img?`<div class="cimg"><button type="button" class="cimgv" data-cimgview="${key}">${cakeImgCache[c.img.id]?`<img src="${cakeImgCache[c.img.id]}" alt="Imagem do bolo">`:"🖼️ Ver imagem"}</button>
@@ -3889,6 +3894,10 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-cimg
     putBill({...fresh,cakes:cakesOf(fresh).map(x=>{if(x.id!==cid)return x;const y={...x};delete y.img;return y})});renderAnos();toast("Imagem tirada");return}
   if(!cakeImgCache[c.img.id]){t.textContent="A abrir…";try{await cakeImgData(c.img.id)}catch(err){t.textContent="🖼️ Ver imagem";toast(navigator.onLine?"Não foi possível abrir a imagem.":"Sem internet para abrir a imagem.");return}t.innerHTML=`<img src="${cakeImgCache[c.img.id]}" alt="Imagem do bolo">`;return}
   const pv=document.getElementById("picView");if(pv){const im=pv.querySelector("img");if(im){im.src=cakeImgCache[c.img.id];pv.hidden=false}}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cpre]");if(!t)return;e.preventDefault();const f=t.closest("form"), P=(CAKEPRE.find(([n])=>n===t.dataset.cpre)||[])[1];if(!f||!P)return;
+  ["massa","recheio","croc","cobertura","deco"].forEach(k=>{if(f[k])f[k].value=P[k]||""});
+  f.querySelectorAll("[data-cchip]").forEach(x=>{const [k,ov]=x.dataset.cchip.split("|"), el=f[k];if(!el)return;x.classList.toggle("on",CAKE1(k)?el.value.trim().toLowerCase()===ov.toLowerCase():cakeLines(el.value).some(y=>y.toLowerCase()===ov.toLowerCase()))});
+  if(f.nome&&!f.nome.value.trim())f.nome.value=t.dataset.cpre;toast(`${t.dataset.cpre}: preenchido · podes mudar o que quiseres`)});
 function cakeSave(b,f,cid){const c={id:cid==="new"?uid():cid};["nome",...CAKEF.map(x=>x[0]),"dia","hora","quem","past"].forEach(k=>{const v=(f[k]&&f[k].value||"").trim();if(v)c[k]=v});if(f.enc.checked)c.enc=1;
   const L=cakesOf(b), k=L.findIndex(x=>x.id===c.id);if(k>=0&&L[k].img)c.img=L[k].img;if(Object.keys(c).length<2)return null;const cakes=k>=0?L.map((x,i)=>i===k?c:x):[...L,c];
   const nb={...b,cakes};delete nb.cake;putBill(nb);return{nb,c}}
@@ -5559,7 +5568,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v229";
+const APPV="casa-v230";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
