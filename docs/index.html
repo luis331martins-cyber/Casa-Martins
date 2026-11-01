@@ -1879,10 +1879,11 @@ const TUBE_NAME=/pasta de dentes|dent[ií]fric/i;
 const isLiquid=i=>isRes(i)&&!/iogurte/i.test(i.name||"")&&(LIQ_NAME.test(i.name||"")||PACK_NAME.test(i.name||""));
 /* Cada produto pode escolher: i.gauge "fill" (desenho) ou "tag" (balão Tenho/Pouco/Acabou); sem escolha segue o nome */
 /* Símbolo: garrafa, pote, pacote, tubo ou pilha (para o que não é líquido nem pacote: papel, esponjas, pensos…). i.gauge guarda a escolha; "tag" = balão */
-const GSHAPES=[["bottle","Garrafa"],["pot","Pote"],["pack","Pacote"],["tube","Tubo"],["bat","Pilha"]];
-const autoShape=i=>{const n=i.name||"";if(/iogurte/i.test(n))return"bat";return TUBE_NAME.test(n)?"tube":POT_NAME.test(n)?"pot":LIQ_NAME.test(n)&&!/detergente em p/i.test(n)?"bottle":PACK_NAME.test(n)?"pack":"bat"};
+const GSHAPES=[["bottle","Garrafa"],["pot","Pote"],["pack","Pacote"],["tube","Tubo"]];
+/* O resto (papel, esponjas, pensos…) fica com o balão, que muda sozinho com o stock */
+const autoShape=i=>{const n=i.name||"";if(/iogurte/i.test(n))return"";return TUBE_NAME.test(n)?"tube":POT_NAME.test(n)?"pot":LIQ_NAME.test(n)&&!/detergente em p/i.test(n)?"bottle":PACK_NAME.test(n)?"pack":""};
 const shapeOf=i=>GSHAPES.some(([k])=>k===i.gauge)?i.gauge:autoShape(i);
-const gaugeOn=i=>isRes(i)&&i.gauge!=="tag";
+const gaugeOn=i=>isRes(i)&&i.gauge!=="tag"&&!!shapeOf(i);
 const FILL=[["Vazio",0,"#ff3b30"],["Quase vazio",.18,"#ff3b30"],["Meio",.5,"#ffcc00"],["Quase cheio",.78,"#34c759"],["Cheio",1,"#34c759"]];
 const fillOf=i=>i.fill==null?4:Math.max(0,Math.min(4,+i.fill));
 let fillSeq=0;
@@ -1900,7 +1901,7 @@ function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n
 let resTidyDone=false;
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   /* produtos com desenho: o estado passa a seguir o nível do aberto (ex.: garrafa cheia sem stock já não vai às compras) */
-  for(const it of items.filter(i=>i.res!=null&&gaugeOn(i)&&i.lvl!==resLvl(i))){const n={...it,lvl:resLvl(it)};if(n.lvl===2)delete n.skip;upsert(n);put(n)}
+  for(const it of items.filter(i=>i.res!=null&&isRes(i)&&i.lvl!==resLvl(i))){const n={...it,lvl:resLvl(it)};if(n.lvl===2)delete n.skip;upsert(n);put(n)}
   /* o separador Peixe saiu: o peixe passa para Congelados (conta-se à unidade, com sacos se tiver) */
   for(const it of items.filter(i=>i.cat==="Peixe")){const n={...it,cat:"Congelados",cnt:true,rtidy:1,rt2:1};["use","res","want"].forEach(k=>delete n[k]);upsert(n);put(n);c++}
   /* "Outros" passou a "Fruta": fruta vai para lá, medicamentos para Higiene, o resto para Despensa */
@@ -1992,7 +1993,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       ${!MEAT.includes(i.cat)&&!i.med?`<label class="f wide">Como contar<select name="mo"><option value="res"${isRes(i)?" selected":""}>Em uso + stock</option><option value="cnt"${isRes(i)?"":" selected"}>À unidade / peso (ex.: ovos, iogurtes, arroz)</option></select></label>`:""}
       ${isRes(i)?`<label class="f">Stock<input name="rv" type="number" min="0" step="1" inputmode="numeric" value="${i.res??""}" placeholder="—"></label>
       <label class="f">Quero ter em stock<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
-      <div class="f wide">Símbolo<input type="hidden" name="gg" value="${i.gauge==="tag"?"tag":shapeOf(i)}"><div class="ggrow">${GSHAPES.map(([k,l])=>`<button type="button" class="ggopt" data-gg="${k}" aria-pressed="${i.gauge!=="tag"&&shapeOf(i)===k}">${fillSVG({id:"s",gauge:k,fill:3})}<span>${l}</span></button>`).join("")}<button type="button" class="ggopt" data-gg="tag" aria-pressed="${i.gauge==="tag"}"><span class="lvlb s1" style="margin:7px 0;padding:3px 5px;font-size:10px">Pouco</span><span>Balão</span></button></div></div>
+      <div class="f wide">Símbolo<input type="hidden" name="gg" value="${gaugeOn(i)?shapeOf(i):"tag"}"><div class="ggrow">${GSHAPES.map(([k,l])=>`<button type="button" class="ggopt" data-gg="${k}" aria-pressed="${gaugeOn(i)&&shapeOf(i)===k}">${fillSVG({id:"s",gauge:k,fill:3})}<span>${l}</span></button>`).join("")}<button type="button" class="ggopt" data-gg="tag" aria-pressed="${!gaugeOn(i)}"><span class="lvlb s1" style="margin:7px 0;padding:3px 5px;font-size:10px">Pouco</span><span>Balão</span></button></div></div>
       <label class="tick wide">Há um em uso (aberto)<input type="checkbox" name="iu"${i.use||(i.use==null&&(i.lvl??2)>0)?" checked":""}></label>
       <div hidden><input name="q"><input name="u" value="un"><input name="lo"><input name="pn"><input name="pu" value="un."></div>`:
       hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
@@ -2106,7 +2107,7 @@ document.addEventListener("submit",e=>{
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
   if(hasBags(n)){n.qty=bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
   if(isRes(n)&&f.rv){const rv=parseInt(f.rv.value), wv=parseInt(f.wv.value);delete n.qty;delete n.low;delete n.want;if(wv>=0)n.want=wv;
-    if(f.gg){if(f.gg.value===autoShape(n))delete n.gauge;else n.gauge=f.gg.value}
+    if(f.gg){if(f.gg.value===(autoShape(n)||"tag"))delete n.gauge;else n.gauge=f.gg.value}
     if(f.iu)n.use=f.iu.checked;if(rv>=0)n.res=rv;else if(f.iu&&n.res==null&&!n.use)n.res=0;if(n.res!=null)n.lvl=resLvl(n)}
   if(shop)n.shop=shop;
   if(nk){/* novo: se a forma de contar não foi escolhida, segue o nome (ex.: iogurtes à unidade, detergente em uso + guardados) */
@@ -5451,7 +5452,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v216";
+const APPV="casa-v217";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
