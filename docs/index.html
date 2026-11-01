@@ -584,6 +584,9 @@ h1.large{margin-top:2px}
 #accounts:has(.bank)>*::after{display:none}
 #accounts .bill.acc.bank{border:0;border-radius:14px!important;padding:16px;color:#fff;background:linear-gradient(135deg,var(--bk) 0,color-mix(in srgb,var(--bk) 70%,#000) 100%);box-shadow:0 3px 10px rgba(0,0,0,.12)}
 #accounts .bill.acc.bank::after{display:none}
+#accounts .bill.acc.brk{border:0;border-radius:14px!important;padding:16px;background:#fff;color:#1c1c1e;position:relative;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+#accounts .bill.acc.brk::after{content:"";display:block;position:absolute;left:0;right:0;bottom:0;height:9px;background:linear-gradient(90deg,#e6007e 0 20%,#ff8a00 20% 40%,#ffd400 40% 60%,#00b2a9 60% 80%,#3f51b5 80%)}
+#accounts .bill.acc.brk .name{color:#1c1c1e;font-weight:800;font-size:17px}#accounts .bill.acc.brk .amt{color:#1c1c1e!important;font-size:19px}
 #accounts .bill.acc.bank .name{color:#fff;font-weight:700;font-size:17px}
 #accounts .bill.acc.bank .meta{color:rgba(255,255,255,.82)!important}
 #accounts .bill.acc.bank .amt{color:#fff!important;font-size:19px}
@@ -2804,7 +2807,8 @@ function renderBills(){
   pa.hidden=unpaid<2||!!editBill;pa.textContent=`Marcar as ${unpaid} por pagar como pagas`;
   const have=new Set(bills.map(b=>String(b.name||"").toLowerCase()));
   /* Saldo das contas e previsão para o fim do mês (só para o mês atual, ou novembro de 2026 antes de começar) */
-  const accs=accounts().sort((a,b)=>a.name.localeCompare(b.name,"pt")), bal=accs.reduce((s,a)=>s+(+a.bal||0),0);
+  const accRank=a=>{const n=a.name||"";return /\bcgd\b|caixa/i.test(n)?0:/activo/i.test(n)?1:/break/i.test(n)?2:3};
+  const accs=accounts().sort((a,b)=>accRank(a)-accRank(b)||a.name.localeCompare(b.name,"pt")), bal=accs.reduce((s,a)=>s+(+a.bal||0),0);
   const fk=houseKey(now)<START?START:houseKey(now);
   document.getElementById("vBal").textContent=accs.length?eur(bal):"—";
   document.getElementById("vBal").style.color=bal<0?"var(--bad)":"";
@@ -2825,7 +2829,7 @@ function renderBills(){
       <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
       ${a?`<button class="btn danger wide" type="button" data-delacc="${a.id}">Apagar ${esc(a.name)}</button>`:""}
     </form>`;
-  document.getElementById("accounts").innerHTML=accs.map(a=>{const c=bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""}>
+  document.getElementById("accounts").innerHTML=accs.map(a=>{const brk=/break/i.test(a.name||"")&&(!a.color||a.color==="#ff2d55"), c=brk?"":bankColor(a);return a.id===editAcc?accForm(a):`<div class="bill acc${c?" bank":""}${brk?" brk":""}${c&&LIGHTBK.has(c)?" lightbk":""}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""}>
       <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(bankLabel(a.name))}</div></button>
       <div class="amt"${(+a.bal||0)<0&&!c?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
@@ -5745,7 +5749,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v246";
+const APPV="casa-v247";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
