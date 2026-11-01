@@ -123,6 +123,15 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .mcat{margin-top:8px}.mcat .b2cat{font-size:12px;padding:4px 8px}.mcat .b2cat+.mrow{border-top:0}.lowbox .mput{background:#ff3b30}
 .sadd{display:flex;flex-direction:column;gap:8px}.sadd>input{width:100%;padding:13px 14px;border-radius:14px;border:1.5px dashed var(--accent);background:var(--surface);font-size:16px;color:var(--fg)}
 .saddx{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}.saddx select,.saddx input{min-width:0;padding:10px;border-radius:10px;border:0;background:var(--surface);color:var(--fg);font-size:15px}
+.lupa{width:40px;height:40px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);margin-left:auto;color:var(--accent)}.lupa svg,.srbar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.navbar>span:last-child{display:flex;justify-content:flex-end}
+#srch{position:fixed;inset:0;z-index:300;background:color-mix(in srgb,var(--bg,#f2f2f7) 96%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 14px 14px}
+.srbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 6px 4px 12px;color:var(--muted)}.srbar input{flex:1;min-width:0;border:0;background:none;font-size:17px;padding:10px 0;color:var(--fg);outline:none}
+#srX{background:none;color:var(--accent);font-weight:600;font-size:16px;padding:8px}
+#srRes{flex:1;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px;padding-bottom:30px}
+.srrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;color:var(--fg)}.sric{font-size:22px;width:30px;text-align:center;flex:none}
+.srt{flex:1;min-width:0;display:flex;flex-direction:column}.srt b{font-weight:600;font-size:16px}.srt small{font-size:12.5px;color:var(--muted)}.srgo{color:var(--muted);font-size:20px}.srnone{color:var(--muted);text-align:center;margin-top:30px}
+@keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -1769,6 +1778,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
 </div>
 <button type="button" id="updBar" hidden style="position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;background:#0a84ff;color:#fff;border-radius:14px;padding:12px 16px;font:600 15px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.25);text-align:left">✨ Há uma versão nova da app · <u>Atualizar</u></button>
 <div id="picView" hidden role="dialog" aria-label="Fotografia"><img alt=""></div>
+<div id="srch" hidden role="dialog" aria-label="Procurar"><div class="srbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="srIn" type="search" placeholder="Procurar em tudo…" autocomplete="off" autocapitalize="off" enterkeyhint="search"><button type="button" id="srX">Cancelar</button></div><div id="srRes"></div></div>
 <div id="scanSheet" hidden role="dialog" aria-label="Ler fotografia"><form class="ta-box" id="scanForm" autocomplete="off"><div class="ta-h"><b id="scanTitle">📷 Encontrei</b><button type="button" id="scanClose" class="back">Cancelar</button></div>
   <p class="note" id="scanNote" style="margin:0 0 6px"></p><div id="scanList"></div>
   <button class="btn" type="submit" id="scanOk" style="width:100%;margin-top:10px">Juntar à despensa</button></form></div>
@@ -2287,6 +2297,39 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
       if(!MEAT.includes(cat)&&resDefault(n)){n.use=false;n.res=0}else{n.cnt=true;n.qty=0;n.unit="un"}
       upsert(n);render();put(n);toast(`${n.name} juntado à lista`)}
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;f.n.focus()})}
+/* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
+const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
+const SR_KIND={med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
+const srNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+let srFrom="inicio";
+function srIndex(){const R=[];Object.entries(SR_TABS).forEach(([t,n])=>{if(document.getElementById("tab-"+t))R.push({t:n,s:"Abrir",ic:"📂",go:t})});
+  items.forEach(i=>R.push({t:i.name,s:`Em casa · ${i.cat}${i.lvl===0?" · acabou":i.lvl===1?" · pouco":""}`,ic:MEAT.includes(i.cat)?"🥩":"🏠",go:"despensa",item:i.id}));
+  bills.forEach(b=>{if(!b.name||["flag","msg","packtpl","acerto","foto"].includes(b.kind))return;const go=SR_KIND[b.kind]||(b.kind?null:"despesas");if(!go||!document.getElementById("tab-"+go))return;
+    R.push({t:b.name,s:SR_TABS[go]+(b.kind==="bday"&&b.md?` · ${b.md.split("-").reverse().join("/")}`:b.kind==="account"?` · ${eur(+b.bal||0)}`:b.amount?` · ${eur(+b.amount)}`:""),ic:{meds:"💊",anos:"🎂",despesas:"💶",carro:"🚗",casa:"🏡",cartoes:"💳",viagens:"✈️",escola:"🎒",docs:"📄",saude:"🩺",creditos:"🏦",poupancas:"🐷",comer:"🍽️",videos:"▶️"}[go]||"•",go,find:b.name})});
+  (events||[]).forEach(e=>{if(e.title)R.push({t:e.title,s:`Agenda · ${String(e.date||"").split("-").reverse().join("/")}${e.time?" "+e.time:""}`,ic:"📅",go:"calendario",ev:e})});
+  return R}
+function srRender(){const q=srNorm(document.getElementById("srIn").value.trim()), out=document.getElementById("srRes");
+  if(!q){out.innerHTML=`<p class="srnone">Escreve o que procuras: um produto, uma conta, um aniversário, uma marcação…</p>`;return}
+  const words=q.split(/\s+/), R=srIndex().filter(r=>{const h=srNorm(r.t+" "+r.s);return words.every(w=>h.includes(w))});
+  R.sort((a,b)=>(srNorm(b.t).startsWith(q)-srNorm(a.t).startsWith(q))||((b.go===srFrom)-(a.go===srFrom))||a.t.localeCompare(b.t,"pt"));
+  out.innerHTML=R.slice(0,60).map((r,k)=>`<button type="button" class="srrow" data-sr="${k}"><span class="sric">${r.ic}</span><span class="srt"><b>${esc(r.t)}</b><small>${esc(r.s)}</small></span><span class="srgo">›</span></button>`).join("")||`<p class="srnone">Nada encontrado com “${esc(document.getElementById("srIn").value.trim())}”.</p>`;
+  out._R=R}
+function srOpen(){const cur=[...document.querySelectorAll('section[id^="tab-"]')].find(x=>!x.hidden);srFrom=cur?cur.id.slice(4):"inicio";const o=document.getElementById("srch");o.hidden=false;const i=document.getElementById("srIn");i.value="";srRender();setTimeout(()=>i.focus(),50)}
+function srClose(){document.getElementById("srch").hidden=true;document.getElementById("srIn").blur()}
+document.getElementById("srIn").addEventListener("input",srRender);
+document.getElementById("srX").addEventListener("click",srClose);
+document.getElementById("srRes").addEventListener("click",e=>{const b=e.target.closest("[data-sr]");if(!b)return;const r=(document.getElementById("srRes")._R||[])[+b.dataset.sr];if(!r)return;srClose();
+  if(r.item){const it=items.find(i=>i.id===r.item);if(!it)return;show("despensa");if(MEAT.includes(it.cat))catSel.m=it.cat;else catSel.p=it.cat;editItem=it.id;render();
+    setTimeout(()=>{const f=document.querySelector(`[data-itemform="${it.id}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},80);return}
+  show(r.go);if(r.go==="anos"&&typeof renderAnos==="function")renderAnos();
+  if(r.find||r.ev)setTimeout(()=>{const want=srNorm(r.find||r.ev.title), sec=document.getElementById("tab-"+r.go);if(!sec)return;
+    const el=[...sec.querySelectorAll(".name,.bn,.bt .name,b,.ev-row,button,.bill")].find(x=>srNorm(x.textContent).includes(want));
+    if(el){const box=el.closest(".bill,.bd,.budget,.ev-row,.item,button")||el;box.scrollIntoView({block:"center",behavior:"smooth"});box.classList.remove("srflash");void box.offsetWidth;box.classList.add("srflash")}},120)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElementById("srch").hidden)srClose()});
+/* a lupa vai para o canto direito de todas as barras de cima */
+document.querySelectorAll(".navbar").forEach(n=>{let sp=n.lastElementChild;if(!sp||sp.tagName!=="SPAN"||sp.classList.contains("navtitle")){sp=document.createElement("span");n.appendChild(sp)}
+  if(!sp.children.length&&!sp.textContent.trim())sp.innerHTML=`<button type="button" class="lupa" aria-label="Procurar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>`});
+document.addEventListener("click",e=>{if(e.target.closest(".lupa"))srOpen()});
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
@@ -5698,7 +5741,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v244";
+const APPV="casa-v245";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
