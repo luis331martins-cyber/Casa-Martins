@@ -140,6 +140,9 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .rsi .tolist{position:absolute;top:8px;right:8px;margin:0}.rsi .bname{padding-right:46px}.revok{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#34c759;color:#fff;font-size:11px;font-weight:800;vertical-align:2px;margin-left:4px}
 .qok{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid #34c759;background:none;color:#34c759;font-size:17px;font-weight:800;padding:0;display:grid;place-items:center}.qok:active{background:#34c759;color:#fff}.qdone{margin-top:10px;padding:8px 10px;border-radius:10px;background:#34c75922;color:#1d7a3a;font-size:14px;font-weight:600}
 .qadd{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--fill);border-radius:14px;padding:10px}.qadd .wide{grid-column:1/-1}.qah{grid-column:1/-1;font-weight:800}.qadd label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);font-weight:600}.qadd input,.qadd select{min-width:0;padding:10px;border-radius:10px;border:0;background:var(--surface);color:var(--fg);font-size:15px}
+.lowbox .mrow{padding:5px 2px;gap:8px}.lowbox .mbadge{min-width:42px;padding:3px 4px;border-radius:9px}.lowbox .mbadge b{font-size:15px}.lowbox .mbadge small{font-size:9px}.lowbox .mt b{font-size:15px}
+.mput{min-width:40px}.lowbox .mput{width:40px;height:36px;padding:0;font-size:18px;border-radius:12px}.lowbox .b2e{width:32px;height:32px}.mgauge{display:inline-block;width:12px;height:16px;vertical-align:-3px;margin-right:4px}.mgauge svg{width:12px;height:16px}
+.lowbar{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:2px 0 4px}.lowbar .lowp{margin:0;flex:1}.lowall{flex:none;padding:8px 12px;border-radius:999px;background:#ff3b30;color:#fff;font-weight:700;font-size:13px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2182,11 +2185,14 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const mBadge=i=>{const has=isRes(i)?(i.res==null?null:+i.res||0):i.qty, low=mLow(i);
     const t=has==null?"?":isRes(i)?`${has}`:String(has).replace(".",","), u=has==null?"sem nº":isRes(i)?"em stock":unitShort(i);
     return`<span class="mbadge ${has==null?"unk":low?"lo":"ok"}"><b>${t}</b><small>${u}</small></span>`};
-  const mRow=i=>`<div class="mrow${mLow(i)?" lo":""}">${mBadge(i)}<div class="mt"><b>${esc(i.name)}</b><small>${[gaugeOn(i)&&(i.use!=null?i.use:true)?"aberto: "+FILL[fillOf(i)][0].toLowerCase():"",i.shop?esc(i.shop):""].filter(Boolean).join(" · ")}</small></div><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="mput" data-maybe="${i.id}">＋ Lista</button></div>`;
+  /* linha compacta: [quanto há] nome · (desenho do aberto) loja · ✏️ · ＋ */
+  const mSub=i=>{const op=isRes(i)&&(i.use!=null?i.use:(i.lvl??2)>0);return[isRes(i)?(op?"1 aberto"+(gaugeOn(i)?" ("+FILL[fillOf(i)][0].toLowerCase()+")":""):"nenhum aberto"):"",i.shop?esc(i.shop):""].filter(Boolean).join(" · ")};
+  const mRow=i=>`<div class="mrow${mLow(i)?" lo":""}">${mBadge(i)}<div class="mt"><b>${esc(i.name)}</b><small>${gaugeOn(i)&&isRes(i)&&(i.use!=null?i.use:true)?`<span class="mgauge">${fillSVG(i)}</span>`:""}${mSub(i)}</small></div><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="mput" data-maybe="${i.id}" aria-label="Pôr ${esc(i.name)} na lista">＋</button></div>`;
   /* Por categoria (com a faixa da categoria); o que tens pouco vai para cima, num cartão à parte, antes da lista */
   const mGrp=L=>[...ALLC,...new Set(L.map(i=>i.cat).filter(c=>!ALLC.includes(c)))].map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="mcat">${catHd(c)}${G.map(mRow).join("")}</div>`:""}).join("");
   if(maybe.length){const lo=maybe.filter(mLow), unk=maybe.filter(mUnk), ok=maybe.filter(i=>!mLow(i)&&!mUnk(i));
-    if(lo.length){const box=`<div class="lowbox"><div class="lowh">⚠️ Tens pouco<span>${lo.length}</span></div><p class="lowp">Já quase não tens. Toca em <b>＋ Lista</b> para os juntar às compras.</p>${mGrp(lo)}</div>`;
+    if(lo.length){lo.sort((a,b)=>((isRes(a)?(a.use?1:0)+(+a.res||0):+a.qty||0)-(isRes(b)?(b.use?1:0)+(+b.res||0):+b.qty||0)));
+      const box=`<div class="lowbox"><div class="lowh">⚠️ Tens pouco<span>${lo.length}</span></div><div class="lowbar"><p class="lowp">O número é o que tens em stock. <b>＋</b> junta à lista.</p><button type="button" class="lowall" data-maybeall="1">＋ Juntar todos</button></div>${mGrp(lo)}</div>`;
       const q=shop.querySelector(".qpanel,.qbanner");if(q)q.insertAdjacentHTML("afterend",box);else shop.insertAdjacentHTML("afterbegin",box)}
     if(unk.length||ok.length)shop.innerHTML+=`<div class="mbox"><h3>🤔 Talvez comprar</h3>
       ${unk.length?`<div class="msec unk"><div class="msh">❔ Sem quantidade registada <span>${unk.length}</span></div>${mGrp(unk)}<p class="mhint">Diz quanto tens (em Em casa) e passam a ir para o sítio certo.</p></div>`:""}
@@ -2327,6 +2333,8 @@ document.addEventListener("submit",e=>{const f=e.target;if(!f.dataset||!f.datase
   else{n={id:uid(),name:name[0].toUpperCase()+name.slice(1),cat,lvl:0,cart:1,tidy:1,rtidy:1,rt2:1,added:Date.now()};if(!MEAT.includes(cat)&&resDefault(n)&&unit==="un"){n.use=false;n.res=0}else{n.cnt=true;n.qty=0;n.unit=unit}}
   if(shop)n.shop=shop;n.buyNow=isRes(n)?Math.max(1,Math.round(q)):q;qtyOpen=true;upsert(n);put(n);render();toast(`${n.name} no carrinho`);
   setTimeout(()=>{const g=document.querySelector("form[data-qadd] [name=n]");if(g)g.focus()},80)});
+document.addEventListener("click",e=>{if(!e.target.closest("[data-maybeall]"))return;const L=items.filter(i=>document.querySelector(`.lowbox [data-maybe="${i.id}"]`));
+  L.forEach(it=>{const n={...it,mb:1};delete n.skip;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1;if(n.lvl>1)n.lvl=1;upsert(n);put(n)});render();toast(`${L.length} produto${L.length===1?"":"s"} juntado${L.length===1?"":"s"} à lista`)});
 /* Tirar da lista de compras: passa a "tenho" (não apaga o produto) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
@@ -5804,7 +5812,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v260";
+const APPV="casa-v261";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
