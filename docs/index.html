@@ -3797,9 +3797,11 @@ const CAKEF=[["massa","Massa","ex.: Pão de ló normal"],["recheio","Recheio","e
 /* Opções da pastelaria Moinho d'Água (dos prints das encomendas): toca-se para escolher; a massa é uma só, recheios e crocantes podem ser vários */
 const CAKEOPT={massa:["Chocolate","Pão de ló","Red velvet","Laranja","Limão","Iogurte","Amêndoa","Cenoura","Framboesa","Nozes","Maracujá"],
   recheio:["Mousse de chocolate","Creme mascarpone","Mousse doce de leite","Creme de pistáchio","Mousse de coco","Creme de limão","Mousse de limão","Mousse de avelã","Mousse de Oreo","Mousse de frutos vermelhos","Mousse de morango","Creme de avelã","Chantilly","Creme russo","Cheesecake","Nutella","Coulis de framboesa","Doce de leite","Doce de ovo","Brigadeiro branco","Brigadeiro preto","Beijinho de coco"],
-  croc:["Chocolate","Caramelo salgado","Frutos vermelhos"]};
+  croc:["Chocolate","Caramelo salgado","Frutos vermelhos"],
+  forma:["Redondo","Retangular"],peso:["1 kg","1,5 kg","2 kg","2,5 kg","3 kg","4 kg","5 kg"]};
+const CAKE1=k=>["massa","forma","peso"].includes(k);
 const cakeLines=v=>String(v||"").split("\n").map(x=>x.trim()).filter(Boolean);
-const cakeChips=(k,val)=>CAKEOPT[k]?`<div class="cchips">${CAKEOPT[k].map(o=>`<button type="button" class="chip${(k==="massa"?String(val||"").toLowerCase()===o.toLowerCase():cakeLines(val).some(x=>x.toLowerCase()===o.toLowerCase()))?" on":""}" data-cchip="${k}|${esc(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip other" data-cother="${k}">✏️ Outro</button></div>`:"";
+const cakeChips=(k,val)=>CAKEOPT[k]?`<div class="cchips">${CAKEOPT[k].map(o=>`<button type="button" class="chip${(CAKE1(k)?String(val||"").toLowerCase()===o.toLowerCase():cakeLines(val).some(x=>x.toLowerCase()===o.toLowerCase()))?" on":""}" data-cchip="${k}|${esc(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip other" data-cother="${k}">✏️ Outro</button></div>`:"";
 let cakeImgCache={};
 const cakesOf=b=>b.cakes||(b.cake?[{id:"c0",...b.cake}]:[]);
 const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
@@ -3809,7 +3811,7 @@ function cakeText(c){c=c||{};const L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l
 function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco|croc/.test(k), key=b.id+"|"+cid;
   return`<form class="bill-edit cakef" data-cakeform="${key}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 ${cid==="new"?"Novo bolo":esc(c.nome||"Bolo")} · ${esc(b.name)}</h3>
     <label class="f wide">Nome do bolo<input name="nome" value="${v(c.nome)}" placeholder="opcional · ex.: Festa da família, Escola" autocapitalize="sentences"></label>
-    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||k==="massa"?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>`).join("")}
+    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||CAKE1(k)?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>`).join("")}
     <div class="f wide">Imagem para o bolo${c.img?`<div class="cimg"><button type="button" class="cimgv" data-cimgview="${key}">${cakeImgCache[c.img.id]?`<img src="${cakeImgCache[c.img.id]}" alt="Imagem do bolo">`:"🖼️ Ver imagem"}</button>
       <div class="cimgb"><label class="chip">🔄 Trocar<input type="file" accept="image/*" data-cakeimg="${key}" hidden></label><button type="button" class="chip" data-cimgdel="${key}">🗑️ Tirar</button></div></div>`:
       `<div class="cimgb"><label class="chip">📷 Tirar foto<input type="file" accept="image/*" capture="environment" data-cakeimg="${key}" hidden></label><label class="chip">🖼️ Da galeria<input type="file" accept="image/*" data-cakeimg="${key}" hidden></label></div>`}</div>
@@ -3861,14 +3863,14 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],
       if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({text:txt,files:[file]}).catch(()=>{});else{navigator.share({text:txt}).catch(()=>{});toast("A imagem vai à parte: abre-a e partilha")}}).catch(()=>{navigator.share({text:txt}).catch(()=>{});toast("Não deu para juntar a imagem (sem internet?)")});return}
   if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cchip]");if(!t)return;e.preventDefault();const f=t.closest("form");const [k,o]=t.dataset.cchip.split("|"), el=f&&f[k];if(!el)return;
-  if(k==="massa"){const on=el.value.trim().toLowerCase()===o.toLowerCase();el.value=on?"":o}
+  if(CAKE1(k)){const on=el.value.trim().toLowerCase()===o.toLowerCase();el.value=on?"":o}
   else{const L=cakeLines(el.value), i=L.findIndex(x=>x.toLowerCase()===o.toLowerCase());if(i>=0)L.splice(i,1);else L.push(o);el.value=L.join("\n")}
-  t.closest(".cchips").querySelectorAll("[data-cchip]").forEach(x=>{const ov=x.dataset.cchip.split("|")[1];x.classList.toggle("on",k==="massa"?el.value.trim().toLowerCase()===ov.toLowerCase():cakeLines(el.value).some(y=>y.toLowerCase()===ov.toLowerCase()))})});
+  t.closest(".cchips").querySelectorAll("[data-cchip]").forEach(x=>{const ov=x.dataset.cchip.split("|")[1];x.classList.toggle("on",CAKE1(k)?el.value.trim().toLowerCase()===ov.toLowerCase():cakeLines(el.value).some(y=>y.toLowerCase()===ov.toLowerCase()))})});
 /* "Outro": escreve-se à mão no campo (na massa substitui a escolha; nos recheios/crocantes junta uma linha nova) */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cother]");if(!t)return;e.preventDefault();const f=t.closest("form"), k=t.dataset.cother, el=f&&f[k];if(!el)return;
-  if(k==="massa"){if(CAKEOPT.massa.some(o=>o.toLowerCase()===el.value.trim().toLowerCase()))el.value="";t.closest(".cchips").querySelectorAll(".chip.on").forEach(x=>x.classList.remove("on"))}
+  if(CAKE1(k)){if(CAKEOPT[k].some(o=>o.toLowerCase()===el.value.trim().toLowerCase()))el.value="";t.closest(".cchips").querySelectorAll(".chip.on").forEach(x=>x.classList.remove("on"))}
   else if(el.value.trim()&&!el.value.endsWith("\n"))el.value+="\n";
-  el.placeholder=k==="massa"?"Escreve a massa":"Escreve aqui (uma por linha)";el.focus();const n=el.value.length;try{el.setSelectionRange(n,n)}catch(err){}el.scrollIntoView({block:"center",behavior:"smooth"})});
+  el.placeholder=CAKE1(k)?({massa:"Escreve a massa",forma:"ex.: Coração, número 7",peso:"ex.: 1,2 kg"})[k]:"Escreve aqui (uma por linha)";el.focus();const n=el.value.length;try{el.setSelectionRange(n,n)}catch(err){}el.scrollIntoView({block:"center",behavior:"smooth"})});
 /* Imagem do bolo: reduzida (legível, ~600 KB) e guardada na coleção "files" como os anexos; no bolo fica só img:{id,size} */
 async function cakeImgData(id){if(cakeImgCache[id])return cakeImgCache[id];const d=await fb.getFile(houseCode,id);cakeImgCache[id]=d;return d}
 document.addEventListener("change",async e=>{const inp=e.target.closest&&e.target.closest("[data-cakeimg]");if(!inp)return;const file=inp.files&&inp.files[0];inp.value="";if(!file)return;
@@ -5557,7 +5559,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v228";
+const APPV="casa-v229";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
