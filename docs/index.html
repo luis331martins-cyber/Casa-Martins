@@ -113,6 +113,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;font-weight:500;overflow-wrap:anywhere}
 .cakeb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ff9f0a 14%,var(--surface));color:var(--fg);font-size:15px}
 .cakeb span{flex:1;min-width:0;font-size:13px;color:var(--muted)}.cakeb i{font-style:normal;color:var(--muted)}.cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;text-transform:none;letter-spacing:0}.cchips .chip{font-size:13px;padding:6px 10px}.cchips .chip.on{background:#ff9f0a;color:#fff}.cchips .chip.other{background:none;border:1.5px dashed var(--accent)}
+.cimg{display:flex;gap:10px;align-items:center;margin-top:6px;text-transform:none;letter-spacing:0}.cimgv{flex:none;width:96px;height:96px;border-radius:12px;background:var(--fill);color:var(--accent);font-size:13px;overflow:hidden;padding:0}.cimgv img{width:100%;height:100%;object-fit:cover}.cimgb{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;text-transform:none;letter-spacing:0}
 .cakeb.add{background:none;border:1.5px dashed color-mix(in srgb,#ff9f0a 55%,transparent);color:var(--accent)}.cakef textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);resize:vertical}
 .ggrow{display:flex;gap:5px;margin-top:6px;text-transform:none;letter-spacing:0}.ggopt{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1 1 0;min-width:0;padding:8px 6px 6px;border-radius:12px;background:var(--fill);color:var(--fg);font-size:12px;font-weight:500}
 .ggopt svg{width:20px;height:28px;overflow:visible}.ggopt[aria-pressed="true"]{background:var(--accent-soft,#e5f0ff);box-shadow:inset 0 0 0 2px var(--accent)}
@@ -3799,6 +3800,7 @@ const CAKEOPT={massa:["Chocolate","Pão de ló","Red velvet","Laranja","Limão",
   croc:["Chocolate","Caramelo salgado","Frutos vermelhos"]};
 const cakeLines=v=>String(v||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const cakeChips=(k,val)=>CAKEOPT[k]?`<div class="cchips">${CAKEOPT[k].map(o=>`<button type="button" class="chip${(k==="massa"?String(val||"").toLowerCase()===o.toLowerCase():cakeLines(val).some(x=>x.toLowerCase()===o.toLowerCase()))?" on":""}" data-cchip="${k}|${esc(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip other" data-cother="${k}">✏️ Outro</button></div>`:"";
+let cakeImgCache={};
 const cakesOf=b=>b.cakes||(b.cake?[{id:"c0",...b.cake}]:[]);
 const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
 function cakeText(c){c=c||{};const L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l,String(c[k]).trim())});
@@ -3808,6 +3810,9 @@ function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/rech
   return`<form class="bill-edit cakef" data-cakeform="${key}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 ${cid==="new"?"Novo bolo":esc(c.nome||"Bolo")} · ${esc(b.name)}</h3>
     <label class="f wide">Nome do bolo<input name="nome" value="${v(c.nome)}" placeholder="opcional · ex.: Festa da família, Escola" autocapitalize="sentences"></label>
     ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||k==="massa"?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>`).join("")}
+    <div class="f wide">Imagem para o bolo${c.img?`<div class="cimg"><button type="button" class="cimgv" data-cimgview="${key}">${cakeImgCache[c.img.id]?`<img src="${cakeImgCache[c.img.id]}" alt="Imagem do bolo">`:"🖼️ Ver imagem"}</button>
+      <div class="cimgb"><label class="chip">🔄 Trocar<input type="file" accept="image/*" data-cakeimg="${key}" hidden></label><button type="button" class="chip" data-cimgdel="${key}">🗑️ Tirar</button></div></div>`:
+      `<div class="cimgb"><label class="chip">📷 Tirar foto<input type="file" accept="image/*" capture="environment" data-cakeimg="${key}" hidden></label><label class="chip">🖼️ Da galeria<input type="file" accept="image/*" data-cakeimg="${key}" hidden></label></div>`}</div>
     <label class="f">Levantar no dia<input name="dia" type="date" value="${v(c.dia)}"></label>
     <label class="f">Hora<input name="hora" type="time" value="${v(c.hora)}"></label>
     <label class="f">Quem levanta<input name="quem" value="${v(c.quem)}" placeholder="ex.: Luís Martins" autocapitalize="words"></label>
@@ -3818,7 +3823,7 @@ function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/rech
     <button class="btn ghost${cid==="new"?" wide":""}" type="button" data-cakeclose="1">Fechar</button>
     ${cid==="new"?"":`<button class="btn danger" type="button" data-cakedel="${key}">Apagar bolo</button>`}</form>`}
 const cakeBtn=(b,c)=>{const d=cakeDate(c), fut=d&&d>=new Date(new Date().toDateString());
-  return`<button type="button" class="cakeb" data-cakeopen="${b.id}|${c.id}">🎂 <b>${esc(c.nome||"Bolo")}</b><span>${(c.enc?"Encomendado":"Por encomendar")+(fut?` · levantar ${d.toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}${c.hora?" às "+c.hora:""}`:"")}</span><i>›</i></button>`};
+  return`<button type="button" class="cakeb" data-cakeopen="${b.id}|${c.id}">🎂 <b>${esc(c.nome||"Bolo")}</b><span>${(c.enc?"Encomendado":"Por encomendar")+(fut?` · levantar ${d.toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}${c.hora?" às "+c.hora:""}`:"")}</span>${c.img?"🖼️":""}<i>›</i></button>`};
 function bdNext(b){const t=new Date(), y=t.getFullYear(), [m,d]=b.md.split("-").map(Number);let n=new Date(y,m-1,d);
   const td=new Date(y,t.getMonth(),t.getDate());if(n<td)n=new Date(y+1,m-1,d);const days=Math.round((n-td)/864e5);return{date:n,days,age:b.year?n.getFullYear()-b.year:null}}
 function anosForm(b){const v=x=>x==null?"":esc(x), [m,d]=b?b.md.split("-").map(Number):[0,0];
@@ -3852,6 +3857,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],
   const [bid,cid]=(t.dataset.cakesend||t.dataset.cakedel).split("|"), b=bdays().find(x=>x.id===bid);if(!b)return;
   if(t.dataset.cakedel){const c=cakesOf(b).find(x=>x.id===cid);if(!confirm(`Apagar ${c&&c.nome?c.nome:"este bolo"}?`))return;const nb={...b,cakes:cakesOf(b).filter(x=>x.id!==cid)};delete nb.cake;putBill(nb);cakeOpen="";renderAnos();toast("Bolo apagado");return}
   const r=cakeSave(b,t.closest("form"),cid);if(!r){toast("Preenche primeiro o bolo");return}cakeOpen=bid+"|"+r.c.id;const txt=cakeText(r.c);
+  if(r.c.img&&navigator.share){cakeImgData(r.c.img.id).then(async d=>{const blob=await(await fetch(d)).blob(), file=new File([blob],`bolo-${b.name.split(" ")[0].toLowerCase()}.jpg`,{type:"image/jpeg"});
+      if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({text:txt,files:[file]}).catch(()=>{});else{navigator.share({text:txt}).catch(()=>{});toast("A imagem vai à parte: abre-a e partilha")}}).catch(()=>{navigator.share({text:txt}).catch(()=>{});toast("Não deu para juntar a imagem (sem internet?)")});return}
   if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cchip]");if(!t)return;e.preventDefault();const f=t.closest("form");const [k,o]=t.dataset.cchip.split("|"), el=f&&f[k];if(!el)return;
   if(k==="massa"){const on=el.value.trim().toLowerCase()===o.toLowerCase();el.value=on?"":o}
@@ -3862,8 +3869,26 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cother]");
   if(k==="massa"){if(CAKEOPT.massa.some(o=>o.toLowerCase()===el.value.trim().toLowerCase()))el.value="";t.closest(".cchips").querySelectorAll(".chip.on").forEach(x=>x.classList.remove("on"))}
   else if(el.value.trim()&&!el.value.endsWith("\n"))el.value+="\n";
   el.placeholder=k==="massa"?"Escreve a massa":"Escreve aqui (uma por linha)";el.focus();const n=el.value.length;try{el.setSelectionRange(n,n)}catch(err){}el.scrollIntoView({block:"center",behavior:"smooth"})});
+/* Imagem do bolo: reduzida (legível, ~600 KB) e guardada na coleção "files" como os anexos; no bolo fica só img:{id,size} */
+async function cakeImgData(id){if(cakeImgCache[id])return cakeImgCache[id];const d=await fb.getFile(houseCode,id);cakeImgCache[id]=d;return d}
+document.addEventListener("change",async e=>{const inp=e.target.closest&&e.target.closest("[data-cakeimg]");if(!inp)return;const file=inp.files&&inp.files[0];inp.value="";if(!file)return;
+  const [bid,cid]=inp.dataset.cakeimg.split("|"), b=bdays().find(x=>x.id===bid), f=inp.closest("form");if(!b||!f)return;
+  if(!store||!fb||!houseCode){toast("As imagens precisam da casa partilhada (com conta).");return}
+  if(!navigator.onLine){toast("Sem internet. Tenta outra vez com rede.");return}
+  toast("A guardar a imagem…");let data;try{data=await shrinkDoc(file)}catch(err){toast("Não foi possível abrir essa imagem.");return}
+  const id=uid(), parts=[];for(let i=0;i<data.length;i+=900000)parts.push(data.slice(i,i+900000));
+  try{await fb.putFile(houseCode,id,parts)}catch(err){toast("Não foi possível guardar a imagem. Tenta outra vez.");return}
+  cakeImgCache[id]=data;const fresh=bdays().find(x=>x.id===bid)||b, L=cakesOf(fresh), old=L.find(x=>x.id===cid);
+  const c={id:cid==="new"?uid():cid};["nome",...CAKEF.map(x=>x[0]),"dia","hora","quem","past"].forEach(k=>{const v=(f[k]&&f[k].value||"").trim();if(v)c[k]=v});if(f.enc.checked)c.enc=1;
+  c.img={id,size:Math.round(data.length*.75)};if(old&&old.img)fb.delFile(houseCode,old.img.id).catch(()=>{});
+  const cakes=old?L.map(x=>x.id===cid?c:x):[...L,c];const nb={...fresh,cakes};delete nb.cake;putBill(nb);cakeOpen=bid+"|"+c.id;renderAnos();toast("Imagem guardada 🖼️")});
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-cimgview],[data-cimgdel]");if(!t)return;e.preventDefault();const [bid,cid]=(t.dataset.cimgview||t.dataset.cimgdel).split("|"), b=bdays().find(x=>x.id===bid), c=b&&cakesOf(b).find(x=>x.id===cid);if(!c||!c.img)return;
+  if(t.dataset.cimgdel){if(!confirm("Tirar a imagem deste bolo?"))return;const f=t.closest("form");if(f)cakeSave(b,f,cid);const fresh=bdays().find(x=>x.id===bid);fb&&houseCode&&fb.delFile(houseCode,c.img.id).catch(()=>{});
+    putBill({...fresh,cakes:cakesOf(fresh).map(x=>{if(x.id!==cid)return x;const y={...x};delete y.img;return y})});renderAnos();toast("Imagem tirada");return}
+  if(!cakeImgCache[c.img.id]){t.textContent="A abrir…";try{await cakeImgData(c.img.id)}catch(err){t.textContent="🖼️ Ver imagem";toast(navigator.onLine?"Não foi possível abrir a imagem.":"Sem internet para abrir a imagem.");return}t.innerHTML=`<img src="${cakeImgCache[c.img.id]}" alt="Imagem do bolo">`;return}
+  const pv=document.getElementById("picView");if(pv){const im=pv.querySelector("img");if(im){im.src=cakeImgCache[c.img.id];pv.hidden=false}}});
 function cakeSave(b,f,cid){const c={id:cid==="new"?uid():cid};["nome",...CAKEF.map(x=>x[0]),"dia","hora","quem","past"].forEach(k=>{const v=(f[k]&&f[k].value||"").trim();if(v)c[k]=v});if(f.enc.checked)c.enc=1;
-  if(Object.keys(c).length<2)return null;const L=cakesOf(b), k=L.findIndex(x=>x.id===c.id);const cakes=k>=0?L.map((x,i)=>i===k?c:x):[...L,c];
+  const L=cakesOf(b), k=L.findIndex(x=>x.id===c.id);if(k>=0&&L[k].img)c.img=L[k].img;if(Object.keys(c).length<2)return null;const cakes=k>=0?L.map((x,i)=>i===k?c:x):[...L,c];
   const nb={...b,cakes};delete nb.cake;putBill(nb);return{nb,c}}
 document.addEventListener("submit",e=>{const f=e.target;if(!f.dataset.cakeform)return;e.preventDefault();const [bid,cid]=f.dataset.cakeform.split("|"), b=bdays().find(x=>x.id===bid);if(!b)return;if(!cakeSave(b,f,cid)){toast("Preenche primeiro o bolo");return}cakeOpen="";renderAnos();toast("Bolo guardado")});
 document.getElementById("addAnos").addEventListener("click",()=>{editAnos="new";renderAnos();const f=document.querySelector('[data-anosform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
@@ -5532,7 +5557,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v227";
+const APPV="casa-v228";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
