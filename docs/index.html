@@ -1877,7 +1877,8 @@ const wantOf=i=>i.want!=null?+i.want:1;
 const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);if(!h)return 0;if(n.mb)return 1;if(gaugeOn(n)){if(+n.res>0)return 2;return n.use&&fillOf(n)<=1?1:2}if(h-1>=wantOf(n))return 2;return 1};
 /* Garrafa/pacote vermelho mas com stock: não vai às compras, aparece nos alertas para abrir o próximo */
 const gaugeAlert=i=>gaugeOn(i)&&(i.use!=null?i.use:(i.lvl??2)>0)&&+i.res>0&&fillOf(i)<=1;
-const isMaybe=i=>isRes(i)&&i.use&&i.lvl===2&&!i.mb&&!(+i.res)&&gaugeOn(i)&&fillOf(i)===2;
+/* "Talvez comprar": o que vai a meio sem stock, e o que está marcado para aparecer sempre (i.always: papel higiénico, guardanapos…) */
+const isMaybe=i=>(i.lvl??2)===2&&!i.mb&&!i.cart&&(i.always||isRes(i)&&i.use&&!(+i.res)&&gaugeOn(i)&&fillOf(i)===2);
 const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} em stock`:""):`1 em uso · ${i.res?`${i.res} em stock`:"sem stock"}`;
 function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
   const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
@@ -1917,6 +1918,13 @@ function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n
     const q=Math.max(0,Math.ceil(+n.qty||0));if(n.low!=null&&n.want==null)n.want=Math.max(0,+n.low);n.use=q>0;n.res=Math.max(0,q-1);delete n.qty;delete n.low;delete n.packN;delete n.packU;n.lvl=resLvl(n)}
   return n}
 let resTidyDone=false;
+/* Pedido (01/11): papel higiénico, guardanapos, pasta de dentes e creme de rosto sempre em "Talvez comprar" (se não existirem, são criados) */
+let alwDone=false;
+function alwaysTidy(){if(alwDone||!items.length||!bills.length)return;alwDone=true;if(bills.some(b=>b.id==="flag-always-1"))return;
+  [[/papel higi[eé]nico/i,"Papel higiénico","Higiene"],[/guardanapo/i,"Guardanapos","Despensa"],[/pasta de dentes|dent[ií]fric/i,"Pasta de dentes","Higiene"],[/creme (de |do |para o )?rosto|creme facial/i,"Creme de rosto","Higiene"]].forEach(([re,name,cat])=>{
+    const L=items.filter(i=>re.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
+    else{const n={id:uid(),name,cat,lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
+  putBill({id:"flag-always-1",kind:"flag",at:Date.now()})}
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   /* produtos com desenho: o estado passa a seguir o nível do aberto (ex.: garrafa cheia sem stock já não vai às compras) */
   for(const it of items.filter(i=>i.res!=null&&isRes(i)&&i.lvl!==resLvl(i))){const n={...it,lvl:resLvl(it)};if(n.lvl===2)delete n.skip;upsert(n);put(n)}
@@ -2021,6 +2029,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <label class="f">Compro de cada vez<input name="bu" type="number" min="0" step="any" inputmode="decimal" value="${i.buy??""}" placeholder="${String(buyOf({...i,low:i.low})).replace(".",",")}"></label>
       <label class="f">Categoria<select name="c">${PCATS.map(c=>`<option${c===i.cat?" selected":""}>${c}</option>`).join("")}</select></label>
       <input type="hidden" name="e" value="${i.exp||""}">
+      <label class="tick wide">Pôr sempre em “Talvez comprar”<input type="checkbox" class="switch" name="alw"${i.always?" checked":""}></label>
       <label class="f wide">Onde se compra<input name="s" list="shopList" value="${esc(i.shop||"")}" placeholder="ex.: Continente" autocapitalize="words"></label>
       <div class="chips wide">${shopsUsed().slice(0,8).map(n=>`<button type="button" class="chip" data-shop="${esc(n)}">${esc(n)}</button>`).join("")}</div>
       ${String(i.id).startsWith("__new")?`<button class="btn" type="submit">Adicionar</button>
@@ -2091,7 +2100,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),inShop.filter(i=>i.cart)):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
   const maybe=sorted.filter(isMaybe);
-  if(maybe.length)shop.innerHTML+=`<h3 style="margin-top:14px">Talvez comprar (${maybe.length})</h3><p class="note" style="margin:0 0 6px">Vão a meio e não há stock. Junta à lista se for preciso.</p>`+maybe.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span class="fillb" style="width:24px;height:30px" aria-hidden="true">${fillSVG(i)}</span><div><div class="name">${esc(i.name)}</div><div class="meta">Meio · sem stock${i.shop?" · "+esc(i.shop):""}</div></div></div>
+  if(maybe.length)shop.innerHTML+=`<h3 style="margin-top:14px">Talvez comprar (${maybe.length})</h3><p class="note" style="margin:0 0 6px">Vão a meio sem stock, ou estão marcados para aparecer sempre. Junta à lista se for preciso.</p>`+maybe.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px">${gaugeOn(i)?`<span class="fillb" style="width:24px;height:30px" aria-hidden="true">${fillSVG(i)}</span>`:""}<div><div class="name">${esc(i.name)}</div><div class="meta">${i.always&&!(gaugeOn(i)&&fillOf(i)===2&&!(+i.res))?(isRes(i)&&resText(i)?resText(i):i.qty!=null?"tens "+qtyText(i):"Decide se é preciso"):"Meio · sem stock"}${i.shop?" · "+esc(i.shop):""}</div></div></div>
       <div class="buybtns"><button type="button" class="bb" data-maybe="${i.id}">+ Pôr na lista</button></div></div>`).join("");
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
@@ -2139,6 +2148,7 @@ document.addEventListener("submit",e=>{
     if(f.gg){if(f.gg.value===(autoShape(n)||"tag"))delete n.gauge;else n.gauge=f.gg.value}
     if(f.iu)n.use=f.iu.checked;if(rv>=0)n.res=rv;else if(f.iu&&n.res==null&&!n.use)n.res=0;if(n.res!=null)n.lvl=resLvl(n)}
   if(shop)n.shop=shop;
+  if(f.alw){if(f.alw.checked)n.always=1;else delete n.always}
   if(nk){/* novo: se a forma de contar não foi escolhida, segue o nome (ex.: iogurtes à unidade, detergente em uso + guardados) */
     if(!n.mchosen&&!MEAT.includes(n.cat)&&!n.med){const w=resDefault(n);if(w&&n.cnt)cntToRes(n);else if(!w&&!n.cnt)resToCnt(n)}
     upsert(n);put(n);closeDraft(nk);render();toast(name+" adicionado");return}
@@ -2168,7 +2178,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(
   if(on){setRes(it,false,r,null,["fill","mb"]);toast(r?`Acabou o aberto · ${r} em stock`:"Acabou · vai para as compras")}
   else{setRes(it,true,r>0?r-1:0,null,["fill","mb"]);toast(r?"Em uso · saiu 1 do stock":"Em uso")}},true);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-maybe]");if(!b)return;const it=items.find(i=>i.id===b.dataset.maybe);if(!it)return;
-  const n={...it,mb:1};delete n.skip;n.lvl=resLvl(n);upsert(n);render();put(n);toast(`${it.name} na lista de compras`)});
+  const n={...it,mb:1};delete n.skip;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1;upsert(n);render();put(n);toast(`${it.name} na lista de compras`)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-gg]");if(!b)return;const f=b.closest("form");if(!f||!f.gg)return;f.gg.value=b.dataset.gg;f.querySelectorAll("[data-gg]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
 /* Garrafa/pote: cada toque baixa um nível (cheio → quase cheio → meio → quase vazio → vazio → cheio) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-fill]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.fill);if(!it)return;
@@ -2207,7 +2217,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[dat
 document.addEventListener("click",e=>{if(!e.target.closest("[data-qtyopen]"))return;qtyOpen=true;render();window.scrollTo(0,0)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))return;const L=items.filter(i=>i.cart&&i.lvl<2);
   L.forEach(it=>{const n={...it};delete n.cart;const k=items.findIndex(x=>x.id===it.id);if(k>=0)items[k]=n;if(n.med)put(n);buyDone(it.id,true)});qtyOpen=false;render();toast(`${L.length} produto${L.length===1?"":"s"} atualizado${L.length===1?"":"s"} em casa`)});
-function buyDone(id,quiet){const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
+function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
@@ -3106,9 +3116,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",alwaysTidy)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Talvez comprar",alwaysTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -5522,7 +5532,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Talvez comprar",alwaysTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5584,7 +5594,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v234";
+const APPV="casa-v235";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
