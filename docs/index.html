@@ -154,7 +154,10 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lowbox.shut>:not(.lowh),.mbox.shut>:not(.mboxh){display:none}.lowbox.shut{padding:10px 12px}
 .skrow .okc{background:#34c759;color:#fff}.skrow{flex-wrap:wrap}.skrow .mt{flex:1 1 100%}.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
 #useBox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:2px solid #ff9500;border-radius:16px;padding:10px}.useh input{width:100%;padding:11px 12px;border-radius:12px;border:0;background:var(--fill);font-size:16px;color:var(--fg)}
-.usel{display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow:auto}.usel .b2cat{margin-top:8px}.userow{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line)}.userow.on{background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px}
+.usel{display:flex;flex-direction:column;gap:2px}.useh{display:flex;flex-direction:column;gap:8px}.useh b{font-size:18px}
+.usegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.usecat{position:relative;display:flex;align-items:center;gap:8px;padding:14px 10px;border-radius:14px;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));text-align:left;font-size:15px}.usecat b{font-weight:700}
+.usecat i{position:absolute;top:-6px;right:-6px;font-style:normal;background:#ff3b30;color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;font-weight:800}
+#useBox .catback{align-self:flex-start}.usecath{font-size:18px;font-weight:800;margin:8px 2px 4px}.usesel{display:flex;flex-wrap:wrap;gap:6px}.usesel .chip.on{background:#ff9500;color:#fff;font-size:13px}.usel .b2cat{margin-top:8px}.userow{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line)}.userow.on{background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px}
 .userow .mt{flex:1;min-width:0}.usebar{display:grid;grid-template-columns:1fr 2fr;gap:8px;position:sticky;bottom:0}.usebar .btn[disabled]{opacity:.45}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
@@ -2428,7 +2431,7 @@ document.addEventListener("input",e=>{if(e.target.name==="cc"&&e.target.closest(
 const CATREN={"Despensa":"Mercearia","Frigorífico":"Laticínios e frios","Fruta":"Frutas e legumes"};
 function catRename(){items.filter(i=>CATREN[i.cat]).forEach(i=>{const n={...i,cat:CATREN[i.cat]};upsert(n);put(n)});["p","m"].forEach(k=>{if(CATREN[catSel[k]])catSel[k]=CATREN[catSel[k]]})}
 /* ---------- Dar baixa: escolher 1 ou vários produtos e quanto se gastou; o stock desce logo ---------- */
-let useSel={}, useQ="";
+let useSel={}, useQ="", useCat="";
 const useHas=i=>hasBags(i)?bagSum(i.bags||[])>0:isRes(i)?(i.use||(+i.res||0)>0||(i.res==null&&(i.lvl??2)>0)):(+i.qty||0)>0||i.qty==null&&(i.lvl??2)>0;
 const useAmt=i=>hasBags(i)?`${String(bagSum(i.bags)).replace(".",",")} un.`:isRes(i)?resText(i)||"em uso":i.qty!=null?qtyText(i):"tenho";
 function useApply(it,k){if(!k)return;
@@ -2436,16 +2439,25 @@ function useApply(it,k){if(!k)return;
   if(hasBags(it)){let bg=[...it.bags], left=k;while(left>0&&bg.length){const j=bg.indexOf(Math.min(...bg)), t=Math.min(left,bg[j]);bg[j]=Math.round((bg[j]-t)*100)/100;left-=t;if(bg[j]<=0)bg.splice(j,1)}setBags(it,bg);return}
   if(it.qty==null){setLevel(it.id,0);return}
   setQty(it.id,(+it.qty||0)-k*(packBuy(it)?1:unitStep(it.unit)))}
+/* Dar baixa em passos: 1) categoria (ou procurar) 2) produtos dessa categoria 3) confirmar os escolhidos */
 function useRender(){const box=document.getElementById("useBox"), q=srNorm(useQ.trim());
-  const L=items.filter(i=>!i.med&&useHas(i)&&(!q||srNorm(i.name).includes(q))), n=Object.values(useSel).filter(v=>v>0).length;
-  const cats=[...new Set([...PCATS,...MEAT,...L.map(i=>i.cat)])];
-  box.innerHTML=`<div class="useh"><input id="useQ" type="search" placeholder="Procurar (ex.: leite)" value="${esc(useQ)}" autocomplete="off"></div>
-    <div class="usel">${cats.map(c=>{const G=L.filter(i=>i.cat===c).sort((a,b)=>a.name.localeCompare(b.name,"pt"));if(!G.length)return"";const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];
-      return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`+G.map(i=>{const v=useSel[i.id]||0;return`<div class="userow${v?" on":""}"><span class="mt"><b>${esc(i.name)}</b><small>Tens ${esc(useAmt(i))}</small></span>
-        <div class="qrow"><button type="button" class="qb" data-useq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${v}<small>${isRes(i)||hasBags(i)||!i.unit||i.unit==="un"?"un.":i.unit==="kg"||i.unit==="L"?"× ½ "+i.unit:i.unit}</small></span><button type="button" class="qb" data-useq="${i.id}|1" aria-label="Mais">+</button></div></div>`}).join("")}).join("")||`<p class="srnone">Nada encontrado.</p>`}</div>
+  const ALL=items.filter(i=>!i.med&&useHas(i)), sel=Object.entries(useSel).filter(([,v])=>v>0), n=sel.length;
+  const unitL=i=>isRes(i)||hasBags(i)||!i.unit||i.unit==="un"?"un.":i.unit==="kg"||i.unit==="L"?"× ½ "+i.unit:i.unit;
+  const rowU=i=>{const v=useSel[i.id]||0;return`<div class="userow${v?" on":""}"><span class="mt"><b>${esc(i.name)}</b><small>Tens ${esc(useAmt(i))}</small></span>
+    <div class="qrow"><button type="button" class="qb" data-useq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${v}<small>${unitL(i)}</small></span><button type="button" class="qb" data-useq="${i.id}|1" aria-label="Mais">+</button></div></div>`};
+  let body;
+  if(q){const L=ALL.filter(i=>srNorm(i.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt"));body=L.map(rowU).join("")||`<p class="srnone">Nada encontrado.</p>`}
+  else if(useCat){const L=ALL.filter(i=>i.cat===useCat).sort((a,b)=>a.name.localeCompare(b.name,"pt"));body=`<button type="button" class="catback" data-usecat=""><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><div class="usecath">${esc(useCat)}</div>`+L.map(rowU).join("")}
+  else{const cats=[...new Set([...PCATS,...MEAT,...ALL.map(i=>i.cat)])].filter(c=>ALL.some(i=>i.cat===c));
+    body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
+      return`<button type="button" class="usecat" data-usecat="${esc(c)}" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span><b>${esc(c)}</b>${k?`<i>${k}</i>`:""}</button>`}).join("")}</div>`}
+  box.innerHTML=`<div class="useh"><b>➖ Dar baixa</b><input id="useQ" type="search" placeholder="Procurar produto (ex.: leite)" value="${esc(useQ)}" autocomplete="off"></div>
+    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on">${esc(it.name)} −${v}</span>`:""}).join("")}</div>`:`<p class="note" style="margin:0">Escolhe a categoria (ou procura) e diz quanto gastaste de cada produto.</p>`}
+    <div class="usel">${body}</div>
     <div class="usebar"><button type="button" class="btn ghost" id="useCancel">Fechar</button><button type="button" class="btn" id="useGo"${n?"":" disabled"}>✓ Dar baixa${n?` de ${n} produto${n===1?"":"s"}`:""}</button></div>`;
   const qi=document.getElementById("useQ");qi.oninput=()=>{useQ=qi.value;const pos=qi.selectionStart;useRender();const nq=document.getElementById("useQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
-document.getElementById("useOpen").addEventListener("click",()=>{const b=document.getElementById("useBox");b.hidden=!b.hidden;useSel={};useQ="";if(!b.hidden)useRender()});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-usecat]");if(!t||!t.closest("#useBox"))return;e.preventDefault();e.stopPropagation();useCat=t.dataset.usecat;useRender();document.getElementById("useBox").scrollIntoView({block:"start",behavior:"smooth"})},true);
+document.getElementById("useOpen").addEventListener("click",()=>{const b=document.getElementById("useBox");b.hidden=!b.hidden;useSel={};useQ="";useCat="";if(!b.hidden)useRender()});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-useq],#useCancel,#useGo");if(!t)return;e.preventDefault();e.stopPropagation();
   if(t.id==="useCancel"){document.getElementById("useBox").hidden=true;useSel={};return}
   if(t.id==="useGo"){const L=Object.entries(useSel).filter(([,v])=>v>0);L.forEach(([id,k])=>{const it=items.find(i=>i.id===id);if(it)useApply(it,k)});useSel={};document.getElementById("useBox").hidden=true;render();toast(`Baixa dada a ${L.length} produto${L.length===1?"":"s"} ✓`);return}
@@ -5897,7 +5909,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v270";
+const APPV="casa-v271";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
