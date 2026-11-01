@@ -143,6 +143,8 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lowbox .mrow{padding:5px 2px;gap:8px}.lowbox .mbadge{min-width:42px;padding:3px 4px;border-radius:9px}.lowbox .mbadge b{font-size:15px}.lowbox .mbadge small{font-size:9px}.lowbox .mt b{font-size:15px}
 .mput{min-width:40px}.lowbox .mput{width:40px;height:36px;padding:0;font-size:18px;border-radius:12px}.lowbox .b2e{width:32px;height:32px}.mgauge{display:inline-block;width:12px;height:16px;vertical-align:-3px;margin-right:4px}.mgauge svg{width:12px;height:16px}
 .lowbar{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:2px 0 4px}.lowbar .lowp{margin:0;flex:1}.lowall{flex:none;padding:8px 12px;border-radius:999px;background:#ff3b30;color:#fff;font-weight:700;font-size:13px}
+#revBox{display:flex;flex-direction:column;gap:8px}.revh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.revrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.revn{display:flex;flex-direction:column}.revn small{color:var(--muted);font-size:12px}.revi{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px;padding:6px 8px}.revi.inf{background:var(--fill);color:var(--muted)}.revrow>[data-revedit]{align-self:flex-start}.revok2{padding:12px;border-radius:12px;background:#34c75922;color:#1d7a3a;font-weight:600}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -1333,6 +1335,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <h1 class="large">Em casa</h1>
     <div class="summary" id="summary"></div>
     <label class="btn ghost scanbtn">📷 Ler o talão das compras<input type="file" accept="image/*" data-scan="despensa" hidden></label>
+    <button type="button" class="btn ghost" id="revOpen">🔎 Rever os produtos (categoria, como contar, símbolo…)</button>
+    <div id="revBox" hidden></div>
     <button type="button" class="btn addopen" data-addopen="pAdd">＋ Adicionar produto</button>
     <div id="pAdd" class="addbox" hidden>
     <div id="pAddForm"></div>
@@ -2399,6 +2403,33 @@ document.addEventListener("input",e=>{if(e.target.name==="cc"&&e.target.closest(
 /* Categorias com os nomes dos corredores (pedido 01/11): Despensa → Mercearia, Frigorífico → Laticínios e frios, Fruta → Frutas e legumes */
 const CATREN={"Despensa":"Mercearia","Frigorífico":"Laticínios e frios","Fruta":"Frutas e legumes"};
 function catRename(){items.filter(i=>CATREN[i.cat]).forEach(i=>{const n={...i,cat:CATREN[i.cat]};upsert(n);put(n)});["p","m"].forEach(k=>{if(CATREN[catSel[k]])catSel[k]=CATREN[catSel[k]]})}
+/* ---------- Rever os produtos: a app verifica cada produto e sugere correções (com "Aplicar") ---------- */
+function revIssues(){const R=[], NOGAUGE=["Congelados","Carne","Frutas e legumes"];
+  items.filter(i=>!i.med).forEach(i=>{const n=i.name||"", gc=guessCat(n);
+    if(gc!=="Mercearia"&&gc!==i.cat&&!MEAT.includes(i.cat)&&!(gc==="Carne"&&i.cat==="Congelados"))R.push({id:i.id,k:"cat",t:`Categoria: está em ${i.cat}, parece ${gc}`,to:gc});
+    if(!MEAT.includes(i.cat)&&!i.mchosen){const w=resDefault(i);if(w&&!isRes(i))R.push({id:i.id,k:"res",t:"Como contar: costuma ser “Em uso + stock” (um aberto e os outros guardados)"});
+      else if(!w&&isRes(i)&&!autoShape(i)&&NOGAUGE.concat(["Laticínios e frios"]).includes(i.cat))R.push({id:i.id,k:"cnt",t:"Como contar: aqui faz mais sentido “À unidade” (ex.: iogurtes, congelados)"})}
+    if(isRes(i)&&gaugeOn(i)&&NOGAUGE.includes(i.cat))R.push({id:i.id,k:"tag",t:`Símbolo: ${i.cat.toLowerCase()} não precisa de garrafa/pacote — melhor o balão`});
+    if(isRes(i)&&!gaugeOn(i)&&autoShape(i)&&i.gauge==="tag")R.push({id:i.id,k:"info",t:`Símbolo: está em balão; podia ser ${GSHAPES.find(([k])=>k===autoShape(i))[1].toLowerCase()} (opcional)`});
+    if(isRes(i)&&i.res==null)R.push({id:i.id,k:"info",t:"Falta dizer quantos tens em stock"});
+    if(!isRes(i)&&!MEAT.includes(i.cat)&&i.qty==null&&!hasBags(i))R.push({id:i.id,k:"info",t:"Falta dizer a quantidade que tens"});
+    if(/caixa|pack|embalagem/i.test(n)&&!i.packN)R.push({id:i.id,k:"info",t:"Se compras à caixa, diz quantas unidades traz (✏️ → Cada caixa traz)"});});
+  return R}
+function revApply(r){const it=items.find(i=>i.id===r.id);if(!it)return;let n={...it};
+  if(r.k==="cat")n.cat=r.to;else if(r.k==="res")n=cntToRes({...n,mchosen:1});else if(r.k==="cnt")n=resToCnt({...n,mchosen:1});else if(r.k==="tag")n.gauge="tag";else return;
+  upsert(n);put(n)}
+function revRender(){const box=document.getElementById("revBox"), R=revIssues(), fix=R.filter(r=>r.k!=="info");
+  if(!R.length){box.innerHTML=`<div class="revok2">✅ Está tudo certo nos ${items.length} produtos.</div>`;return}
+  const by={};R.forEach(r=>{(by[r.id]=by[r.id]||[]).push(r)});
+  box.innerHTML=`<div class="revh"><b>${Object.keys(by).length} produtos para rever</b>${fix.length?`<button type="button" class="btn" data-revall="1">✓ Aplicar as ${fix.length} sugestões</button>`:""}</div>`+
+    Object.entries(by).map(([id,L])=>{const it=items.find(i=>i.id===id);return`<div class="revrow"><div class="revn"><b>${esc(it.name)}</b><small>${esc(it.cat)} · ${isRes(it)?"em uso + stock":"à unidade"}${gaugeOn(it)?" · "+GSHAPES.find(([k])=>k===shapeOf(it))[1].toLowerCase():""}</small></div>
+      ${L.map((r,k)=>`<div class="revi${r.k==="info"?" inf":""}"><span>${esc(r.t)}</span>${r.k==="info"?"":`<button type="button" class="chip" data-revfix="${id}|${R.indexOf(r)}">Aplicar</button>`}</div>`).join("")}
+      <button type="button" class="chip" data-revedit="${id}">✏️ Abrir</button></div>`}).join("");box._R=R}
+document.getElementById("revOpen").addEventListener("click",()=>{const b=document.getElementById("revBox");b.hidden=!b.hidden;if(!b.hidden)revRender()});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-revfix],[data-revall],[data-revedit]");if(!t)return;const box=document.getElementById("revBox"), R=box._R||[];
+  if(t.dataset.revall){const L=R.filter(r=>r.k!=="info");L.forEach(revApply);render();revRender();toast(`${L.length} correções aplicadas`);return}
+  if(t.dataset.revedit){const it=items.find(i=>i.id===t.dataset.revedit);if(!it)return;if(MEAT.includes(it.cat))catSel.m=it.cat;else catSel.p=it.cat;editItem=it.id;render();setTimeout(()=>{const f=document.querySelector(`#pantry [data-itemform="${it.id}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},80);return}
+  const r=R[+t.dataset.revfix.split("|")[1]];if(r){revApply(r);render();revRender();toast("Corrigido")}});
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
@@ -5812,7 +5843,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v261";
+const APPV="casa-v262";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
