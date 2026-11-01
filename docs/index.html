@@ -132,6 +132,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .srrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;color:var(--fg)}.sric{font-size:22px;width:30px;text-align:center;flex:none}
 .srt{flex:1;min-width:0;display:flex;flex-direction:column}.srt b{font-weight:600;font-size:16px}.srt small{font-size:12.5px;color:var(--muted)}.srgo{color:var(--muted);font-size:20px}.srnone{color:var(--muted);text-align:center;margin-top:30px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
+.acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2330,6 +2331,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElemen
 document.querySelectorAll(".navbar").forEach(n=>{let sp=n.lastElementChild;if(!sp||sp.tagName!=="SPAN"||sp.classList.contains("navtitle")){sp=document.createElement("span");n.appendChild(sp)}
   if(!sp.children.length&&!sp.textContent.trim())sp.innerHTML=`<button type="button" class="lupa" aria-label="Procurar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>`});
 document.addEventListener("click",e=>{if(e.target.closest(".lupa"))srOpen()});
+/* Cor da conta: ao mexer no quadrado de cor, passa sozinho para "Outra cor" */
+document.addEventListener("input",e=>{if(e.target.name==="cc"&&e.target.closest("[data-accform]")){const f=e.target.form;f.c.value="custom"}});
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
@@ -2815,7 +2818,8 @@ function renderBills(){
   const ago=t=>{if(!t)return"";const d=Math.floor((Date.now()-t)/864e5);return d<=0?"hoje":d===1?"ontem":`há ${d} dias`};
   const accForm=a=>`<form class="bill-edit" data-accform="${a?a.id:"new"}" autocomplete="off">
       <label class="f wide">Conta<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: CGD" autocapitalize="words"></label>
-      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&(a.color===c||["#5fae2e","#00a3e0"].includes(a.color)&&c==="#7dd3fc")?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option></select></label>
+      <label class="f wide">Cor do banco<select name="c"><option value="">Automática (pelo nome)</option>${BANKS.map(([,c,n])=>`<option value="${c}"${a&&(a.color===c||["#5fae2e","#00a3e0"].includes(a.color)&&c==="#7dd3fc")?" selected":""}>${n}</option>`).join("")}<option value="none"${a&&a.color==="none"?" selected":""}>Sem cor</option><option value="custom"${a&&a.color&&a.color!=="none"&&!BANKS.some(([,c])=>c===a.color)&&!["#5fae2e","#00a3e0"].includes(a.color)?" selected":""}>🎨 Outra cor (escolher)</option></select></label>
+      <label class="f wide acccol">Escolher a cor (toca no quadrado)<input type="color" name="cc" value="${a&&/^#[0-9a-f]{6}$/i.test(a.color||"")?a.color:"#ff2d55"}"></label>
       <label class="f wide">Saldo atual (€)<input name="b" type="number" step="0.01" inputmode="decimal" required value="${a?Math.round((+a.bal||0)*100)/100:""}" placeholder="1.250,00"></label>
       <button class="btn" type="submit">Guardar</button>
       <button class="btn ghost" type="button" data-cancelacc="1">Cancelar</button>
@@ -2898,7 +2902,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
 });
 document.addEventListener("submit",e=>{
   const id=e.target.dataset.accform;if(!id)return;e.preventDefault();
-  const name=e.target.n.value.trim(), bal=parseFloat(e.target.b.value), color=e.target.c.value;if(!name||isNaN(bal))return;
+  const name=e.target.n.value.trim(), bal=parseFloat(e.target.b.value), color=e.target.c.value==="custom"?e.target.cc.value:e.target.c.value;if(!name||isNaN(bal))return;
   const old=id==="new"?null:accounts().find(x=>x.id===id);
   const a={...(old||{}),id:old?old.id:uid(),kind:"account",name,bal,at:Date.now(),...(myName()?{by:myName()}:{})};if(color)a.color=color;else delete a.color;
   editAcc="";putBill(a);toast("Saldo guardado");
@@ -5741,7 +5745,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v245";
+const APPV="casa-v246";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
