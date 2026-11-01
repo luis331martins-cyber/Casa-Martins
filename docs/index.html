@@ -152,6 +152,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lowh,.mboxh{width:100%;background:none;padding:0;text-align:left;display:flex;align-items:center;gap:8px}.lowh i,.mboxh i{font-style:normal;color:var(--muted);font-size:20px;margin-left:6px}.lowh span{margin-left:auto}
 .mboxh{font-size:18px;font-weight:700;color:var(--fg)}.mboxh .mcount{margin-left:auto;font-size:13px;background:var(--fill);border-radius:999px;padding:2px 10px}
 .lowbox.shut>:not(.lowh),.mbox.shut>:not(.mboxh){display:none}.lowbox.shut{padding:10px 12px}
+.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2207,13 +2208,17 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   if(maybe.length){const lo=maybe.filter(mLow), unk=maybe.filter(mUnk), ok=maybe.filter(i=>!mLow(i)&&!mUnk(i));
     if(lo.length){lo.sort((a,b)=>((isRes(a)?(a.use?1:0)+(+a.res||0):+a.qty||0)-(isRes(b)?(b.use?1:0)+(+b.res||0):+b.qty||0)));
       const shutL=boxShut("low"), box=`<div class="lowbox${shutL?" shut":""}"><button type="button" class="lowh" data-boxtog="low" aria-expanded="${!shutL}">⚠️ Tens pouco<span>${lo.length}</span><i>${shutL?"⌄":"⌃"}</i></button><div class="lowbar"><p class="lowp">O número é o que tens em stock. <b>＋</b> junta à lista.</p><button type="button" class="lowall" data-maybeall="1">＋ Juntar todos</button></div>${mGrp(lo)}</div>`;
-      const q=shop.querySelector(".qpanel,.qbanner");if(q)q.insertAdjacentHTML("afterend",box);else shop.insertAdjacentHTML("afterbegin",box)}
+      shop.insertAdjacentHTML("beforeend",box)}
     if(unk.length||ok.length){const shutM=boxShut("maybe");shop.innerHTML+=`<div class="mbox${shutM?" shut":""}"><button type="button" class="mboxh" data-boxtog="maybe" aria-expanded="${!shutM}"><span>🤔 Talvez comprar</span><span class="mcount">${unk.length+ok.length}</span><i>${shutM?"⌄":"⌃"}</i></button>
       ${unk.length?`<div class="msec unk"><div class="msh">❔ Sem quantidade registada <span>${unk.length}</span></div>${mGrp(unk)}<p class="mhint">Diz quanto tens (em Em casa) e passam a ir para o sítio certo.</p></div>`:""}
       ${ok.length?`<div class="msec ok"><div class="msh">✓ Ainda chega <span>${ok.length}</span></div>${mGrp(ok)}</div>`:""}</div>`}}
   const skipped=sorted.filter(i=>i.lvl<2&&skipOn(i));
-  if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3><p class="note" style="margin:0 0 6px">Voltam sozinhos à lista nas próximas compras.</p>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
-      <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
+  if(skipped.length){const shutS=boxShut("skip");shop.innerHTML+=`<div class="mbox skipbox${shutS?" shut":""}"><button type="button" class="mboxh" data-boxtog="skip" aria-expanded="${!shutS}"><span>✕ Não comprei desta vez</span><span class="mcount">${skipped.length}</span><i>${shutS?"⌄":"⌃"}</i></button>
+    <p class="note" style="margin:4px 0 6px">São os que tocaste no ✕ nesta ida às compras. Voltam sozinhos à lista na próxima vez. Se afinal compraste, toca em <b>🛒 Comprei</b>.</p>
+    ${skipped.map(i=>`<div class="skrow"><div class="mt"><b>${esc(i.name)}</b><small>${esc(i.cat)}</small></div>
+      <button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button>
+      <button type="button" class="chip" data-skipbuy="${i.id}">🛒 Comprei</button>
+      <button type="button" class="chip" data-skip="${i.id}" aria-label="Voltar à lista">↩︎ Lista</button></div>`).join("")}</div>`}
 }
 
 /* ---------- eventos ---------- */
@@ -2349,6 +2354,9 @@ document.addEventListener("submit",e=>{const f=e.target;if(!f.dataset||!f.datase
   setTimeout(()=>{const g=document.querySelector("form[data-qadd] [name=n]");if(g)g.focus()},80)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-maybeall]"))return;const L=items.filter(i=>document.querySelector(`.lowbox [data-maybe="${i.id}"]`));
   L.forEach(it=>{const n={...it,mb:1};delete n.skip;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1;if(n.lvl>1)n.lvl=1;upsert(n);put(n)});render();toast(`${L.length} produto${L.length===1?"":"s"} juntado${L.length===1?"":"s"} à lista`)});
+/* "Não comprei" → afinal comprei: passa para o carrinho (entra em Pôr as quantidades) */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-skipbuy]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.skipbuy);if(!it)return;
+  const n={...it,cart:1};delete n.skip;qtyOpen=true;upsert(n);render();put(n);toast(`${it.name} no carrinho · acerta a quantidade`)});
 /* Tirar da lista de compras: passa a "tenho" (não apaga o produto) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
@@ -5857,7 +5865,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v266";
+const APPV="casa-v267";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
