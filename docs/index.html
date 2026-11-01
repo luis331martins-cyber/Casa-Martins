@@ -3909,14 +3909,12 @@ const cakesOf=b=>b.cakes||(b.cake?[{id:"c0",...b.cake}]:[]);
 const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
 /* Pedido à pastelaria feito pela app: mensagem arrumada (negritos do WhatsApp) + ficha em imagem com tudo e a foto */
 const cakeWhen=c=>{const d=cakeDate(c);return[d?d.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}):"",c.hora?"às "+c.hora.replace(/^(\d+):00$/,"$1")+"h":""].filter(Boolean).join(" ")};
-function cakeMsg(b,c){const hasImg=CIMG.some(([k])=>c[k]), L=["🎂 *Encomenda de bolo*"+(c.past?` · ${c.past}`:""),""];
-  CAKEF.forEach(([k,l])=>{let v=String(c[k]||"").trim().split("\n").filter(Boolean);if(k==="deco"&&hasImg)v.push("conforme a foto em anexo");if(v.length)L.push(`*${l}:* ${v.join(", ")}`)});
-  if(c.dia||c.hora||c.quem){L.push("");if(c.dia||c.hora)L.push(`📅 *Levantamento:* ${cakeWhen(c)}`);if(c.quem)L.push(`👤 *Em nome de:* ${c.quem}`)}
-  L.push("","Obrigado! 😊");return L.join("\n")}
+function cakeMsg(b,c){const w=cakeWhen(c);
+  return [`🎂 *Encomenda de bolo*${c.past?` · ${c.past}`:""}`,"",`Olá! Segue em anexo o pedido do bolo${w?`, para levantar *${w}*`:""}${c.quem?` (em nome de ${c.quem})`:""}.`,"","Obrigado! 😊"].join("\n")}
 async function cakeCard(b,c){const W=1080, P=64, cv=document.createElement("canvas"), g=cv.getContext("2d"), F='-apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif';
   const wrap=(t,font,max)=>{g.font=font;const out=[];String(t).split("\n").forEach(par=>{let line="";par.split(" ").forEach(w=>{const tt=line?line+" "+w:w;if(g.measureText(tt).width>max&&line){out.push(line);line=w}else line=tt});out.push(line)});return out};
   const hasImg=CIMG.some(([k])=>c[k]);let img=null;if(c.img)try{img=await new Promise(async(ok,ko)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=ko;im.src=await cakeImgData(c.img.id)})}catch(e){}
-  const rows=[];CAKEF.forEach(([k,l])=>{let v=String(c[k]||"").trim().split("\n").filter(Boolean);if(k==="deco"&&hasImg)v.push("Conforme a foto em anexo");if(v.length)rows.push([l,v.join(" · ")])});
+  const rows=[];CAKEF.forEach(([k,l])=>{let v=String(c[k]||"").trim().split("\n").filter(Boolean);if(k==="deco"&&hasImg&&!v.some(x=>/foto/i.test(x)))v.push("Conforme a foto");if(v.length)rows.push([l,v.join(" · ")])});
   const VF=`500 40px ${F}`, LF=`800 26px ${F}`;let H=300;const R=rows.map(([l,v])=>{const lines=wrap(v,VF,W-2*P-40);H+=88+lines.length*46;return[l,lines]});
   let ih=0,iw=0;if(img){iw=W-2*P;ih=Math.min(900,img.height*iw/img.width);iw=img.width*ih/img.height;H+=ih+40}
   const pick=c.dia||c.hora||c.quem;if(pick)H+=190;H+=90;cv.width=W;cv.height=H;
@@ -3930,7 +3928,7 @@ async function cakeCard(b,c){const W=1080, P=64, cv=document.createElement("canv
     g.fillStyle="#c25e00";g.font=LF;g.fillText("LEVANTAMENTO",P+32,y+48);g.fillStyle="#1c1c1e";g.font=`700 40px ${F}`;g.fillText(cakeWhen(c)||"—",P+32,y+100);g.font=`500 32px ${F}`;g.fillStyle="#555";if(c.quem)g.fillText(c.quem,P+32,y+142);y+=190}
   g.fillStyle="#b0a090";g.font=`500 24px ${F}`;g.fillText("Feito na app A nossa casa",P,H-36);
   return await new Promise(ok=>cv.toBlob(ok,"image/png"))}
-function cakeText(c){c=c||{};const L=[], hasImg=CIMG.some(([k])=>c[k]);CAKEF.forEach(([k,l])=>{if(k==="deco"&&hasImg){L.push(l,[String(c[k]||"").trim(),"Conforme a foto em anexo"].filter(Boolean).join("\n"));return}if(c[k])L.push(l,String(c[k]).trim())});
+function cakeText(c){c=c||{};const L=[], hasImg=CIMG.some(([k])=>c[k]);CAKEF.forEach(([k,l])=>{if(k==="deco"&&hasImg&&!/foto/i.test(String(c[k]||""))){L.push(l,[String(c[k]||"").trim(),"Conforme a foto em anexo"].filter(Boolean).join("\n"));return}if(c[k])L.push(l,String(c[k]).trim())});
   if(c.dia||c.hora||c.quem){L.push("Levantamento");const d=cakeDate(c);L.push([d?`Dia ${d.toLocaleDateString("pt-PT")}`:"",c.hora?c.hora.replace(/^(\d+):00$/,"$1")+"h":""].filter(Boolean).join(" - "));if(c.quem)L.push(c.quem)}
   return L.filter(Boolean).join("\n")}
 function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco|croc/.test(k), key=b.id+"|"+cid;
@@ -3985,7 +3983,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],
   const r=cakeSave(b,t.closest("form"),cid);if(!r){toast("Preenche primeiro o bolo");return}cakeOpen=bid+"|"+r.c.id;const txt=cakeMsg(b,r.c);
   const slug=b.name.split(" ")[0].toLowerCase();toast("A preparar o pedido…");
   (async()=>{const files=[];try{const card=await cakeCard(b,r.c);files.push(new File([card],`pedido-bolo-${slug}.png`,{type:"image/png"}))}catch(e){}
-    if(r.c.img)try{const d=await cakeImgData(r.c.img.id), blob=await(await fetch(d)).blob();files.push(new File([blob],`foto-bolo-${slug}.jpg`,{type:"image/jpeg"}))}catch(e){}
+    if(r.c.img&&!files.length)try{const d=await cakeImgData(r.c.img.id), blob=await(await fetch(d)).blob();files.push(new File([blob],`foto-bolo-${slug}.jpg`,{type:"image/jpeg"}))}catch(e){}
     if(navigator.share&&files.length&&navigator.canShare&&navigator.canShare({files}))navigator.share({text:txt,files}).catch(()=>{});
     else if(navigator.share)navigator.share({text:txt}).catch(()=>{});
     else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))})()});
@@ -5694,7 +5692,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v242";
+const APPV="casa-v243";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
