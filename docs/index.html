@@ -2016,7 +2016,7 @@ document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemf
   if(d.mchosen||MEAT.includes(d.cat))return;const w=resDefault(d);if(w===!d.cnt)return;if(w){delete d.cnt;d.use=true;d.res=0}else{d.cnt=true;delete d.use;delete d.res}
   const shop=f.s.value;paintDraft(k);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g){g.s.value=shop;const x=g.querySelector("[name=rv],[name=q]");if(x)x.focus()}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:"",s:""};const shopFold=new Set();let qtyOpen=false, shopEdit="";
+const catSel={p:"",m:"",s:""};const shopFold=new Set();let qtyOpen=false, shopEdit="", addToCart=false;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-shopfold]");if(!b)return;const c=b.dataset.shopfold;shopFold.has(c)?shopFold.delete(c):shopFold.add(c);render()});let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
 const SHOPCOL=[[/continente.*lidl|lidl.*continente/,"#e30613","#0050aa","#fff"],[/continente/,"#e30613","#e30613","#fff"],[/lidl/,"#0050aa","#0050aa","#ffe500"],
@@ -2152,7 +2152,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
   const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? ✏️ edita · ✕ não trouxe (volta à lista). Ao guardar, fica tudo atualizado em casa.</p>
     ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" aria-label="Não trouxe ${esc(i.name)}">✕</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?`${buyAmt(i)===1?"caixa":"caixas"} · ${String(buyAmt(i)*i.packN).replace(".",",")} un.`:unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
-    <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
+    <button type="button" class="btn ghost" data-addcart="1" style="margin-top:10px;width:100%">＋ Juntar um produto que também trouxe</button>
+    <button type="button" class="btn" data-cartdone="1" style="margin-top:8px;width:100%">✓ Guardar quantidades</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
   const sEdit=shopEdit&&editItem===shopEdit&&items.find(i=>i.id===shopEdit);if(!sEdit)shopEdit="";
@@ -2295,6 +2296,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!
   document.addEventListener("click",e=>{if(lpDone&&e.target.closest("#shop .b2main,#shop .mrow")){e.preventDefault();e.stopImmediatePropagation();lpDone=false}},true)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-sedit]");if(!b)return;e.preventDefault();e.stopPropagation();shopEdit=editItem=b.dataset.sedit;render();
   setTimeout(()=>{const x=document.querySelector(".sedit");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60)},true);
+document.addEventListener("click",e=>{if(!e.target.closest("[data-addcart]"))return;addToCart=true;qtyOpen=true;const f=document.getElementById("shopAdd");f.n.placeholder="O que trouxeste a mais? (ex.: pilhas)";f.scrollIntoView({block:"center",behavior:"smooth"});setTimeout(()=>f.n.focus(),250)});
 /* Tirar da lista de compras: passa a "tenho" (não apaga o produto) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
@@ -2316,11 +2318,11 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
   f.n.addEventListener("input",fill);f.n.addEventListener("focus",()=>{document.getElementById("itemNames").innerHTML=items.map(i=>`<option value="${esc(i.name)}">`).join("")});f.s.addEventListener("input",()=>{f.s.dataset.touched=1});
   f.addEventListener("submit",e=>{e.preventDefault();const name=f.n.value.trim();if(!name)return;const shop=f.s.value.trim(), cat=f.c.value;
     let it=items.find(i=>i.name.toLowerCase()===name.toLowerCase());
-    if(it){const n={...it,cat};delete n.skip;delete n.cart;if(shop)n.shop=shop;if((n.lvl??2)===2){n.mb=1;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1}upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} na lista · podes acertar os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
+    if(it){const n={...it,cat};delete n.skip;delete n.cart;if(addToCart){n.cart=1;if((n.lvl??2)===2)n.lvl=1}if(shop)n.shop=shop;if((n.lvl??2)===2){n.mb=1;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1}upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} na lista · podes acertar os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
     else{const n={id:uid(),name:name[0].toUpperCase()+name.slice(1),cat,lvl:0,tidy:1,rtidy:1,rt2:1,added:Date.now(),...(shop?{shop}:{})};
-      if(!MEAT.includes(cat)&&resDefault(n)){n.use=false;n.res=0}else{n.cnt=true;n.qty=0;n.unit="un"}
+      if(!MEAT.includes(cat)&&resDefault(n)){n.use=false;n.res=0}else{n.cnt=true;n.qty=0;n.unit="un"}if(addToCart)n.cart=1;
       upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} juntado à lista · acerta os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
-    f.n.value="";delete f.s.dataset.touched;x.hidden=true;f.n.focus()})}
+    f.n.value="";delete f.s.dataset.touched;x.hidden=true;if(addToCart){addToCart=false;f.n.placeholder="＋ Juntar à lista (ex.: atum, pilhas…)"}})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
 const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
 const SR_KIND={med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
@@ -5772,7 +5774,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v255";
+const APPV="casa-v256";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
