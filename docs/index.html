@@ -1823,7 +1823,7 @@ const COUNTU=["un","pacotes","latas","garrafas","caixas","doses","sacos"];
 const unitLow=u=>!u||COUNTU.includes(u)?1:u==="kg"||u==="L"?0.5:u==="g"?200:250;
 const unitStep=u=>u==="kg"||u==="L"?0.5:u==="g"||u==="ml"?100:1;
 const lowOf=i=>i.low!=null?+i.low:MEAT.includes(i.cat)?0:unitLow(i.unit);
-const buyOf=i=>i.buy!=null?+i.buy:isRes(i)?Math.max(1,wantOf(i)-(+i.res||0)+(i.use||i.res==null&&i.lvl>0?0:1)):MEAT.includes(i.cat)?1:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
+const buyOf=i=>i.buy!=null?+i.buy:typeof boxBuy==="function"&&boxBuy(i)?1:isRes(i)?Math.max(1,wantOf(i)-(+i.res||0)+(i.use||i.res==null&&i.lvl>0?0:1)):MEAT.includes(i.cat)?1:!i.unit||COUNTU.includes(i.unit)?Math.max(2,lowOf(i)*2):i.unit==="kg"||i.unit==="L"?1:500;
 const autoLvl=(i,q)=>q<=0?0:q<=lowOf(i)?1:2;
 function setQty(id,q){const it=items.find(i=>i.id===id);if(!it)return;q=Math.max(0,Math.round(q*100)/100);
   const n={...it,qty:q,unit:it.unit||"un"};n.lvl=autoLvl(n,q);if(n.lvl===2||q>(+it.qty||0))delete n.skip;if(it.qty===q&&it.lvl===n.lvl)return;upsert(n);render();put(n)}
@@ -1888,6 +1888,8 @@ const packText=i=>{if(!i.packN)return"";const nm=i.unit&&i.unit!=="un"&&SING[i.u
 /* Carne/peixe contado à unidade mas comprado ao saco (ex.: sacos com 6 e com 2) */
 /* Sacos com quantidades diferentes: carne, peixe e congelados */
 const BAGC=["Carne","Peixe","Congelados"];
+/* Compra-se à caixa: "Cada caixa traz N un." → nas Compras conta caixas e ao guardar soma caixas × N */
+const boxBuy=i=>!BAGC.includes(i.cat)&&+i.packN>0&&(!i.packU||i.packU==="un.")&&(!i.unit||i.unit==="un"||isRes(i));
 const packBuy=i=>BAGC.includes(i.cat)&&(Array.isArray(i.bags)||i.packN>0&&(!i.unit||i.unit==="un")&&(!i.packU||i.packU==="un."));
 /* Sacos em casa com quantidades diferentes (ex.: bags:[6,2]): a quantidade é a soma, em un. */
 const hasBags=i=>BAGC.includes(i.cat)&&Array.isArray(i.bags);
@@ -2079,7 +2081,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <label class="f">Quero ter em stock<input name="wv" type="number" min="0" step="1" inputmode="numeric" value="${i.want??""}" placeholder="1"></label>
       <div class="f wide">Símbolo<input type="hidden" name="gg" value="${gaugeOn(i)?shapeOf(i):"tag"}"><div class="ggrow">${GSHAPES.map(([k,l])=>`<button type="button" class="ggopt" data-gg="${k}" aria-pressed="${gaugeOn(i)&&shapeOf(i)===k}">${fillSVG({id:"s",gauge:k,fill:3})}<span>${l}</span></button>`).join("")}<button type="button" class="ggopt" data-gg="tag" aria-pressed="${!gaugeOn(i)}"><span class="lvlb s1" style="margin:7px 0;padding:3px 5px;font-size:10px">Pouco</span><span>Balão</span></button></div></div>
       <label class="tick wide">Há um em uso (aberto)<input type="checkbox" name="iu"${i.use||(i.use==null&&(i.lvl??2)>0)?" checked":""}></label>
-      <div hidden><input name="q"><input name="u" value="un"><input name="lo"><input name="pn"><input name="pu" value="un."></div>`:
+      <label class="f wide">Compro à caixa? Cada caixa traz<span class="qty"><input name="pn" type="number" min="0" step="1" inputmode="numeric" value="${i.packN??""}" placeholder="ex.: 6 (vazio = à unidade)"><select name="pu"><option>un.</option></select></span></label><div hidden><input name="q"><input name="u" value="un"><input name="lo"></div>`:
       hasBags(i)?`<input type="hidden" name="q"><input type="hidden" name="u" value="un">`:`<label class="f wide">Quantidade<span class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input name="q" type="number" min="0" step="any" inputmode="decimal" value="${i.qty??""}" placeholder="—"><button type="button" data-step="1" aria-label="Mais">+</button></span></label>
       <label class="f">Unidade<select name="u">${unitOpts(i.unit)}</select></label>`}
       ${isRes(i)?"":`<label class="f wide">Cada ${i.unit&&COUNTU.includes(i.unit)&&i.unit!=="un"?(SING[i.unit]||i.unit):"saco/caixa"} traz<span class="qty"><input name="pn" type="number" min="0" step="any" inputmode="decimal" value="${i.packN??""}" placeholder="ex.: 6"><select name="pu">${["un.","g","kg","doses","fatias"].map(u=>`<option${(i.packU||"un.")===u?" selected":""}>${u}</option>`).join("")}</select></span></label>
@@ -2149,7 +2151,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
     <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
   const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? ✏️ edita · ✕ não trouxe (volta à lista). Ao guardar, fica tudo atualizado em casa.</p>
-    ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" aria-label="Não trouxe ${esc(i.name)}">✕</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
+    ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" aria-label="Não trouxe ${esc(i.name)}">✕</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?`${buyAmt(i)===1?"caixa":"caixas"} · ${String(buyAmt(i)*i.packN).replace(".",",")} un.`:unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
     <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
@@ -2359,9 +2361,9 @@ const CATREN={"Despensa":"Mercearia","Frigorífico":"Laticínios e frios","Fruta
 function catRename(){items.filter(i=>CATREN[i.cat]).forEach(i=>{const n={...i,cat:CATREN[i.cat]};upsert(n);put(n)});["p","m"].forEach(k=>{if(CATREN[catSel[k]])catSel[k]=CATREN[catSel[k]]})}
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
-    if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
+    if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
-    if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
+    if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)||boxBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
 function show(tab){if(tab==="carne"){tab="despensa";catSel.p="";}["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
@@ -5770,7 +5772,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v254";
+const APPV="casa-v255";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
