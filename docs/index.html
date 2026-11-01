@@ -3800,7 +3800,7 @@ const CAKEOPT={massa:["Chocolate","Pão de ló","Red velvet","Laranja","Limão",
   recheio:["Mousse de chocolate","Creme mascarpone","Mousse doce de leite","Creme de pistáchio","Mousse de coco","Creme de limão","Mousse de limão","Mousse de avelã","Mousse de Oreo","Mousse de frutos vermelhos","Mousse de morango","Creme de avelã","Chantilly","Creme russo","Cheesecake","Nutella","Coulis de framboesa","Doce de leite","Doce de ovo","Brigadeiro branco","Brigadeiro preto","Beijinho de coco"],
   croc:["Chocolate","Caramelo salgado","Frutos vermelhos","Kinder"],
   cobertura:["Chantilly","Chocolate derretido (escorrido)","Chocolate branco escorrido","Caramelo salgado escorrido","Calda de maracujá","Calda de frutos vermelhos","Cobertura total de chocolate","Granulado de chocolate nos lados","Naked (camadas à vista)"],
-  deco:["Frutos vermelhos","Morangos","Framboesas","Mirtilos","Amoras","Cerejas","Fruta tropical (kiwi, maracujá, manga)","Rodelas de laranja","Kinder","Oreo","Maltesers","Ferrero Rocher","Toblerone","Milka","Macarons","Bolachas","Flores comestíveis","Folhas verdes","Coco","Cone de bolacha","Chupa de bolo (cakesicle)","Placa Parabéns","Laço"],
+  deco:["Frutos vermelhos","Morangos","Framboesas","Mirtilos","Amoras","Cerejas","Fruta tropical (kiwi, maracujá, manga)","Rodelas de laranja","Kinder","Oreo","Maltesers","Ferrero Rocher","Toblerone","Milka","Macarons","Bolachas","Flores comestíveis","Folhas verdes","Coco","Cone de bolacha","Chupa de bolo (cakesicle)","Imagem comestível","Placa Parabéns","Laço"],
   forma:["Redondo","Retangular"],peso:["1 kg","1,5 kg","2 kg","2,5 kg","3 kg","4 kg","5 kg"]};
 /* Combinações mais pedidas do Moinho d'Água: um toque preenche */
 const CAKEPRE=[["Red velvet",{massa:"Red velvet",recheio:"Chantilly",cobertura:"Chantilly",deco:"Frutos vermelhos"}],["Kinder",{massa:"Chocolate",recheio:"Mousse de chocolate",croc:"Kinder",cobertura:"Chocolate derretido (escorrido)",deco:"Kinder"}],["Caramelo salgado",{massa:"Chocolate",recheio:"Mousse de chocolate",croc:"Caramelo salgado",cobertura:"Caramelo salgado escorrido"}]];
@@ -3815,15 +3815,14 @@ const cakeImgBlock=(key,c,slot,label)=>{const im=c[slot], k3=key+"|"+slot;return
       `<div class="cimgb"><label class="chip">📷 Tirar foto<input type="file" accept="image/*" capture="environment" data-cakeimg="${k3}" hidden></label><label class="chip">🖼️ Da galeria<input type="file" accept="image/*" data-cakeimg="${k3}" hidden></label></div>`}</div>`};
 const cakesOf=b=>b.cakes||(b.cake?[{id:"c0",...b.cake}]:[]);
 const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
-function cakeText(c){c=c||{};const L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l,String(c[k]).trim())});
+function cakeText(c){c=c||{};const L=[], hasImg=CIMG.some(([k])=>c[k]);CAKEF.forEach(([k,l])=>{if(k==="deco"&&hasImg){L.push(l,[String(c[k]||"").trim(),"Conforme a foto em anexo"].filter(Boolean).join("\n"));return}if(c[k])L.push(l,String(c[k]).trim())});
   if(c.dia||c.hora||c.quem){L.push("Levantamento");const d=cakeDate(c);L.push([d?`Dia ${d.toLocaleDateString("pt-PT")}`:"",c.hora?c.hora.replace(/^(\d+):00$/,"$1")+"h":""].filter(Boolean).join(" - "));if(c.quem)L.push(c.quem)}
   return L.filter(Boolean).join("\n")}
 function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco|croc/.test(k), key=b.id+"|"+cid;
   return`<form class="bill-edit cakef" data-cakeform="${key}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 ${cid==="new"?"Novo bolo":esc(c.nome||"Bolo")} · ${esc(b.name)}</h3>
     <div class="f wide">⭐ Mais pedidos<div class="cchips">${CAKEPRE.map(([n])=>`<button type="button" class="chip" data-cpre="${esc(n)}">${esc(n)}</button>`).join("")}</div></div>
     <label class="f wide">Nome do bolo<input name="nome" value="${v(c.nome)}" placeholder="opcional · ex.: Festa da família, Escola" autocapitalize="sentences"></label>
-    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||CAKE1(k)?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>${k==="cobertura"?cakeImgBlock(key,c,"imgCob","Foto da cobertura"):k==="deco"?cakeImgBlock(key,c,"imgDeco","Foto da decoração"):""}`).join("")}
-    ${cakeImgBlock(key,c,"img","Imagem para o bolo (geral)")}
+    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||CAKE1(k)?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>${k==="deco"?cakeImgBlock(key,c,"img","Foto para o bolo")+(c.img?`<p class="note wide" style="margin:-4px 0 0">Na decoração do pedido aparece “conforme a foto em anexo”.</p>`:""):""}`).join("")}
     <label class="f">Levantar no dia<input name="dia" type="date" value="${v(c.dia)}"></label>
     <label class="f">Hora<input name="hora" type="time" value="${v(c.hora)}"></label>
     <label class="f">Quem levanta<input name="quem" value="${v(c.quem)}" placeholder="ex.: Luís Martins" autocapitalize="words"></label>
@@ -5573,7 +5572,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v231";
+const APPV="casa-v232";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
