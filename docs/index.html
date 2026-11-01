@@ -105,7 +105,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .fillb{width:34px;height:40px;padding:0;background:none;display:grid;place-items:center;flex:none}.fillb svg{width:26px;height:36px;overflow:visible}.buyrow .fillb svg{width:20px;height:28px}
 .buy2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}.bcol{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;min-width:0}
 .bcol.cart{background:color-mix(in srgb,#34c759 9%,var(--surface))}.bcol h4{margin:2px 4px 6px;font-size:15px;display:flex;justify-content:space-between;align-items:center}.bcol h4 span{font-size:12px;background:var(--fill);border-radius:999px;padding:2px 8px;color:var(--muted)}
-.b2cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:8px 4px 2px}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
+.b2grp{margin-top:8px}.b2cat+.b2row{border-top:0}.b2cat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#fff;padding:5px 8px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.15)}.b2ci{display:grid;place-items:center;width:20px;height:20px;flex:none}.b2ci svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
 .b2main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:anywhere}.b2t small{font-size:11px;color:var(--muted)}
 .b2chk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:13px;color:#fff}.b2chk.on{background:#34c759;border-color:#34c759}.b2row.in .b2t b{color:var(--muted);text-decoration:line-through}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
@@ -2075,8 +2075,12 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button></div>`;
-  const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${[...new Set([...PCATS,...CATS,...MEAT])].map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2cat">${c}</div>`+G.map(leftRow).join(""):""}).join("")||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
-    <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${R.map(rightRow).join("")||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
+  /* Cada categoria com o seu ícone e cor, em destaque */
+  const ALLC=[...new Set([...PCATS,...CATS,...MEAT])];
+  const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO.Despensa;return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
+  const byCat=(L,row)=>ALLC.map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2grp">${catHd(c)}${G.map(row).join("")}</div>`:""}).join("");
+  const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
+    <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
   const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? Ao guardar, fica tudo atualizado em casa.</p>
     ${cartL.map(i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`).join("")}
     <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
@@ -5580,7 +5584,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v233";
+const APPV="casa-v234";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
