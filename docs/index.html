@@ -118,6 +118,12 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .cakef>.f{font-size:13px;font-weight:800;letter-spacing:.06em;color:#c26a00;padding-top:6px}.cakef>.f>input,.cakef>.f>textarea,.cakef>.f>select{font-weight:400;letter-spacing:0;color:var(--fg)}
 .cakef .chip,.cakef .cimgb{font-weight:500;letter-spacing:0}.cakef .tick{font-weight:500;letter-spacing:0;color:var(--fg)}.cgrps{display:flex;flex-direction:column;gap:8px;margin-top:6px}.cgrp{background:color-mix(in srgb,#ff9f0a 7%,transparent);border-radius:12px;padding:8px}.cgt{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--fg);border-left:3px solid #ff9f0a;padding-left:7px}.cgrp .cchips{margin-top:6px}
 .cakeb.add{background:none;border:1.5px dashed color-mix(in srgb,#ff9f0a 55%,transparent);color:var(--accent)}.cakef textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);resize:vertical}
+.mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
+.msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
+.msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
+.mrow{display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px solid var(--line)}.msh+.mrow{border-top:0}.mt{flex:1;min-width:0;display:flex;flex-direction:column}.mt b{font-weight:600;font-size:15px}.mt small{font-size:12px;color:var(--muted)}
+.mbadge{flex:none;min-width:52px;text-align:center;border-radius:10px;padding:4px 6px;line-height:1.1}.mbadge b{display:block;font-size:17px}.mbadge small{font-size:10px}.mbadge.lo{background:#ff3b30;color:#fff}.mbadge.ok{background:#34c75922;color:#1d7a3a}.mbadge.unk{background:var(--surface);color:var(--muted);border:1px dashed var(--line)}.msec.unk{background:var(--fill)}.msec.unk .msh{color:var(--muted)}.mhint{font-size:12px;color:var(--muted);margin:4px 2px 2px}
+.msec.ok .mrow{opacity:.75}.mput{flex:none;padding:8px 12px;border-radius:999px;background:var(--accent);color:#fff;font-size:13px;font-weight:600}.msec.ok .mput{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
 .ggrow{display:flex;gap:5px;margin-top:6px;text-transform:none;letter-spacing:0}.ggopt{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1 1 0;min-width:0;padding:8px 6px 6px;border-radius:12px;background:var(--fill);color:var(--fg);font-size:12px;font-weight:500}
 .ggopt svg{width:20px;height:28px;overflow:visible}.ggopt[aria-pressed="true"]{background:var(--accent-soft,#e5f0ff);box-shadow:inset 0 0 0 2px var(--accent)}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
@@ -1925,6 +1931,11 @@ function alwaysTidy(){if(alwDone||!items.length||!bills.length)return;alwDone=tr
     const L=items.filter(i=>re.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
     else{const n={id:uid(),name,cat,lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
   putBill({id:"flag-always-1",kind:"flag",at:Date.now()})}
+let alw2Done=false;
+function alwaysTidy2(){if(alw2Done||!items.length||!bills.length)return;alw2Done=true;if(bills.some(b=>b.id==="flag-always-2"))return;
+  const L=items.filter(i=>/p[aã]o rico/i.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
+  else{const n={id:uid(),name:"Pão rico integral",cat:"Despensa",lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}
+  putBill({id:"flag-always-2",kind:"flag",at:Date.now()})}
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   /* produtos com desenho: o estado passa a seguir o nível do aberto (ex.: garrafa cheia sem stock já não vai às compras) */
   for(const it of items.filter(i=>i.res!=null&&isRes(i)&&i.lvl!==resLvl(i))){const n={...it,lvl:resLvl(it)};if(n.lvl===2)delete n.skip;upsert(n);put(n)}
@@ -2100,8 +2111,18 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),inShop.filter(i=>i.cart)):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
   const maybe=sorted.filter(isMaybe);
-  if(maybe.length)shop.innerHTML+=`<h3 style="margin-top:14px">Talvez comprar (${maybe.length})</h3><p class="note" style="margin:0 0 6px">Vão a meio sem stock, ou estão marcados para aparecer sempre. Junta à lista se for preciso.</p>`+maybe.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px">${gaugeOn(i)?`<span class="fillb" style="width:24px;height:30px" aria-hidden="true">${fillSVG(i)}</span>`:""}<div><div class="name">${esc(i.name)}</div><div class="meta">${i.always&&!(gaugeOn(i)&&fillOf(i)===2&&!(+i.res))?(isRes(i)&&resText(i)?resText(i):i.qty!=null?"tens "+qtyText(i):"Decide se é preciso"):"Meio · sem stock"}${i.shop?" · "+esc(i.shop):""}</div></div></div>
-      <div class="buybtns"><button type="button" class="bb" data-maybe="${i.id}">+ Pôr na lista</button></div></div>`).join("");
+  /* Talvez comprar: em cima o que tem pouco (é o que é mesmo para comprar), em baixo o que ainda chega */
+  const mUnk=i=>isRes(i)?i.res==null:i.qty==null;
+  const mLow=i=>!mUnk(i)&&(isRes(i)?((+i.res||0)<wantOf(i)||(gaugeOn(i)&&!(+i.res)&&fillOf(i)<=2)):i.qty<=lowOf(i));
+  const mBadge=i=>{const has=isRes(i)?(i.res==null?null:+i.res||0):i.qty, low=mLow(i);
+    const t=has==null?"?":isRes(i)?`${has}`:String(has).replace(".",","), u=has==null?"sem nº":isRes(i)?"em stock":unitShort(i);
+    return`<span class="mbadge ${has==null?"unk":low?"lo":"ok"}"><b>${t}</b><small>${u}</small></span>`};
+  const mRow=i=>`<div class="mrow${mLow(i)?" lo":""}">${mBadge(i)}<div class="mt"><b>${esc(i.name)}</b><small>${[gaugeOn(i)&&(i.use!=null?i.use:true)?"aberto: "+FILL[fillOf(i)][0].toLowerCase():"",i.shop?esc(i.shop):""].filter(Boolean).join(" · ")}</small></div><button type="button" class="mput" data-maybe="${i.id}">＋ Lista</button></div>`;
+  if(maybe.length){const lo=maybe.filter(mLow), unk=maybe.filter(mUnk), ok=maybe.filter(i=>!mLow(i)&&!mUnk(i));
+    shop.innerHTML+=`<div class="mbox"><h3>🤔 Talvez comprar</h3>
+      ${lo.length?`<div class="msec lo"><div class="msh">⚠️ Tens pouco · é para comprar <span>${lo.length}</span></div>${lo.map(mRow).join("")}</div>`:""}
+      ${unk.length?`<div class="msec unk"><div class="msh">❔ Sem quantidade registada <span>${unk.length}</span></div>${unk.map(mRow).join("")}<p class="mhint">Diz quanto tens (em Em casa) e passam a ir para o sítio certo.</p></div>`:""}
+      ${ok.length?`<div class="msec ok"><div class="msh">✓ Ainda chega <span>${ok.length}</span></div>${ok.map(mRow).join("")}</div>`:""}</div>`}
   const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
   if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
       <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
@@ -3116,9 +3137,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",alwaysTidy)},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Talvez comprar",alwaysTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -5532,7 +5553,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Talvez comprar",alwaysTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5594,7 +5615,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v235";
+const APPV="casa-v236";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
