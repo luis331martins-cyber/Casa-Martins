@@ -3075,13 +3075,15 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");
     <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · já levantaste <b>${eur(dn)}</b> · falta <b>${eur(falta)}</b>${(b.levb||{})[k]?` · descontado no banco: ${eur(b.levb[k])}`:dn>0?" · (o já levantado ainda não foi descontado no banco)":""}</div>
     <label class="f">Quanto levantaste agora (€)<input id="lvAmt" type="text" inputmode="decimal" placeholder="ex.: 500,00"></label>
     ${accounts().length?`<label class="f">Levantado de (desconta no saldo)<select id="lvAcc"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${(b.acc||(/activo/i.test(a.name)?a.id:""))===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
-    <button type="button" class="btn" data-lv="part">Juntar ao levantado</button>
+    <button type="button" class="btn" data-lv="settle" style="background:#34c759">✓ Levantei este valor · fica acertado</button>
+    <p class="note" style="margin:-4px 0 0;font-size:12.5px">Usa quando arredondas (ex.: falta 969,59 € e levantas 970 €): desconta no banco o que levantaste e dá o mês por acertado.</p>
+    <button type="button" class="btn ghost" data-lv="part">Juntar ao levantado (ainda falta levantar mais)</button>
     <button type="button" class="btn ghost" data-lv="ok">✓ Já levantei tudo (${eur(c.e)})</button>
     ${dn>0?`<button type="button" class="btn ghost" data-lv="zero">Pôr o levantado a zero</button>`:""}
     <button type="button" class="btn danger" data-lv="del">Apagar este valor de ${mn}</button>
     <button type="button" class="btn ghost" data-lv="x">Fechar</button></div>`;
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-lv]");if(ev.target!==o&&!q)return;const a=q?q.dataset.lv:"x";
-    const v=a==="part"?numIn(o.querySelector("#lvAmt").value):0;if(a==="part"&&!(v>0)){o.querySelector("#lvAmt").focus();toast("Escreve quanto levantaste");return}
+    const v=a==="part"||a==="settle"?numIn(o.querySelector("#lvAmt").value):0;if((a==="part"||a==="settle")&&!(v>0)){o.querySelector("#lvAmt").focus();toast("Escreve quanto levantaste");return}
     o.remove();if(a==="x")return;
     const sel=o.querySelector("#lvAcc"), accId=sel?sel.value:"";
     const nb={...b,caixa:{...(b.caixa||{})},amounts:{...(b.amounts||{})},paid:{...(b.paid||{})},iconf:{...(b.iconf||{})},lev:{...(b.lev||{})},levv:{...(b.levv||{})}};
@@ -3090,6 +3092,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");
     nb.levb={...(b.levb||{})};
     const levBank=d=>{if(!accId||Math.abs(d)<0.005)return;nb.levb[k]=Math.round(((+nb.levb[k]||0)+d)*100)/100;if(nb.levb[k]<=0.004)delete nb.levb[k];const a=bills.find(x=>x.id===accId);if(!a)return;const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),900)};
     if(a==="part"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;if(tot>=c.e-0.004)nb.lev[k]=true;levBank(v);putBill(nb);toast(tot>=c.e-0.004?"Levantado tudo ✓":`Levantado ${eur(tot)} · falta ${eur(c.e-tot)}`)}
+    else if(a==="settle"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;nb.lev[k]=true;levBank(v);putBill(nb);const dif=Math.round((tot-c.e)*100)/100;toast(`Acertado ✓${Math.abs(dif)>0.004?` · ${dif>0?"+":"−"}${eur(Math.abs(dif))} do arredondamento`:""}`)}
     else if(a==="zero"){const back=+(b.levb||{})[k]||0;delete nb.levv[k];delete nb.lev[k];levBank(-back);putBill(nb);toast(back?`Levantado a zero · ${eur(back)} voltou ao saldo`:"Levantado a zero")}
     else if(a==="ok"){nb.lev[k]=true;nb.levv[k]=c.e;levBank(falta);putBill(nb);toast("Marcado como levantado ✓")}
     else{delete nb.caixa[k];delete nb.amounts[k];delete nb.paid[k];delete nb.iconf[k];delete nb.lev[k];putBill(nb);toast(`Valor da ${b.name} de ${mn} apagado`)}
@@ -5894,7 +5897,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v269";
+const APPV="casa-v270";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
