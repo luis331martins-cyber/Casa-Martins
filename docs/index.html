@@ -2346,7 +2346,7 @@ let openBud="", editSpend="";
 /* A app começa a contar a 1 de novembro de 2026: antes disso não há contas atrasadas nem meses para ver */
 const START="2026-11";
 let sortBy=(()=>{try{return localStorage.getItem("casa-ordem")||"day"}catch(e){return"day"}})();
-const BUDQUICK=["Supermercado","Restauração","Combustível","Farmácia"], INCQUICK=["Ordenado","Subsídio de alimentação","Abono"];
+const BUDQUICK=["Supermercado","Restaurantes","Combustível","Farmácia","Outros gastos"], INCQUICK=["Ordenado","Subsídio de alimentação","Abono"];
 /* Sugestões de "onde / o quê" para cada gasto: as já usadas nessa despesa e algumas habituais */
 const SHOPS={super:["Continente","Pingo Doce","Lidl","Mercadona","Aldi","Intermarché","Auchan","Minipreço"],rest:["Almoço","Jantar","Café","Take-away"]};
 const BQUICK=["Renda","Luz","Água","Gás","Internet","Condomínio","Seguro da casa"];
@@ -2378,8 +2378,8 @@ async function delBill(id){
 function fitTotals(){document.querySelectorAll(".tot .v").forEach(v=>{const box=v.parentElement;if(!box.clientWidth)return;v.style.fontSize="";const w=box.clientWidth-(box.closest(".chero")?0:20);
   for(let f=parseFloat(getComputedStyle(v).fontSize);v.scrollWidth>w&&f>10;f-=.5)v.style.fontSize=f+"px"})}
 /* Ícone de cada conta pelo nome (luz, água, internet, gás, casa, seguro, escola, carro, supermercado…) */
-const BIC=[[/luz|eletric|edp|endesa|iberdrola|goldenergy/i,"bolt","#ffcc00"],[/[aá]gua|epal|smas/i,"drop","#32ade6"],[/internet|net\b|fibra|meo|nos\b|vodafone|digi|telem[oó]vel|telefone/i,"wifi","#5e5ce6"],
-  [/g[aá]s/i,"flame","#ff9f0a"],[/cr[eé]dito habita|habita[cç][aã]o|renda|condom[ií]nio|casa/i,"house","#a2845e"],[/seguro/i,"shield","#34c759"],[/escola|creche|col[eé]gio|nata[cç][aã]o|gin[aá]stica|ballet|atl\b|propina/i,"bag","#ffb800"],
+const BIC=[[/^outros/i,"dots","#8e8e93"],[/luz|eletric|edp|endesa|iberdrola|goldenergy/i,"bolt","#ffcc00"],[/[aá]gua|epal|smas/i,"drop","#32ade6"],[/internet|net\b|fibra|meo|nos\b|vodafone|digi|telem[oó]vel|telefone/i,"wifi","#5e5ce6"],
+  [/\bg[aá]s\b|bilha/i,"flame","#ff9f0a"],[/cr[eé]dito habita|habita[cç][aã]o|renda|condom[ií]nio|casa/i,"house","#a2845e"],[/seguro/i,"shield","#34c759"],[/escola|creche|col[eé]gio|nata[cç][aã]o|gin[aá]stica|ballet|atl\b|propina/i,"bag","#ffb800"],
   [/carro|combust|gasolina|gas[oó]leo|portage|via verde|estaciona|iuc/i,"car","#30b0c7"],[/super|continente|lidl|pingo|mercadona|aldi|compras|mercado/i,"cart","#34c759"],[/restaura|comer|jantar|almo[cç]o|caf[eé]s?\b/i,"fork","#ff6b5e"],
   [/sa[uú]de|farm[aá]cia|m[eé]dic|dentista|consulta/i,"heart","#ff375f"],[/cart[aã]o|wizink|unibanco|cetelem|cofidis/i,"card","#af52de"],[/netflix|spotify|disney|hbo|max\b|youtube|prime|apple|icloud/i,"play","#ff453a"],
   [/gin[aá]sio|fitness|padel|t[eé]nis/i,"bolt2","#ff9f0a"],[/ordenado|sal[aá]rio|vencimento|subs[ií]dio|abono/i,"cash","#34c759"],[/caixa|break|empresa/i,"cash","#30d158"]];
@@ -2388,7 +2388,7 @@ const BICS={bolt:'<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>',drop:'<path d="M12
   shield:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/>',bag:'<path d="M7 8a5 5 0 0 1 10 0v12H7z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0M7 13h10"/>',car:'<path d="M5 16v-4l2-5h10l2 5v4z"/><path d="M5 12h14"/><circle cx="8" cy="16.5" r="1.5"/><circle cx="16" cy="16.5" r="1.5"/>',
   cart:'<path d="M3 4h2.5l2 11h10.5l2-8H6.5"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/>',fork:'<path d="M7 3v8a2 2 0 0 0 4 0V3M9 3v18M16 3c-1.5 1.5-2 4-2 7h3v11"/>',
   heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',play:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
-  bolt2:'<path d="M4 12h3M17 12h3M7 8v8M17 8v8M7 12h10"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 13.5h8"/>'};
+  bolt2:'<path d="M4 12h3M17 12h3M7 8v8M17 8v8M7 12h10"/>',cash:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/>',dots:'<circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>',euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 13.5h8"/>'};
 const billIc=b=>{const m=BIC.find(([re])=>re.test(b.name||"")), [k,c]=m?[m[1],m[2]]:[isInc(b)?"cash":"euro",isInc(b)?"#34c759":"#0a84ff"];return `<span class="bic" style="background:${c}" aria-hidden="true"><svg viewBox="0 0 24 24">${BICS[k]}</svg></span>`};
 /* Pedido de 29/10/2026: apagar uma vez os produtos da categoria Despensa (do "Em casa"); fica marcado na casa (flag-desp-1)
    para não voltar a acontecer, e o que for criado depois nunca é apagado */
@@ -2400,7 +2400,9 @@ function despWipe(){if(despWiped||!items.length||!bills.length)return;despWiped=
 /* Pedido (01/11): gastos de restaurantes junto ao supermercado (id fixo: não duplica entre telemóveis; só com dados do servidor) */
 let restDone=false;
 function restTidy(snap){if(restDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;restDone=true;
-  if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}})}
+  if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}});
+  /* Pedido (01/11): "Outros gastos" para o que não é supermercado nem restaurantes */
+  if(!bills.some(b=>b.id==="bud-outros"||(b.kind==="budget"&&/^outros/i.test(b.name||""))))putBill({id:"bud-outros",name:"Outros gastos",amount:0,day:0,kind:"budget",spent:{}})}
 let gasTidyDone=false;
 function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
   /* só a bilha de gás (nunca a luz da Galp) */
@@ -2441,7 +2443,7 @@ function renderBills(){
    document.getElementById("mLabel").innerHTML=`${label[0].toUpperCase()+label.slice(1)}<small class="mrange">${f(a)} – ${f(b)}</small>`}
   const byName=(a,b)=>a.name.localeCompare(b.name,"pt");
   const order=sortBy==="name"?byName:sortBy==="amt"?(a,b)=>planned(b,k)-planned(a,k)||byName(a,b):(a,b)=>(a.day||99)-(b.day||99)||byName(a,b);
-  const all=contas(), list=fixas().sort(order), buds=all.filter(isBud).sort(sortBy==="day"?byName:order);
+  const all=contas(), list=fixas().sort(order), buds=all.filter(isBud).sort(sortBy==="day"?byName:order).sort((a,c)=>/^outros/i.test(a.name||"")-/^outros/i.test(c.name||""));
   const inc=bills.filter(isInc).sort(order);
   document.querySelectorAll("[data-sort]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.sort===sortBy));
   document.getElementById("mPrev").disabled=k<=START;
@@ -5423,7 +5425,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v212";
+const APPV="casa-v213";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
