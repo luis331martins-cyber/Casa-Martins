@@ -1333,7 +1333,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="more">
         <label class="f">Categoria
           <select id="newCat">
-            <option>Frigorífico</option><option>Despensa</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Fruta</option>
+            <option>Laticínios e frios</option><option>Mercearia</option><option>Congelados</option><option>Limpeza</option><option>Higiene</option><option>Frutas e legumes</option>
           </select>
         </label>
         <input type="hidden" id="newExp">
@@ -1808,10 +1808,10 @@ addEventListener("unhandledrejection",e=>{const r=e.reason;showFatal(r&&(r.code?
 /* Dados incompletos (ex.: sem nome) não podem impedir a app de abrir */
 const fixNames=L=>(Array.isArray(L)?L:[]).filter(x=>x&&typeof x==="object").map(x=>({...x,name:String(x.name??x.title??"").trim()||"Sem nome"}));
 function safe(name,fn){try{return fn()}catch(err){showFatal(name+": "+(err&&err.message||err));console.error(err)}}
-const QUICK=[["Leite","Frigorífico"],["Ovos","Frigorífico"],["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Café","Despensa"],["Bananas","Fruta"],["Maçãs","Fruta"],["Laranjas","Fruta"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
-const CATS=["Frigorífico","Despensa","Congelados","Limpeza","Higiene","Fruta"];
+const QUICK=[["Leite","Laticínios e frios"],["Ovos","Laticínios e frios"],["Pão","Mercearia"],["Arroz","Mercearia"],["Massa","Mercearia"],["Azeite","Mercearia"],["Café","Mercearia"],["Bananas","Frutas e legumes"],["Maçãs","Frutas e legumes"],["Laranjas","Frutas e legumes"],["Detergente da loiça","Limpeza"],["Papel higiénico","Higiene"]];
+const CATS=["Laticínios e frios","Mercearia","Congelados","Limpeza","Higiene","Frutas e legumes"];
 /* "Em casa": todas as categorias num só separador (a carne e o peixe também) */
-const PCATS=["Frigorífico","Despensa","Congelados","Fruta","Carne","Limpeza","Higiene"];
+const PCATS=["Laticínios e frios","Mercearia","Congelados","Frutas e legumes","Carne","Limpeza","Higiene"];
 const FRUIT=/fruta|banana|ma[cç][aã]s?\b|\bperas?\b|laranja|\buvas?\b|morango|kiwi|anan[aá]s|abacaxi|mel[aã]o|melancia|manga\b|mangas\b|p[eê]ssego|ameixa|cereja|lim[aã]o|lim[oõ]es|tangerina|clementina|framboesa|mirtilo|abacate|\bfigos?\b|rom[aã]|papaia|maracuj|nectarina|alperce|dióspiro|di[oó]spiro|lima\b/i;
 const MEAT=["Carne","Peixe"];
 const MQUICK=[["Peito de frango","Carne"],["Carne picada","Carne"],["Bifes de vaca","Carne"],["Costeletas de porco","Carne"],["Fiambre","Carne"],["Salsichas","Carne"],["Salsichas frescas","Carne"],["Almôndegas","Carne"],["Almôndegas de frango","Carne"],["Espetadas de frango","Carne"],["Espetadas mistas","Carne"],["Hambúrgueres","Carne"],["Febras","Carne"],["Panados","Carne"],["Nuggets","Carne"],["Bacalhau","Peixe"],["Salmão","Peixe"],["Pescada","Peixe"],["Douradinhos","Peixe"],["Lulas","Peixe"],["Polvo","Peixe"],["Atum em lata","Peixe"],["Camarão","Peixe"]];
@@ -1864,10 +1864,10 @@ const HABITUAIS=[
   ["Espetadas de porco preto","Carne","Mercado da Carne"],["Espetadas de frango e peru","Carne","Mercado da Carne"],["Costeletas","Carne","Mercado da Carne"],
   ["Hambúrgueres de frango","Carne","Continente"],["Hambúrgueres de vaca","Carne","Continente"],["Panados de frango","Carne","Continente"],["Nuggets","Carne","Continente"],
   ["Bacalhau","Peixe","Continente"],["Hambúrgueres de salmão","Peixe","Lidl"],["Lombos de pescada","Peixe","Continente"],
-  ["Leite","Frigorífico"],["Ovos","Frigorífico"],["Manteiga","Frigorífico"],["Queijo","Frigorífico"],["Fiambre","Frigorífico"],["Iogurtes","Frigorífico"],
-  ["Pão","Despensa"],["Arroz","Despensa"],["Massa","Despensa"],["Azeite","Despensa"],["Óleo","Despensa"],["Açúcar","Despensa"],["Sal","Despensa"],["Farinha","Despensa"],
-  ["Café","Despensa"],["Cereais","Despensa"],["Atum","Despensa"],["Feijão","Despensa"],["Grão","Despensa"],["Polpa de tomate","Despensa"],["Batatas","Despensa"],
-  ["Cebolas","Despensa"],["Alhos","Despensa"],["Fruta","Fruta"],["Água","Despensa"],
+  ["Leite","Laticínios e frios"],["Ovos","Laticínios e frios"],["Manteiga","Laticínios e frios"],["Queijo","Laticínios e frios"],["Fiambre","Laticínios e frios"],["Iogurtes","Laticínios e frios"],
+  ["Pão","Mercearia"],["Arroz","Mercearia"],["Massa","Mercearia"],["Azeite","Mercearia"],["Óleo","Mercearia"],["Açúcar","Mercearia"],["Sal","Mercearia"],["Farinha","Mercearia"],
+  ["Café","Mercearia"],["Cereais","Mercearia"],["Atum","Mercearia"],["Feijão","Mercearia"],["Grão","Mercearia"],["Polpa de tomate","Mercearia"],["Batatas","Mercearia"],
+  ["Cebolas","Mercearia"],["Alhos","Mercearia"],["Frutas e legumes","Frutas e legumes"],["Água","Mercearia"],
   ["Ervilhas","Congelados"],["Douradinhos","Congelados"],
   ["Detergente da loiça","Limpeza"],["Detergente da roupa","Limpeza"],["Lixívia","Limpeza"],["Sacos do lixo","Limpeza"],["Rolo de cozinha","Limpeza"],
   ["Papel higiénico","Higiene"],["Gel de banho","Higiene"],["Champô","Higiene"],["Pasta de dentes","Higiene"]];
@@ -1918,7 +1918,7 @@ function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!
 /* Que produtos usam "em uso + guardados": limpeza, higiene e coisas que se abrem e duram (azeite, café, detergente…).
    Iogurtes, leite, ovos, fruta, congelados, arroz, massa, latas… contam-se à unidade. Escolhido à mão no produto (mchosen), manda isso. */
 const RES_NAME=/azeite|[oó]leo|vinagre|caf[eé]|a[cç][uú]car|\bsal\b|farinha|detergente|amaciador|l[ií]xivia|champ[oô]|\bgel\b|sabonete|pasta de dentes|dent[ií]fric|desodori|papel|guardanapo|\brolo|esponja|sacos? do lixo|ketchup|maionese|mostarda|\bmel\b|compota|molho|tempero|caldo|fermento|\bch[aá]\b|cereais|limpa|ambientador|creme|protetor|cotonete|algod[aã]o|pensos|fraldas|toalhitas|pastilhas|sal fino|especiarias|canela|oregãos|orégãos|pimenta|manteiga de amendoim|nutella|chocolate em p[oó]|cacau/i;
-const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Congelados","Fruta"].includes(i.cat)&&RES_NAME.test(i.name||""));
+const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Laticínios e frios","Congelados","Frutas e legumes"].includes(i.cat)&&RES_NAME.test(i.name||""));
 /* Líquidos (garrafa ou pote) com nível do que está aberto: i.fill 4 cheio · 3 quase cheio · 2 meio · 1 quase vazio · 0 vazio.
    Iogurtes, carne e medicamentos não (contam-se à unidade). Só nos produtos "em uso + stock", e só quando há um em uso. */
 const LIQ_NAME=/azeite|[oó]leo|vinagre|leite|natas|sumo|[aá]gua|refrigerante|cerveja|vinho|bebida|xarope|detergente|amaciador|l[ií]xivia|champ[oô]|condicionador|\bgel\b|sabonete l[ií]quido|lava.?loi[cç]a|limpa|tira.?n[oó]doas|desinfetante|amon[ií]aco|elixir|colut[oó]rio|ketchup|maionese|mostarda|\bmel\b|compota|doce de|molho|manteiga de amendoim|nutella|creme|lo[cç][aã]o/i;
@@ -1953,7 +1953,7 @@ let resTidyDone=false;
 /* Pedido (01/11): papel higiénico, guardanapos, pasta de dentes e creme de rosto sempre em "Talvez comprar" (se não existirem, são criados) */
 let alwDone=false;
 function alwaysTidy(){if(alwDone||!items.length||!bills.length)return;alwDone=true;if(bills.some(b=>b.id==="flag-always-1"))return;
-  [[/papel higi[eé]nico/i,"Papel higiénico","Higiene"],[/guardanapo/i,"Guardanapos","Despensa"],[/pasta de dentes|dent[ií]fric/i,"Pasta de dentes","Higiene"],[/creme (de |do |para o )?rosto|creme facial/i,"Creme de rosto","Higiene"]].forEach(([re,name,cat])=>{
+  [[/papel higi[eé]nico/i,"Papel higiénico","Higiene"],[/guardanapo/i,"Guardanapos","Mercearia"],[/pasta de dentes|dent[ií]fric/i,"Pasta de dentes","Higiene"],[/creme (de |do |para o )?rosto|creme facial/i,"Creme de rosto","Higiene"]].forEach(([re,name,cat])=>{
     const L=items.filter(i=>re.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
     else{const n={id:uid(),name,cat,lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
   putBill({id:"flag-always-1",kind:"flag",at:Date.now()})}
@@ -1968,7 +1968,7 @@ let alw4Done=false;
 function alwaysTidy4(){if(alw4Done||!items.length||!bills.length)return;alw4Done=true;if(bills.some(b=>b.id==="flag-always-4"))return;
   [[/bechamel/i,"Bechamel"],[/\bnatas\b/i,"Natas"]].forEach(([re,name])=>{const L=items.filter(i=>re.test(i.name||""));
     if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
-    else{const n={id:uid(),name,cat:"Frigorífico",lvl:2,cnt:true,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
+    else{const n={id:uid(),name,cat:"Laticínios e frios",lvl:2,cnt:true,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
   putBill({id:"flag-always-4",kind:"flag",at:Date.now()})}
 let alw3Done=false;
 function alwaysTidy3(){if(alw3Done||!items.length||!bills.length)return;alw3Done=true;if(bills.some(b=>b.id==="flag-always-3"))return;
@@ -1978,15 +1978,15 @@ function alwaysTidy3(){if(alw3Done||!items.length||!bills.length)return;alw3Done
 let alw2Done=false;
 function alwaysTidy2(){if(alw2Done||!items.length||!bills.length)return;alw2Done=true;if(bills.some(b=>b.id==="flag-always-2"))return;
   const L=items.filter(i=>/p[aã]o rico/i.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
-  else{const n={id:uid(),name:"Pão rico integral",cat:"Despensa",lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}
+  else{const n={id:uid(),name:"Pão rico integral",cat:"Mercearia",lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}
   putBill({id:"flag-always-2",kind:"flag",at:Date.now()})}
 function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
   /* produtos com desenho: o estado passa a seguir o nível do aberto (ex.: garrafa cheia sem stock já não vai às compras) */
   for(const it of items.filter(i=>i.res!=null&&isRes(i)&&i.lvl!==resLvl(i))){const n={...it,lvl:resLvl(it)};if(n.lvl===2)delete n.skip;upsert(n);put(n)}
   /* o separador Peixe saiu: o peixe passa para Congelados (conta-se à unidade, com sacos se tiver) */
   for(const it of items.filter(i=>i.cat==="Peixe")){const n={...it,cat:"Congelados",cnt:true,rtidy:1,rt2:1};["use","res","want"].forEach(k=>delete n[k]);upsert(n);put(n);c++}
-  /* "Outros" passou a "Fruta": fruta vai para lá, medicamentos para Higiene, o resto para Despensa */
-  for(const it of items.filter(i=>i.cat==="Outros")){const n={...it,cat:it.med?"Higiene":FRUIT.test(it.name||"")?"Fruta":"Despensa"};upsert(n);put(n);c++}
+  /* "Outros" passou a "Frutas e legumes": fruta vai para lá, medicamentos para Higiene, o resto para Despensa */
+  for(const it of items.filter(i=>i.cat==="Outros")){const n={...it,cat:it.med?"Higiene":FRUIT.test(it.name||"")?"Frutas e legumes":"Mercearia"};upsert(n);put(n);c++}
   for(const it of items.filter(i=>!i.rtidy&&!MEAT.includes(i.cat))){const n=toRes({...it});upsert(n);put(n);c++}
   /* 2.ª passagem (uma vez): cada produto fica com a forma de contar que faz sentido, se não foi escolhida à mão */
   for(const it of items.filter(i=>!i.rt2&&!i.mchosen&&!i.med&&!MEAT.includes(i.cat))){const n={...it,rt2:1}, want=resDefault(n);
@@ -1996,7 +1996,7 @@ function resTidy(){if(resTidyDone)return;resTidyDone=true;let c=0;
 /* O "adicionar" usa o mesmo formulário do editar (como contar, guardados, quero ter, onde se compra…); fecha ao gravar */
 function paintDraft(k){const el=document.getElementById(k+"AddForm");if(el&&draft[k]&&itemFormFn)el.innerHTML=itemFormFn(draft[k])}
 function syncDraft(k,f){const d=draft[k];if(!d||!f)return;d.name=f.n.value;if(f.c)d.cat=f.c.value;if(f.s)d.shop=f.s.value}
-function openDraft(k){const cat=catSel[k]||(k==="p"?"Frigorífico":"Carne"), d={id:"__new"+k,name:"",cat,lvl:2};
+function openDraft(k){const cat=catSel[k]||(k==="p"?"Laticínios e frios":"Carne"), d={id:"__new"+k,name:"",cat,lvl:2};
   if(MEAT.includes(cat)){d.qty=1;d.unit="un"}else if(resDefault(d)){d.use=true;d.res=0}else d.cnt=true;
   draft[k]=d;paintDraft(k);const box=document.getElementById(k+"Add");box.hidden=false;const b=document.querySelector(`[data-addopen="${k}Add"]`);if(b){b.textContent="Fechar";b.classList.add("ghost")}
   setTimeout(()=>{const n=box.querySelector("input[name=n]");if(n)n.focus()},50)}
@@ -2022,12 +2022,12 @@ const SHOPCOL=[[/continente.*lidl|lidl.*continente/,"#e30613","#0050aa","#fff"],
 const shopGrid=(names,by)=>`<div class="catl">${names.map(n=>{const L=by[n], k=n||"~", m=SHOPCOL.find(([re])=>re.test(n.toLowerCase())), g1=m?m[1]:"#9aa3ad", g2=m?m[2]:"#5d6670", tc=m?m[3]:"#fff",
   ini=n?n.split(/[\s/]+/).filter(w=>w.length>2||/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||n[0].toUpperCase():"?";
   return `<button type="button" class="catr" data-catopen="s|${esc(k)}"><span class="cico" style="background:linear-gradient(135deg,${g1} 0 50%,${g2} 50% 100%)"><b class="sini" style="color:${tc};font-size:16px">${esc(ini)}</b></span><span class="ct"><b>${n?esc(n):"Sem loja"}</b><small>${(c=>c?c+" para comprar":"tudo no carrinho ✓")(L.filter(i=>!i.cart).length)}</small></span><span class="hlb">${L.filter(i=>!i.cart).length||"✓"}</span><span class="hlgo">›</span></button>`}).join("")}</div>`;
-const CATICO={"Frigorífico":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/>'],
-  "Despensa":["#e0a85a","#a8662a",'<path d="M8.5 3h7v3h-7z"/><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"/><path d="M6 11.5h12"/>'],
+const CATICO={"Laticínios e frios":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/>'],
+  "Mercearia":["#e0a85a","#a8662a",'<path d="M8.5 3h7v3h-7z"/><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"/><path d="M6 11.5h12"/>'],
   "Congelados":["#8fd3f4","#3b8fc9",'<path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8M9.2 4l2.8 2 2.8-2M9.2 20l2.8-2 2.8 2"/>'],
   "Limpeza":["#6fcf97","#2e8b57",'<path d="M9 9h6l1 3.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 20v-7.5z"/><path d="M10 9V5.5h4.5l2.5 1.8M13 5.5V3h-2.5"/>'],
   "Higiene":["#c39bd3","#8e44ad",'<path d="M12 3s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.4 12 3 12 3z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>'],
-  "Fruta":["#ff8f6b","#d83a3a",'<path d="M12 7.5c-1.6-1-4.6-1.3-6.3.8-1.9 2.3-1.3 6.6.9 9.7 1.4 2 3.1 3 4.4 2.5.5-.2.7-.3 1-.3s.5.1 1 .3c1.3.5 3-.5 4.4-2.5 2.2-3.1 2.8-7.4.9-9.7-1.7-2.1-4.7-1.8-6.3-.8z"/><path d="M12 7.5c0-2 .8-3.6 2.4-4.5"/><path d="M13 5.2c1.6-.9 3.4-.6 4.2.4-1.4 1-3.2 1-4.2-.4z"/>'],
+  "Frutas e legumes":["#ff8f6b","#d83a3a",'<path d="M12 7.5c-1.6-1-4.6-1.3-6.3.8-1.9 2.3-1.3 6.6.9 9.7 1.4 2 3.1 3 4.4 2.5.5-.2.7-.3 1-.3s.5.1 1 .3c1.3.5 3-.5 4.4-2.5 2.2-3.1 2.8-7.4.9-9.7-1.7-2.1-4.7-1.8-6.3-.8z"/><path d="M12 7.5c0-2 .8-3.6 2.4-4.5"/><path d="M13 5.2c1.6-.9 3.4-.6 4.2.4-1.4 1-3.2 1-4.2-.4z"/>'],
   "Carne":["#ff8a7a","#b4424a",'<path d="M12.2 11.8 6.6 17.4"/><path d="M6.6 17.4a1.8 1.8 0 1 0-1.2 2.4 1.8 1.8 0 1 0 2.4-1.2"/><path d="M11.4 7.2a5 5 0 1 1 5.4 5.6l-3.4.9-2.9-2.9z"/>'],
   "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
 /* Em casa: categorias em lista (ícone, nome, nº de produtos, o que falta comprar) */
@@ -2288,10 +2288,10 @@ document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))re
   L.forEach(it=>{const n={...it};delete n.cart;const k=items.findIndex(x=>x.id===it.id);if(k>=0)items[k]=n;if(n.med)put(n);buyDone(it.id,true)});qtyOpen=false;render();toast(`${L.length} produto${L.length===1?"":"s"} atualizado${L.length===1?"":"s"} em casa`)});
 /* Juntar à lista nas Compras: se o produto já existe, passa para "Falta"; se é novo, é criado (em Em casa) já como "acabou" */
 function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.toLowerCase()===n.toLowerCase());if(q)return q[1];
-  if(FRUIT.test(n))return"Fruta";if(/detergente|l[ií]xivia|limpa|esponja|amaciador|air ?wick|ambientador|sacos? do lixo|pastilhas/i.test(n))return"Limpeza";
+  if(FRUIT.test(n)||/batata|cebola|\balho\b|cenoura|tomate|alface|courgette|br[oó]colos|espinafre|pepino|pimento|ab[oó]bora|legume|salada|cogumelo|feij[aã]o verde|nabo|couve/i.test(n))return"Frutas e legumes";if(/detergente|l[ií]xivia|limpa|esponja|amaciador|air ?wick|ambientador|sacos? do lixo|pastilhas/i.test(n))return"Limpeza";
   if(/champ[oô]|\bgel\b|sabonete|pasta de dentes|desodori|creme|papel higi|fralda|pensos|cotonete|algod|escova|toalhitas|protetor/i.test(n))return"Higiene";
   if(/congelad|gelado|pizza|douradinhos|ervilhas/i.test(n))return"Congelados";if(/frango|vaca|porco|picada|bife|salsicha|peru|fiambre|chouri|bacon|hamb[uú]rguer/i.test(n))return"Carne";
-  if(/leite|iogurte|queijo|manteiga|natas|ovos|bechamel|requeij|presunto/i.test(n))return"Frigorífico";return"Despensa"}
+  if(/leite|iogurte|queijo|manteiga|natas|ovos|bechamel|requeij|presunto/i.test(n))return"Laticínios e frios";return"Mercearia"}
 {const f=document.getElementById("shopAdd"), x=f.querySelector(".saddx");f.c.innerHTML=[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option>${c}</option>`).join("");
   const fill=()=>{const v=f.n.value.trim(), it=items.find(i=>i.name.toLowerCase()===v.toLowerCase());x.hidden=!v;if(!v)return;f.c.value=it?it.cat:guessCat(v);if(!f.s.dataset.touched)f.s.value=it&&it.shop||(catSel.s&&catSel.s!=="~"?catSel.s:"")};
   f.n.addEventListener("input",fill);f.n.addEventListener("focus",()=>{document.getElementById("itemNames").innerHTML=items.map(i=>`<option value="${esc(i.name)}">`).join("")});f.s.addEventListener("input",()=>{f.s.dataset.touched=1});
@@ -2337,6 +2337,9 @@ document.querySelectorAll(".navbar").forEach(n=>{let sp=n.lastElementChild;if(!s
 document.addEventListener("click",e=>{if(e.target.closest(".lupa"))srOpen()});
 /* Cor da conta: ao mexer no quadrado de cor, passa sozinho para "Outra cor" */
 document.addEventListener("input",e=>{if(e.target.name==="cc"&&e.target.closest("[data-accform]")){const f=e.target.form;f.c.value="custom"}});
+/* Categorias com os nomes dos corredores (pedido 01/11): Despensa → Mercearia, Frigorífico → Laticínios e frios, Fruta → Frutas e legumes */
+const CATREN={"Despensa":"Mercearia","Frigorífico":"Laticínios e frios","Fruta":"Frutas e legumes"};
+function catRename(){items.filter(i=>CATREN[i.cat]).forEach(i=>{const n={...i,cat:CATREN[i.cat]};upsert(n);put(n)});["p","m"].forEach(k=>{if(CATREN[catSel[k]])catSel[k]=CATREN[catSel[k]]})}
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
 function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it));const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
@@ -2383,22 +2386,22 @@ addEventListener("hashchange",()=>route(location.hash));
 /* ---------- O que comer: sugestões com o que há em casa ----------
    Cada ingrediente reconhece-se por palavras no nome do produto (sem acentos). */
 const ING={
-  ovos:["Ovos",["ovo"],"Frigorífico"], batata:["Batatas",["batata"],"Despensa"], cebola:["Cebolas",["cebola"],"Despensa"],
-  alho:["Alho",["alho"],"Despensa"], tomate:["Tomate",["tomate","polpa"],"Despensa"], arroz:["Arroz",["arroz"],"Despensa"],
-  massa:["Massa",["massa","esparguete","fusilli","penne","macarr","talharim","lacinho"],"Despensa"],
+  ovos:["Ovos",["ovo"],"Laticínios e frios"], batata:["Batatas",["batata"],"Mercearia"], cebola:["Cebolas",["cebola"],"Mercearia"],
+  alho:["Alho",["alho"],"Mercearia"], tomate:["Tomate",["tomate","polpa"],"Mercearia"], arroz:["Arroz",["arroz"],"Mercearia"],
+  massa:["Massa",["massa","esparguete","fusilli","penne","macarr","talharim","lacinho"],"Mercearia"],
   bacalhau:["Bacalhau",["bacalhau"],"Peixe"], salmao:["Salmão",["salmao"],"Peixe"], pescada:["Pescada",["pescada","maruca","perca"],"Peixe"],
-  peixe:["Peixe fresco",["dourada","robalo","sardinha","carapau","peixe"],"Peixe"], atum:["Atum em lata",["atum"],"Despensa"],
+  peixe:["Peixe fresco",["dourada","robalo","sardinha","carapau","peixe"],"Peixe"], atum:["Atum em lata",["atum"],"Mercearia"],
   camarao:["Camarão",["camarao","gamba"],"Peixe"], frango:["Frango",["frango","galinha","peru"],"Carne"],
   picada:["Carne picada",["picada"],"Carne"], bife:["Bifes",["bife"],"Carne"], porco:["Carne de porco",["costeleta","porco","entrecosto","lombo"],"Carne"],
-  chourico:["Chouriço",["chouri"],"Frigorífico"], fiambre:["Fiambre",["fiambre","presunto"],"Carne"], salsichas:["Salsichas",["salsicha"],"Frigorífico"],
-  queijo:["Queijo",["queijo"],"Frigorífico"], natas:["Natas",["natas"],"Frigorífico"], leite:["Leite",["leite"],"Frigorífico"],
-  manteiga:["Manteiga",["manteiga"],"Frigorífico"], iogurte:["Iogurtes",["iogurte"],"Frigorífico"], pao:["Pão",["pao"],"Despensa"],
-  farinha:["Farinha",["farinha"],"Despensa"], acucar:["Açúcar",["acucar"],"Despensa"], cogumelos:["Cogumelos",["cogumelo"],"Frigorífico"],
-  couve:["Couve",["couve","grelos","espinafre"],"Frigorífico"], cenoura:["Cenouras",["cenoura"],"Frigorífico"],
-  legumes:["Legumes",["brocolo","courgete","courgette","feijao verde","legume","abobora","ervilha"],"Frigorífico"],
-  grao:["Grão",["grao","feijao frade","feijao-frade"],"Despensa"], feijao:["Feijão",["feijao"],"Despensa"],
-  fruta:["Fruta",["fruta","banana","maca","pera","laranja","morango","kiwi"],"Fruta"], cereais:["Cereais",["cereais","aveia","granola"],"Despensa"],
-  limao:["Limão",["limao"],"Fruta"], milho:["Milho",["milho"],"Despensa"]
+  chourico:["Chouriço",["chouri"],"Laticínios e frios"], fiambre:["Fiambre",["fiambre","presunto"],"Carne"], salsichas:["Salsichas",["salsicha"],"Laticínios e frios"],
+  queijo:["Queijo",["queijo"],"Laticínios e frios"], natas:["Natas",["natas"],"Laticínios e frios"], leite:["Leite",["leite"],"Laticínios e frios"],
+  manteiga:["Manteiga",["manteiga"],"Laticínios e frios"], iogurte:["Iogurtes",["iogurte"],"Laticínios e frios"], pao:["Pão",["pao"],"Mercearia"],
+  farinha:["Farinha",["farinha"],"Mercearia"], acucar:["Açúcar",["acucar"],"Mercearia"], cogumelos:["Cogumelos",["cogumelo"],"Laticínios e frios"],
+  couve:["Couve",["couve","grelos","espinafre"],"Laticínios e frios"], cenoura:["Cenouras",["cenoura"],"Laticínios e frios"],
+  legumes:["Legumes",["brocolo","courgete","courgette","feijao verde","legume","abobora","ervilha"],"Laticínios e frios"],
+  grao:["Grão",["grao","feijao frade","feijao-frade"],"Mercearia"], feijao:["Feijão",["feijao"],"Mercearia"],
+  fruta:["Frutas e legumes",["fruta","banana","maca","pera","laranja","morango","kiwi"],"Frutas e legumes"], cereais:["Cereais",["cereais","aveia","granola"],"Mercearia"],
+  limao:["Limão",["limao"],"Frutas e legumes"], milho:["Milho",["milho"],"Mercearia"]
 };
 const RECIPES=[
   ["Bacalhau à Brás","refeicao",["bacalhau","ovos","batata","cebola"],[],["Desfia o bacalhau já demolhado.","Aloura a cebola em azeite, junta o bacalhau e a batata palha.","Junta os ovos batidos e mexe em lume brando até ficar cremoso."]],
@@ -2440,7 +2443,7 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const ingOf=key=>({label:ING[key][0],cat:ING[key][2],kws:ING[key][1]});
 /* Ingrediente escrito à mão num prato nosso: usa a lista conhecida quando possível (ex.: "carne picada") */
 const ingFree=str=>{const n=norm(str).trim(), key=Object.keys(ING).find(k=>ING[k][1].some(w=>n.includes(w)));
-  return{label:cap(str.trim()),cat:key?ING[key][2]:"Despensa",kws:[n,...(key?ING[key][1]:[])],rev:n}};
+  return{label:cap(str.trim()),cat:key?ING[key][2]:"Mercearia",kws:[n,...(key?ING[key][1]:[])],rev:n}};
 /* Produto da casa que serve para um ingrediente (só os marcados "Tenho" ou "Pouco", a não ser com all) */
 const findIngr=(g,all)=>items.find(i=>{if(!(all||i.lvl>0))return false;const n=norm(i.name);
   return g.kws.some(k=>n.includes(k))||(g.rev&&n.length>=3&&g.rev.includes(n))});
@@ -2587,7 +2590,7 @@ const billIc=b=>{const m=BIC.find(([re])=>re.test(b.name||"")), [k,c]=m?[m[1],m[
    para não voltar a acontecer, e o que for criado depois nunca é apagado */
 let despWiped=false;const DESP_CUT=1793301693745;
 function despWipe(){if(despWiped||!items.length||!bills.length)return;despWiped=true;if(bills.some(b=>b.id==="flag-desp-1"))return;
-  const L=items.filter(i=>i.cat==="Despensa"&&!i.med&&!(+i.added>DESP_CUT));L.forEach(i=>remove(i.id));
+  const L=items.filter(i=>i.cat==="Mercearia"&&!i.med&&!(+i.added>DESP_CUT));L.forEach(i=>remove(i.id));
   putBill({id:"flag-desp-1",kind:"flag",at:Date.now(),n:L.length});if(L.length)toast(`Despensa limpa: ${L.length} produto${L.length===1?"":"s"} apagado${L.length===1?"":"s"}`)}
 /* Gás em bilha (Galp): uma vez, passa de conta fixa para "gastos do mês" (junta-se cada bilha com o valor) e sem contagem */
 /* Pedido (01/11): gastos de restaurantes junto ao supermercado (id fixo: não duplica entre telemóveis; só com dados do servidor) */
@@ -3244,9 +3247,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4041,7 +4044,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],
   const r=cakeSave(b,t.closest("form"),cid);if(!r){toast("Preenche primeiro o bolo");return}cakeOpen=bid+"|"+r.c.id;const txt=cakeMsg(b,r.c);
   const slug=b.name.split(" ")[0].toLowerCase();toast("A preparar o pedido…");
   (async()=>{const files=[];try{const card=await cakeCard(b,r.c);files.push(new File([card],`pedido-bolo-${slug}.png`,{type:"image/png"}))}catch(e){}
-    if(r.c.img&&!files.length)try{const d=await cakeImgData(r.c.img.id), blob=await(await fetch(d)).blob();files.push(new File([blob],`foto-bolo-${slug}.jpg`,{type:"image/jpeg"}))}catch(e){}
+    if(r.c.img)try{const d=await cakeImgData(r.c.img.id), blob=await(await fetch(d)).blob();files.push(new File([blob],`foto-bolo-${slug}.jpg`,{type:"image/jpeg"}))}catch(e){}
     if(navigator.share&&files.length&&navigator.canShare&&navigator.canShare({files}))navigator.share({text:txt,files}).catch(()=>{});
     else if(navigator.share)navigator.share({text:txt}).catch(()=>{});
     else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))})()});
@@ -5616,10 +5619,10 @@ applyHdr();
 const SC_SKIP=/total|subtotal|iva|multibanco|visa|mastercard|cart[aã]o|troco|nif|contribuinte|fatura|factura|recibo|obrigad|data|hora|loja|tel\b|telef|www|\.pt\b|desconto|poupan|saldo|cliente|atendid|caixa\s*\d|op\.|n\.?º|pagamento|numer[aá]rio|dinheiro|continente|pingo|lidl|auchan|intermarch|mercadona|minipre|aldi|sonae|jer[oó]nimo|morada|rua\b|avenida|lisboa|porto|valor|qtd|pre[cç]o|artigo|documento|original|processado|programa|certificad|at\b|atcud|hash/i;
 const SC_FISH=/bacalhau|salm[aã]o|pescada|atum|camar[aã]o|gamba|dourada|robalo|sardinha|carapau|polvo|lula|choco|peixe|filete|perca|maruca|tamboril|marisco|mexilh|amêijo|ameijo/;
 const SC_MEAT=/frango|peru|porco|vaca|novilho|bife|carne|picad|costelet|entrecosto|febra|lombo|hamb[uú]rg|salsich|chouri[cç]|fiambre|presunto|bacon|perna|asa|coxa|espetad|panado|nugget|almôndeg|almondeg|vitela|borrego|cabrito|coelho|pato/;
-const SC_CATS=[[/leite|iogur|queijo|manteiga|natas|ovos?\b|sumo|nata|requeij|kefir|tofu|margarin|mozzar|fiambre/,"Frigorífico"],[/congel|gelado|ultracong|douradinho|pizza|ervilha cong/,"Congelados"],
+const SC_CATS=[[/leite|iogur|queijo|manteiga|natas|ovos?\b|sumo|nata|requeij|kefir|tofu|margarin|mozzar|fiambre/,"Laticínios e frios"],[/congel|gelado|ultracong|douradinho|pizza|ervilha cong/,"Congelados"],
   [/detergent|lix[ií]via|amaciad|esfreg|limpa|sacos? do lixo|desinfet|lava.?lou[cç]a|pastilhas|esponja|guardanapo|rolo de cozinha|papel de cozinha/,"Limpeza"],
   [/champ[oô]|gel de banho|gel banho|pasta de dentes|pasta dent|escova de dentes|papel higi|desodoriz|fralda|toalhit|cotonete|sabonete|creme|penso|tamp[aã]o/,"Higiene"]];
-function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Congelados";if(SC_MEAT.test(t))return"Carne";if(FRUIT.test(t))return"Fruta";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Despensa"}
+function scCat(n,where){const t=noAcc(n);if(SC_FISH.test(t))return"Congelados";if(SC_MEAT.test(t))return"Carne";if(FRUIT.test(t))return"Frutas e legumes";for(const [re,c] of SC_CATS)if(re.test(t))return c;return where==="carne"?"Carne":"Mercearia"}
 const scWords=t=>noAcc(t).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
 function scMatch(name){const W=scWords(name);if(!W.length)return null;let best=null,bs=0;
   for(const it of items){const I=scWords(it.name);if(!I.length)continue;const hit=I.filter(w=>W.some(x=>x.startsWith(w.slice(0,5))||w.startsWith(x.slice(0,5)))).length;const sc=hit/I.length;
@@ -5688,7 +5691,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5750,7 +5753,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v248";
+const APPV="casa-v249";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
