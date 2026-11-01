@@ -111,7 +111,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .b2e{flex:none;width:30px;height:30px;border-radius:50%;background:var(--fill);font-size:13px;padding:0;display:grid;place-items:center}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
 .qbanner{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#34c759;color:#fff;font-size:15px;margin-bottom:10px}
-.qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;font-weight:500;overflow-wrap:anywhere}
+.qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;flex:1;font-weight:500;overflow-wrap:anywhere}
 .cakeb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ff9f0a 14%,var(--surface));color:var(--fg);font-size:15px}
 .cakeb span{flex:1;min-width:0;font-size:13px;color:var(--muted)}.cakeb i{font-style:normal;color:var(--muted)}.cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;text-transform:none;letter-spacing:0}.cchips .chip{font-size:13px;padding:6px 10px}.cchips .chip.on{background:#ff9f0a;color:#fff}.cchips .chip.other{background:none;border:1.5px dashed var(--accent)}
 .cimg{display:flex;gap:10px;align-items:center;margin-top:6px;text-transform:none;letter-spacing:0}.cimgv{flex:none;width:96px;height:96px;border-radius:12px;background:var(--fill);color:var(--accent);font-size:13px;overflow:hidden;padding:0}.cimgv img{width:100%;height:100%;object-fit:cover}.cimgb{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;text-transform:none;letter-spacing:0}
@@ -2148,8 +2148,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const byCat=(L,row)=>ALLC.map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2grp">${catHd(c)}${G.map(row).join("")}</div>`:""}).join("");
   const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
     <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
-  const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? Ao guardar, fica tudo atualizado em casa.</p>
-    ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
+  const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? ✏️ edita · ✕ não trouxe (volta à lista). Ao guardar, fica tudo atualizado em casa.</p>
+    ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" aria-label="Não trouxe ${esc(i.name)}">✕</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
     <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
@@ -2298,7 +2298,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
 /* Carrinho: ✓ põe no carrinho (sem mexer no stock); no fim "Guardar quantidades" atualiza tudo */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[data-uncart]");if(!b)return;e.preventDefault();const id=b.dataset.cart||b.dataset.uncart, it=items.find(i=>i.id===id);if(!it)return;
-  const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
+  if(b.closest(".qpanel"))qtyOpen=true;const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-qtyopen]"))return;qtyOpen=true;render();window.scrollTo(0,0)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))return;const L=items.filter(i=>i.cart&&i.lvl<2);
   items.filter(i=>i.skip).forEach(i=>{const n={...i};delete n.skip;upsert(n);put(n)});
@@ -5770,7 +5770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v253";
+const APPV="casa-v254";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
