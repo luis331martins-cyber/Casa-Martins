@@ -152,7 +152,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lowh,.mboxh{width:100%;background:none;padding:0;text-align:left;display:flex;align-items:center;gap:8px}.lowh i,.mboxh i{font-style:normal;color:var(--muted);font-size:20px;margin-left:6px}.lowh span{margin-left:auto}
 .mboxh{font-size:18px;font-weight:700;color:var(--fg)}.mboxh .mcount{margin-left:auto;font-size:13px;background:var(--fill);border-radius:999px;padding:2px 10px}
 .lowbox.shut>:not(.lowh),.mbox.shut>:not(.mboxh){display:none}.lowbox.shut{padding:10px 12px}
-.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
+.skrow .okc{background:#34c759;color:#fff}.skrow{flex-wrap:wrap}.skrow .mt{flex:1 1 100%}.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2214,9 +2214,10 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       ${ok.length?`<div class="msec ok"><div class="msh">✓ Ainda chega <span>${ok.length}</span></div>${mGrp(ok)}</div>`:""}</div>`}}
   const skipped=sorted.filter(i=>i.lvl<2&&skipOn(i));
   if(skipped.length){const shutS=boxShut("skip");shop.innerHTML+=`<div class="mbox skipbox${shutS?" shut":""}"><button type="button" class="mboxh" data-boxtog="skip" aria-expanded="${!shutS}"><span>✕ Não comprei desta vez</span><span class="mcount">${skipped.length}</span><i>${shutS?"⌄":"⌃"}</i></button>
-    <p class="note" style="margin:4px 0 6px">São os que tocaste no ✕ nesta ida às compras. Voltam sozinhos à lista na próxima vez. Se afinal compraste, toca em <b>🛒 Comprei</b>.</p>
+    <p class="note" style="margin:4px 0 6px">São os que tocaste no ✕ nesta ida às compras. Voltam sozinhos à lista na próxima vez. Se já acertaste em casa, toca em <b>✓ Já tenho</b> e sai daqui; se ainda queres pôr a quantidade, <b>🛒 Comprei</b>.</p>
     ${skipped.map(i=>`<div class="skrow"><div class="mt"><b>${esc(i.name)}</b><small>${esc(i.cat)}</small></div>
       <button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button>
+      <button type="button" class="chip okc" data-unlist="${i.id}">✓ Já tenho</button>
       <button type="button" class="chip" data-skipbuy="${i.id}">🛒 Comprei</button>
       <button type="button" class="chip" data-skip="${i.id}" aria-label="Voltar à lista">↩︎ Lista</button></div>`).join("")}</div>`}
 }
@@ -2266,7 +2267,7 @@ document.addEventListener("submit",e=>{
   if(nk){/* novo: se a forma de contar não foi escolhida, segue o nome (ex.: iogurtes à unidade, detergente em uso + guardados) */
     if(!n.mchosen&&!MEAT.includes(n.cat)&&!n.med){const w=resDefault(n);if(w&&n.cnt)cntToRes(n);else if(!w&&!n.cnt)resToCnt(n)}
     upsert(n);put(n);closeDraft(nk);render();toast(name+" adicionado");return}
-  n.rev=Date.now();editItem="";upsert(n);render();put(n);toast("Guardado ✓");
+  n.rev=Date.now();delete n.skip;editItem="";upsert(n);render();put(n);toast("Guardado ✓");
 });
 /* Proteção contra toques sem querer na Despensa e na Carne e Peixe: os −/+ e o "Em uso" estão trancados até tocar em "Alterar";
    cada alteração mostra "Desfazer" durante uns segundos */
@@ -5865,7 +5866,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v267";
+const APPV="casa-v268";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
