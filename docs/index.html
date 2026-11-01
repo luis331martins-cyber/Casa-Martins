@@ -106,7 +106,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .buy2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}.bcol{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;min-width:0}
 .bcol.cart{background:color-mix(in srgb,#34c759 9%,var(--surface))}.bcol h4{margin:2px 4px 6px;font-size:15px;display:flex;justify-content:space-between;align-items:center}.bcol h4 span{font-size:12px;background:var(--fill);border-radius:999px;padding:2px 8px;color:var(--muted)}
 .b2grp{margin-top:8px}.b2cat+.b2row{border-top:0}.b2cat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#fff;padding:5px 8px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.15)}.b2ci{display:grid;place-items:center;width:20px;height:20px;flex:none}.b2ci svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
-.b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:anywhere}.b2t small{font-size:11px;color:var(--muted)}
+.b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:break-word;hyphens:auto}.b2t small{font-size:11px;color:var(--muted)}
 .b2chk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:13px;color:#fff}.b2chk.on{background:#34c759;border-color:#34c759}.b2row.in .b2t b{color:var(--muted);text-decoration:line-through}
 .b2e{flex:none;width:30px;height:30px;border-radius:50%;background:var(--fill);font-size:13px;padding:0;display:grid;place-items:center}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
@@ -2045,7 +2045,7 @@ const CATICO={"Laticínios e frios":["#5aa9e6","#2f6fb3",'<rect x="6" y="2.5" wi
   "Frutas e legumes":["#ff8f6b","#d83a3a",'<path d="M12 7.5c-1.6-1-4.6-1.3-6.3.8-1.9 2.3-1.3 6.6.9 9.7 1.4 2 3.1 3 4.4 2.5.5-.2.7-.3 1-.3s.5.1 1 .3c1.3.5 3-.5 4.4-2.5 2.2-3.1 2.8-7.4.9-9.7-1.7-2.1-4.7-1.8-6.3-.8z"/><path d="M12 7.5c0-2 .8-3.6 2.4-4.5"/><path d="M13 5.2c1.6-.9 3.4-.6 4.2.4-1.4 1-3.2 1-4.2-.4z"/>'],
   "Carne":["#ff8a7a","#b4424a",'<path d="M12.2 11.8 6.6 17.4"/><path d="M6.6 17.4a1.8 1.8 0 1 0-1.2 2.4 1.8 1.8 0 1 0 2.4-1.2"/><path d="M11.4 7.2a5 5 0 1 1 5.4 5.6l-3.4.9-2.9-2.9z"/>'],
   "Peixe":["#6bb6ff","#2a6bb0",'<path d="M2.5 12c2.6-3.9 6.2-5.8 10.2-5.8 2.9 0 5 1.3 6.6 3l2.2-2v9.6l-2.2-2c-1.6 1.7-3.7 3-6.6 3-4 0-7.6-1.9-10.2-5.8z"/><circle cx="7.6" cy="11.3" r=".6"/>']};
-CATICO["Despensa"]=CATICO["Mercearia"];CATICO["Frigorífico"]=CATICO["Laticínios e frios"];CATICO["Fruta"]=CATICO["Frutas e legumes"];
+CATICO["Farmácia"]=["#3fd1a5","#126650",'<rect x="4" y="9" width="16" height="7" rx="3.5" transform="rotate(-45 12 12.5)"/><path d="m9.5 10 5 5"/>'];CATICO["Despensa"]=CATICO["Mercearia"];CATICO["Frigorífico"]=CATICO["Laticínios e frios"];CATICO["Fruta"]=CATICO["Frutas e legumes"];
 /* Em casa: categorias em lista (ícone, nome, nº de produtos, o que falta comprar) */
 const catList=(cats,list,k)=>`<div class="catl">${cats.map(c=>{const L=list.filter(i=>i.cat===c), nb=L.filter(i=>(i.lvl??2)<2).length, [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];
   return `<button type="button" class="catr" data-catopen="${k}|${c}"><span class="cico" style="background:linear-gradient(180deg,${g1},${g2})"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span><span class="ct"><b>${c}</b><small>${L.length?L.length+" produto"+(L.length===1?"":"s"):"vazio"}</small></span>${nb?`<span class="hlb">${nb}</span>`:""}<span class="hlgo">›</span></button>`}).join("")}</div>`;
@@ -2159,7 +2159,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button></div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
-  const ALLC=[...new Set([...PCATS,...CATS,...MEAT])];
+  const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
   const byCat=(L,row)=>ALLC.map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2grp">${catHd(c)}${G.map(row).join("")}</div>`:""}).join("");
   const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
@@ -3518,8 +3518,10 @@ function dosesToday(who){const d=ymd(now), L=[];
 function medDays(m){if(m.stock==null)return null;const P=medPlan(m,ymd(new Date()))||{times:m.times||[],per:+m.per||1}, perDay=(P.times||[]).length*(+P.per||1);return perDay?Math.floor(m.stock/perDay):null}
 function medLow(m){if(m.stock==null)return false;const d=medDays(m);return d!=null?d<=(m.warnDays||7):m.stock<=5}
 /* Quando está a acabar, põe nas Compras (loja "Farmácia"); id fixo "med-…" para os dois telemóveis não o porem duas vezes */
-function medShopSync(){meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=>i.id===id), low=medLow(m)&&medActive(m,ymd(now));
-  if(low&&!it){const n={id,name:`${m.name} (${m.who})`,cat:"Higiene",lvl:0,shop:"Farmácia",added:Date.now(),med:m.id};upsert(n);put(n)}
+function medShopSync(){/* os medicamentos não pertencem a Em casa: ficam só nas Compras, na categoria Farmácia */
+  items.filter(i=>i.med&&i.cat!=="Farmácia").forEach(i=>{const n={...i,cat:"Farmácia"};upsert(n);put(n)});
+  meds().forEach(m=>{const id="med-"+m.id, it=items.find(i=>i.id===id), low=medLow(m)&&medActive(m,ymd(now));
+  if(low&&!it){const n={id,name:`${m.name} (${m.who})`,cat:"Farmácia",lvl:0,shop:"Farmácia",added:Date.now(),med:m.id};upsert(n);put(n)}
   else if(!low&&it&&it.lvl<2)remove(id)})}
 function medBought(id){const m=meds().find(x=>x.id===id);if(!m)return;const nm={...m,stock:Math.round(((+m.stock||0)+(+m.box||0))*100)/100};
   putBill(nm);if(items.some(i=>i.id==="med-"+id))remove("med-"+id);renderMeds();toast(`${m.name}: +${m.box} · restam ${String(nm.stock).replace(".",",")}`)}
@@ -5843,7 +5845,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v262";
+const APPV="casa-v263";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
