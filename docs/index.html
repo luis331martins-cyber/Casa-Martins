@@ -134,6 +134,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
 .qpcat{margin-top:8px}.qpcat .b2cat{font-size:12px;padding:4px 8px}.qpcat .b2cat+.qprow{border-top:0}
+.sedit{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:10px;margin-bottom:12px}.sedh{font-weight:800;font-size:16px;margin:2px 4px 8px}.sedit .bill-edit{border:0;padding:0}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2012,7 +2013,7 @@ document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemf
   if(d.mchosen||MEAT.includes(d.cat))return;const w=resDefault(d);if(w===!d.cnt)return;if(w){delete d.cnt;d.use=true;d.res=0}else{d.cnt=true;delete d.use;delete d.res}
   const shop=f.s.value;paintDraft(k);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g){g.s.value=shop;const x=g.querySelector("[name=rv],[name=q]");if(x)x.focus()}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
-const catSel={p:"",m:"",s:""};const shopFold=new Set();let qtyOpen=false;
+const catSel={p:"",m:"",s:""};const shopFold=new Set();let qtyOpen=false, shopEdit="";
 document.addEventListener("click",e=>{const b=e.target.closest("[data-shopfold]");if(!b)return;const c=b.dataset.shopfold;shopFold.has(c)?shopFold.delete(c):shopFold.add(c);render()});let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
 const SHOPCOL=[[/continente.*lidl|lidl.*continente/,"#e30613","#0050aa","#fff"],[/continente/,"#e30613","#e30613","#fff"],[/lidl/,"#0050aa","#0050aa","#ffe500"],
@@ -2151,7 +2152,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
-  shop.innerHTML=(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
+  const sEdit=shopEdit&&editItem===shopEdit&&items.find(i=>i.id===shopEdit);if(!sEdit)shopEdit="";
+  shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
     (!want.length&&!cartL.length?`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`:
     catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),inShop.filter(i=>i.cart)):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
@@ -2298,10 +2300,10 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
   f.n.addEventListener("input",fill);f.n.addEventListener("focus",()=>{document.getElementById("itemNames").innerHTML=items.map(i=>`<option value="${esc(i.name)}">`).join("")});f.s.addEventListener("input",()=>{f.s.dataset.touched=1});
   f.addEventListener("submit",e=>{e.preventDefault();const name=f.n.value.trim();if(!name)return;const shop=f.s.value.trim(), cat=f.c.value;
     let it=items.find(i=>i.name.toLowerCase()===name.toLowerCase());
-    if(it){const n={...it,cat};delete n.skip;delete n.cart;if(shop)n.shop=shop;if((n.lvl??2)===2){n.mb=1;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1}upsert(n);render();put(n);toast(`${n.name} na lista`)}
+    if(it){const n={...it,cat};delete n.skip;delete n.cart;if(shop)n.shop=shop;if((n.lvl??2)===2){n.mb=1;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1}upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} na lista · podes acertar os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
     else{const n={id:uid(),name:name[0].toUpperCase()+name.slice(1),cat,lvl:0,tidy:1,rtidy:1,rt2:1,added:Date.now(),...(shop?{shop}:{})};
       if(!MEAT.includes(cat)&&resDefault(n)){n.use=false;n.res=0}else{n.cnt=true;n.qty=0;n.unit="un"}
-      upsert(n);render();put(n);toast(`${n.name} juntado à lista`)}
+      upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} juntado à lista · acerta os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;f.n.focus()})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
 const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
@@ -5754,7 +5756,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v250";
+const APPV="casa-v251";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
