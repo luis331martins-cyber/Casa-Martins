@@ -1893,6 +1893,8 @@ const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);if(!h)return 0;if(n.mb)return 1
 /* Garrafa/pacote vermelho mas com stock: não vai às compras, aparece nos alertas para abrir o próximo */
 const gaugeAlert=i=>gaugeOn(i)&&(i.use!=null?i.use:(i.lvl??2)>0)&&+i.res>0&&fillOf(i)<=1;
 /* "Talvez comprar": o que vai a meio sem stock, e o que está marcado para aparecer sempre (i.always: papel higiénico, guardanapos…) */
+/* "Não comprei" vale só para esta ida às compras: volta à lista ao guardar as quantidades ou ao fim de 20 horas */
+const skipOn=i=>!!i.skip&&Date.now()-(+i.skip||0)<20*36e5;
 const isMaybe=i=>(i.lvl??2)===2&&!i.mb&&!i.cart&&(i.always||isRes(i)&&i.use&&!(+i.res)&&gaugeOn(i)&&fillOf(i)===2);
 const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} em stock`:""):`1 em uso · ${i.res?`${i.res} em stock`:"sem stock"}`;
 function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
@@ -2032,7 +2034,7 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 function render(){document.body.classList.toggle("qopen",!qLock);
   const pantry=document.getElementById("pantry"), shop=document.getElementById("shop");
   const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,"pt"));
-  const toBuy=sorted.filter(i=>i.lvl<2&&!i.skip);
+  const toBuy=sorted.filter(i=>i.lvl<2&&!skipOn(i));
   const expiring=items.filter(i=>{const d=daysLeft(i.exp);return d!==null&&d<=3});
 
   document.getElementById("summary").innerHTML=
@@ -2153,8 +2155,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     if(unk.length||ok.length)shop.innerHTML+=`<div class="mbox"><h3>🤔 Talvez comprar</h3>
       ${unk.length?`<div class="msec unk"><div class="msh">❔ Sem quantidade registada <span>${unk.length}</span></div>${mGrp(unk)}<p class="mhint">Diz quanto tens (em Em casa) e passam a ir para o sítio certo.</p></div>`:""}
       ${ok.length?`<div class="msec ok"><div class="msh">✓ Ainda chega <span>${ok.length}</span></div>${mGrp(ok)}</div>`:""}</div>`}
-  const skipped=sorted.filter(i=>i.lvl<2&&i.skip);
-  if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
+  const skipped=sorted.filter(i=>i.lvl<2&&skipOn(i));
+  if(skipped.length)shop.innerHTML+=`<h3 style="margin-top:14px">Não comprei desta vez (${skipped.length})</h3><p class="note" style="margin:0 0 6px">Voltam sozinhos à lista nas próximas compras.</p>`+skipped.map(i=>`<div class="buyrow off"><div style="flex:1;min-width:0"><div class="name">${esc(i.name)}</div><div class="meta">${i.cat}</div></div>
       <div class="buybtns"><button type="button" class="bb" data-skip="${i.id}">↩︎ Voltar à lista</button></div></div>`).join("");
 }
 
@@ -2267,6 +2269,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[dat
   const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-qtyopen]"))return;qtyOpen=true;render();window.scrollTo(0,0)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))return;const L=items.filter(i=>i.cart&&i.lvl<2);
+  items.filter(i=>i.skip).forEach(i=>{const n={...i};delete n.skip;upsert(n);put(n)});
   L.forEach(it=>{const n={...it};delete n.cart;const k=items.findIndex(x=>x.id===it.id);if(k>=0)items[k]=n;if(n.med)put(n);buyDone(it.id,true)});qtyOpen=false;render();toast(`${L.length} produto${L.length===1?"":"s"} atualizado${L.length===1?"":"s"} em casa`)});
 /* Juntar à lista nas Compras: se o produto já existe, passa para "Falta"; se é novo, é criado (em Em casa) já como "acabou" */
 function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.toLowerCase()===n.toLowerCase());if(q)return q[1];
@@ -3123,7 +3126,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(typeof incAskMonth==="function"){const k=incAskMonth(), L=k?incAskList(k):[];if(L.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Escrever o que entrou em ${mFull(k).split(" de ")[0]}`,meta:L.map(b=>b.name).join(", ")})}
   /* Valores do mês seguinte por atualizar (a partir do dia 20) */
   if(typeof askPending==="function"){const P=askPending();if(P.length)A.push({o:1,cls:"warn",dot:"bl",go:"despesas",name:`Atualizar ${P.length} valor${P.length===1?"":"es"} de ${[...new Set(P.map(x=>mFull(x.k).split(" de ")[0]))].join(" e ")}`,meta:P.map(x=>x.b.name).join(", ")})}
-  const toBuy=items.filter(i=>i.lvl<2&&!i.skip&&!i.cart).length;
+  const toBuy=items.filter(i=>i.lvl<2&&!skipOn(i)&&!i.cart).length;
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alertSec").hidden=!A.length;
@@ -5691,7 +5694,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v241";
+const APPV="casa-v242";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
