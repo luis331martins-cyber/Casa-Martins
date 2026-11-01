@@ -133,6 +133,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .srt{flex:1;min-width:0;display:flex;flex-direction:column}.srt b{font-weight:600;font-size:16px}.srt small{font-size:12.5px;color:var(--muted)}.srgo{color:var(--muted);font-size:20px}.srnone{color:var(--muted);text-align:center;margin-top:30px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
+.qpcat{margin-top:8px}.qpcat .b2cat{font-size:12px;padding:4px 8px}.qpcat .b2cat+.qprow{border-top:0}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2145,7 +2146,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
     <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
   const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Quanto trouxeste de cada um? Ao guardar, fica tudo atualizado em casa.</p>
-    ${cartL.map(i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`).join("")}
+    ${(()=>{const qRow=i=>`<div class="qprow"><span class="qpn">${esc(i.name)}</span><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
     <button type="button" class="btn" data-cartdone="1" style="margin-top:10px;width:100%">✓ Guardar quantidades</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
@@ -5749,7 +5750,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v247";
+const APPV="casa-v248";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
