@@ -102,6 +102,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .usep{padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
 .usep.on{background:#34c759;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.15),0 2px 8px rgba(52,199,89,.45)}
 .rsl{display:flex;align-items:center;gap:6px;min-width:0}
+.fillb{width:34px;height:40px;padding:0;background:none;display:grid;place-items:center;flex:none}.fillb svg{width:26px;height:36px;overflow:visible}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
@@ -1864,6 +1865,17 @@ function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!
    Iogurtes, leite, ovos, fruta, congelados, arroz, massa, latas… contam-se à unidade. Escolhido à mão no produto (mchosen), manda isso. */
 const RES_NAME=/azeite|[oó]leo|vinagre|caf[eé]|a[cç][uú]car|\bsal\b|farinha|detergente|amaciador|l[ií]xivia|champ[oô]|\bgel\b|sabonete|pasta de dentes|dent[ií]fric|desodori|papel|guardanapo|\brolo|esponja|sacos? do lixo|ketchup|maionese|mostarda|\bmel\b|compota|molho|tempero|caldo|fermento|\bch[aá]\b|cereais|limpa|ambientador|creme|protetor|cotonete|algod[aã]o|pensos|fraldas|toalhitas|pastilhas|sal fino|especiarias|canela|oregãos|orégãos|pimenta|manteiga de amendoim|nutella|chocolate em p[oó]|cacau/i;
 const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Congelados","Fruta"].includes(i.cat)&&RES_NAME.test(i.name||""));
+/* Líquidos (garrafa ou pote) com nível do que está aberto: i.fill 4 cheio · 3 quase cheio · 2 meio · 1 quase vazio · 0 vazio.
+   Iogurtes, carne e medicamentos não (contam-se à unidade). Só nos produtos "em uso + stock", e só quando há um em uso. */
+const LIQ_NAME=/azeite|[oó]leo|vinagre|leite|natas|sumo|[aá]gua|refrigerante|cerveja|vinho|bebida|xarope|detergente|amaciador|l[ií]xivia|champ[oô]|condicionador|\bgel\b|sabonete l[ií]quido|lava.?loi[cç]a|limpa|tira.?n[oó]doas|desinfetante|amon[ií]aco|elixir|colut[oó]rio|ketchup|maionese|mostarda|\bmel\b|compota|doce de|molho|manteiga de amendoim|nutella|creme|lo[cç][aã]o/i;
+const POT_NAME=/compota|doce de|\bmel\b|manteiga|nutella|creme|maionese|pat[eê]|pickles|azeitonas/i;
+const isLiquid=i=>isRes(i)&&!/iogurte/i.test(i.name||"")&&LIQ_NAME.test(i.name||"");
+const FILL=[["Vazio",0,"#ff3b30"],["Quase vazio",.18,"#ff3b30"],["Meio",.5,"#ffcc00"],["Quase cheio",.78,"#34c759"],["Cheio",1,"#34c759"]];
+const fillOf=i=>i.fill==null?4:Math.max(0,Math.min(4,+i.fill));
+function fillSVG(i){const [,p,c]=FILL[fillOf(i)], pot=POT_NAME.test(i.name||""), cid="fc"+String(i.id).replace(/[^\w-]/g,"");
+  const body=pot?{x:3,y:9,w:20,h:24,r:4}:{x:6,y:11,w:14,h:22,r:4}, top=body.y+body.h*(1-p);
+  const shape=pot?`<rect x="3" y="9" width="20" height="24" rx="4"/>`:`<path d="M10 2h6v5c0 1 4 2 4 6v16a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4V13c0-4 4-5 4-6z"/>`;
+  return `<svg viewBox="0 0 26 36" aria-hidden="true"><defs><clipPath id="${cid}">${shape}</clipPath></defs>${pot?`<rect x="2" y="3" width="22" height="5" rx="1.5" fill="${c}"/>`:""}<rect x="0" y="${top.toFixed(1)}" width="26" height="36" fill="${c}" clip-path="url(#${cid})" opacity=".9"/><g fill="none" stroke="${c}" stroke-width="2">${shape}</g></svg>`}
 function resToCnt(n){n.cnt=true;if(n.res!=null){n.qty=(n.use?1:0)+(+n.res||0);n.unit="un";if(n.want!=null)n.low=+n.want;n.lvl=autoLvl(n,n.qty)}["use","res","want"].forEach(k=>delete n[k]);return n}
 function cntToRes(n){delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}return toRes(n,true)}
 function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n))return resToCnt(n);if(!isRes(n))return n;
@@ -1988,7 +2000,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <div class="item rsi">
         <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div></button>
         <div class="rsctl">
-          <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
+          <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${on&&isLiquid(i)?`<button type="button" class="fillb" data-fill="${i.id}" aria-label="${esc(i.name)} aberto: ${FILL[fillOf(i)][0].toLowerCase()}. Toca para mudar">${fillSVG(i)}</button>`:""}${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
           <div class="qrow" role="group" aria-label="Stock de ${esc(i.name)}"><span class="bql">Stock</span>
             <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um em stock de ${esc(i.name)}">−</button>
             <span class="qv">${rs?i.res:0}</span>
@@ -2082,11 +2094,11 @@ document.addEventListener("submit",e=>{
 });
 /* Proteção contra toques sem querer na Despensa e na Carne e Peixe: os −/+ e o "Em uso" estão trancados até tocar em "Alterar";
    cada alteração mostra "Desfazer" durante uns segundos */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-q],[data-use],[data-opn]");if(!b||!b.closest("#pantry,#meat"))return;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-q],[data-use],[data-opn],[data-fill]");if(!b||!b.closest("#pantry,#meat"))return;
   if(qLock){e.preventDefault();e.stopImmediatePropagation();toast("Toca em “Alterar” para mudar as quantidades");const l=document.querySelector(".lockb");if(l){l.classList.remove("nudge");void l.offsetWidth;l.classList.add("nudge")}return}
-  const id=(b.dataset.q||"").split("|")[0]||b.dataset.use||b.dataset.opn, prev=items.find(i=>i.id===id);if(!prev)return;const snap={...prev};
+  const id=(b.dataset.q||"").split("|")[0]||b.dataset.use||b.dataset.opn||b.dataset.fill, prev=items.find(i=>i.id===id);if(!prev)return;const snap={...prev};
   setTimeout(()=>{const now=items.find(i=>i.id===id);if(!now||JSON.stringify(now)===JSON.stringify(snap))return;
-    const t=isRes(now)?`${now.use?"Em uso":"Nenhum em uso"} · ${+now.res||0} em stock`:hasBags(now)&&now.bags.length?bagText(now):qtyText(now);
+    const t=isRes(now)?`${now.use?"Em uso"+(isLiquid(now)?" ("+FILL[fillOf(now)][0].toLowerCase()+")":""):"Nenhum em uso"} · ${+now.res||0} em stock`:hasBags(now)&&now.bags.length?bagText(now):qtyText(now);
     undoToast(`${now.name}: ${t}`,()=>{upsert(snap);render();put(snap);toast("Desfeito")})},0)},true);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-qlock]");if(!b)return;qLock=!qLock;render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const [id,d]=b.dataset.q.split("|"), it=items.find(i=>i.id===id);if(!it)return;
@@ -2101,12 +2113,15 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
 /* Botão "Em uso": desligar = acabou o aberto; ligar = abriu um (sai dos guardados, se houver) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.use);if(!it)return;
   const on=it.use!=null?!!it.use:(it.lvl??2)>0, r=+it.res||0;
-  if(on){setRes(it,false,r);toast(r?`Acabou o aberto · ${r} em stock`:"Acabou · vai para as compras")}
-  else{setRes(it,true,r>0?r-1:0);toast(r?"Em uso · saiu 1 do stock":"Em uso")}},true);
+  if(on){setRes(it,false,r,null,["fill"]);toast(r?`Acabou o aberto · ${r} em stock`:"Acabou · vai para as compras")}
+  else{setRes(it,true,r>0?r-1:0,null,["fill"]);toast(r?"Em uso · saiu 1 do stock":"Em uso")}},true);
+/* Garrafa/pote: cada toque baixa um nível (cheio → quase cheio → meio → quase vazio → vazio → cheio) */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-fill]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.fill);if(!it)return;
+  const f=(fillOf(it)+4)%5, n={...it,fill:f};upsert(n);render();put(n);toast(f?`${it.name}: ${FILL[f][0].toLowerCase()}`:`${it.name}: vazio · toca em “✓ Em uso” quando acabar`)},true);
 /* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
-  const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1));toast(`${it.name} em uso${r?` · ${n.res?n.res+" em stock":"sem stock"}`:""}`);return}
-  const n=setRes(it,r>0,Math.max(0,r-1));toast(n.use?`Abriste outro · ${n.res?n.res+" em stock":"sem stock"}`:"Acabou · vai para as compras")},true);
+  const r=+it.res||0;if(!it.use){const n=setRes(it,true,Math.max(0,r-1),null,["fill"]);toast(`${it.name} em uso${r?` · ${n.res?n.res+" em stock":"sem stock"}`:""}`);return}
+  const n=setRes(it,r>0,Math.max(0,r-1),null,["fill"]);toast(n.use?`Abriste outro · ${n.res?n.res+" em stock":"sem stock"}`:"Acabou · vai para as compras")},true);
 /* Mudar a forma de contar (no editar do produto) */
 document.addEventListener("change",e=>{const sel=e.target.closest("select[name=mo]");if(!sel)return;const fid=sel.closest("form").dataset.itemform;
   if(fid.startsWith("__new")){const k=fid.slice(5), d=draft[k];if(!d)return;syncDraft(k,sel.form);d.mchosen=1;if(sel.value==="cnt"){d.cnt=true;delete d.use;delete d.res}else{delete d.cnt;d.use=true;d.res=0}paintDraft(k);return}
@@ -5404,7 +5419,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v210";
+const APPV="casa-v211";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
