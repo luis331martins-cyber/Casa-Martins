@@ -1879,9 +1879,9 @@ const TUBE_NAME=/pasta de dentes|dent[ií]fric/i;
 const isLiquid=i=>isRes(i)&&!/iogurte/i.test(i.name||"")&&(LIQ_NAME.test(i.name||"")||PACK_NAME.test(i.name||""));
 /* Cada produto pode escolher: i.gauge "fill" (desenho) ou "tag" (balão Tenho/Pouco/Acabou); sem escolha segue o nome */
 /* Símbolo: garrafa, pote, pacote, tubo ou pilha (para o que não é líquido nem pacote: papel, esponjas, pensos…). i.gauge guarda a escolha; "tag" = balão */
-const GSHAPES=[["bottle","Garrafa"],["pot","Pote"],["pack","Pacote"],["tube","Tubo"]];
-/* O resto (papel, esponjas, pensos…) fica com o balão, que muda sozinho com o stock */
-const autoShape=i=>{const n=i.name||"";if(/iogurte/i.test(n))return"";return TUBE_NAME.test(n)?"tube":POT_NAME.test(n)?"pot":LIQ_NAME.test(n)&&!/detergente em p/i.test(n)?"bottle":PACK_NAME.test(n)?"pack":""};
+const GSHAPES=[["bottle","Garrafa"],["pot","Pote"],["pack","Pacote"],["tube","Tubo"],["bat","Pilha"]];
+/* O resto (papel, esponjas, pensos…) fica com a pilha: toca-se nela na lista para dizer quanto resta do aberto */
+const autoShape=i=>{const n=i.name||"";return TUBE_NAME.test(n)?"tube":POT_NAME.test(n)?"pot":LIQ_NAME.test(n)&&!/detergente em p/i.test(n)?"bottle":PACK_NAME.test(n)?"pack":"bat"};
 const shapeOf=i=>GSHAPES.some(([k])=>k===i.gauge)?i.gauge:autoShape(i);
 const gaugeOn=i=>isRes(i)&&i.gauge!=="tag"&&!!shapeOf(i);
 const FILL=[["Vazio",0,"#ff3b30"],["Quase vazio",.18,"#ff3b30"],["Meio",.5,"#ffcc00"],["Quase cheio",.78,"#34c759"],["Cheio",1,"#34c759"]];
@@ -5452,7 +5452,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v217";
+const APPV="casa-v218";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
