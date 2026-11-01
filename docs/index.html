@@ -1859,8 +1859,10 @@ const isRes=i=>!MEAT.includes(i.cat)&&!i.cnt&&!i.med;
 const wantOf=i=>i.want!=null?+i.want:1;
 /* conta o total (aberto + guardados): falta reserva quando o que sobra além de 1 é menos do que "quero ter" */
 /* Com desenho (garrafa/pacote): se o stock não chega, quem manda é o nível do aberto — vermelho vai às compras, amarelo fica em "Talvez comprar", verde ainda não */
-const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);if(!h)return 0;if(h-1>=wantOf(n))return 2;if(n.use&&gaugeOn(n))return n.mb||fillOf(n)<=1?1:2;return 1};
-const isMaybe=i=>isRes(i)&&i.use&&i.lvl===2&&!i.mb&&(+i.res||0)<wantOf(i)&&gaugeOn(i)&&fillOf(i)===2;
+const resLvl=n=>{const h=(n.use?1:0)+(+n.res||0);if(!h)return 0;if(n.mb)return 1;if(gaugeOn(n)){if(+n.res>0)return 2;return n.use&&fillOf(n)<=1?1:2}if(h-1>=wantOf(n))return 2;return 1};
+/* Garrafa/pacote vermelho mas com stock: não vai às compras, aparece nos alertas para abrir o próximo */
+const gaugeAlert=i=>gaugeOn(i)&&(i.use!=null?i.use:(i.lvl??2)>0)&&+i.res>0&&fillOf(i)<=1;
+const isMaybe=i=>isRes(i)&&i.use&&i.lvl===2&&!i.mb&&!(+i.res)&&gaugeOn(i)&&fillOf(i)===2;
 const resText=i=>i.res==null?"":!i.use?(i.res?`nenhum em uso · ${i.res} em stock`:""):`1 em uso · ${i.res?`${i.res} em stock`:"sem stock"}`;
 function setRes(it,use,res,extra,drop){res=Math.max(0,Math.round(+res||0));use=!!use;
   const n={...it,...extra,use,res,rtidy:1};delete n.qty;(drop||[]).forEach(k=>delete n[k]);n.lvl=resLvl(n);if(n.lvl===2)delete n.skip;upsert(n);render();put(n);return n}
@@ -2981,6 +2983,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
     /* as contas e débitos de hoje e amanhã já aparecem na Agenda (e no "Confirmar"); aqui só as atrasadas */});
   [...fixas(),...others()].forEach(b=>{const r=rdState(b,mk);if(!r||r.done||r.left>1||r.left<0)return;
     A.push({o:r.left<=0?1:2,cls:r.left<0?"bad":"warn",dot:"bl",go:"despesas",rd:b.id,rdk:mk,name:`Dar a contagem: ${b.name}`,meta:r.left===0?"Último dia é hoje":"Último dia é amanhã"})});
+  items.filter(gaugeAlert).forEach(i=>A.push({o:3,cls:"",dot:"ex",go:"despensa",name:`${i.name}: ${shapeOf(i)==="pack"?(fillOf(i)?"pacote quase no fim":"pacote acabou"):(fillOf(i)?"quase vazio":"vazio")}`,meta:`Tens ${i.res} em stock · abre ${i.res===1?"o":"um"} próximo`}));
   items.forEach(i=>{const d=daysLeft(i.exp);if(d===null||d>1||d<-3)return;const go="despensa";
     A.push({o:d<=0?0:2,cls:d<=0?"bad":"warn",dot:d<=0?"bad":"ex",go,name:i.name,meta:d<0?`Passou do prazo há ${-d} dia${d===-1?"":"s"}`:d===0?"Validade termina hoje":`Validade termina em ${d} dia${d===1?"":"s"}`});});
   /* Medicamentos: tomas de hoje que já passaram da hora e stock a acabar */
@@ -5453,7 +5456,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v220";
+const APPV="casa-v221";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
