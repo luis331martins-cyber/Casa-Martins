@@ -1934,6 +1934,13 @@ function alwaysTidy(){if(alwDone||!items.length||!bills.length)return;alwDone=tr
     const L=items.filter(i=>re.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
     else{const n={id:uid(),name,cat,lvl:2,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
   putBill({id:"flag-always-1",kind:"flag",at:Date.now()})}
+/* Pedido (01/11): bechamel e natas também sempre em "Talvez comprar" (contam-se à unidade) */
+let alw4Done=false;
+function alwaysTidy4(){if(alw4Done||!items.length||!bills.length)return;alw4Done=true;if(bills.some(b=>b.id==="flag-always-4"))return;
+  [[/bechamel/i,"Bechamel"],[/\bnatas\b/i,"Natas"]].forEach(([re,name])=>{const L=items.filter(i=>re.test(i.name||""));
+    if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
+    else{const n={id:uid(),name,cat:"Frigorífico",lvl:2,cnt:true,always:1,tidy:1,rtidy:1,rt2:1,mchosen:1,added:Date.now()};upsert(n);put(n)}});
+  putBill({id:"flag-always-4",kind:"flag",at:Date.now()})}
 let alw3Done=false;
 function alwaysTidy3(){if(alw3Done||!items.length||!bills.length)return;alw3Done=true;if(bills.some(b=>b.id==="flag-always-3"))return;
   const L=items.filter(i=>/air ?wick/i.test(i.name||""));if(L.length)L.forEach(i=>{if(!i.always){const n={...i,always:1};upsert(n);put(n)}});
@@ -3148,9 +3155,9 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
 function listen(){
-  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3()})},
+  store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -5564,7 +5571,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5626,7 +5633,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v237";
+const APPV="casa-v238";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
