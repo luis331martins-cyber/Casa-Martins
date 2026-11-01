@@ -2397,6 +2397,10 @@ function despWipe(){if(despWiped||!items.length||!bills.length)return;despWiped=
   const L=items.filter(i=>i.cat==="Despensa"&&!i.med&&!(+i.added>DESP_CUT));L.forEach(i=>remove(i.id));
   putBill({id:"flag-desp-1",kind:"flag",at:Date.now(),n:L.length});if(L.length)toast(`Despensa limpa: ${L.length} produto${L.length===1?"":"s"} apagado${L.length===1?"":"s"}`)}
 /* Gás em bilha (Galp): uma vez, passa de conta fixa para "gastos do mês" (junta-se cada bilha com o valor) e sem contagem */
+/* Pedido (01/11): gastos de restaurantes junto ao supermercado (id fixo: não duplica entre telemóveis; só com dados do servidor) */
+let restDone=false;
+function restTidy(snap){if(restDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;restDone=true;
+  if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}})}
 let gasTidyDone=false;
 function gasTidy(){if(gasTidyDone)return;gasTidyDone=true;
   /* só a bilha de gás (nunca a luz da Galp) */
@@ -2507,10 +2511,10 @@ function renderBills(){
     return `<div class="budget">
       <div class="head">
         <button class="plus" type="button" data-spend="${b.id}" aria-label="Juntar gasto em ${esc(b.name)}">+</button>
-        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">Gasto ${eur(sp)} de ${eur(lim)}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}</div></span></button>
-        <div class="amt">${left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${left>=0?"disponível":"acima"}</small></div>
+        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${lim?`Gasto ${eur(sp)} de ${eur(lim)}`:"Sem limite"}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}</div></span></button>
+        <div class="amt">${!lim?eur(sp):left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${!lim?"gasto":left>=0?"disponível":"acima"}</small></div>
       </div>
-      <div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>
+      ${lim?`<div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>`:""}
       ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
@@ -3036,7 +3040,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Despensa",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe)},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -5357,7 +5361,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Despensa",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -5419,7 +5423,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v211";
+const APPV="casa-v212";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
