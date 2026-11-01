@@ -112,7 +112,8 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .qbanner{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#34c759;color:#fff;font-size:15px;margin-bottom:10px}
 .qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;font-weight:500;overflow-wrap:anywhere}
 .cakeb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ff9f0a 14%,var(--surface));color:var(--fg);font-size:15px}
-.cakeb span{flex:1;min-width:0;font-size:13px;color:var(--muted)}.cakeb i{font-style:normal;color:var(--muted)}.cakeb.add{background:none;border:1.5px dashed color-mix(in srgb,#ff9f0a 55%,transparent);color:var(--accent)}.cakef textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);resize:vertical}
+.cakeb span{flex:1;min-width:0;font-size:13px;color:var(--muted)}.cakeb i{font-style:normal;color:var(--muted)}.cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;text-transform:none;letter-spacing:0}.cchips .chip{font-size:13px;padding:6px 10px}.cchips .chip.on{background:#ff9f0a;color:#fff}
+.cakeb.add{background:none;border:1.5px dashed color-mix(in srgb,#ff9f0a 55%,transparent);color:var(--accent)}.cakef textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);resize:vertical}
 .ggrow{display:flex;gap:5px;margin-top:6px;text-transform:none;letter-spacing:0}.ggopt{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1 1 0;min-width:0;padding:8px 6px 6px;border-radius:12px;background:var(--fill);color:var(--fg);font-size:12px;font-weight:500}
 .ggopt svg{width:20px;height:28px;overflow:visible}.ggopt[aria-pressed="true"]{background:var(--accent-soft,#e5f0ff);box-shadow:inset 0 0 0 2px var(--accent)}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
@@ -3791,20 +3792,26 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.holdform;if(!id
 const bdays=()=>bills.filter(b=>b.kind==="bday");
 let editAnos="", cakeOpen="";
 /* Bolos de aniversário (b.cakes=[{id,nome,…}]; o antigo b.cake passa a ser o primeiro): o que se pede à pastelaria; fica guardado de um ano para o outro */
-const CAKEF=[["massa","Massa","ex.: Pão de ló normal"],["recheio","Recheio","ex.: Mousse creme de leite\nCaramelo salgado crocante"],["cobertura","Cobertura","ex.: Chantilly\nChocolate derretido"],["deco","Decoração","ex.: Frutos vermelhos"],["forma","Forma","ex.: Retangular"],["peso","Peso","ex.: 1,5 kg"],["msg","Mensagem",""],["velas","Velas",""]];
+const CAKEF=[["massa","Massa","ex.: Pão de ló normal"],["recheio","Recheio","ex.: Mousse doce de leite\nCreme de pistáchio"],["croc","Crocante","ex.: Caramelo salgado"],["cobertura","Cobertura","ex.: Chantilly\nChocolate derretido"],["deco","Decoração","ex.: Frutos vermelhos"],["forma","Forma","ex.: Retangular"],["peso","Peso","ex.: 1,5 kg"],["msg","Mensagem",""],["velas","Velas",""]];
+/* Opções da pastelaria Moinho d'Água (dos prints das encomendas): toca-se para escolher; a massa é uma só, recheios e crocantes podem ser vários */
+const CAKEOPT={massa:["Chocolate","Pão de ló","Red velvet","Laranja","Limão","Iogurte","Amêndoa","Cenoura","Framboesa","Nozes","Maracujá"],
+  recheio:["Mousse de chocolate","Creme mascarpone","Mousse doce de leite","Creme de pistáchio","Mousse de coco","Creme de limão","Mousse de limão","Mousse de avelã","Mousse de Oreo","Mousse de frutos vermelhos","Mousse de morango","Creme de avelã","Chantilly","Creme russo","Cheesecake","Nutella","Coulis de framboesa","Doce de leite","Doce de ovo","Brigadeiro branco","Brigadeiro preto","Beijinho de coco"],
+  croc:["Chocolate","Caramelo salgado","Frutos vermelhos"]};
+const cakeLines=v=>String(v||"").split("\n").map(x=>x.trim()).filter(Boolean);
+const cakeChips=(k,val)=>CAKEOPT[k]?`<div class="cchips">${CAKEOPT[k].map(o=>`<button type="button" class="chip${(k==="massa"?String(val||"").toLowerCase()===o.toLowerCase():cakeLines(val).some(x=>x.toLowerCase()===o.toLowerCase()))?" on":""}" data-cchip="${k}|${esc(o)}">${esc(o)}</button>`).join("")}</div>`:"";
 const cakesOf=b=>b.cakes||(b.cake?[{id:"c0",...b.cake}]:[]);
 const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
 function cakeText(c){c=c||{};const L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l,String(c[k]).trim())});
   if(c.dia||c.hora||c.quem){L.push("Levantamento");const d=cakeDate(c);L.push([d?`Dia ${d.toLocaleDateString("pt-PT")}`:"",c.hora?c.hora.replace(/^(\d+):00$/,"$1")+"h":""].filter(Boolean).join(" - "));if(c.quem)L.push(c.quem)}
   return L.filter(Boolean).join("\n")}
-function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco/.test(k), key=b.id+"|"+cid;
+function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco|croc/.test(k), key=b.id+"|"+cid;
   return`<form class="bill-edit cakef" data-cakeform="${key}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 ${cid==="new"?"Novo bolo":esc(c.nome||"Bolo")} · ${esc(b.name)}</h3>
     <label class="f wide">Nome do bolo<input name="nome" value="${v(c.nome)}" placeholder="opcional · ex.: Festa da família, Escola" autocapitalize="sentences"></label>
-    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||k==="massa"?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}</label>`).join("")}
+    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||k==="massa"?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}${cakeChips(k,c[k])}</label>`).join("")}
     <label class="f">Levantar no dia<input name="dia" type="date" value="${v(c.dia)}"></label>
     <label class="f">Hora<input name="hora" type="time" value="${v(c.hora)}"></label>
     <label class="f">Quem levanta<input name="quem" value="${v(c.quem)}" placeholder="ex.: Luís Martins" autocapitalize="words"></label>
-    <label class="f">Pastelaria<input name="past" value="${v(c.past)}" placeholder="opcional" autocapitalize="words"></label>
+    <label class="f">Pastelaria<input name="past" value="${v(c.past)}" placeholder="Moinho d'Água" autocapitalize="words"></label>
     <label class="tick wide"><input type="checkbox" class="switch" name="enc"${c.enc?" checked":""}> Já encomendei</label>
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cakesend="${key}">📤 Enviar à pastelaria</button>
@@ -3846,6 +3853,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],
   if(t.dataset.cakedel){const c=cakesOf(b).find(x=>x.id===cid);if(!confirm(`Apagar ${c&&c.nome?c.nome:"este bolo"}?`))return;const nb={...b,cakes:cakesOf(b).filter(x=>x.id!==cid)};delete nb.cake;putBill(nb);cakeOpen="";renderAnos();toast("Bolo apagado");return}
   const r=cakeSave(b,t.closest("form"),cid);if(!r){toast("Preenche primeiro o bolo");return}cakeOpen=bid+"|"+r.c.id;const txt=cakeText(r.c);
   if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cchip]");if(!t)return;e.preventDefault();const f=t.closest("form");const [k,o]=t.dataset.cchip.split("|"), el=f&&f[k];if(!el)return;
+  if(k==="massa"){const on=el.value.trim().toLowerCase()===o.toLowerCase();el.value=on?"":o}
+  else{const L=cakeLines(el.value), i=L.findIndex(x=>x.toLowerCase()===o.toLowerCase());if(i>=0)L.splice(i,1);else L.push(o);el.value=L.join("\n")}
+  t.closest(".cchips").querySelectorAll("[data-cchip]").forEach(x=>{const ov=x.dataset.cchip.split("|")[1];x.classList.toggle("on",k==="massa"?el.value.trim().toLowerCase()===ov.toLowerCase():cakeLines(el.value).some(y=>y.toLowerCase()===ov.toLowerCase()))})});
 function cakeSave(b,f,cid){const c={id:cid==="new"?uid():cid};["nome",...CAKEF.map(x=>x[0]),"dia","hora","quem","past"].forEach(k=>{const v=(f[k]&&f[k].value||"").trim();if(v)c[k]=v});if(f.enc.checked)c.enc=1;
   if(Object.keys(c).length<2)return null;const L=cakesOf(b), k=L.findIndex(x=>x.id===c.id);const cakes=k>=0?L.map((x,i)=>i===k?c:x):[...L,c];
   const nb={...b,cakes};delete nb.cake;putBill(nb);return{nb,c}}
@@ -5355,8 +5366,8 @@ const hfUrl=L=>"https://fonts.googleapis.com/css2?"+L.map(f=>"family="+f.replace
 function hfLoad(L,id){if(!L.length||document.getElementById(id))return;const l=document.createElement("link");l.id=id;l.rel="stylesheet";l.href=hfUrl(L);document.head.appendChild(l)}
 function hdrFont(){try{return localStorage.getItem("casa-hdrfont")||""}catch(e){return""}}
 function hfWhere(){try{return localStorage.getItem("casa-hfwhere")||"all"}catch(e){return"all"}}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-hfwhere]");if(!b)return;try{localStorage.setItem("casa-hfwhere",b.dataset.hfwhere)}catch(err){}applyHdrFont();toast(b.dataset.hfwhere==="all"?"Letra no Início e nos títulos":"Letra só no Início")});
-function applyHdrFont(){const root=document.documentElement, f=hdrFont();root.dataset.hfwhere=hfWhere();document.querySelectorAll("[data-hfwhere]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfwhere===hfWhere()));if(f){hfLoad([f],"hfOne-"+f.replace(/ /g,""));root.style.setProperty("--hdrfont",`"${f}"`);root.dataset.hdrfont=f}else{root.style.removeProperty("--hdrfont");delete root.dataset.hdrfont}
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-hfwhere]");if(!b)return;try{localStorage.setItem("casa-hfwhere",b.dataset.hfwhere)}catch(err){}applyHdrFont();toast(b.dataset.hfwhere==="all"?"Letra no Início e nos títulos":"Letra só no Início")});
+function applyHdrFont(){const root=document.documentElement, f=hdrFont();root.dataset.hfwhere=hfWhere();document.querySelectorAll("button[data-hfwhere]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfwhere===hfWhere()));if(f){hfLoad([f],"hfOne-"+f.replace(/ /g,""));root.style.setProperty("--hdrfont",`"${f}"`);root.dataset.hdrfont=f}else{root.style.removeProperty("--hdrfont");delete root.dataset.hdrfont}
   const el=document.getElementById("hdrFonts");if(el)el.querySelectorAll("[data-hfont]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hfont===f))}
 function buildHdrFonts(){const el=document.getElementById("hdrFonts");if(!el||el.dataset.built)return;el.dataset.built=1;hfLoad(HFONTS.map(x=>x[0]).filter(Boolean),"hfAll");
   el.innerHTML=HFONTS.map(([f,n])=>`<button type="button" class="hfont" data-hfont="${f}" style="${f?`font-family:'${f}'`:""}"><b>08:26</b><small>${n}</small></button>`).join("");applyHdrFont()}
@@ -5516,7 +5527,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v225";
+const APPV="casa-v226";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
