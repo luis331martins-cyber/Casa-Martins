@@ -1869,13 +1869,18 @@ const resDefault=i=>["Limpeza","Higiene"].includes(i.cat)||(!["Frigorífico","Co
    Iogurtes, carne e medicamentos não (contam-se à unidade). Só nos produtos "em uso + stock", e só quando há um em uso. */
 const LIQ_NAME=/azeite|[oó]leo|vinagre|leite|natas|sumo|[aá]gua|refrigerante|cerveja|vinho|bebida|xarope|detergente|amaciador|l[ií]xivia|champ[oô]|condicionador|\bgel\b|sabonete l[ií]quido|lava.?loi[cç]a|limpa|tira.?n[oó]doas|desinfetante|amon[ií]aco|elixir|colut[oó]rio|ketchup|maionese|mostarda|\bmel\b|compota|doce de|molho|manteiga de amendoim|nutella|creme|lo[cç][aã]o/i;
 const POT_NAME=/compota|doce de|\bmel\b|manteiga|nutella|creme|maionese|pat[eê]|pickles|azeitonas/i;
-const isLiquid=i=>isRes(i)&&!/iogurte/i.test(i.name||"")&&LIQ_NAME.test(i.name||"");
+/* Sólidos que se vão gastando aos poucos: pacote (café, açúcar, farinha…) ou tubo (pasta de dentes) */
+const PACK_NAME=/caf[eé]|a[cç][uú]car|\bsal\b|farinha|cereais|aveia|cacau|chocolate em p[oó]|fermento|\bch[aá]\b|especiarias|canela|or[eé]g[aã]os|pimenta|caril|colorau|p[aã]o ralado|arroz|massa|detergente em p[oó]|pasta de dentes|dent[ií]fric|tempero|caldo/i;
+const TUBE_NAME=/pasta de dentes|dent[ií]fric/i;
+const isLiquid=i=>isRes(i)&&!/iogurte/i.test(i.name||"")&&(LIQ_NAME.test(i.name||"")||PACK_NAME.test(i.name||""));
 const FILL=[["Vazio",0,"#ff3b30"],["Quase vazio",.18,"#ff3b30"],["Meio",.5,"#ffcc00"],["Quase cheio",.78,"#34c759"],["Cheio",1,"#34c759"]];
 const fillOf=i=>i.fill==null?4:Math.max(0,Math.min(4,+i.fill));
-function fillSVG(i){const [,p,c]=FILL[fillOf(i)], pot=POT_NAME.test(i.name||""), cid="fc"+String(i.id).replace(/[^\w-]/g,"");
-  const body=pot?{x:3,y:9,w:20,h:24,r:4}:{x:6,y:11,w:14,h:22,r:4}, top=body.y+body.h*(1-p);
-  const shape=pot?`<rect x="3" y="9" width="20" height="24" rx="4"/>`:`<path d="M10 2h6v5c0 1 4 2 4 6v16a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4V13c0-4 4-5 4-6z"/>`;
-  return `<svg viewBox="0 0 26 36" aria-hidden="true"><defs><clipPath id="${cid}">${shape}</clipPath></defs>${pot?`<rect x="2" y="3" width="22" height="5" rx="1.5" fill="${c}"/>`:""}<rect x="0" y="${top.toFixed(1)}" width="26" height="36" fill="${c}" clip-path="url(#${cid})" opacity=".9"/><g fill="none" stroke="${c}" stroke-width="2">${shape}</g></svg>`}
+let fillSeq=0;
+function fillSVG(i,off){const [,p,c]=FILL[off?0:fillOf(i)], n=i.name||"", liq=LIQ_NAME.test(n)&&!/detergente em p/i.test(n), t=TUBE_NAME.test(n)?"tube":POT_NAME.test(n)?"pot":liq?"bottle":"pack", cid="fc"+(++fillSeq);
+  const pot=t==="pot", body={pot:{y:9,h:24},bottle:{y:11,h:22},pack:{y:5,h:28},tube:{y:6,h:24}}[t], top=body.y+body.h*(1-p);
+  const shape={pot:`<rect x="3" y="9" width="20" height="24" rx="4"/>`,bottle:`<path d="M10 2h6v5c0 1 4 2 4 6v16a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4V13c0-4 4-5 4-6z"/>`,
+    pack:`<path d="M5 5l2-3h12l2 3v26a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/>`,tube:`<path d="M7 6h12l-1 22h-10z"/>`}[t]+(t==="tube"?"":"");
+  return `<svg viewBox="0 0 26 36" aria-hidden="true"><defs><clipPath id="${cid}">${shape}</clipPath></defs>${pot?`<rect x="2" y="3" width="22" height="5" rx="1.5" fill="${c}"/>`:t==="tube"?`<rect x="10" y="29" width="6" height="5" rx="1" fill="${c}"/><rect x="6" y="2" width="14" height="3" rx="1" fill="${c}"/>`:t==="pack"?`<path d="M7 9h12" stroke="${c}" stroke-width="1.5" fill="none"/>`:""}<rect x="0" y="${top.toFixed(1)}" width="26" height="36" fill="${c}" clip-path="url(#${cid})" opacity=".9"/><g fill="none" stroke="${c}" stroke-width="1.7">${shape}</g></svg>`}
 function resToCnt(n){n.cnt=true;if(n.res!=null){n.qty=(n.use?1:0)+(+n.res||0);n.unit="un";if(n.want!=null)n.low=+n.want;n.lvl=autoLvl(n,n.qty)}["use","res","want"].forEach(k=>delete n[k]);return n}
 function cntToRes(n){delete n.cnt;if(n.qty!=null&&!COUNTU.includes(n.unit||"un")){n.qty=n.qty>0?1:0;n.unit="un";delete n.low}return toRes(n,true)}
 function toRes(n,force){n.rtidy=1;if(!force&&!n.mchosen&&isRes(n)&&!resDefault(n))return resToCnt(n);if(!isRes(n))return n;
@@ -2000,7 +2005,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <div class="item rsi">
         <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div></button>
         <div class="rsctl">
-          <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${on&&isLiquid(i)?`<button type="button" class="fillb" data-fill="${i.id}" aria-label="${esc(i.name)} aberto: ${FILL[fillOf(i)][0].toLowerCase()}. Toca para mudar">${fillSVG(i)}</button>`:""}${(i.lvl??2)<2?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
+          <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${isLiquid(i)?`<button type="button" class="fillb" data-fill="${i.id}" aria-label="${esc(i.name)}: ${on?FILL[fillOf(i)][0].toLowerCase()+". Toca para mudar":"acabou"}">${fillSVG(i,!on)}</button>`:""}${(i.lvl??2)<2&&!isLiquid(i)?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
           <div class="qrow" role="group" aria-label="Stock de ${esc(i.name)}"><span class="bql">Stock</span>
             <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos um em stock de ${esc(i.name)}">−</button>
             <span class="qv">${rs?i.res:0}</span>
@@ -2117,6 +2122,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(
   else{setRes(it,true,r>0?r-1:0,null,["fill"]);toast(r?"Em uso · saiu 1 do stock":"Em uso")}},true);
 /* Garrafa/pote: cada toque baixa um nível (cheio → quase cheio → meio → quase vazio → vazio → cheio) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-fill]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.fill);if(!it)return;
+  if(!(it.use!=null?it.use:(it.lvl??2)>0)){toast(`${it.name}: acabou · toca em “Em uso” quando abrires outro`);return}
   const f=(fillOf(it)+4)%5, n={...it,fill:f};upsert(n);render();put(n);toast(f?`${it.name}: ${FILL[f][0].toLowerCase()}`:`${it.name}: vazio · toca em “✓ Em uso” quando acabar`)},true);
 /* Acabou o que está aberto: abre um da reserva (ou fica "Acabou") */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-opn]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.opn);if(!it)return;
@@ -5425,7 +5431,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v213";
+const APPV="casa-v214";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
