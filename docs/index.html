@@ -111,6 +111,8 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
 .qbanner{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#34c759;color:#fff;font-size:15px;margin-bottom:10px}
 .qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;font-weight:500;overflow-wrap:anywhere}
+.cakeb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin:8px 0 4px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ff9f0a 14%,var(--surface));color:var(--fg);font-size:15px}
+.cakeb span{flex:1;min-width:0;font-size:13px;color:var(--muted)}.cakeb i{font-style:normal;color:var(--muted)}.cakef textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:0;background:var(--fill);color:var(--fg);resize:vertical}
 .ggrow{display:flex;gap:5px;margin-top:6px;text-transform:none;letter-spacing:0}.ggopt{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1 1 0;min-width:0;padding:8px 6px 6px;border-radius:12px;background:var(--fill);color:var(--fg);font-size:12px;font-weight:500}
 .ggopt svg{width:20px;height:28px;overflow:visible}.ggopt[aria-pressed="true"]{background:var(--accent-soft,#e5f0ff);box-shadow:inset 0 0 0 2px var(--accent)}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
@@ -779,7 +781,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .bd .idea{display:flex;align-items:center;gap:10px;font-size:15px;padding:4px 0;border-top:.5px solid var(--line)}
 .bd .idea input{width:20px;height:20px;flex:none}.bd .idea.done span{text-decoration:line-through;color:var(--muted)}
 .bd .idea button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
-.bd form{display:flex;gap:8px}.bd form input{flex:1;min-width:0}
+.bd form:not(.cakef){display:flex;gap:8px}.bd form:not(.cakef) input{flex:1;min-width:0}.bd .cakef{display:grid}
 .esc-row{box-sizing:border-box;display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 16px;border-top:.5px solid var(--line);background:transparent;color:var(--fg);font:inherit;text-align:left;width:100%}
 .esc-row:first-child{border-top:0}.esc-row .t{font-variant-numeric:tabular-nums;font-weight:600}.esc-row small{display:block;color:var(--muted);font-size:13px}
 .esc-row.now{background:color-mix(in srgb,var(--accent) 12%,transparent)}
@@ -3024,6 +3026,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
   if(td>=AC_DAY-1&&mk>=START)acertoTotals(mk).filter(x=>!x.done).forEach(x=>A.push({o:td>=AC_DAY?1:3,cls:td>AC_DAY?"warn":"",dot:"bl",go:"despesas",acr:1,
     name:`Acerto com ${x.w}${td<AC_DAY?" amanhã":td===AC_DAY?" hoje":""}`,meta:x.tot>=0?`${x.w} passa-te ${eur(x.tot)}`:`Passas a ${x.w} ${eur(-x.tot)}`}));
+  bdays().forEach(b=>{const c=b.cake, d=cakeDate(c);if(!d)return;const dd=Math.round((d-new Date(new Date().toDateString()))/864e5);if(dd<0||dd>1)return;
+    A.push({o:dd===0?1:2,cls:"warn",dot:"ex",go:"anos",name:`🎂 Levantar o bolo de ${b.name} ${dd===0?"hoje":"amanhã"}${c.hora?" às "+c.hora:""}`,meta:[c.past,c.quem,c.enc?"":"⚠️ ainda não está encomendado"].filter(Boolean).join(" · ")||"Bolo de aniversário"})});
   if(typeof bkDue==="function"&&bkDue()&&store)A.push({o:5,cls:"",dot:"bl",go:"definicoes",bk:1,name:"Fazer a cópia de segurança",meta:"⚙️ Geral → Exportar"});
   /* Escola: hoje/amanhã sem aulas (férias ou feriado marcados na Escola) */
   [[todayS,"Hoje"],[tomS,"Amanhã"]].forEach(([ds,lb])=>{const wd=new Date(ds+"T12:00").getDay();if(wd===0||wd===6)return;
@@ -3785,7 +3789,24 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.holdform;if(!id
 /* ---------- Aniversários (kind:"bday") ----------
    {name, md "MM-DD", year (opcional), rel, ideas:[{id,t,done}]} — avisa 7 dias antes, na véspera e no dia */
 const bdays=()=>bills.filter(b=>b.kind==="bday");
-let editAnos="";
+let editAnos="", cakeOpen="";
+/* Bolo de aniversário (b.cake): o que se pede à pastelaria; fica guardado de um ano para o outro */
+const CAKEF=[["massa","Massa","ex.: Pão de ló normal"],["recheio","Recheio","ex.: Mousse creme de leite\nCaramelo salgado crocante"],["cobertura","Cobertura","ex.: Chantilly\nChocolate derretido"],["deco","Decoração","ex.: Frutos vermelhos"],["forma","Forma","ex.: Retangular"],["peso","Peso","ex.: 1,5 kg"],["msg","Mensagem",""],["velas","Velas",""]];
+const cakeDate=c=>c&&c.dia?new Date(c.dia+"T00:00"):null;
+function cakeText(b){const c=b.cake||{}, L=[];CAKEF.forEach(([k,l])=>{if(c[k])L.push(l,String(c[k]).trim())});
+  if(c.dia||c.hora||c.quem){L.push("Levantamento");const d=cakeDate(c);L.push([d?`Dia ${d.toLocaleDateString("pt-PT")}`:"",c.hora?c.hora.replace(/^(\d+):00$/,"$1")+"h":""].filter(Boolean).join(" - "));if(c.quem)L.push(c.quem)}
+  return L.filter(Boolean).join("\n")}
+function cakeForm(b,n){const c=b.cake||{}, v=x=>x==null?"":esc(x), area=k=>/recheio|cobertura|deco/.test(k);
+  return`<form class="bill-edit cakef" data-cakeform="${b.id}" autocomplete="off"><h3 class="wide" style="margin:0">🎂 Bolo de ${esc(b.name)}</h3>
+    ${CAKEF.map(([k,l,ph])=>`<label class="f${area(k)||k==="msg"||k==="massa"?" wide":""}">${l}${area(k)?`<textarea name="${k}" rows="2" placeholder="${ph.replace(/\n/g," · ")}">${v(c[k])}</textarea>`:`<input name="${k}" value="${v(c[k])}" placeholder="${k==="msg"?`ex.: Placa Parabéns ${esc(b.name.split(" ")[0])}`:k==="velas"?(n.age!=null?`ex.: ${n.age} anos`:"ex.: 33 anos"):ph}" autocapitalize="sentences">`}</label>`).join("")}
+    <label class="f">Levantar no dia<input name="dia" type="date" value="${v(c.dia)}"></label>
+    <label class="f">Hora<input name="hora" type="time" value="${v(c.hora)}"></label>
+    <label class="f">Quem levanta<input name="quem" value="${v(c.quem)}" placeholder="ex.: Luís Martins" autocapitalize="words"></label>
+    <label class="f">Pastelaria<input name="past" value="${v(c.past)}" placeholder="opcional" autocapitalize="words"></label>
+    <label class="tick wide"><input type="checkbox" class="switch" name="enc"${c.enc?" checked":""}> Já encomendei</label>
+    <button class="btn" type="submit">Guardar</button>
+    <button class="btn ghost" type="button" data-cakesend="${b.id}">📤 Enviar à pastelaria</button>
+    <button class="btn ghost wide" type="button" data-cakeclose="1">Fechar</button></form>`}
 function bdNext(b){const t=new Date(), y=t.getFullYear(), [m,d]=b.md.split("-").map(Number);let n=new Date(y,m-1,d);
   const td=new Date(y,t.getMonth(),t.getDate());if(n<td)n=new Date(y+1,m-1,d);const days=Math.round((n-td)/864e5);return{date:n,days,age:b.year?n.getFullYear()-b.year:null}}
 function anosForm(b){const v=x=>x==null?"":esc(x), [m,d]=b?b.md.split("-").map(Number):[0,0];
@@ -3807,11 +3828,20 @@ function renderAnos(){const el=document.getElementById("anosList");if(!el)return
         <span class="bdn">${n.date.getDate()}<small>${MES[n.date.getMonth()]}</small></span>
         <span style="min-width:0;flex:1"><span class="bn" style="display:block">${esc(b.name)}</span><span class="bm">${[b.rel?esc(b.rel):"",n.age!=null?`faz ${n.age} anos`:"",wd].filter(Boolean).join(" · ")}</span></span>
         <span class="due ${n.days===0?"bad":n.days<=7?"warn":"ok"}">${when}</span></button>
+      ${cakeOpen===b.id?cakeForm(b,n):`<button type="button" class="cakeb" data-cakeopen="${b.id}">🎂 <b>Bolo</b><span>${b.cake&&cakeText(b)?(b.cake.enc?"Encomendado":"Por encomendar")+(cakeDate(b.cake)&&cakeDate(b.cake)>=new Date(new Date().toDateString())?` · levantar ${cakeDate(b.cake).toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}${b.cake.hora?" às "+b.cake.hora:""}`:""):"Preparar o pedido para a pastelaria"}</span><i>›</i></button>`}
       ${ideas.map(x=>`<label class="idea${x.done?" done":""}"><input type="checkbox" data-idea="${b.id}|${x.id}"${x.done?" checked":""}><span>🎁 ${esc(x.t)}</span><button type="button" data-delidea="${b.id}|${x.id}" aria-label="Apagar ideia">×</button></label>`).join("")}
       <form data-ideaform="${b.id}" autocomplete="off"><input name="t" placeholder="${b.name.toLowerCase().startsWith("maria")?"Juntar à lista de desejos":"Ideia de presente"}" autocapitalize="sentences"><button class="btn" type="submit" style="padding:8px 14px">+</button></form></div>`}).join("")
     +(editAnos==="new"?"":"")||(editAnos==="new"?"":`<div class="empty">Ainda não há aniversários.<br>Toca em “Juntar aniversário”.</div>`);
   document.getElementById("anosNew").innerHTML=editAnos==="new"?anosForm(null):"";document.getElementById("addAnos").hidden=editAnos==="new";
   const bb=document.getElementById("anosBadge");if(bb){const n=L.filter(x=>x.n.days===0).length;bb.hidden=!n;bb.textContent=n}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeopen],[data-cakeclose],[data-cakesend]");if(!t)return;
+  if(t.dataset.cakeopen){cakeOpen=t.dataset.cakeopen;renderAnos();const f=document.querySelector(`[data-cakeform="${cakeOpen}"]`);if(f)f.scrollIntoView({block:"start",behavior:"smooth"});return}
+  if(t.dataset.cakeclose){cakeOpen="";renderAnos();return}
+  const f=t.closest("form"), b=bdays().find(x=>x.id===t.dataset.cakesend);if(!b)return;const nb=cakeSave(b,f);const txt=cakeText(nb);if(!txt){toast("Preenche primeiro o bolo");return}
+  if(navigator.share)navigator.share({text:txt}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast("Copiado · cola na mensagem para a pastelaria"),()=>toast("Não foi possível copiar"))});
+function cakeSave(b,f){const c={};[...CAKEF.map(x=>x[0]),"dia","hora","quem","past"].forEach(k=>{const v=(f[k]&&f[k].value||"").trim();if(v)c[k]=v});if(f.enc.checked)c.enc=1;
+  const nb={...b};if(Object.keys(c).length)nb.cake=c;else delete nb.cake;putBill(nb);return nb}
+document.addEventListener("submit",e=>{const f=e.target;if(!f.dataset.cakeform)return;e.preventDefault();const b=bdays().find(x=>x.id===f.dataset.cakeform);if(!b)return;cakeSave(b,f);cakeOpen="";renderAnos();toast("Bolo guardado")});
 document.getElementById("addAnos").addEventListener("click",()=>{editAnos="new";renderAnos();const f=document.querySelector('[data-anosform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
 document.addEventListener("click",e=>{const t=e.target.closest("button,input");if(!t)return;
   if(t.dataset.editanos){editAnos=t.dataset.editanos;renderAnos()}
@@ -5478,7 +5508,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v223";
+const APPV="casa-v224";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
