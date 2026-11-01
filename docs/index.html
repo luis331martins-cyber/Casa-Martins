@@ -108,6 +108,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .b2grp{margin-top:8px}.b2cat+.b2row{border-top:0}.b2cat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#fff;padding:5px 8px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.15)}.b2ci{display:grid;place-items:center;width:20px;height:20px;flex:none}.b2ci svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
 .b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:anywhere}.b2t small{font-size:11px;color:var(--muted)}
 .b2chk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:13px;color:#fff}.b2chk.on{background:#34c759;border-color:#34c759}.b2row.in .b2t b{color:var(--muted);text-decoration:line-through}
+.b2e{flex:none;width:30px;height:30px;border-radius:50%;background:var(--fill);font-size:13px;padding:0;display:grid;place-items:center}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
 .qbanner{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#34c759;color:#fff;font-size:15px;margin-bottom:10px}
 .qpanel{background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:12px;margin-bottom:12px}.qprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}.qpn{min-width:0;font-weight:500;overflow-wrap:anywhere}
@@ -1678,7 +1679,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-lista" class="group" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
-    <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). <b>Carrega em cima</b> de um produto para o editar ou tirar da lista. No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
+    <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). Toca no <b>✏️</b> de um produto para o editar ou tirar da lista. No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
     <form id="shopAdd" class="sadd" autocomplete="off">
       <input name="n" list="itemNames" placeholder="＋ Juntar à lista (ex.: atum, pilhas…)" autocapitalize="sentences" aria-label="Produto a juntar à lista">
       <div class="saddx" hidden><select name="c" aria-label="Categoria"></select><input name="s" list="shopList" placeholder="Loja" autocapitalize="words" aria-label="Loja (opcional)"><button class="btn" type="submit">Juntar</button></div>
@@ -2139,8 +2140,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const byShop={};[...want,...cartL].forEach(i=>{const k=i.shop||"";(byShop[k]=byShop[k]||[]).push(i)});
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
-  const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button></div>`;
+  const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button></div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
@@ -2164,7 +2165,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const mBadge=i=>{const has=isRes(i)?(i.res==null?null:+i.res||0):i.qty, low=mLow(i);
     const t=has==null?"?":isRes(i)?`${has}`:String(has).replace(".",","), u=has==null?"sem nº":isRes(i)?"em stock":unitShort(i);
     return`<span class="mbadge ${has==null?"unk":low?"lo":"ok"}"><b>${t}</b><small>${u}</small></span>`};
-  const mRow=i=>`<div class="mrow${mLow(i)?" lo":""}">${mBadge(i)}<div class="mt"><b>${esc(i.name)}</b><small>${[gaugeOn(i)&&(i.use!=null?i.use:true)?"aberto: "+FILL[fillOf(i)][0].toLowerCase():"",i.shop?esc(i.shop):""].filter(Boolean).join(" · ")}</small></div><button type="button" class="mput" data-maybe="${i.id}">＋ Lista</button></div>`;
+  const mRow=i=>`<div class="mrow${mLow(i)?" lo":""}">${mBadge(i)}<div class="mt"><b>${esc(i.name)}</b><small>${[gaugeOn(i)&&(i.use!=null?i.use:true)?"aberto: "+FILL[fillOf(i)][0].toLowerCase():"",i.shop?esc(i.shop):""].filter(Boolean).join(" · ")}</small></div><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="mput" data-maybe="${i.id}">＋ Lista</button></div>`;
   /* Por categoria (com a faixa da categoria); o que tens pouco vai para cima, num cartão à parte, antes da lista */
   const mGrp=L=>[...ALLC,...new Set(L.map(i=>i.cat).filter(c=>!ALLC.includes(c)))].map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="mcat">${catHd(c)}${G.map(mRow).join("")}</div>`:""}).join("");
   if(maybe.length){const lo=maybe.filter(mLow), unk=maybe.filter(mUnk), ok=maybe.filter(i=>!mLow(i)&&!mUnk(i));
@@ -2290,6 +2291,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!
   document.addEventListener("pointerdown",lpStart);["pointerup","pointercancel","pointerleave","scroll"].forEach(t=>document.addEventListener(t,lpEnd,true));
   document.addEventListener("contextmenu",e=>{if(e.target.closest("#shop .b2main,#shop .mrow"))e.preventDefault()});
   document.addEventListener("click",e=>{if(lpDone&&e.target.closest("#shop .b2main,#shop .mrow")){e.preventDefault();e.stopImmediatePropagation();lpDone=false}},true)}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-sedit]");if(!b)return;e.preventDefault();e.stopPropagation();shopEdit=editItem=b.dataset.sedit;render();
+  setTimeout(()=>{const x=document.querySelector(".sedit");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60)},true);
 /* Tirar da lista de compras: passa a "tenho" (não apaga o produto) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
@@ -5767,7 +5770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v252";
+const APPV="casa-v253";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
