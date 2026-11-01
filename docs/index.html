@@ -106,7 +106,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .buy2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}.bcol{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;min-width:0}
 .bcol.cart{background:color-mix(in srgb,#34c759 9%,var(--surface))}.bcol h4{margin:2px 4px 6px;font-size:15px;display:flex;justify-content:space-between;align-items:center}.bcol h4 span{font-size:12px;background:var(--fill);border-radius:999px;padding:2px 8px;color:var(--muted)}
 .b2grp{margin-top:8px}.b2cat+.b2row{border-top:0}.b2cat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#fff;padding:5px 8px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.15)}.b2ci{display:grid;place-items:center;width:20px;height:20px;flex:none}.b2ci svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
-.b2main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:anywhere}.b2t small{font-size:11px;color:var(--muted)}
+.b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:anywhere}.b2t small{font-size:11px;color:var(--muted)}
 .b2chk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:13px;color:#fff}.b2chk.on{background:#34c759;border-color:#34c759}.b2row.in .b2t b{color:var(--muted);text-decoration:line-through}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
 .qbanner{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#34c759;color:#fff;font-size:15px;margin-bottom:10px}
@@ -1678,7 +1678,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-lista" class="group" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
-    <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
+    <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). <b>Carrega em cima</b> de um produto para o editar ou tirar da lista. No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
     <form id="shopAdd" class="sadd" autocomplete="off">
       <input name="n" list="itemNames" placeholder="＋ Juntar à lista (ex.: atum, pilhas…)" autocapitalize="sentences" aria-label="Produto a juntar à lista">
       <div class="saddx" hidden><select name="c" aria-label="Categoria"></select><input name="s" list="shopList" placeholder="Loja" autocapitalize="words" aria-label="Loja (opcional)"><button class="btn" type="submit">Juntar</button></div>
@@ -2153,7 +2153,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length&&(qtyOpen||!want.length);
   const sEdit=shopEdit&&editItem===shopEdit&&items.find(i=>i.id===shopEdit);if(!sEdit)shopEdit="";
-  shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
+  shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${(sEdit.lvl??2)<2?`<button type="button" class="btn danger" data-unlist="${sEdit.id}" style="width:100%;margin:0 0 10px">🗑️ Tirar da lista de compras</button>`:""}${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
     (!want.length&&!cartL.length?`<div class="empty">Não falta nada. Quando algo estiver a acabar, marca “Pouco” ou “Acabou” na despensa.</div>`:
     catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),inShop.filter(i=>i.cart)):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
@@ -2282,6 +2282,17 @@ document.addEventListener("click",e=>{const a=e.target.closest("[data-bagadd],[d
 const buyAmt=i=>i.buyNow!=null?+i.buyNow:buyOf(i);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bq]");if(!b)return;e.preventDefault();e.stopPropagation();const [id,d]=b.dataset.bq.split("|"), it=items.find(i=>i.id===id);if(!it)return;
   const st=unitStep(it.unit), v=Math.max(st,Math.round((buyAmt(it)+st*(+d))*100)/100), n={...it,buyNow:v,unit:it.unit||"un"};upsert(n);render();put(n)},true);
+/* Carregar em cima (toque longo) de um produto nas Compras abre os detalhes para editar */
+{let lpT=null, lpDone=false;const lpStart=e=>{const b=e.target.closest("#shop .b2main,#shop .mrow");if(!b)return;lpDone=false;clearTimeout(lpT);
+    lpT=setTimeout(()=>{const id=(b.dataset.cart||b.dataset.uncart||(b.querySelector("[data-maybe]")||{}).dataset?.maybe);if(!id)return;lpDone=true;if(navigator.vibrate)navigator.vibrate(15);
+      shopEdit=editItem=id;render();setTimeout(()=>{const x=document.querySelector(".sedit");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60)},550)};
+  const lpEnd=()=>clearTimeout(lpT);
+  document.addEventListener("pointerdown",lpStart);["pointerup","pointercancel","pointerleave","scroll"].forEach(t=>document.addEventListener(t,lpEnd,true));
+  document.addEventListener("contextmenu",e=>{if(e.target.closest("#shop .b2main,#shop .mrow"))e.preventDefault()});
+  document.addEventListener("click",e=>{if(lpDone&&e.target.closest("#shop .b2main,#shop .mrow")){e.preventDefault();e.stopImmediatePropagation();lpDone=false}},true)}
+/* Tirar da lista de compras: passa a "tenho" (não apaga o produto) */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
+  const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
 /* Carrinho: ✓ põe no carrinho (sem mexer no stock); no fim "Guardar quantidades" atualiza tudo */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[data-uncart]");if(!b)return;e.preventDefault();const id=b.dataset.cart||b.dataset.uncart, it=items.find(i=>i.id===id);if(!it)return;
   const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
@@ -5756,7 +5767,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v251";
+const APPV="casa-v252";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
