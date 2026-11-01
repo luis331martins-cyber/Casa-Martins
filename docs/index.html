@@ -106,7 +106,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .buy2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}.bcol{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;min-width:0}
 .bcol.cart{background:color-mix(in srgb,#34c759 9%,var(--surface))}.bcol h4{margin:2px 4px 6px;font-size:15px;display:flex;justify-content:space-between;align-items:center}.bcol h4 span{font-size:12px;background:var(--fill);border-radius:999px;padding:2px 8px;color:var(--muted)}
 .b2grp{margin-top:8px}.b2cat+.b2row{border-top:0}.b2cat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#fff;padding:5px 8px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.15)}.b2ci{display:grid;place-items:center;width:20px;height:20px;flex:none}.b2ci svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.b2row{display:flex;align-items:center;gap:2px;border-top:1px solid var(--line)}.b2row:first-of-type{border-top:0}
-.b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:15px;overflow-wrap:break-word;hyphens:auto}.b2t small{font-size:11px;color:var(--muted)}
+.b2main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 4px;background:none;text-align:left;color:var(--fg)}.b2t{min-width:0;display:flex;flex-direction:column}.b2t b{font-weight:500;font-size:16px;overflow-wrap:break-word}.b2t small{font-size:11px;color:var(--muted)}
 .b2chk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:13px;color:#fff}.b2chk.on{background:#34c759;border-color:#34c759}.b2row.in .b2t b{color:var(--muted);text-decoration:line-through}
 .b2e{flex:none;width:30px;height:30px;border-radius:50%;background:var(--fill);font-size:13px;padding:0;display:grid;place-items:center}
 .b2x{flex:none;width:28px;height:28px;border-radius:50%;background:none;color:var(--muted);font-size:13px;padding:0}.b2none{font-size:13px;color:var(--muted);margin:6px 4px}
@@ -145,6 +145,10 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lowbar{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:2px 0 4px}.lowbar .lowp{margin:0;flex:1}.lowall{flex:none;padding:8px 12px;border-radius:999px;background:#ff3b30;color:#fff;font-weight:700;font-size:13px}
 #revBox{display:flex;flex-direction:column;gap:8px}.revh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.revrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .revn{display:flex;flex-direction:column}.revn small{color:var(--muted);font-size:12px}.revi{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px;padding:6px 8px}.revi.inf{background:var(--fill);color:var(--muted)}.revrow>[data-revedit]{align-self:flex-start}.revok2{padding:12px;border-radius:12px;background:#34c75922;color:#1d7a3a;font-weight:600}
+@media (max-width:620px){.buy2{grid-template-columns:1fr}.bcol.cart .b2row{padding:0}.bcol.cart .b2main{padding:6px 4px}.bcol.cart .b2t b{font-size:15px}}
+.b2main{padding:8px 4px}.b2t small{font-size:12px}.b2row .b2e{width:34px;height:34px}.b2x{width:34px;height:34px;font-size:15px}
+#tab-lista>.note{display:none}
+.shint{margin:-6px 2px 0;font-size:14px;color:var(--fg);opacity:.85;background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:10px;padding:6px 10px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -1691,6 +1695,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Compras</span><span></span></nav>
     <h1 class="large">Compras</h1>
     <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). Toca no <b>✏️</b> de um produto para o editar ou tirar da lista. No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
+    <p class="shint">Toca no produto quando o pões no carrinho · ✏️ editar · ✕ não comprei</p>
     <form id="shopAdd" class="sadd" autocomplete="off">
       <input name="n" list="itemNames" placeholder="＋ Juntar à lista (ex.: atum, pilhas…)" autocapitalize="sentences" aria-label="Produto a juntar à lista">
       <div class="saddx" hidden><select name="c" aria-label="Categoria"></select><input name="s" list="shopList" placeholder="Loja" autocapitalize="words" aria-label="Loja (opcional)"><button class="btn" type="submit">Juntar</button></div>
@@ -5845,7 +5850,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v263";
+const APPV="casa-v264";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
