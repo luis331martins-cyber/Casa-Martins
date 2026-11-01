@@ -144,7 +144,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .mput{min-width:40px}.lowbox .mput{width:40px;height:36px;padding:0;font-size:18px;border-radius:12px}.lowbox .b2e{width:32px;height:32px}.mgauge{display:inline-block;width:12px;height:16px;vertical-align:-3px;margin-right:4px}.mgauge svg{width:12px;height:16px}
 .lowbar{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:2px 0 4px}.lowbar .lowp{margin:0;flex:1}.lowall{flex:none;padding:8px 12px;border-radius:999px;background:#ff3b30;color:#fff;font-weight:700;font-size:13px}
 #revBox{display:flex;flex-direction:column;gap:8px}.revh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.revrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
-.revn{display:flex;flex-direction:column}.revn small{color:var(--muted);font-size:12px}.revi{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px;padding:6px 8px}.revi.inf{background:var(--fill);color:var(--muted)}.revrow>[data-revedit]{align-self:flex-start}.revok2{padding:12px;border-radius:12px;background:#34c75922;color:#1d7a3a;font-weight:600}
+.revn{display:flex;flex-direction:column}.revn small{color:var(--muted);font-size:12px}.revi{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px;padding:6px 8px}.revi.inf{background:var(--fill);color:var(--muted)}.revbt{display:flex;gap:6px;flex:none}.revno{background:var(--surface);color:var(--muted)}.revrow>[data-revedit]{align-self:flex-start}.revok2{padding:12px;border-radius:12px;background:#34c75922;color:#1d7a3a;font-weight:600}
 @media (max-width:620px){.buy2{grid-template-columns:1fr}.bcol.cart .b2row{padding:0}.bcol.cart .b2main{padding:6px 4px}.bcol.cart .b2t b{font-size:15px}}
 .b2main{padding:8px 4px}.b2t small{font-size:12px}.b2row .b2e{width:34px;height:34px}.b2x{width:34px;height:34px;font-size:15px}
 #tab-lista>.note{display:none}
@@ -2419,7 +2419,8 @@ function revIssues(){const R=[], NOGAUGE=["Congelados","Carne","Frutas e legumes
     if(isRes(i)&&i.res==null)R.push({id:i.id,k:"info",t:"Falta dizer quantos tens em stock"});
     if(!isRes(i)&&!MEAT.includes(i.cat)&&i.qty==null&&!hasBags(i))R.push({id:i.id,k:"info",t:"Falta dizer a quantidade que tens"});
     if(/caixa|pack|embalagem/i.test(n)&&!i.packN)R.push({id:i.id,k:"info",t:"Se compras à caixa, diz quantas unidades traz (✏️ → Cada caixa traz)"});});
-  return R}
+  R.forEach(r=>{r.key=r.k==="info"?"info:"+r.t.slice(0,24):r.k+(r.to?":"+r.to:"")});
+  return R.filter(r=>{const it=items.find(i=>i.id===r.id);return!(it&&(it.revNo||[]).includes(r.key))})}
 function revApply(r){const it=items.find(i=>i.id===r.id);if(!it)return;let n={...it};
   if(r.k==="cat")n.cat=r.to;else if(r.k==="res")n=cntToRes({...n,mchosen:1});else if(r.k==="cnt")n=resToCnt({...n,mchosen:1});else if(r.k==="tag")n.gauge="tag";else return;
   upsert(n);put(n)}
@@ -2428,10 +2429,11 @@ function revRender(){const box=document.getElementById("revBox"), R=revIssues(),
   const by={};R.forEach(r=>{(by[r.id]=by[r.id]||[]).push(r)});
   box.innerHTML=`<div class="revh"><b>${Object.keys(by).length} produtos para rever</b>${fix.length?`<button type="button" class="btn" data-revall="1">✓ Aplicar as ${fix.length} sugestões</button>`:""}</div>`+
     Object.entries(by).map(([id,L])=>{const it=items.find(i=>i.id===id);return`<div class="revrow"><div class="revn"><b>${esc(it.name)}</b><small>${esc(it.cat)} · ${isRes(it)?"em uso + stock":"à unidade"}${gaugeOn(it)?" · "+GSHAPES.find(([k])=>k===shapeOf(it))[1].toLowerCase():""}</small></div>
-      ${L.map((r,k)=>`<div class="revi${r.k==="info"?" inf":""}"><span>${esc(r.t)}</span>${r.k==="info"?"":`<button type="button" class="chip" data-revfix="${id}|${R.indexOf(r)}">Aplicar</button>`}</div>`).join("")}
+      ${L.map((r,k)=>`<div class="revi${r.k==="info"?" inf":""}"><span>${esc(r.t)}</span><span class="revbt">${r.k==="info"?"":`<button type="button" class="chip" data-revfix="${id}|${R.indexOf(r)}">Aplicar</button>`}<button type="button" class="chip revno" data-revno="${R.indexOf(r)}" aria-label="Não aceitar">✕ Não</button></span></div>`).join("")}
       <button type="button" class="chip" data-revedit="${id}">✏️ Abrir</button></div>`}).join("");box._R=R}
 document.getElementById("revOpen").addEventListener("click",()=>{const b=document.getElementById("revBox");b.hidden=!b.hidden;if(!b.hidden)revRender()});
-document.addEventListener("click",e=>{const t=e.target.closest("[data-revfix],[data-revall],[data-revedit]");if(!t)return;const box=document.getElementById("revBox"), R=box._R||[];
+document.addEventListener("click",e=>{const t=e.target.closest("[data-revfix],[data-revall],[data-revedit],[data-revno]");if(!t)return;const box=document.getElementById("revBox"), R=box._R||[];
+  if(t.dataset.revno!=null){const r=R[+t.dataset.revno], it=r&&items.find(i=>i.id===r.id);if(!it)return;const n={...it,revNo:[...new Set([...(it.revNo||[]),r.key])]};upsert(n);put(n);revRender();toast("Não volta a aparecer");return}
   if(t.dataset.revall){const L=R.filter(r=>r.k!=="info");L.forEach(revApply);render();revRender();toast(`${L.length} correções aplicadas`);return}
   if(t.dataset.revedit){const it=items.find(i=>i.id===t.dataset.revedit);if(!it)return;if(MEAT.includes(it.cat))catSel.m=it.cat;else catSel.p=it.cat;editItem=it.id;render();setTimeout(()=>{const f=document.querySelector(`#pantry [data-itemform="${it.id}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},80);return}
   const r=R[+t.dataset.revfix.split("|")[1]];if(r){revApply(r);render();revRender();toast("Corrigido")}});
@@ -5850,7 +5852,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v264";
+const APPV="casa-v265";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
