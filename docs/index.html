@@ -1528,7 +1528,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <button class="btn ghost" type="button" id="addHm">+ Juntar compra</button>
     <details class="import" id="hmImportBox"><summary>📋 Colar uma lista de compras</summary>
       <p class="note" style="margin:0">Cola a lista como a escreves: um título por grupo (ex.: <b>Obras:</b>) e uma linha por compra (ex.: <b>- Sanita: 437,65€</b> ou <b>- Tintas: 272,69€ + 17,49€ − 66,15€ = 224,03€</b>). O que já existe não se repete.</p>
-      <textarea id="hmImport" rows="8" placeholder="Obras:&#10;- Janelas: 6.416,81€&#10;Mobílias e Decoração:&#10;- Sapateira: 299,00€" aria-label="Lista de compras"></textarea>
+      <textarea id="hmImport" rows="8" placeholder="Obras:&#10;- Janelas: 6.416,81€&#10;Mobílias:&#10;- Sapateira: 299,00€&#10;Decoração:&#10;- Quadro: 45,00€" aria-label="Lista de compras"></textarea>
       <button class="btn" type="button" id="hmImportBtn">Juntar à Casa</button>
     </details>
     <div id="hmNew"></div>
@@ -4487,8 +4487,11 @@ const HM_TYPES=[["Eletrodoméstico","🔌"],["Móveis","🛋️"],["Camas e colc
 const hmEmo=t=>(HM_TYPES.find(x=>x[0]===t)||HM_TYPES[HM_TYPES.length-1])[1];
 let editHm="", openHm="", hmSort=(()=>{try{return localStorage.getItem("casa-hmsort")||"grp"}catch(e){return"grp"}})();
 /* Grupos das compras da casa (h.grp); os antigos sem grupo vão pelo tipo */
-const HM_GRPS=["Obras","Mobílias e Decoração","Eletrodomésticos e eletrónica","Outros"];
-const hmGrp=h=>h.grp||(h.type==="Janelas e obras"?"Obras":["Móveis","Camas e colchões","Cortinados e têxteis","Iluminação","Decoração"].includes(h.type)?"Mobílias e Decoração":["Eletrodoméstico","Eletrónica"].includes(h.type)?"Eletrodomésticos e eletrónica":"Outros");
+const HM_GRPS=["Obras","Mobílias","Decoração","Eletrodomésticos e eletrónica","Outros"];
+/* Pedido (02/11): Mobílias e Decoração separadas — decoração pelo nome ou pelo tipo */
+const HM_DECO=/quadro|espelho|vaso|tapete|almofada|cortin|candeeiro|l[aâ]mpada|planta|moldura|decora|vela|rel[oó]gio|manta|cesto|estore|papel de parede|figura|jarra|cortinado/i;
+const hmMobDeco=h=>HM_DECO.test(h.name||"")||["Decoração","Cortinados e têxteis","Iluminação"].includes(h.type)?"Decoração":"Mobílias";
+const hmGrp=h=>h.grp==="Mobílias e Decoração"?hmMobDeco(h):h.grp||(h.type==="Janelas e obras"?"Obras":["Móveis","Camas e colchões","Cortinados e têxteis","Iluminação","Decoração"].includes(h.type)?hmMobDeco(h):["Eletrodoméstico","Eletrónica"].includes(h.type)?"Eletrodomésticos e eletrónica":"Outros");
 /* "272,69€ + 17,49€ − 66,15€" → [272.69, 17.49, -66.15] */
 const hmParts=t=>{t=String(t||"").replace(/[€\u200e\s]/g,"").replace(/−/g,"-");if(t.includes(","))t=t.replace(/\./g,"");
   return (t.match(/[+-]?\d+(?:[.,]\d+)?/g)||[]).map(x=>Math.round(parseFloat(x.replace(",","."))*100)/100).filter(x=>!isNaN(x)&&x!==0)};
@@ -4526,7 +4529,7 @@ function renderHome(){const el=document.getElementById("hmList");if(!el)return;c
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
-  if(hmSort==="grp"){[...new Set([...HM_GRPS.slice(0,3),...L.map(hmGrp),"Outros"])].forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
+  if(hmSort==="grp"){[...new Set([...HM_GRPS.slice(0,4),...L.map(hmGrp),"Outros"])].forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(g)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
   else if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
@@ -4542,7 +4545,7 @@ document.getElementById("hmImportBtn").addEventListener("click",()=>{const ta=do
   let grp="Outros";const out=[];
   lines.forEach(l=>{const it=l.match(/^[-•*·]\s*(.+?)\s*:\s*(.+)$/);if(it){const parts=hmParts(it[2].split("=")[0]);if(!parts.length)return;
       const value=Math.round(parts.reduce((t,x)=>t+x,0)*100)/100, sh=/ikea/i.test(it[1])?"IKEA":/bestwindow/i.test(it[1])?"Bestwindow":/\bjom\b/i.test(it[1])?"JOM":"";out.push({name:it[1],grp,value,parts,shop:sh});return}
-    const g=l.match(/^(.+?):\s*$/);if(g)grp=/^obras?$/i.test(g[1].trim())?"Obras":/mob[ií]lia|decora/i.test(g[1])?"Mobílias e Decoração":g[1].trim()});
+    const g=l.match(/^(.+?):\s*$/);if(g)grp=/^obras?$/i.test(g[1].trim())?"Obras":/mob[ií]lia/i.test(g[1])&&!/decora/i.test(g[1])?"Mobílias":/decora/i.test(g[1])&&!/mob[ií]lia/i.test(g[1])?"Decoração":/mob[ií]lia|decora/i.test(g[1])?"Mobílias e Decoração":g[1].trim()});
   if(!out.length){toast("Não encontrei compras. Cada compra numa linha a começar por “-”.");return}
   const have=new Set(homes().map(x=>noAcc(x.name)+"|"+(+x.value||0).toFixed(2)));let n=0, tot=0;
   let ctx="";/* os móveis de quarto que vêm a seguir a "Cama Solteiro" são do quarto da Maria; a seguir a "casal", do quarto de casal */
@@ -5915,7 +5918,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v272";
+const APPV="casa-v273";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
