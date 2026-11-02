@@ -160,6 +160,12 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 #useBox .catback{align-self:flex-start}.usetog{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;padding:4px 0;text-align:left;color:var(--fg)}.usechk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}.userow.on .usechk{background:#ff9500;border-color:#ff9500}
 .usecath{display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:800;margin:8px 2px 4px}.usesel{display:flex;flex-wrap:wrap;gap:6px}.usesel .chip.on{background:#ff9500;color:#fff;font-size:13px}.usel .b2cat{margin-top:8px}.userow{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line)}.userow.on{background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px}
 .userow .mt{flex:1;min-width:0}.usebar{display:grid;grid-template-columns:1fr 2fr;gap:8px;position:sticky;bottom:0}.usebar .btn[disabled]{opacity:.45}
+.hmsum{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:12px}
+.hmsr{display:grid;grid-template-columns:26px 1fr 28% 84px;align-items:center;gap:8px;background:none;padding:4px 0;text-align:left;color:var(--fg);font-size:14px}.hmse{font-size:18px}.hmsn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmsb{height:8px;border-radius:999px;background:var(--fill);overflow:hidden}.hmsb i{display:block;height:100%;border-radius:999px}.hmsr b{font-variant-numeric:tabular-nums;font-size:14px;text-align:right}
+.hmgrp{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden}.hmgh{width:100%;display:flex;align-items:center;gap:10px;padding:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--gc) 22%,transparent),transparent);text-align:left;color:var(--fg);border-left:5px solid var(--gc)}
+.hmge{font-size:24px}.hmgt{flex:1;min-width:0;display:flex;flex-direction:column}.hmgt b{font-size:17px}.hmgt small{color:var(--muted);font-size:12px}.hmgv{font-weight:800;font-variant-numeric:tabular-nums}.hmgh i{font-style:normal;color:var(--muted);font-size:20px}
+.hmgl{display:flex;flex-direction:column;gap:6px;padding:0 8px 8px}
 .mbox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.mbox h3{margin:0 0 8px!important;font-size:18px!important;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important}
 .msec{border-radius:12px;padding:6px 8px;margin-top:8px}.msec.lo{background:color-mix(in srgb,#ff9500 12%,transparent)}.msec.ok{background:var(--fill)}
 .msh{font-size:13px;font-weight:800;display:flex;justify-content:space-between;align-items:center;padding:2px 2px 4px}.msec.lo .msh{color:#c25e00}.msec.ok .msh{color:var(--muted)}.msh span{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px}
@@ -2046,7 +2052,8 @@ document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemf
   const shop=f.s.value;paintDraft(k);const g=document.querySelector(`form[data-itemform="${d.id}"]`);if(g){g.s.value=shop;const x=g.querySelector("[name=rv],[name=q]");if(x)x.focus()}});
 /* Categorias como ícones (tipo app): toca para abrir; "‹ Categorias" volta à grelha */
 const catSel={p:"",m:"",s:""};const shopFold=new Set();const boxShut=k=>{try{return localStorage.getItem("casa-shut-"+k)==="1"}catch(e){return false}};
-document.addEventListener("click",e=>{const b=e.target.closest("[data-boxtog]");if(!b)return;const k=b.dataset.boxtog;try{localStorage.setItem("casa-shut-"+k,boxShut(k)?"0":"1")}catch(err){}render()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-boxtog]");if(!b)return;const k=b.dataset.boxtog;try{localStorage.setItem("casa-shut-"+k,boxShut(k)?"0":"1")}catch(err){}if(k.startsWith("hm-")){if(typeof renderHome==="function")renderHome()}else render()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-hmjump]");if(!b)return;const g=b.dataset.hmjump;try{localStorage.setItem("casa-shut-hm-"+g,"0")}catch(err){}renderHome();const el=document.getElementById("hmg-"+g.replace(/\W+/g,""));if(el)el.scrollIntoView({block:"start",behavior:"smooth"})});
 let qtyOpen=false, shopEdit="", addToCart=false, qDoneNow=[];
 document.addEventListener("click",e=>{const b=e.target.closest("[data-shopfold]");if(!b)return;const c=b.dataset.shopfold;shopFold.has(c)?shopFold.delete(c):shopFold.add(c);render()});let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
@@ -4488,6 +4495,7 @@ const hmEmo=t=>(HM_TYPES.find(x=>x[0]===t)||HM_TYPES[HM_TYPES.length-1])[1];
 let editHm="", openHm="", hmSort=(()=>{try{return localStorage.getItem("casa-hmsort")||"grp"}catch(e){return"grp"}})();
 /* Grupos das compras da casa (h.grp); os antigos sem grupo vão pelo tipo */
 const HM_GRPS=["Obras","Mobílias","Decoração","Eletrodomésticos e eletrónica","Outros"];
+const HM_GSTY={"Obras":["#ff9500","🔨"],"Mobílias":["#a2845e","🛋️"],"Decoração":["#ff2d55","🖼️"],"Eletrodomésticos e eletrónica":["#0a84ff","🔌"],"Outros":["#8e8e93","📦"]};
 /* Pedido (02/11): Mobílias e Decoração separadas — decoração pelo nome ou pelo tipo */
 const HM_DECO=/quadro|espelho|vaso|tapete|almofada|cortin|candeeiro|l[aâ]mpada|planta|moldura|decora|vela|rel[oó]gio|manta|cesto|estore|papel de parede|figura|jarra|cortinado/i;
 const hmMobDeco=h=>HM_DECO.test(h.name||"")||["Decoração","Cortinados e têxteis","Iluminação"].includes(h.type)?"Decoração":"Mobílias";
@@ -4529,8 +4537,11 @@ function renderHome(){const el=document.getElementById("hmList");if(!el)return;c
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
-  if(hmSort==="grp"){[...new Set([...HM_GRPS.slice(0,4),...L.map(hmGrp),"Outros"])].forEach(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));if(!G.length)return;
-      html+=`<div class="hmdiv"><h2>${esc(g)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
+  if(hmSort==="grp"){/* resumo em barras por grupo + cada grupo num cartão que abre e fecha */
+    const tot=L.reduce((t,h)=>t+(+h.value||0),0)||1, GS=[...new Set([...HM_GRPS.slice(0,4),...L.map(hmGrp),"Outros"])].map(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));return{g,G,v:G.reduce((t,h)=>t+(+h.value||0),0)}}).filter(x=>x.G.length);
+    html+=`<div class="hmsum">${GS.map(({g,v})=>{const [c,e]=HM_GSTY[g]||HM_GSTY.Outros;return`<button type="button" class="hmsr" data-hmjump="${esc(g)}"><span class="hmse">${e}</span><span class="hmsn">${esc(g)}</span><span class="hmsb"><i style="width:${Math.max(3,Math.round(v/tot*100))}%;background:${c}"></i></span><b>${eur(v).replace(",00","")}</b></button>`}).join("")}</div>`;
+    GS.forEach(({g,G,v})=>{const [c,e]=HM_GSTY[g]||HM_GSTY.Outros, shut=boxShut("hm-"+g);
+      html+=`<div class="hmgrp${shut?" shut":""}" id="hmg-${esc(g).replace(/\W+/g,"")}"><button type="button" class="hmgh" data-boxtog="hm-${esc(g)}" style="--gc:${c}"><span class="hmge">${e}</span><span class="hmgt"><b>${esc(g)}</b><small>${G.length} compra${G.length===1?"":"s"}</small></span><span class="hmgv">${eur(v)}</span><i>${shut?"⌄":"⌃"}</i></button>${shut?"":`<div class="hmgl">${G.map(card).join("")}</div>`}</div>`})}
   else if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
       html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
   else{const S=[...L];if(hmSort==="new")S.sort((a,b)=>(b.date||"").localeCompare(a.date||""));else if(hmSort==="val")S.sort((a,b)=>(+b.value||0)-(+a.value||0));
@@ -5918,7 +5929,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v273";
+const APPV="casa-v274";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
