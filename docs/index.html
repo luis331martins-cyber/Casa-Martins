@@ -1526,7 +1526,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <h1 class="large">Casa</h1>
     <div id="hinsBox"></div>
     <div class="totals two" id="hmTot" hidden>
-      <div class="tot"><div class="k">Gasto na casa</div><div class="v" id="vHmTotal"></div></div>
+      <div class="tot"><div class="k">Gasto na casa</div><div class="v" id="vHmTotal"></div><div class="note" id="vHmWv" style="margin-top:2px" hidden></div></div>
       <div class="tot"><div class="k">Na garantia</div><div class="v" id="vHmWar"></div></div>
     </div>
     <div class="sortbar"><span class="note">Ver</span>
@@ -4522,34 +4522,36 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
     <label class="f wide">Notas<input name="x" value="${h?v(h.notes):""}" placeholder="opcional"></label>
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelhm="1">Cancelar</button>
     ${h?`<button class="btn danger wide" type="button" data-delhm="${h.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Depois de guardar, toca na compra para juntar a fatura (foto ou PDF).</p>`}</form>`}
+const hmVal=h=>(+h.value||0)+(+h.wv||0);/* compra + garantia extra paga */
 function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.id;
   const war=we?(d<0?`<span class="due bad">Garantia acabou</span>`:d<=60?`<span class="due warn">Garantia: ${d} dias</span>`:`<span class="due ok">🛡️ ${hmLeft(we).replace("faltam ","")}</span>`):"";
   return`<div class="hm"><button type="button" class="hh" data-openhm="${h.id}"><span class="he">${hmEmo(h.type)}</span>
       <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hmm">${[hmSort!=="div"&&h.room!=="Toda a casa"?h.room:"",h.parts&&h.parts.length>1?h.parts.length+" parcelas":"",h.date?fmtD(h.date):"",hmAge(h.date)].filter(Boolean).map(esc).join(" · ")}${(h.files||[]).length?" · 📎":""}</span></span>
-      <span class="hv">${h.value?eur(+h.value):""}${war?`<span style="display:block;margin-top:3px">${war}</span>`:""}</span></button>
+      <span class="hv">${hmVal(h)?eur(hmVal(h)):""}${h.wv&&h.value?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${eur(+h.value)} + ${eur(+h.wv)} 🛡️</small>`:""}${war?`<span style="display:block;margin-top:3px">${war}</span>`:""}</span></button>
     ${open?`<div class="hb">
       ${h.parts&&h.parts.length>1?`<div class="row"><span>Parcelas</span><b style="text-align:right">${h.parts.map((x,i)=>(i?(x<0?" − ":" + "):x<0?"− ":"")+eur(Math.abs(x))).join("")}</b></div>`:""}
       ${h.shop?`<div class="row"><span>Comprado em</span><b>${esc(h.shop)}</b></div>`:""}
       ${we?`<div class="row"><span>Garantia até</span><b>${fmtD(we)} · ${hmLeft(we)}</b></div>`:""}
       ${h.war||h.wx?`<div class="row"><span>Garantia</span><b>${[h.war?`${h.war} ano${+h.war===1?"":"s"} da loja`:"",h.wx?`+${h.wx} ano${+h.wx===1?"":"s"} extra`:""].filter(Boolean).join(" ")}</b></div>`:""}
-      ${h.wv?`<div class="row"><span>Garantia extra paga</span><b>${eur(+h.wv)}</b></div>`:""}
+      ${h.wv?`<div class="row"><span>Pago</span><b style="text-align:right">${h.value?eur(+h.value)+" compra<br>+ ":""}${eur(+h.wv)} garantia extra<br>= ${eur(hmVal(h))}</b></div>`:""}
       ${h.brand?`<div class="row"><span>Marca e modelo</span><b>${esc(h.brand)}</b></div>`:""}
       ${h.notes?`<div>📝 ${esc(h.notes)}</div>`:""}
       ${attBlock(h)}
       <button class="btn ghost" type="button" data-edithm="${h.id}" style="align-self:flex-start">Editar</button></div>`:""}</div>`}
 function renderHome(){const el=document.getElementById("hmList");if(!el)return;const L=homes();safe("Seguro da casa",renderHins);
   document.querySelectorAll("[data-hmsort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hmsort===hmSort));
-  document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+(+h.value||0),0));
+  document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+hmVal(h),0));
+  {const wv=L.reduce((t,h)=>t+(+h.wv||0),0), e=document.getElementById("vHmWv");e.hidden=!wv;e.textContent=wv?`inclui ${eur(wv)} em garantias extra`:""}
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
   if(hmSort==="grp"){/* resumo em barras por grupo + cada grupo num cartão que abre e fecha */
-    const tot=L.reduce((t,h)=>t+(+h.value||0),0)||1, GS=[...new Set([...HM_GRPS.slice(0,4),...L.map(hmGrp),"Outros"])].map(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>(+b.value||0)-(+a.value||0));return{g,G,v:G.reduce((t,h)=>t+(+h.value||0),0)}}).filter(x=>x.G.length);
+    const tot=L.reduce((t,h)=>t+hmVal(h),0)||1, GS=[...new Set([...HM_GRPS.slice(0,4),...L.map(hmGrp),"Outros"])].map(g=>{const G=L.filter(h=>hmGrp(h)===g).sort((a,b)=>hmVal(b)-hmVal(a));return{g,G,v:G.reduce((t,h)=>t+hmVal(h),0)}}).filter(x=>x.G.length);
     html+=`<div class="hmsum">${GS.map(({g,v})=>{const [c,e]=HM_GSTY[g]||HM_GSTY.Outros;return`<button type="button" class="hmsr" data-hmjump="${esc(g)}"><span class="hmse">${e}</span><span class="hmsn">${esc(g)}</span><span class="hmsb"><i style="width:${Math.max(3,Math.round(v/tot*100))}%;background:${c}"></i></span><b>${eur(v).replace(",00","")}</b></button>`}).join("")}</div>`;
     GS.forEach(({g,G,v})=>{const [c,e]=HM_GSTY[g]||HM_GSTY.Outros, shut=boxShut("hm-"+g);
       html+=`<div class="hmgrp${shut?" shut":""}" id="hmg-${esc(g).replace(/\W+/g,"")}"><button type="button" class="hmgh" data-boxtog="hm-${esc(g)}" style="--gc:${c}"><span class="hmge">${e}</span><span class="hmgt"><b>${esc(g)}</b><small>${G.length} compra${G.length===1?"":"s"}</small></span><span class="hmgv">${eur(v)}</span><i>${shut?"⌄":"⌃"}</i></button>${shut?"":`<div class="hmgl">${G.map(card).join("")}</div>`}</div>`})}
   else if(hmSort==="div"){HM_ROOMS.forEach(r=>{const G=L.filter(h=>(h.room||"Toda a casa")===r).sort((a,b)=>(b.date||"").localeCompare(a.date||""));if(!G.length)return;
-      html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+(+h.value||0),0))}</span></div>`+G.map(card).join("")})}
-  else{const S=[...L];if(hmSort==="new")S.sort((a,b)=>(b.date||"").localeCompare(a.date||""));else if(hmSort==="val")S.sort((a,b)=>(+b.value||0)-(+a.value||0));
+      html+=`<div class="hmdiv"><h2>${esc(r)}</h2><span>${eur(G.reduce((t,h)=>t+hmVal(h),0))}</span></div>`+G.map(card).join("")})}
+  else{const S=[...L];if(hmSort==="new")S.sort((a,b)=>(b.date||"").localeCompare(a.date||""));else if(hmSort==="val")S.sort((a,b)=>hmVal(b)-hmVal(a));
     else S.sort((a,b)=>{const x=hmWarEnd(a), y=hmWarEnd(b), xa=x&&x>=ymd(new Date()), ya=y&&y>=ymd(new Date());return(ya-xa)||(x||"9").localeCompare(y||"9")});html=S.map(card).join("")}
   el.innerHTML=html||(editHm==="new"?"":`<div class="empty">Ainda não há compras.<br>Junta os eletrodomésticos, móveis, colchões, cortinados…</div>`);
   document.getElementById("hmNew").innerHTML=editHm==="new"?hmForm(null):"";document.getElementById("addHm").hidden=editHm==="new";
@@ -5934,7 +5936,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v275";
+const APPV="casa-v276";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
