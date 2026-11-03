@@ -3903,6 +3903,32 @@ function cardBuys(c){const mk=cardK(), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).re
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${kName(mk)}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
+/* Pedido (03/11): compras fracionadas no cartão — {id,n,pay,cnt,first "AAAA-MM",fv (valor da compra, p/ os juros)} em c.frs;
+   as da Casa pagas com este cartão entram sozinhas. Não mexe no "usado" (o banco já as conta); só mostra o que se paga por mês e o que falta. */
+let cardFrOpen="";
+function frState(cnt,first,pay){const paid=Math.max(0,Math.min(cnt,mIdx(ymOf(new Date()))-mIdx(first)+1)), left=cnt-paid, lm=mIdx(first)+cnt-1;
+  return{n:cnt,pay,paid,left,leftAmt:Math.round(left*pay*100)/100,done:!left,last:`${Math.floor(lm/12)}-${String(lm%12+1).padStart(2,"0")}`}}
+function cardFrs(c){return[...(c.frs||[]).map(x=>({...x,own:1,st:frState(+x.cnt,x.first,+x.pay),jur:x.fv?Math.round((x.cnt*x.pay-x.fv)*100)/100:null})),
+  ...homes().filter(h=>h.pay===c.id&&hmFr(h)).map(h=>{const st=hmFr(h);return{id:h.id,n:"🏠 "+h.name,st,jur:+h.frp?Math.round((st.n*st.pay-hmVal(h))*100)/100:null}})]}
+function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduce((t,x)=>t+x.st.pay,0), falta=A.reduce((t,x)=>t+x.st.leftAmt,0);
+  const rows=F.map(x=>`<div class="row" style="font-size:13px;align-items:flex-start;gap:8px;border-top:1px solid var(--sep,rgba(0,0,0,.08));padding-top:4px"><span style="min-width:0">${esc(x.n)}<br><span style="color:var(--muted)">${x.st.done?`terminada ✓ (${mLong(x.st.last)})`:`${x.st.paid}/${x.st.n} · faltam ${x.st.left} (${eur(x.st.leftAmt)}) · última ${mLong(x.st.last)}`}${x.jur>0.005?` · juros ${eur(x.jur)}`:x.jur!=null?" · sem juros":""}</span></span><span style="font-weight:600;white-space:nowrap">${eur(x.st.pay)}/mês${x.own?` <button type="button" class="bump" data-cardfrdel="${c.id}|${x.id}" aria-label="Apagar">✕</button>`:""}</span></div>`).join("");
+  const form=cardFrOpen===c.id?`<form data-cardfr="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+      <input name="n" required placeholder="O quê (ex.: Telemóvel Worten)" style="grid-column:1/-1" autocapitalize="sentences">
+      <label class="f">Cada prestação (€)<input name="p" type="number" step="0.01" min="0" inputmode="decimal" required placeholder="ex.: 41,50"></label>
+      <label class="f">Nº de prestações<input name="c" type="number" min="2" max="120" inputmode="numeric" required placeholder="ex.: 12"></label>
+      <label class="f">1.ª prestação<input name="a" type="month" required value="${ymOf(new Date())}"></label>
+      <label class="f">Valor da compra (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="p/ ver os juros"></label>
+      <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" data-cardfropen="">Cancelar</button></form>`
+    :`<button type="button" class="back" data-cardfropen="${c.id}" style="align-self:flex-start">+ Prestação</button>`;
+  return`<div class="row" style="font-weight:600;margin-top:6px"><span>💳 Prestações${A.length?` · ${eur(mes)}/mês`:""}</span><span>${falta?`faltam ${eur(falta)}`:""}</span></div>${rows}${form}`}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfropen],[data-cardfrdel]");if(!t)return;
+  if(t.dataset.cardfrdel!=null){const [cid,id]=t.dataset.cardfrdel.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.frs||[]).find(y=>y.id===id);
+    if(x&&confirm(`Apagar a prestação "${x.n}"?`)){putBill({...c,frs:c.frs.filter(y=>y.id!==id)});renderCards();toast("Apagada")}}
+  else{cardFrOpen=t.dataset.cardfropen;renderCards();if(cardFrOpen)setTimeout(()=>{const i=document.querySelector(`[data-cardfr="${cardFrOpen}"] [name=n]`);if(i)i.focus()},30)}});
+document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
+  const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};const pay=num(f.p.value), cnt=Math.round(+f.c.value), fv=num(f.v.value);if(!pay||!cnt||!f.a.value)return;
+  putBill({...c,frs:[...(c.frs||[]),{id:uid(),n:f.n.value.trim(),pay,cnt,first:f.a.value,...(fv?{fv}:{})}]});cardFrOpen="";renderCards();
+  const st=frState(cnt,f.a.value,pay);toast(st.done?"Juntada (já terminou)":`Juntada: faltam ${st.left} prestações (${eur(st.leftAmt)})`)});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round((+c.used||0)/c.limit*100));
     L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
@@ -3913,6 +3939,7 @@ function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=
   const AU=(c.auto||[]).map(a=>{const b=a.bill&&bills.find(x=>x.id===c.bill);if(a.bill&&!b)return"";const v=b?monthAmt(b,cardK()):a.v, d=b?b.day:a.day;
     return`${esc(a.bill?"Prestação":a.n)} ${a.t==="compra"?"+":"−"}${eur(v)} · dia ${d}`}).filter(Boolean);
   if(AU.length)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>🔁 ${AU.join(" · ")}</span></div>`);
+  if(isCredit(c))L.push(cardFrBox(c));
   L.push(cardBuys(c));
   return`<div class="cinfo">${L.join("")}</div>`}
 /* Cores tiradas de uma foto do cartão: só ficam 3 cores (canto de cima, meio e canto de baixo); a foto não é guardada nem enviada */
@@ -4529,7 +4556,7 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
     <label class="f">Pago com<select name="pay"><option value="">—</option>${[...cards().map(c=>[c.id,"💳 "+c.name+(c.who?` (${c.who})`:"")]),...accounts().map(a=>[a.id,"🏦 "+a.name])].map(([k,t])=>`<option value="${k}"${h&&h.pay===k?" selected":""}>${esc(t)}</option>`).join("")}</select></label>
     <label class="f">Pagamento<select name="frn"><option value="">De uma vez</option>${[2,3,4,5,6,8,9,10,12,15,18,20,24,36,48].map(n=>`<option value="${n}"${h&&+h.frn===n?" selected":""}>Fracionado em ${n}×</option>`).join("")}</select></label>
     <label class="f">1.ª prestação<input name="frf" type="month" value="${h&&h.frf||(h&&h.date?h.date.slice(0,7):ymOf(new Date()))}"></label>
-    <label class="f wide">Cada prestação (€)<input name="frp" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.frp):""}" placeholder="vazio = valor ÷ nº de prestações (sem juros)"></label>
+    <label class="f wide">Cada prestação (€)<input name="frp" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.frp):""}" placeholder="o que vem no extrato ou contrato (vazio = valor ÷ nº)"></label>
     <label class="tick wide"><input type="checkbox" class="switch" name="payc"${!h||h.payc||!h.pay?" checked":""}> Se for cartão de crédito, lançar lá a compra (conta como usado)</label>
     <label class="f">Onde comprei<input name="s" list="shopList" value="${h?v(h.shop):""}" placeholder="ex.: IKEA, Worten" autocapitalize="words"></label>
     <label class="f">Garantia<select name="w">${[["0","Sem garantia"],["1","1 ano"],["2","2 anos"],["3","3 anos"],["5","5 anos"],["10","10 anos"]].map(([k,t])=>`<option value="${k}"${String(war||0)===k?" selected":""}>${t}</option>`).join("")}</select></label>
@@ -4552,7 +4579,7 @@ function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.i
     ${open?`<div class="hb">
       ${h.parts&&h.parts.length>1?`<div class="row"><span>Parcelas</span><b style="text-align:right">${h.parts.map((x,i)=>(i?(x<0?" − ":" + "):x<0?"− ":"")+eur(Math.abs(x))).join("")}</b></div>`:""}
       ${h.shop?`<div class="row"><span>Comprado em</span><b>${esc(h.shop)}</b></div>`:""}
-      ${(fr=>fr?`<div class="row"><span>Fracionado</span><b style="text-align:right">${fr.n} × ${eur(fr.pay)}${+h.frp&&Math.abs(fr.n*fr.pay-hmVal(h))>0.05?` = ${eur(fr.n*fr.pay)}`:""}<br>${fr.done?`pago ✓ (última em ${mLong(fr.last)})`:`${fr.paid} paga${fr.paid===1?"":"s"} · faltam ${fr.left} (${eur(fr.leftAmt)})<br>última em ${mLong(fr.last)}`}</b></div>`:"")(hmFr(h))}
+      ${(fr=>fr?`<div class="row"><span>Fracionado</span><b style="text-align:right">${fr.n} × ${eur(fr.pay)}${+h.frp&&Math.abs(fr.n*fr.pay-hmVal(h))>0.05?` = ${eur(fr.n*fr.pay)}<br>juros ${eur(fr.n*fr.pay-hmVal(h))}`:+h.frp?" · sem juros":""}<br>${fr.done?`pago ✓ (última em ${mLong(fr.last)})`:`${fr.paid} paga${fr.paid===1?"":"s"} · faltam ${fr.left} (${eur(fr.leftAmt)})<br>última em ${mLong(fr.last)}`}</b></div>`:"")(hmFr(h))}
       ${h.pay?`<div class="row"><span>Pago com</span><b>${esc((bills.find(b=>b.id===h.pay)||{}).name||"—")}${bills.some(c=>c.kind==="card"&&(c.buys||[]).some(y=>y.hm===h.id))?" · lançado no cartão":""}</b></div>`:""}
       ${we?`<div class="row"><span>Garantia até</span><b>${fmtD(we)} · ${hmLeft(we)}</b></div>`:""}
       ${h.war||h.wx?`<div class="row"><span>Garantia</span><b>${[h.war?`${h.war} ano${+h.war===1?"":"s"} da loja`:"",h.wx?`+${h.wx} ano${+h.wx===1?"":"s"} extra`:""].filter(Boolean).join(" ")}</b></div>`:""}
@@ -5965,7 +5992,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v281";
+const APPV="casa-v282";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
