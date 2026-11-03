@@ -4527,6 +4527,9 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
     <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.value):""}" placeholder="0,00"></label>
     <label class="f wide">Parcelas (opcional, ex.: 272,69 + 17,49 − 66,15)<input name="p" value="${h&&h.parts?esc(h.parts.map((x,i)=>(i&&x>=0?"+ ":x<0?"− ":"")+String(Math.abs(x)).replace(".",",")).join(" ")):""}" placeholder="o valor fica a soma"></label>
     <label class="f">Pago com<select name="pay"><option value="">—</option>${[...cards().map(c=>[c.id,"💳 "+c.name+(c.who?` (${c.who})`:"")]),...accounts().map(a=>[a.id,"🏦 "+a.name])].map(([k,t])=>`<option value="${k}"${h&&h.pay===k?" selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="f">Pagamento<select name="frn"><option value="">De uma vez</option>${[2,3,4,5,6,8,9,10,12,15,18,20,24,36,48].map(n=>`<option value="${n}"${h&&+h.frn===n?" selected":""}>Fracionado em ${n}×</option>`).join("")}</select></label>
+    <label class="f">1.ª prestação<input name="frf" type="month" value="${h&&h.frf||(h&&h.date?h.date.slice(0,7):ymOf(new Date()))}"></label>
+    <label class="f wide">Cada prestação (€)<input name="frp" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.frp):""}" placeholder="vazio = valor ÷ nº de prestações (sem juros)"></label>
     <label class="tick wide"><input type="checkbox" class="switch" name="payc"${!h||h.payc||!h.pay?" checked":""}> Se for cartão de crédito, lançar lá a compra (conta como usado)</label>
     <label class="f">Onde comprei<input name="s" list="shopList" value="${h?v(h.shop):""}" placeholder="ex.: IKEA, Worten" autocapitalize="words"></label>
     <label class="f">Garantia<select name="w">${[["0","Sem garantia"],["1","1 ano"],["2","2 anos"],["3","3 anos"],["5","5 anos"],["10","10 anos"]].map(([k,t])=>`<option value="${k}"${String(war||0)===k?" selected":""}>${t}</option>`).join("")}</select></label>
@@ -4537,14 +4540,19 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelhm="1">Cancelar</button>
     ${h?`<button class="btn danger wide" type="button" data-delhm="${h.id}">Apagar</button>`:`<p class="note wide" style="margin:0">Depois de guardar, toca na compra para juntar a fatura (foto ou PDF).</p>`}</form>`}
 const hmVal=h=>(+h.value||0)+(+h.wv||0);/* compra + garantia extra paga */
+/* Pedido (03/11): pagamento fracionado — nº de prestações, mês da 1.ª e valor de cada (por defeito total ÷ nº); conta a deste mês como paga */
+function hmFr(h){const n=+h.frn;if(!n||!h.frf)return null;const pay=+h.frp||Math.round(hmVal(h)/n*100)/100;
+  const paid=Math.max(0,Math.min(n,mIdx(ymOf(new Date()))-mIdx(h.frf)+1)), left=n-paid;
+  const lm=mIdx(h.frf)+n-1, last=`${Math.floor(lm/12)}-${String(lm%12+1).padStart(2,"0")}`;return{n,pay,paid,left,leftAmt:Math.round(left*pay*100)/100,done:!left,last}}
 function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.id;
   const war=we?(d<0?`<span class="due bad">Garantia acabou</span>`:d<=60?`<span class="due warn">Garantia: ${d} dias</span>`:`<span class="due ok">🛡️ ${hmLeft(we).replace("faltam ","")}</span>`):"";
   return`<div class="hm"><button type="button" class="hh" data-openhm="${h.id}"><span class="he">${hmEmo(h.type)}</span>
       <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hmm">${[hmSort!=="div"&&h.room!=="Toda a casa"?h.room:"",h.parts&&h.parts.length>1?h.parts.length+" parcelas":"",h.date?fmtD(h.date):"",hmAge(h.date)].filter(Boolean).map(esc).join(" · ")}${(h.files||[]).length?" · 📎":""}</span></span>
-      <span class="hv">${hmVal(h)?eur(hmVal(h)):""}${h.wv&&h.value?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${eur(+h.value)} + ${eur(+h.wv)} 🛡️</small>`:""}${war?`<span style="display:block;margin-top:3px">${war}</span>`:""}</span></button>
+      <span class="hv">${hmVal(h)?eur(hmVal(h)):""}${h.wv&&h.value?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${eur(+h.value)} + ${eur(+h.wv)} 🛡️</small>`:""}${(fr=>fr?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${fr.done?`${fr.n}× pago ✓`:`${fr.paid}/${fr.n} prestações`}</small>`:"")(hmFr(h))}${war?`<span style="display:block;margin-top:3px">${war}</span>`:""}</span></button>
     ${open?`<div class="hb">
       ${h.parts&&h.parts.length>1?`<div class="row"><span>Parcelas</span><b style="text-align:right">${h.parts.map((x,i)=>(i?(x<0?" − ":" + "):x<0?"− ":"")+eur(Math.abs(x))).join("")}</b></div>`:""}
       ${h.shop?`<div class="row"><span>Comprado em</span><b>${esc(h.shop)}</b></div>`:""}
+      ${(fr=>fr?`<div class="row"><span>Fracionado</span><b style="text-align:right">${fr.n} × ${eur(fr.pay)}${+h.frp&&Math.abs(fr.n*fr.pay-hmVal(h))>0.05?` = ${eur(fr.n*fr.pay)}`:""}<br>${fr.done?`pago ✓ (última em ${mLong(fr.last)})`:`${fr.paid} paga${fr.paid===1?"":"s"} · faltam ${fr.left} (${eur(fr.leftAmt)})<br>última em ${mLong(fr.last)}`}</b></div>`:"")(hmFr(h))}
       ${h.pay?`<div class="row"><span>Pago com</span><b>${esc((bills.find(b=>b.id===h.pay)||{}).name||"—")}${bills.some(c=>c.kind==="card"&&(c.buys||[]).some(y=>y.hm===h.id))?" · lançado no cartão":""}</b></div>`:""}
       ${we?`<div class="row"><span>Garantia até</span><b>${fmtD(we)} · ${hmLeft(we)}</b></div>`:""}
       ${h.war||h.wx?`<div class="row"><span>Garantia</span><b>${[h.war?`${h.war} ano${+h.war===1?"":"s"} da loja`:"",h.wx?`+${h.wx} ano${+h.wx===1?"":"s"} extra`:""].filter(Boolean).join(" ")}</b></div>`:""}
@@ -4556,7 +4564,7 @@ function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.i
 function renderHome(){const el=document.getElementById("hmList");if(!el)return;const L=homes();safe("Seguro da casa",renderHins);
   document.querySelectorAll("[data-hmsort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.hmsort===hmSort));
   document.getElementById("hmTot").hidden=!L.length;document.getElementById("vHmTotal").textContent=eur(L.reduce((t,h)=>t+hmVal(h),0));
-  {const wv=L.reduce((t,h)=>t+(+h.wv||0),0), e=document.getElementById("vHmWv");e.hidden=!wv;e.textContent=wv?`inclui ${eur(wv)} em garantias extra`:""}
+  {const wv=L.reduce((t,h)=>t+(+h.wv||0),0), e=document.getElementById("vHmWv");const fl=L.reduce((t,h)=>{const fr=hmFr(h);return t+(fr?fr.leftAmt:0)},0);e.hidden=!wv&&!fl;e.textContent=[wv?`inclui ${eur(wv)} em garantias extra`:"",fl?`faltam ${eur(fl)} em prestações`:""].filter(Boolean).join(" · ")}
   document.getElementById("vHmWar").textContent=String(L.filter(h=>{const w=hmWarEnd(h);return w&&daysTo(w)>=0}).length);
   const card=h=>h.id===editHm?hmForm(h):hmCard(h);let html="";
   if(hmSort==="grp"){/* resumo em barras por grupo + cada grupo num cartão que abre e fecha */
@@ -4597,10 +4605,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
 document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)return;e.preventDefault();const f=e.target;const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
   const old=id==="new"?null:homes().find(x=>x.id===id);const h={...(old||{}),id:old?old.id:uid(),kind:"home",name:f.n.value.trim(),room:f.r.value,type:f.t.value};
   h.grp=f.g.value;delete h.parts;{const P=hmParts(f.p.value);if(P.length>1||(P.length===1&&f.p.value.trim())){h.parts=P;f.v.value=String(Math.round(P.reduce((t,x)=>t+x,0)*100)/100)}}
-  for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["wv",num(f.wv.value)],["wx",+f.wx.value||null],["pay",f.pay.value||null],["payc",f.payc.checked&&f.pay.value?1:null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
+  for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["wv",num(f.wv.value)],["wx",+f.wx.value||null],["pay",f.pay.value||null],["payc",f.payc.checked&&f.pay.value?1:null],["frn",+f.frn.value||null],["frf",+f.frn.value&&f.frf.value||null],["frp",+f.frn.value?num(f.frp.value):null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
   editHm="";openHm=h.id;putBill(h);const cc=hmCardSync(h);renderHome();toast(cc?`Guardado e lançado no ${cc}`:old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
 /* Pedido (03/11): compra da Casa paga com cartão de crédito entra nos movimentos do cartão e soma ao usado (acerta se mudar; sai se apagar) */
-function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n="🏠 "+h.name;
+function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n="🏠 "+h.name+(+h.frn?` (${h.frn}×)`:"");
   const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0;if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n){out="";return}
   let buys=(c.buys||[]).filter(y=>y.hm!==h.id), used=c.used!=null?(+c.used||0)-had.reduce((t,y)=>t+(+y.v||0),0):null;
   if(add){buys=[...buys,{id:uid(),v:nv,d,n,hm:h.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);used=(used||0)+nv}
@@ -5957,7 +5965,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v280";
+const APPV="casa-v281";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
