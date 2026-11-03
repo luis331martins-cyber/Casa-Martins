@@ -3109,7 +3109,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");
   const mn="fim de "+mFull(prevK(k)).split(" de ")[0], dn=levDone(b,k), falta=Math.max(0,Math.round((c.e-dn)*100)/100), o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" aria-label="Levantar para a empresa">
     <div class="rdh">💶 Levantar ${eur(c.e)} para a empresa</div><div class="rdm">${esc(b.name)} de ${mn} · já levantaste <b>${eur(dn)}</b> · falta <b>${eur(falta)}</b>${(b.levb||{})[k]?` · descontado no banco: ${eur(b.levb[k])}`:dn>0?" · (o já levantado ainda não foi descontado no banco)":""}</div>
     <label class="f">Quanto levantaste agora (€)<input id="lvAmt" type="text" inputmode="decimal" placeholder="ex.: 500,00"></label>
-    ${accounts().length?`<label class="f">Levantado de (desconta no saldo)<select id="lvAcc"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${(b.acc||(/activo/i.test(a.name)?a.id:""))===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
+    ${accounts().length?`<label class="f">Levantado de (desconta no saldo)<select id="lvAcc">${(()=>{const A=accounts(), def=(A.find(a=>a.id===b.acc)||A.find(a=>/activo/i.test(a.name))||A[0]||{}).id;return A.map(a=>`<option value="${a.id}"${a.id===def?" selected":""}>${esc(bankLabel(a.name))} · saldo ${eur(+a.bal||0)}</option>`).join("")})()}<option value="">Não descontar no banco</option></select></label>`:""}
+    ${accounts().length&&dn>0.004&&dn-(+(b.levb||{})[k]||0)>0.004?`<button type="button" class="btn" data-lv="bank">🏦 Descontar já no banco o levantado (${eur(Math.round((dn-(+(b.levb||{})[k]||0))*100)/100)})</button>`:""}
     <button type="button" class="btn" data-lv="settle" style="background:#34c759">✓ Levantei este valor · fica acertado</button>
     <p class="note" style="margin:-4px 0 0;font-size:12.5px">Usa quando arredondas (ex.: falta 969,59 € e levantas 970 €): desconta no banco o que levantaste e dá o mês por acertado.</p>
     <button type="button" class="btn ghost" data-lv="part">Juntar ao levantado (ainda falta levantar mais)</button>
@@ -3128,6 +3129,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-levask]");
     const levBank=d=>{if(!accId||Math.abs(d)<0.005)return;nb.levb[k]=Math.round(((+nb.levb[k]||0)+d)*100)/100;if(nb.levb[k]<=0.004)delete nb.levb[k];const a=bills.find(x=>x.id===accId);if(!a)return;const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),900)};
     if(a==="part"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;if(tot>=c.e-0.004)nb.lev[k]=true;levBank(v);putBill(nb);toast(tot>=c.e-0.004?"Levantado tudo ✓":`Levantado ${eur(tot)} · falta ${eur(c.e-tot)}`)}
     else if(a==="settle"){const tot=Math.round((dn+v)*100)/100;nb.levv[k]=tot;nb.lev[k]=true;levBank(v);putBill(nb);const dif=Math.round((tot-c.e)*100)/100;toast(`Acertado ✓${Math.abs(dif)>0.004?` · ${dif>0?"+":"−"}${eur(Math.abs(dif))} do arredondamento`:""}`)}
+    else if(a==="bank"){if(!accId){toast("Escolhe o banco de onde levantaste");return}levBank(Math.round((dn-(+(b.levb||{})[k]||0))*100)/100);putBill(nb);toast("Descontado no banco ✓")}
     else if(a==="zero"){const back=+(b.levb||{})[k]||0;delete nb.levv[k];delete nb.lev[k];levBank(-back);putBill(nb);toast(back?`Levantado a zero · ${eur(back)} voltou ao saldo`:"Levantado a zero")}
     else if(a==="ok"){nb.lev[k]=true;nb.levv[k]=c.e;levBank(falta);putBill(nb);toast("Marcado como levantado ✓")}
     else{delete nb.caixa[k];delete nb.amounts[k];delete nb.paid[k];delete nb.iconf[k];delete nb.lev[k];putBill(nb);toast(`Valor da ${b.name} de ${mn} apagado`)}
@@ -5992,7 +5994,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v282";
+const APPV="casa-v283";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
