@@ -4527,6 +4527,7 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
     <label class="f">Valor (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.value):""}" placeholder="0,00"></label>
     <label class="f wide">Parcelas (opcional, ex.: 272,69 + 17,49 − 66,15)<input name="p" value="${h&&h.parts?esc(h.parts.map((x,i)=>(i&&x>=0?"+ ":x<0?"− ":"")+String(Math.abs(x)).replace(".",",")).join(" ")):""}" placeholder="o valor fica a soma"></label>
     <label class="f">Pago com<select name="pay"><option value="">—</option>${[...cards().map(c=>[c.id,"💳 "+c.name+(c.who?` (${c.who})`:"")]),...accounts().map(a=>[a.id,"🏦 "+a.name])].map(([k,t])=>`<option value="${k}"${h&&h.pay===k?" selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="tick wide"><input type="checkbox" class="switch" name="payc"${!h||h.payc||!h.pay?" checked":""}> Se for cartão de crédito, lançar lá a compra (conta como usado)</label>
     <label class="f">Onde comprei<input name="s" list="shopList" value="${h?v(h.shop):""}" placeholder="ex.: IKEA, Worten" autocapitalize="words"></label>
     <label class="f">Garantia<select name="w">${[["0","Sem garantia"],["1","1 ano"],["2","2 anos"],["3","3 anos"],["5","5 anos"],["10","10 anos"]].map(([k,t])=>`<option value="${k}"${String(war||0)===k?" selected":""}>${t}</option>`).join("")}</select></label>
     <label class="f">Garantia extra paga (€)<input name="wv" type="number" step="0.01" min="0" inputmode="decimal" value="${h?v(h.wv):""}" placeholder="ex.: 49,99"></label>
@@ -4544,7 +4545,7 @@ function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.i
     ${open?`<div class="hb">
       ${h.parts&&h.parts.length>1?`<div class="row"><span>Parcelas</span><b style="text-align:right">${h.parts.map((x,i)=>(i?(x<0?" − ":" + "):x<0?"− ":"")+eur(Math.abs(x))).join("")}</b></div>`:""}
       ${h.shop?`<div class="row"><span>Comprado em</span><b>${esc(h.shop)}</b></div>`:""}
-      ${h.pay?`<div class="row"><span>Pago com</span><b>${esc((bills.find(b=>b.id===h.pay)||{}).name||"—")}</b></div>`:""}
+      ${h.pay?`<div class="row"><span>Pago com</span><b>${esc((bills.find(b=>b.id===h.pay)||{}).name||"—")}${bills.some(c=>c.kind==="card"&&(c.buys||[]).some(y=>y.hm===h.id))?" · lançado no cartão":""}</b></div>`:""}
       ${we?`<div class="row"><span>Garantia até</span><b>${fmtD(we)} · ${hmLeft(we)}</b></div>`:""}
       ${h.war||h.wx?`<div class="row"><span>Garantia</span><b>${[h.war?`${h.war} ano${+h.war===1?"":"s"} da loja`:"",h.wx?`+${h.wx} ano${+h.wx===1?"":"s"} extra`:""].filter(Boolean).join(" ")}</b></div>`:""}
       ${h.wv?`<div class="row"><span>Pago</span><b style="text-align:right">${h.value?eur(+h.value)+" compra<br>+ ":""}${eur(+h.wv)} garantia extra<br>= ${eur(hmVal(h))}</b></div>`:""}
@@ -4592,12 +4593,18 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   if(t.dataset.openhm){openHm=openHm===t.dataset.openhm?"":t.dataset.openhm;renderHome()}
   else if(t.dataset.edithm){editHm=t.dataset.edithm;renderHome()}
   else if(t.dataset.cancelhm){editHm="";renderHome()}
-  else if(t.dataset.delhm){const h=homes().find(x=>x.id===t.dataset.delhm);if(h&&confirm(`Apagar "${h.name}"?`)){(h.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editHm="";delBill(h.id);renderHome();toast("Apagado")}}});
+  else if(t.dataset.delhm){const h=homes().find(x=>x.id===t.dataset.delhm);if(h&&confirm(`Apagar "${h.name}"?`)){(h.files||[]).forEach(f=>{if(fb&&houseCode)fb.delFile(houseCode,f.id).catch(()=>{})});editHm="";hmCardSync(h,true);delBill(h.id);renderHome();toast("Apagado")}}});
 document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)return;e.preventDefault();const f=e.target;const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
   const old=id==="new"?null:homes().find(x=>x.id===id);const h={...(old||{}),id:old?old.id:uid(),kind:"home",name:f.n.value.trim(),room:f.r.value,type:f.t.value};
   h.grp=f.g.value;delete h.parts;{const P=hmParts(f.p.value);if(P.length>1||(P.length===1&&f.p.value.trim())){h.parts=P;f.v.value=String(Math.round(P.reduce((t,x)=>t+x,0)*100)/100)}}
-  for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["wv",num(f.wv.value)],["wx",+f.wx.value||null],["pay",f.pay.value||null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
-  editHm="";openHm=h.id;putBill(h);renderHome();toast(old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
+  for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["wv",num(f.wv.value)],["wx",+f.wx.value||null],["pay",f.pay.value||null],["payc",f.payc.checked&&f.pay.value?1:null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
+  editHm="";openHm=h.id;putBill(h);const cc=hmCardSync(h);renderHome();toast(cc?`Guardado e lançado no ${cc}`:old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
+/* Pedido (03/11): compra da Casa paga com cartão de crédito entra nos movimentos do cartão e soma ao usado (acerta se mudar; sai se apagar) */
+function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n="🏠 "+h.name;
+  const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0;if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n){out="";return}
+  let buys=(c.buys||[]).filter(y=>y.hm!==h.id), used=c.used!=null?(+c.used||0)-had.reduce((t,y)=>t+(+y.v||0),0):null;
+  if(add){buys=[...buys,{id:uid(),v:nv,d,n,hm:h.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);used=(used||0)+nv}
+  putBill({...c,buys,...(used!=null?{used:Math.max(0,Math.round(used*100)/100),usedAt:Date.now()}:{})})});renderCards&&safe("Cartões",renderCards);return out}
 /* ---------- Seguro da casa (kind:"hins") ----------
    {name (seguradora), what, value, per ("mes"|"trim"|"sem"|"ano"), renew "AAAA-MM-DD", notes, files} — aviso 60, 30, 7 dias e no dia */
 const hinss=()=>bills.filter(b=>b.kind==="hins");
@@ -5950,7 +5957,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v279";
+const APPV="casa-v280";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
