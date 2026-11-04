@@ -3902,7 +3902,11 @@ let cardBuy="";
 const cardK=()=>{const k=ymOf(new Date());return k<START?START:k};
 const kName=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"long"})};
 const buysOf=(c,mk)=>(c.buys||[]).filter(x=>!mk||x.d.slice(0,7)===mk||(mk===START&&x.d<START)).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1));
-function cardBuys(c){const mk=cardK(), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
+/* Pedido (04/11): dia de fecho do extrato (c.cd) — compras depois do fecho vão para o extrato seguinte; prestação do mês só conta como paga depois do fecho */
+const cdDay=(cd,y,m)=>Math.min(cd,new Date(y,m,0).getDate());
+function stmtK(c,ds){const d=ds?new Date(ds+"T12:00"):new Date(), y=d.getFullYear(), m=d.getMonth()+1;if(d.getDate()<=cdDay(c.cd,y,m))return`${y}-${String(m).padStart(2,"0")}`;const n=new Date(y,m,1);return ymOf(n)}
+const stmtLabel=(c,k)=>{const [y,m]=k.split("-").map(Number);return`${cdDay(c.cd,y,m)} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`};
+function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(x=>stmtK(c,x.d)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1)):buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
   const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n).map(x=>x.n))].slice(0,6);
   const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
@@ -3913,15 +3917,15 @@ function cardBuys(c){const mk=cardK(), L=buysOf(c,mk), tot=L.filter(x=>x.v>0).re
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
     :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
   const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
-  return`<div class="row" style="font-weight:600;margin-top:4px"><span>Compras em ${kName(mk)}</span><span>${eur(tot)}</span></div>${rows}
+  return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
 /* Pedido (03/11): compras fracionadas no cartão — {id,n,pay,cnt,first "AAAA-MM",fv (valor da compra, p/ os juros)} em c.frs;
    as da Casa pagas com este cartão entram sozinhas. Não mexe no "usado" (o banco já as conta); só mostra o que se paga por mês e o que falta. */
 let cardFrOpen="";
-function frState(cnt,first,pay){const paid=Math.max(0,Math.min(cnt,mIdx(ymOf(new Date()))-mIdx(first)+1)), left=cnt-paid, lm=mIdx(first)+cnt-1;
+function frState(cnt,first,pay,cd){const t=new Date(), cur=mIdx(ymOf(t))-mIdx(first)+(cd&&t.getDate()<cdDay(cd,t.getFullYear(),t.getMonth()+1)?0:1), paid=Math.max(0,Math.min(cnt,cur)), left=cnt-paid, lm=mIdx(first)+cnt-1;
   return{n:cnt,pay,paid,left,leftAmt:Math.round(left*pay*100)/100,done:!left,last:`${Math.floor(lm/12)}-${String(lm%12+1).padStart(2,"0")}`}}
-function cardFrs(c){return[...(c.frs||[]).map(x=>({...x,own:1,st:frState(+x.cnt,x.first,+x.pay),jur:x.fv?Math.round((x.cnt*x.pay-x.fv)*100)/100:null})),
+function cardFrs(c){return[...(c.frs||[]).map(x=>({...x,own:1,st:frState(+x.cnt,x.first,+x.pay,c.cd),jur:x.fv?Math.round((x.cnt*x.pay-x.fv)*100)/100:null})),
   ...homes().filter(h=>h.pay===c.id&&hmFr(h)).map(h=>{const st=hmFr(h);return{id:h.id,n:"🏠 "+h.name,st,jur:+h.frp?Math.round((st.n*st.pay-hmVal(h))*100)/100:null}})]}
 function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduce((t,x)=>t+x.st.pay,0), falta=A.reduce((t,x)=>t+x.st.leftAmt,0);
   const open=cardFrOpen===c.id||frIsOpen(c.id), tot=A.reduce((t,x)=>t+x.st.n*x.st.pay,0), pct=tot?Math.round((tot-falta)/tot*100):0, end=A.map(x=>x.st.last).sort().pop();
@@ -3952,7 +3956,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfropen
 document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
   const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};const pay=num(f.p.value), cnt=Math.round(+f.c.value), fv=num(f.v.value);if(!pay||!cnt||!f.a.value)return;
   putBill({...c,frs:[...(c.frs||[]),{id:uid(),n:f.n.value.trim(),pay,cnt,first:f.a.value,...(fv?{fv}:{})}]});cardFrOpen="";renderCards();
-  const st=frState(cnt,f.a.value,pay);toast(st.done?"Juntada (já terminou)":`Juntada: faltam ${st.left} prestações (${eur(st.leftAmt)})`)});
+  const st=frState(cnt,f.a.value,pay,c.cd);toast(st.done?"Juntada (já terminou)":`Juntada: faltam ${st.left} prestações (${eur(st.leftAmt)})`)});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
     L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
@@ -3999,6 +4003,7 @@ function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
     <label class="f">Titular<select name="w"><option value="">—</option>${PEOPLE.map(p=>`<option${c&&c.who===p?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
     <label class="f">Últimos 4 dígitos<input name="l4" inputmode="numeric" pattern="\\d{4}" maxlength="4" value="${c?v(c.last4):""}" placeholder="opcional"></label>
     <label class="f">Válido até<input name="e" type="month" value="${c?v(c.exp):""}"></label>
+    <label class="f">Fecho do extrato (dia)<input name="cd" type="number" min="1" max="31" inputmode="numeric" value="${c?v(c.cd):""}" placeholder="ex.: 15 · só crédito"></label>
     <label class="f">Plafond (€)<input name="lim" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.limit):""}" placeholder="só crédito"></label>
     <label class="f">Já usado (€)<input name="u" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.used):""}" placeholder="só crédito"></label>
     <label class="f wide">Linha nas Contas (o que pagas por mês)<select name="b">${c?"":'<option value="auto" selected>Automática (pelo nome)</option>'}<option value="">Não ligar</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${c&&(c.bill===b.id||!c.bill&&!c.nolink&&sameName(c.name,b.name))||!c&&false?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
@@ -4053,7 +4058,7 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.cardform;if(!id
   const old=id==="new"?null:cards().find(x=>x.id===id);
   const c={...(old||{}),id:old?old.id:uid(),kind:"card",name:f.n.value.trim(),type:f.t.value};
   const pc=f.pc.value&&photoStyle(f.pc.value)?f.pc.value:null;if(pc)c.pc=pc;else delete c.pc;
-  for(const [k,v] of [["style",f.st.value==="foto"&&!pc?null:f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
+  for(const [k,v] of [["style",f.st.value==="foto"&&!pc?null:f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["cd",Math.min(31,Math.max(0,Math.round(+f.cd.value)||0))||null],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
   if(!c.bill)c.nolink=true;else delete c.nolink;
   {const A=[], oldA=(old&&old.auto)||[], keep=(id,a)=>{const o=oldA.find(x=>x.id===id);return o&&o.v===a.v&&o.day===a.day&&o.t===a.t?o.since:null};
     if(f.ab.checked&&c.bill){const b=bills.find(x=>x.id===c.bill), a={id:"bill",bill:true,n:"Prestação "+c.name,t:"pag"};a.since=keep("bill",a)||nextSince(b&&b.day||1);A.push(a)}
@@ -4594,7 +4599,7 @@ function hmForm(h){const v=x=>x==null?"":esc(x), war=h?h.war:3;return`<form clas
 const hmVal=h=>(+h.value||0)+(+h.wv||0);/* compra + garantia extra paga */
 /* Pedido (03/11): pagamento fracionado — nº de prestações, mês da 1.ª e valor de cada (por defeito total ÷ nº); conta a deste mês como paga */
 function hmFr(h){const n=+h.frn;if(!n||!h.frf)return null;const pay=+h.frp||Math.round(hmVal(h)/n*100)/100;
-  const paid=Math.max(0,Math.min(n,mIdx(ymOf(new Date()))-mIdx(h.frf)+1)), left=n-paid;
+  const cc=bills.find(b=>b.id===h.pay&&b.kind==="card"), st0=frState(n,h.frf,pay,cc&&cc.cd), paid=st0.paid, left=n-paid;
   const lm=mIdx(h.frf)+n-1, last=`${Math.floor(lm/12)}-${String(lm%12+1).padStart(2,"0")}`;return{n,pay,paid,left,leftAmt:Math.round(left*pay*100)/100,done:!left,last}}
 function hmCard(h){const we=hmWarEnd(h), d=we?daysTo(we):null, open=openHm===h.id;
   const war=we?(d<0?`<span class="due bad">Garantia acabou</span>`:d<=60?`<span class="due warn">Garantia: ${d} dias</span>`:`<span class="due ok">🛡️ ${hmLeft(we).replace("faltam ","")}</span>`):"";
@@ -6017,7 +6022,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v285";
+const APPV="casa-v286";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
