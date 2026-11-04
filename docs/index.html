@@ -816,6 +816,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .ccard .cbot b{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;opacity:.75}
 .cinfo{background:var(--surface);border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.cfrbox{display:flex;flex-direction:column;gap:6px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 8%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
 .cinfo .row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .cinfo .bump{align-self:flex-start}
 .styles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -3877,7 +3878,9 @@ const photoStyle=pc=>{const L=String(pc||"").split(",");if(L.length!==3||!L.ever
   return["foto","📷 Do cartão",`linear-gradient(135deg,${L[0]} 0,${L[1]} 50%,${L[2]} 100%)`,lum(L[1])>.62?"#1c1c1e":"#fff",null]};
 function cardStyle(c){const n=noAcc(c.name||"");if(c.style==="foto"){const ps=photoStyle(c.pc);if(ps)return ps}return CSTYLES.find(x=>x[0]===c.style)||CSTYLES.find(x=>x[4]&&x[4].test(n))||CSTYLES.find(x=>x[0]==="preto")}
 const cardEnd=c=>{const [y,m]=String(c.exp).split("-").map(Number);return ymd(new Date(y,m,0))};
-const cardFree=c=>Math.max(0,(+c.limit||0)-(+c.used||0));
+/* Pedido (04/11): cartão só para prestações (ex.: WiZink Flex) → o usado é o que falta pagar das prestações e desce sozinho todos os meses */
+const cardUsed=c=>c.frOnly?Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.leftAmt),0)*100)/100:(+c.used||0);
+const cardFree=c=>Math.max(0,(+c.limit||0)-cardUsed(c));
 const isCredit=c=>c.type!=="debito";
 function cardFace(c){const st=cardStyle(c), ex=c.exp?c.exp.slice(5,7)+"/"+c.exp.slice(2,4):"";
   return`<button type="button" class="ccard" data-editcard="${c.id}" style="--cbg:${st[2]};--cfg:${st[3]}" aria-label="Editar ${esc(c.name)}">
@@ -3922,7 +3925,10 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
       <label class="f">Valor da compra (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="p/ ver os juros"></label>
       <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" data-cardfropen="">Cancelar</button></form>`
     :`<button type="button" class="back" data-cardfropen="${c.id}" style="align-self:flex-start">+ Prestação</button>`;
-  return`<div class="row" style="font-weight:600;margin-top:6px"><span>💳 Prestações${A.length?` · ${eur(mes)}/mês`:""}</span><span>${falta?`faltam ${eur(falta)}`:""}</span></div>${rows}${form}`}
+  return`<div class="cfrbox"><div class="row" style="font-weight:600"><span>💳 Prestações${A.length?` · ${eur(mes)}/mês`:""}</span><span>${falta?`faltam ${eur(falta)}`:""}</span></div>${rows}${form}
+    <label class="tick" style="font-size:13px;margin-top:6px;border-top:1px solid var(--sep,rgba(0,0,0,.08));padding-top:8px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado é o que falta pagar e desce sozinho todos os meses)</label></div>`}
+document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.cardfronly)return;const c=cards().find(x=>x.id===t.dataset.cardfronly);if(!c)return;
+  const on=t.checked;putBill({...c,frOnly:on||null,...(on?{}:{used:cardUsed({...c,frOnly:true}),usedAt:Date.now()})});renderCards();toast(on?`${c.name}: usado ${eur(cardUsed({...c,frOnly:true}))} · desce com as prestações`:"O usado volta a ser escrito à mão")});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfropen],[data-cardfrdel]");if(!t)return;
   if(t.dataset.cardfrdel!=null){const [cid,id]=t.dataset.cardfrdel.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.frs||[]).find(y=>y.id===id);
     if(x&&confirm(`Apagar a prestação "${x.n}"?`)){putBill({...c,frs:c.frs.filter(y=>y.id!==id)});renderCards();toast("Apagada")}}
@@ -3932,12 +3938,13 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
   putBill({...c,frs:[...(c.frs||[]),{id:uid(),n:f.n.value.trim(),pay,cnt,first:f.a.value,...(fv?{fv}:{})}]});cardFrOpen="";renderCards();
   const st=frState(cnt,f.a.value,pay);toast(st.done?"Juntada (já terminou)":`Juntada: faltam ${st.left} prestações (${eur(st.leftAmt)})`)});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
-  if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round((+c.used||0)/c.limit*100));
-    L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
+  if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
+    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
-  if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(+c.used||0)}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
-  if(isCredit(c))L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
+  if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
+  if(isCredit(c)&&c.frOnly)L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>📉 O usado desce sozinho com as prestações</span></div>`);
+  else if(isCredit(c))L.push(`<div class="row" style="color:var(--muted);font-size:13px"><span>${c.usedAt?"Usado atualizado "+(daysTo(ymd(new Date(c.usedAt)))===0?"hoje":`há ${-daysTo(ymd(new Date(c.usedAt)))} dias`):"Escreve quanto já usaste"}</span><button type="button" class="bump" data-cardused="${c.id}">Atualizar usado ›</button></div>`);
   const AU=(c.auto||[]).map(a=>{const b=a.bill&&bills.find(x=>x.id===c.bill);if(a.bill&&!b)return"";const v=b?monthAmt(b,cardK()):a.v, d=b?b.day:a.day;
     return`${esc(a.bill?"Prestação":a.n)} ${a.t==="compra"?"+":"−"}${eur(v)} · dia ${d}`}).filter(Boolean);
   if(AU.length)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>🔁 ${AU.join(" · ")}</span></div>`);
@@ -3987,7 +3994,7 @@ function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
 function renderCards(){const el=document.getElementById("cardList");if(!el)return;
   const L=cards().sort((a,b)=>isCredit(b)-isCredit(a)||a.name.localeCompare(b.name,"pt")), cr=L.filter(c=>isCredit(c)&&c.limit);
   document.getElementById("cardTot").hidden=!cr.length;
-  document.getElementById("vCardUsed").textContent=eur(cr.reduce((t,c)=>t+(+c.used||0),0));
+  document.getElementById("vCardUsed").textContent=eur(cr.reduce((t,c)=>t+cardUsed(c),0));
   document.getElementById("vCardFree").textContent=eur(cr.reduce((t,c)=>t+cardFree(c),0));
   el.innerHTML=L.map(c=>c.id===editCard?cardForm(c):cardFace(c)+cardInfo(c)).join("")||(editCard==="new"?"":`<div class="empty">Ainda não há cartões.<br>Toca em “Juntar cartão”.</div>`);
   document.getElementById("cardNew").innerHTML=editCard==="new"?cardForm(null):"";
@@ -5994,7 +6001,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v283";
+const APPV="casa-v284";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
