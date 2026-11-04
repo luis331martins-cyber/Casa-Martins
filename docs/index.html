@@ -2783,6 +2783,13 @@ let mob2Done=false;
 function mobMar(snap){if(mob2Done||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;mob2Done=true;if(bills.some(b=>b.id==="flag-mobmar-1"))return;
   const L=bills.filter(h=>h.kind==="home"&&hmGrp(h)==="Mobílias"&&MOB_KEEP(h));L.forEach(h=>{const d=(h.date||"").slice(8,10)||"15";if(h.date!=="2026-03-"+d)putBill({...h,date:"2026-03-"+d})});
   putBill({id:"flag-mobmar-1",kind:"flag",at:Date.now(),n:L.length});if(L.length)toast(`${L.map(h=>h.name).join(" e ")}: data em março de 2026`)}
+/* Pedido (04/11): Férias 2025 com os gastos (uma vez; id fixo para não duplicar entre telemóveis) */
+let fer25Done=false;
+function fer25(snap){if(fer25Done||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;fer25Done=true;if(bills.some(b=>b.id==="flag-fer25-1"))return;
+  if(!bills.some(b=>b.id==="trip-ferias-2025"||(b.kind==="trip"&&/f[ée]rias\s*2025/i.test(b.name||"")))){
+    const S=[["Hotel",[2614.40]],["Almoços + Bebidas",[700.25]],["Supermercado",[45.54,9.94,24.98]],["Intimissimi",[63.35,30.00]],["Loja Vila Galé",[33.95,27.00,13.50,5.50,5.00,16.80,8.00,35.50,11.90]],["Levantamentos",[40,60,20]],["Portagens",[22.60,22.60]],["Farmácia",[14.50,11.95,6.30]],["Fotos",[78]],["Nosolo",[76.80]],["KFC",[27.13]],["Ale Hop",[13]],["Pulseiras e B.Berlim",[20,2]]];
+    putBill({id:"trip-ferias-2025",kind:"trip",name:"Férias 2025",year:2025,pack:[],spend:S.map(([n,P],i)=>({id:"f25-"+i,n,...(P.length>1?{parts:P}:{}),v:Math.round(P.reduce((a,b)=>a+b,0)*100)/100}))});toast("Férias 2025 juntadas às Viagens, com os gastos")}
+  putBill({id:"flag-fer25-1",kind:"flag",at:Date.now()})}
 let restDone=false;
 function restTidy(snap){if(restDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;restDone=true;
   if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}});
@@ -3437,7 +3444,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4413,10 +4420,18 @@ const PACK_DEFAULT=["Família: Cartões de cidadão / passaportes","Família: Ca
   "Maria: Roupa para os dias","Maria: Pijama","Maria: Casaco","Maria: Sapatos extra","Maria: Escova e pasta de dentes","Maria: Brinquedo / peluche favorito","Maria: Livros ou jogos para a viagem"];
 function packTpl(){const d=bills.find(b=>b.kind==="packtpl");return d&&Array.isArray(d.items)&&d.items.length?d.items:PACK_DEFAULT.map(l=>{const m=l.match(/^([^:]{1,20}):\s*(.+)$/);return m?{w:m[1].trim(),t:m[2].trim()}:{w:"",t:l}})}
 const tripDays=t=>t.from?daysTo(t.from):null;
+/* Pedido (04/11): gastos da viagem — t.spend=[{id,n,parts,v}] (valor pode ser "45,54 + 9,94"); viagem só com o ano (t.year) quando não há datas */
+const tripKey=t=>t.to||t.from||(t.year?t.year+"-12-31":"9");
+const tripSpent=t=>Math.round((t.spend||[]).reduce((s,x)=>s+(+x.v||0),0)*100)/100;
+function tripSpendBox(t){const S=t.spend||[], tot=tripSpent(t);
+  return`<h4>💶 Gastos${S.length?` · ${eur(tot)}`:""}${t.budget?` <span style="text-transform:none;letter-spacing:0">de ${eur(+t.budget)}</span>`:""}</h4>
+    ${t.budget&&S.length?`<div class="bar"><span style="width:${Math.min(100,Math.round(tot/t.budget*100))}%;${tot>t.budget?"background:var(--bad)":""}"></span></div>`:""}
+    <div>${S.map(x=>`<div class="pk tsp"><span style="flex:1;min-width:0">${esc(x.n)}${x.parts&&x.parts.length>1?`<small style="display:block;color:var(--muted);font-size:12px">${x.parts.map((y,i)=>(i?" + ":"")+eur(y)).join("")}</small>`:""}</span><b style="white-space:nowrap">${eur(+x.v)}</b><button type="button" data-delsp="${t.id}|${x.id}" aria-label="Apagar">×</button></div>`).join("")||`<div class="tm">Ainda nada. Junta o hotel, refeições, supermercado…</div>`}</div>
+    <form class="add" data-spadd="${t.id}" autocomplete="off"><input name="t" placeholder="O quê" style="flex:1.3"><input name="v" placeholder="€ (ex.: 9,94 + 5)" inputmode="decimal" style="flex:1"><button class="btn" type="submit" style="padding:8px 14px">+</button></form>`}
 function tripForm(t){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-tripform="${t?t.id:"new"}" autocomplete="off">
     <label class="f wide">Viagem<input name="n" required value="${t?esc(t.name):""}" placeholder="ex.: Férias no Algarve" autocapitalize="sentences"></label>
     <label class="f wide">Destino<input name="d" value="${t?v(t.dest):""}" placeholder="ex.: Albufeira"></label>
-    <label class="f">De<input name="a" type="date" required value="${t?v(t.from):""}"></label>
+    <label class="f">De<input name="a" type="date"${t&&t.year?"":" required"} value="${t?v(t.from):""}"></label>
     <label class="f">Até<input name="b" type="date" value="${t?v(t.to):""}"></label>
     <label class="f">Orçamento (€)<input name="o" type="number" step="0.01" min="0" inputmode="decimal" value="${t?v(t.budget):""}" placeholder="opcional"></label>
     <label class="f">Poupança<select name="s"><option value="">Não ligar</option>${t?"":`<option value="new">Criar objetivo nas Poupanças</option>`}${savs().map(x=>`<option value="${x.id}"${t&&t.sav===x.id?" selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
@@ -4424,26 +4439,28 @@ function tripForm(t){const v=x=>x==null?"":esc(x);return`<form class="bill-edit"
     <label class="f wide">Notas<input name="x" value="${t?v(t.notes):""}" placeholder="ex.: reserva n.º…, check-in às 15h"></label>
     <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-canceltrip="1">Cancelar</button>
     ${t?`<button class="btn danger wide" type="button" data-deltrip="${t.id}">Apagar viagem</button>`:""}</form>`}
-function tripCard(t){const d=tripDays(t), P=t.pack||[], done=P.filter(x=>x.done).length, past=t.to?daysTo(t.to)<0:d!=null&&d<0, open=openTrip===t.id;
+function tripCard(t){const d=tripDays(t), P=t.pack||[], done=P.filter(x=>x.done).length, past=t.to?daysTo(t.to)<0:d!=null?d<0:tripKey(t)<ymd(new Date()), open=openTrip===t.id;
   const when=d==null?"":d>1?`Faltam ${d} dias`:d===1?"Amanhã!":d===0?"Hoje! ✈️":past?"Já foi":"A decorrer";
   const sv=t.sav&&savs().find(x=>x.id===t.sav), ss=sv&&savState(sv);
   const groups=[...new Set(P.map(x=>x.w||""))];
   return`<div class="trip"><button type="button" class="th" data-opentrip="${t.id}" aria-expanded="${open}"><span class="tem">${past?"📸":"🧳"}</span>
-      <span style="min-width:0;flex:1"><span class="tn" style="display:block">${esc(t.name)}</span><span class="tm">${[t.dest?esc(t.dest):"",t.from?fmtD(t.from).replace(/ \d{4}$/,"")+(t.to&&t.to!==t.from?" – "+fmtD(t.to):""):""].filter(Boolean).join(" · ")}</span></span>
+      <span style="min-width:0;flex:1"><span class="tn" style="display:block">${esc(t.name)}</span><span class="tm">${[t.dest?esc(t.dest):"",t.from?fmtD(t.from).replace(/ \d{4}$/,"")+(t.to&&t.to!==t.from?" – "+fmtD(t.to):""):t.year?String(t.year):"",(t.spend||[]).length?"gasto "+eur(tripSpent(t)):""].filter(Boolean).join(" · ")}</span></span>
       <span style="text-align:right">${when?`<span class="due ${past?"ok":d!=null&&d<=7?"warn":"ok"}">${when}</span>`:""}${P.length&&!past?`<span class="tm" style="display:block;margin-top:4px">mala ${done}/${P.length}</span>`:""}</span></button>
     ${open?`<div class="tb">
       ${t.budget||ss?`<div class="tm" style="font-size:14px">${t.budget?`Orçamento <b style="color:var(--fg)">${eur(+t.budget)}</b>`:""}${ss?`${t.budget?" · ":""}Poupado ${eur(ss.have)} de ${eur(ss.goal)} (${ss.pct}%)`:""}</div>`:""}
       ${t.notes?`<div class="tm" style="font-size:14px">📝 ${esc(t.notes)}</div>`:""}
-      <h4>Mala ${done}/${P.length}</h4><div class="bar"><span style="width:${P.length?Math.round(done/P.length*100):0}%"></span></div>
+      ${tripSpendBox(t)}
+      ${past&&!P.length&&!(t.todo||[]).length?"":`      <h4>Mala ${done}/${P.length}</h4><div class="bar"><span style="width:${P.length?Math.round(done/P.length*100):0}%"></span></div>
       <div>${groups.map(g=>`${g?`<div class="pkwho">${esc(g)}</div>`:""}${P.filter(x=>(x.w||"")===g).map(x=>`<label class="pk${x.done?" done":""}"><input type="checkbox" data-pk="${t.id}|${x.id}"${x.done?" checked":""}><span>${esc(x.t)}</span><button type="button" data-delpk="${t.id}|${x.id}" aria-label="Apagar">×</button></label>`).join("")}`).join("")}</div>
       <form class="add" data-pkadd="${t.id}" autocomplete="off"><select name="w" style="width:104px;background:var(--fill);border:0">${["Família",...PEOPLE].filter((x,i,a)=>a.indexOf(x)===i).map(p=>`<option>${esc(p)}</option>`).join("")}</select><input name="t" placeholder="Juntar à mala"><button class="btn" type="submit" style="padding:8px 14px">+</button></form>
       <h4>A fazer no destino</h4>
       <div>${(t.todo||[]).map(x=>`<label class="pk${x.done?" done":""}"><input type="checkbox" data-td="${t.id}|${x.id}"${x.done?" checked":""}><span>${esc(x.t)}</span><button type="button" data-deltd="${t.id}|${x.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="tm">Ainda nada. Junta passeios, restaurantes, praias…</div>`}</div>
       <form class="add" data-tdadd="${t.id}" autocomplete="off"><input name="t" placeholder="ex.: Zoomarine, jantar na marina"><button class="btn" type="submit" style="padding:8px 14px">+</button></form>
+`}
       <div class="tacts"><button class="btn ghost" type="button" data-edittrip="${t.id}">Editar</button><button class="btn ghost" type="button" data-pkreset="${t.id}">Desmarcar a mala</button>${t.dest?`<a class="btn ghost" href="https://maps.apple.com/?q=${encodeURIComponent(t.dest)}" target="_blank" rel="noopener">🗺️ Mapa</a>`:""}</div>
     </div>`:""}</div>`}
 function renderTrips(){const el=document.getElementById("tripList");if(!el)return;
-  const L=trips().sort((a,b)=>(a.from||"9").localeCompare(b.from||"9")), td=ymd(new Date()), up=L.filter(t=>(t.to||t.from||"9")>=td), past=L.filter(t=>(t.to||t.from||"9")<td).reverse();
+  const L=trips().sort((a,b)=>tripKey(a).localeCompare(tripKey(b))), td=ymd(new Date()), up=L.filter(t=>tripKey(t)>=td), past=L.filter(t=>tripKey(t)<td).reverse();
   el.innerHTML=up.map(t=>t.id===editTrip?tripForm(t):tripCard(t)).join("")||(editTrip==="new"?"":`<div class="empty">Ainda não há viagens marcadas.<br>Toca em “Nova viagem”.</div>`);
   document.getElementById("tripNew").innerHTML=editTrip==="new"?tripForm(null):"";document.getElementById("addTrip").hidden=editTrip==="new";
   document.getElementById("tripPast").innerHTML=past.length?`<h2 style="margin:8px 0">Viagens passadas</h2>`+past.map(t=>t.id===editTrip?tripForm(t):tripCard(t)).join(""):"";
@@ -4461,12 +4478,16 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,input");i
   else if(ds.canceltrip){editTrip="";renderTrips()}
   else if(ds.deltrip){const x=tripById(ds.deltrip);if(x&&confirm(`Apagar a viagem "${x.name}"?`)){if(x.ev)delEv(x.ev);editTrip="";delBill(x.id);renderTrips();toast("Apagada")}}
   else if(ds.pk||ds.td){const [id,iid]=(ds.pk||ds.td).split("|"), x=tripById(id), k=ds.pk?"pack":"todo";if(!x)return;tripPut({...x,[k]:(x[k]||[]).map(y=>y.id===iid?{...y,done:t.checked}:y)})}
+  else if(ds.delsp){const [id,iid]=ds.delsp.split("|"), x=tripById(id), y=x&&(x.spend||[]).find(z=>z.id===iid);if(y&&confirm(`Apagar "${y.n}" (${eur(+y.v)})?`))tripPut({...x,spend:x.spend.filter(z=>z.id!==iid)})}
   else if(ds.delpk||ds.deltd){const [id,iid]=(ds.delpk||ds.deltd).split("|"), x=tripById(id), k=ds.delpk?"pack":"todo";if(!x)return;tripPut({...x,[k]:(x[k]||[]).filter(y=>y.id!==iid)})}
   else if(ds.pkreset){const x=tripById(ds.pkreset);if(x&&confirm("Desmarcar tudo na mala (para arrumar de novo)?"))tripPut({...x,pack:(x.pack||[]).map(y=>({...y,done:false}))})}});
 document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
   if(ds.pkadd||ds.tdadd){e.preventDefault();const x=tripById(ds.pkadd||ds.tdadd), v=f.t.value.trim();if(!x||!v)return;
     if(ds.pkadd)tripPut({...x,pack:[...(x.pack||[]),{id:uid(),t:v,w:f.w.value}].slice(-120)});else tripPut({...x,todo:[...(x.todo||[]),{id:uid(),t:v}].slice(-60)});
     setTimeout(()=>{const n=document.querySelector(`[data-${ds.pkadd?"pkadd":"tdadd"}="${x.id}"] [name=t]`);if(n)n.focus()},50);return}
+  if(ds.spadd){e.preventDefault();const x=tripById(ds.spadd), n=f.t.value.trim(), P=hmParts(f.v.value);if(!x)return;if(!P.length){f.v.focus();toast("Escreve o valor");return}
+    const v=Math.round(P.reduce((a,b)=>a+b,0)*100)/100;tripPut({...x,spend:[...(x.spend||[]),{id:uid(),n:n||"Gasto",...(P.length>1?{parts:P}:{}),v}].slice(-200)});
+    setTimeout(()=>{const i=document.querySelector(`[data-spadd="${x.id}"] [name=t]`);if(i)i.focus()},50);toast(`${n||"Gasto"}: ${eur(v)}`);return}
   const id=ds.tripform;if(!id)return;e.preventDefault();const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
   const old=id==="new"?null:tripById(id);const t={...(old||{}),id:old?old.id:uid(),kind:"trip",name:f.n.value.trim(),from:f.a.value};
   for(const [k,v] of [["dest",f.d.value.trim()||null],["to",f.b.value&&f.b.value>=f.a.value?f.b.value:null],["budget",num(f.o.value)],["notes",f.x.value.trim()||null]])if(v==null)delete t[k];else t[k]=v;
@@ -5960,7 +5981,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6022,7 +6043,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v286";
+const APPV="casa-v287";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
