@@ -816,7 +816,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .ccard .cbot b{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;opacity:.75}
 .cinfo{background:var(--surface);border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
-.cfrbox{display:flex;flex-direction:column;gap:6px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 8%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
+.cfrh .cfrt{display:flex;align-items:center;gap:6px}.cfrh .mcount{font-size:12px;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-weight:700}
+.cfrh .cfrv{font-weight:700}.cfrh small{font-weight:500;color:var(--muted)}.cfrh>i{font-style:normal;color:var(--muted)}
+.cfrs{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
+.cfrbar{grid-column:1/-1;display:block;height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 10%,transparent);overflow:hidden;flex:1}.cfrbar i{display:block;height:100%;background:var(--accent);border-radius:3px}.cfrbar.sm{height:4px}
+.cfri{background:var(--surface);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}.cfri.done{opacity:.6}
+.cfrr{display:flex;align-items:center;gap:8px;font-size:14px}.cfrr .cfrn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cfrr small{font-size:12px;color:var(--muted);white-space:nowrap}
+.cfrd{font-size:12px;color:var(--muted)}.cfrx{background:none;border:0;color:var(--muted);font-size:14px;padding:0 2px}
 .cinfo .row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .cinfo .bump{align-self:flex-start}
 .styles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -3916,7 +3924,13 @@ function frState(cnt,first,pay){const paid=Math.max(0,Math.min(cnt,mIdx(ymOf(new
 function cardFrs(c){return[...(c.frs||[]).map(x=>({...x,own:1,st:frState(+x.cnt,x.first,+x.pay),jur:x.fv?Math.round((x.cnt*x.pay-x.fv)*100)/100:null})),
   ...homes().filter(h=>h.pay===c.id&&hmFr(h)).map(h=>{const st=hmFr(h);return{id:h.id,n:"🏠 "+h.name,st,jur:+h.frp?Math.round((st.n*st.pay-hmVal(h))*100)/100:null}})]}
 function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduce((t,x)=>t+x.st.pay,0), falta=A.reduce((t,x)=>t+x.st.leftAmt,0);
-  const rows=F.map(x=>`<div class="row" style="font-size:13px;align-items:flex-start;gap:8px;border-top:1px solid var(--sep,rgba(0,0,0,.08));padding-top:4px"><span style="min-width:0">${esc(x.n)}<br><span style="color:var(--muted)">${x.st.done?`terminada ✓ (${mLong(x.st.last)})`:`${x.st.paid}/${x.st.n} · faltam ${x.st.left} (${eur(x.st.leftAmt)}) · última ${mLong(x.st.last)}`}${x.jur>0.005?` · juros ${eur(x.jur)}`:x.jur!=null?" · sem juros":""}</span></span><span style="font-weight:600;white-space:nowrap">${eur(x.st.pay)}/mês${x.own?` <button type="button" class="bump" data-cardfrdel="${c.id}|${x.id}" aria-label="Apagar">✕</button>`:""}</span></div>`).join("");
+  const open=cardFrOpen===c.id||frIsOpen(c.id), tot=A.reduce((t,x)=>t+x.st.n*x.st.pay,0), pct=tot?Math.round((tot-falta)/tot*100):0, end=A.map(x=>x.st.last).sort().pop();
+  const head=`<button type="button" class="cfrh" data-frtog="${c.id}" aria-expanded="${open}"><span class="cfrt"><b>💳 Prestações</b>${A.length?`<span class="mcount">${A.length}</span>`:""}</span><span class="cfrv">${A.length?`${eur(mes)}<small>/mês</small>`:`<small>nenhuma</small>`}</span><i>${open?"⌃":"⌄"}</i>
+    ${A.length?`<span class="cfrs">faltam ${eur(falta)} · até ${mLong(end)}</span><span class="cfrbar"><i style="width:${pct}%"></i></span>`:""}</button>`;
+  if(!open)return`<div class="cfrbox shut">${head}</div>`;
+  const rows=F.map(x=>{const p=Math.round(x.st.paid/x.st.n*100);return`<div class="cfri${x.st.done?" done":""}"><div class="cfrr"><span class="cfrn">${esc(x.n)}</span><b>${eur(x.st.pay)}</b>${x.own?`<button type="button" class="cfrx" data-cardfrdel="${c.id}|${x.id}" aria-label="Apagar">✕</button>`:""}</div>
+    <div class="cfrr"><span class="cfrbar sm"><i style="width:${p}%"></i></span><small>${x.st.paid}/${x.st.n}</small></div>
+    <small class="cfrd">${x.st.done?`terminada ✓`:`faltam ${eur(x.st.leftAmt)} · até ${mLong(x.st.last).replace(" de "," ")}`}${x.jur>0.005?` · juros ${eur(x.jur)}`:""}</small></div>`}).join("");
   const form=cardFrOpen===c.id?`<form data-cardfr="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
       <input name="n" required placeholder="O quê (ex.: Telemóvel Worten)" style="grid-column:1/-1" autocapitalize="sentences">
       <label class="f">Cada prestação (€)<input name="p" type="number" step="0.01" min="0" inputmode="decimal" required placeholder="ex.: 41,50"></label>
@@ -3925,8 +3939,10 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
       <label class="f">Valor da compra (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="p/ ver os juros"></label>
       <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" data-cardfropen="">Cancelar</button></form>`
     :`<button type="button" class="back" data-cardfropen="${c.id}" style="align-self:flex-start">+ Prestação</button>`;
-  return`<div class="cfrbox"><div class="row" style="font-weight:600"><span>💳 Prestações${A.length?` · ${eur(mes)}/mês`:""}</span><span>${falta?`faltam ${eur(falta)}`:""}</span></div>${rows}${form}
-    <label class="tick" style="font-size:13px;margin-top:6px;border-top:1px solid var(--sep,rgba(0,0,0,.08));padding-top:8px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado é o que falta pagar e desce sozinho todos os meses)</label></div>`}
+  return`<div class="cfrbox">${head}${rows}${form}
+    <label class="tick" style="font-size:13px;margin-top:4px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado desce sozinho)</label></div>`}
+const frIsOpen=id=>{try{return localStorage.getItem("casa-fro-"+id)==="1"}catch(e){return false}};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-frtog]");if(!b)return;const id=b.dataset.frtog, o=frIsOpen(id);try{localStorage.setItem("casa-fro-"+id,o?"0":"1")}catch(err){}if(o&&cardFrOpen===id)cardFrOpen="";renderCards()});
 document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.cardfronly)return;const c=cards().find(x=>x.id===t.dataset.cardfronly);if(!c)return;
   const on=t.checked;putBill({...c,frOnly:on||null,...(on?{}:{used:cardUsed({...c,frOnly:true}),usedAt:Date.now()})});renderCards();toast(on?`${c.name}: usado ${eur(cardUsed({...c,frOnly:true}))} · desce com as prestações`:"O usado volta a ser escrito à mão")});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfropen],[data-cardfrdel]");if(!t)return;
@@ -6001,7 +6017,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v284";
+const APPV="casa-v285";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
