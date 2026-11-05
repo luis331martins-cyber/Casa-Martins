@@ -3938,6 +3938,11 @@ const buysOf=(c,mk)=>(c.buys||[]).filter(x=>!mk||x.d.slice(0,7)===mk||(mk===STAR
 const cdDay=(cd,y,m)=>Math.min(cd,new Date(y,m,0).getDate());
 function stmtK(c,ds){const d=ds?new Date(ds+"T12:00"):new Date(), y=d.getFullYear(), m=d.getMonth()+1;if(d.getDate()<=cdDay(c.cd,y,m))return`${y}-${String(m).padStart(2,"0")}`;const n=new Date(y,m,1);return ymOf(n)}
 const stmtLabel=(c,k)=>{const [y,m]=k.split("-").map(Number);return`${cdDay(c.cd,y,m)} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`};
+/* Pedido (05/11): compras automáticas (ex.: Netflix) que ainda não entraram este mês aparecem como "previstas" (o serviço junta-as no dia) */
+function cardPending(c){const t=new Date(), mk=ymOf(t), last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  return(c.auto||[]).filter(a=>a.t==="compra"&&!a.bill&&+a.v>0&&!(a.since&&mk<a.since)).map(a=>{const day=Math.min(+a.day||1,last), d=`${mk}-${String(day).padStart(2,"0")}`;
+    return(c.buys||[]).some(x=>x.id===`auto-${a.id}-${mk}`)||day<t.getDate()?null:{n:a.n||"Compra automática",v:+a.v,d,next:!!(c.cd&&stmtK(c,d)!==stmtK(c))}}).filter(Boolean)}
+const pendRow=x=>`<div class="row" style="padding:4px 0;color:var(--muted);border-top:1px dashed var(--sep,rgba(0,0,0,.12));font-size:14px"><span>${dShort(x.d)} · 🔁 ${esc(x.n)} <small>(previsto${x.next?" · extrato seguinte":""})</small></span><span>${eur(x.v)}</span></div>`;
 function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(x=>stmtK(c,x.d)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1)):buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
   const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n&&!x.auto&&!/^🏠/.test(x.n)).map(x=>x.n))].slice(0,8);
   const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -3949,7 +3954,7 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
     :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
   const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
-  return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${rows}
+  return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${cardPending(c).map(pendRow).join("")}${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
 /* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
@@ -3973,7 +3978,7 @@ function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);
       <div class="amt">${eur(tot)}<small>no extrato</small></div>
     </div>
     ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}${g.debit?` · débito a ${dShort(g.debit)}`:""}</span><span>${eur(g.tot)}</span></div>
-      ${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
+      ${(k===ymOf(new Date())?cardPending(g.c):[]).map(pendRow).join("")}${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
       <button class="back" type="button" data-cardspadd="${g.c.id}" style="align-self:flex-start">+ Compra no ${esc(g.c.name)}</button>`).join(""):""}
   </div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardspadd]");if(!t)return;e.preventDefault();e.stopPropagation();const id=t.dataset.cardspadd;
@@ -6103,7 +6108,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v295";
+const APPV="casa-v296";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
