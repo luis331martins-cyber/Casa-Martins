@@ -817,6 +817,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cinfo{background:var(--surface);border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
 .autod{border-radius:12px;background:var(--fill);padding:10px 12px}.autod>summary{cursor:pointer;font-size:15px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}.autod>summary::-webkit-details-marker{display:none}.autod>summary::after{content:"⌄";margin-left:auto;color:var(--muted)}.autod[open]>summary::after{content:"⌃"}.autod>summary small{font-weight:500;color:var(--muted);font-size:13px}.autod .autob{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.amtfix{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px;cursor:pointer}
 .cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
 .cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
 .cfrh .cfrt{display:flex;align-items:center;gap:6px}.cfrh .mcount{font-size:12px;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-weight:700}
@@ -2961,7 +2962,7 @@ function renderBills(){
     return `<div class="bill inc${g?" got":""}">
       <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
-      <div class="amt">+${eur(monthAmt(b,k))}</div>${cxl?`<div class="cxls">${cxl}</div>`:""}
+      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">+${eur(monthAmt(b,k))}</button></div>${cxl?`<div class="cxls">${cxl}</div>`:""}
     </div>`};
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
@@ -2982,7 +2983,7 @@ function renderBills(){
     return `<div class="bill${p?" paid":""}">
       <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></span></button>
-      <div class="amt">${eur(monthAmt(b,k))}${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Pago</button>`:""}</div>
+      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">${eur(monthAmt(b,k))}</button>${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Pago</button>`:""}</div>
     </div>`};
   /* por pagar à vista; as pagas recolhidas numa linha que abre */
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
@@ -3195,7 +3196,29 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-rdask]");i
 /* Gastos do mês com banco escolhido: cada gasto desconta no saldo (s.ab = valor descontado) */
 function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)return;const a=bills.find(x=>x.id===accId&&x.kind==="account");if(!a)return;
   const na={...a,bal:Math.round(((+a.bal||0)-d)*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${d>0?"−":"+"}${eur(Math.abs(d))} · saldo ${eur(na.bal)}`),1200)}
-document.addEventListener("click",e=>{const t=e.target.closest("[data-payask]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.payask);if(b)payAsk(b,mKey())},true);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-payask]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.payask);if(b)payNow(b,mKey())},true);
+/* Pedido (05/11): tocar na bola (ou ✓ Pago) dá logo como paga, com o valor do mês e o banco da conta; o aviso tem "Corrigir valor".
+   Compras de "marca quando comprares" (ex.: bilha) continuam a pedir o valor. */
+function payNow(b,k){if(b.askPay){payAsk(b,k);return}const nb={...b,paid:{...(b.paid||{}),[k]:true}};putBill(nb);
+  setTimeout(()=>{const a=b.acc&&bills.find(x=>x.id===b.acc&&x.kind==="account"), el=document.getElementById("toast");
+    el.innerHTML=`${esc(b.name)}: ${eur(monthAmt(b,k))} pago${a?` · ${esc(bankLabel(a.name))} ${eur(+a.bal||0)}`:""}<button type="button" class="tundo" data-tfix="1">Corrigir valor</button>`;el.hidden=false;
+    undoFn=null;clearTimeout(tt);tt=setTimeout(()=>{el.hidden=true},6000);el.querySelector("[data-tfix]").onclick=ev=>{ev.stopPropagation();el.hidden=true;const x=bills.find(y=>y.id===b.id);if(x)valAsk(x,k)}},500)}
+/* Corrigir o valor deste mês (conta ou receita); se já estava paga/recebida, a diferença vai ao saldo do banco */
+function valAsk(b,k){const inc=isInc(b), paid=isPaid(b,k), old=Math.round(monthAmt(b,k)*100)/100, o=document.createElement("div");o.className="rdovl";
+  const acc=b.acc&&accounts().find(a=>a.id===b.acc);
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: valor de ${esc(mFull(k))}</div><div class="rdm">Agora: ${eur(old)}${paid?` · ${inc?"recebida":"paga"}`:""}</div>
+    <label class="f">${inc?"Quanto entrou":"Quanto pagaste"} (€)<input id="fvV" type="text" inputmode="decimal" value="${old.toFixed(2).replace(".",",")}"></label>
+    ${paid&&accounts().length?`<label class="f">A diferença vai ao saldo de<select id="fvA">${accounts().map(a=>`<option value="${a.id}"${(acc&&acc.id)===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}<option value=""${acc?"":" selected"}>Não mexer no saldo</option></select></label>`:""}
+    <button type="button" class="btn" data-fv="ok">✓ Guardar</button><button type="button" class="btn ghost" data-fv="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-fv]");if(ev.target!==o&&!q)return;if(!q||q.dataset.fv==="x"){o.remove();return}
+    const n=numIn(o.querySelector("#fvV").value);if(isNaN(n)||n<0){toast("Escreve o valor");return}const sel=o.querySelector("#fvA"), aid=sel?sel.value:"";o.remove();
+    const nb={...b,amounts:{...(b.amounts||{})}};if(Math.abs(n-baseAmt(b,k))>.004)nb.amounts[k]=Math.round(n*100)/100;else delete nb.amounts[k];
+    const dif=Math.round((n-old)*100)/100;
+    if(paid&&Math.abs(dif)>.004&&aid){const a=bills.find(x=>x.id===aid);if(a){const na={...a,bal:Math.round(((+a.bal||0)+(inc?dif:-dif))*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${(inc?dif:-dif)>0?"+":"−"}${eur(Math.abs(dif))} · saldo ${eur(na.bal)}`),900)}
+      if(b.acc===aid&&nb.accd&&nb.accd[k]!=null&&nb.accd[k]!==0)nb.accd={...nb.accd,[k]:Math.round(n*100)/100}}
+    putBill(nb);renderBills();toast(`${b.name}: ${eur(n)}${Math.abs(dif)>.004?` (${dif>0?"+":"−"}${eur(Math.abs(dif))})`:""}`)});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#fvV");if(i){i.focus();i.select()}},50)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-fixval]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.fixval);if(b)valAsk(b,mKey())},true);
 /* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
 function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
   o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${esc(b.name)}: ${b.askPay?"comprei":"pago"}</div><div class="rdm">${esc(mFull(k))}${b.dd?" · fica paga já; a app deixa de esperar o débito este mês":""}</div>
@@ -3288,7 +3311,7 @@ document.addEventListener("change",e=>{
   const b=bills.find(x=>x.id===id); if(!b)return;
   const paid={...(b.paid||{})}; const k=mKey(), nb={...b};
   /* contas confirmadas na compra (ex.: bilha de gás): pede o valor pago */
-  if(e.target.checked&&!isInc(b)){e.target.checked=false;payAsk(b,k);return}
+  if(e.target.checked&&!isInc(b)){e.target.checked=false;payNow(b,k);return}
   /* Desmarcar um débito direto fica guardado como "não pago" (senão voltava a contar como pago) */
   if(e.target.checked)paid[k]=true; else if(b.dd)paid[k]=false; else delete paid[k];
   if(!e.target.checked&&b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}
@@ -6117,7 +6140,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v296";
+const APPV="casa-v297";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
