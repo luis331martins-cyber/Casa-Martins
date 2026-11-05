@@ -2921,7 +2921,7 @@ function renderBills(){
       ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${x.card?"💳 ":""}${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
-    </div>`}).join("");
+    </div>`}).join("")+cardSpendBox(k);
   const incRow=b=>{if(b.id===editBill)return editRow(b,"Receita");
     const g=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     const pv=new Date(viewY,viewM-1,1), pvN=pv.toLocaleDateString("pt-PT",{month:"long"}), pvD=lastBizDay(pv.getFullYear(),pv.getMonth()).getDate();
@@ -3931,7 +3931,6 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
       <input name="d" type="date" value="${ymd(new Date())}">
       <input name="n" placeholder="Onde (ex.: Continente)" style="grid-column:1/-1" autocapitalize="words">
-      ${isCredit(c)?`<label class="f" style="grid-column:1/-1">Conta nos gastos do mês<select name="bud"><option value="">Não (só no cartão)</option>${contas().filter(isBud).map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join("")}</select></label>`:""}
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
@@ -3940,6 +3939,25 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
+/* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
+   Só para ver: não conta nos totais nem nos gastos do mês (conta a fatura, quando é debitada). Fecha no dia de fecho do extrato (sem dia: no fim do mês). */
+function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
+    const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
+    return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp";
+  const closes=[...new Set(G.map(g=>g.close))];
+  return`<div class="budget cardsp">
+    <div class="head">
+      <button class="plus" type="button" data-cardspadd="${C[0].id}" aria-label="Juntar compra no cartão">+</button>
+      <button type="button" class="bname wi" data-openbud="cardsp" aria-expanded="${open}"><span class="bic" style="font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,#5856d6 16%,transparent);flex:none">💳</span><span class="bt"><div class="name">Gastos com cartão de crédito</div><div class="meta">${n?`${n} compra${n===1?"":"s"} · `:""}fecha a ${closes.join(" / ")} · não conta nos totais</div></span></button>
+      <div class="amt">${eur(tot)}<small>no extrato</small></div>
+    </div>
+    ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}</span><span>${eur(g.tot)}</span></div>
+      ${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
+      <button class="back" type="button" data-cardspadd="${g.c.id}" style="align-self:flex-start">+ Compra no ${esc(g.c.name)}</button>`).join(""):""}
+  </div>`}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cardspadd]");if(!t)return;e.preventDefault();e.stopPropagation();const id=t.dataset.cardspadd;
+  show("cartoes");cardBuy=id;renderCards();setTimeout(()=>{const f=document.querySelector(`[data-cardbuy="${id}"]`);if(f){f.scrollIntoView({block:"center",behavior:"smooth"});const i=f.querySelector("[name=v]");if(i)i.focus()}},80)},true);
 /* Pedido (03/11): compras fracionadas no cartão — {id,n,pay,cnt,first "AAAA-MM",fv (valor da compra, p/ os juros)} em c.frs;
    as da Casa pagas com este cartão entram sozinhas. Não mexe no "usado" (o banco já as conta); só mostra o que se paga por mês e o que falta. */
 let cardFrOpen="";
@@ -6060,7 +6078,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v289";
+const APPV="casa-v290";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
