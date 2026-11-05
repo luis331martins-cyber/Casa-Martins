@@ -2961,10 +2961,9 @@ function renderBills(){
       <label>Empresa<input data-cxin="${b.id}|${m}|e" type="text" inputmode="decimal" value="${c?vv(c.e):""}" placeholder="${+b.emp?vv(+b.emp):"0,00"}"></label>
       <button type="button" class="btn cxok" data-cxok="1">OK</button>
       ${c?`<span class="cxr">Casa <b>${eur(c.t-c.e)}</b>${c.e>0?` · <span class="${b.lev&&b.lev[m]?"ok":"loanlink"}" data-levask="${b.id}|${m}" role="button">${b.lev&&b.lev[m]?"levantado ✓":levDone(b,m)>0?`levantado ${eur(levDone(b,m))} de ${eur(c.e)} ›`:"levantar ›"}</span>`:""}</span>`:`<span class="cxr">escreve o total</span>`}</div>`}).join("");
-    return `<div class="bill inc${g?" got":""}">
-      <input type="checkbox" data-pay="${b.id}" ${g?"checked":""} aria-label="Marcar ${esc(b.name)} como recebida">
+    return `<div class="bill inc nochk${g?" got":""}">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${meta}</div></span></button>
-      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">+${eur(monthAmt(b,k))}</button></div>${cxl?`<div class="cxls">${cxl}</div>`:""}
+      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">+${eur(monthAmt(b,k))}</button>${g?`<button type="button" class="paybtn undo" data-unrecv="${b.id}">Recebida ✓</button>`:`<button type="button" class="paybtn" data-recv="${b.id}">✓ Recebido</button>`}</div>${cxl?`<div class="cxls">${cxl}</div>`:""}
     </div>`};
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
   const billRow=b=>{
@@ -3238,6 +3237,13 @@ function valAsk(b,k){const inc=isInc(b), paid=isPaid(b,k), old=Math.round(monthA
       if(b.acc===aid&&nb.accd&&nb.accd[k]!=null&&nb.accd[k]!==0)nb.accd={...nb.accd,[k]:Math.round(n*100)/100}}
     putBill(nb);renderBills();toast(`${b.name}: ${eur(n)}${Math.abs(dif)>.004?` (${dif>0?"+":"−"}${eur(Math.abs(dif))})`:""}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#fvV");if(i){i.focus();i.select()}},50)}
+/* Pedido (05/11): receitas também por botão — ✓ Recebido / Recebida ✓ (volta a pôr por receber) */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-recv],[data-unrecv]");if(!t)return;e.preventDefault();e.stopPropagation();const on=!!t.dataset.recv, b=bills.find(x=>x.id===(t.dataset.recv||t.dataset.unrecv));if(!b)return;const k=mKey();
+  if(!on&&!confirm(`Pôr "${b.name}" outra vez por receber?`))return;const paid={...(b.paid||{})}, nb={...b};if(on)paid[k]=true;else if(b.dd)paid[k]=false;else delete paid[k];
+  if(!on&&!b.acc&&nb.accd&&nb.accd[k]!=null){nb.accd={...nb.accd};delete nb.accd[k]}nb.paid=paid;putBill(nb);
+  if(on)setTimeout(()=>{const a=b.acc&&bills.find(x=>x.id===b.acc&&x.kind==="account"), el=document.getElementById("toast");
+    el.innerHTML=`${esc(b.name)}: +${eur(monthAmt(b,k))} recebido${a?` · ${esc(bankLabel(a.name))} ${eur(+a.bal||0)}`:""}<button type="button" class="tundo" data-tfix="1">Corrigir valor</button>`;el.hidden=false;
+    undoFn=null;clearTimeout(tt);tt=setTimeout(()=>{el.hidden=true},6000);el.querySelector("[data-tfix]").onclick=ev=>{ev.stopPropagation();el.hidden=true;const x=bills.find(y=>y.id===b.id);if(x)valAsk(x,k)}},500);else toast(`${b.name}: por receber`)},true);
 /* Pedido (05/11): marca-se pelo botão ✓ Pago (sem bola); "Paga ✓" volta a pôr por pagar */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-unpay]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.unpay);if(!b)return;const k=mKey();
   if(!confirm(`Pôr "${b.name}" outra vez por pagar?`))return;const paid={...(b.paid||{})}, nb={...b};if(b.dd)paid[k]=false;else delete paid[k];
@@ -6164,7 +6170,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v300";
+const APPV="casa-v301";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
