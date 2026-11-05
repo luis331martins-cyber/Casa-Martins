@@ -2992,7 +2992,9 @@ function renderBills(){
       /* Receitas: tudo o que entra no mês (recebido + por receber + acerto) */
       tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(inc)+acL.reduce((t,x)=>t+Math.max(0,x.tot),0)),(()=>{const fl=sum(uI)+acL.filter(x=>!x.dn).reduce((t,x)=>t+Math.max(0,x.tot),0);return fl>0.004?`falta receber ${e0(fl)}`:"tudo recebido ✓"})(),0)+
       tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0)+
-      (cards().some(isCredit)?(()=>{const x=cardSpendSum(k);return tile("cartao","card","#a78bfa","#5b3fd6","Cartão",e0(x.tot),x.n?`${x.n} compra${x.n===1?"":"s"} no extrato`:"sem compras",0)})():"");
+      (cards().some(isCredit)?(()=>{const G=cardSpendGroups(k), x=cardSpendSum(k), one=G.length===1, g=G[0];
+        const sub=one?`fecha ${dShort(g.close)}${g.debit?` · débito ${dShort(g.debit)}`:""}`:G.map(g=>`${esc(g.c.name.split(" ")[0])} ${e0(g.tot)} · ${dShort(g.close)}`).join("<br>");
+        return tile("cartao","card","#a78bfa","#5b3fd6",one?`Cartão ${esc(g.c.name)}`:"Cartões",e0(x.tot),sub,0)})():"");
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
     const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
@@ -3946,12 +3948,17 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
 let cardAll="";
 /* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
    Só para ver: não conta nos totais nem nos gastos do mês (conta a fatura, quando é debitada). Fecha no dia de fecho do extrato (sem dia: no fim do mês). */
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,L,tot:L.reduce((t,x)=>t+x.v,0)}})}
+/* data de fecho do extrato sk e data do débito da fatura (dia da linha do cartão nas Contas, a seguir ao fecho) */
+function stmtDates(c,sk){const [y,m]=sk.split("-").map(Number), cd=c.cd?cdDay(c.cd,y,m):new Date(y,m,0).getDate(), close=ymd(new Date(y,m-1,cd));
+  const b=c.bill&&bills.find(x=>x.id===c.bill), dd=b&&+b.day;let debit=null;if(dd){let d=new Date(y,m-1,Math.min(dd,new Date(y,m,0).getDate()));if(ymd(d)<=close){const n=new Date(y,m,1);d=new Date(n.getFullYear(),n.getMonth(),Math.min(dd,new Date(n.getFullYear(),n.getMonth()+1,0).getDate()))}debit=ymd(d)}
+  return{close,debit}}
+const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
+function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
 const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
   const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
-    return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
+    return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
   return`<div class="budget cardsp">
     <div class="head">
@@ -3959,7 +3966,7 @@ function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);
       <button type="button" class="bname wi" data-openbud="cardsp" aria-expanded="${open}"><span class="bic" style="font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,#5856d6 16%,transparent);flex:none">💳</span><span class="bt"><div class="name">Gastos com cartão de crédito</div><div class="meta">${n?`${n} compra${n===1?"":"s"} · `:""}fecha a ${closes.join(" / ")} · não conta nos totais</div></span></button>
       <div class="amt">${eur(tot)}<small>no extrato</small></div>
     </div>
-    ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}</span><span>${eur(g.tot)}</span></div>
+    ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}${g.debit?` · débito a ${dShort(g.debit)}`:""}</span><span>${eur(g.tot)}</span></div>
       ${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
       <button class="back" type="button" data-cardspadd="${g.c.id}" style="align-self:flex-start">+ Compra no ${esc(g.c.name)}</button>`).join(""):""}
   </div>`}
@@ -5137,6 +5144,8 @@ function deadlines(){const L=[];
   bills.filter(b=>b.kind==="carlog"&&b.date&&b.items).forEach(x=>x.items.forEach(i=>{const w=clWarEnd(x.date,i.g);if(w)L.push({date:w,t:`Garantia: ${i.t}`,m:"Carro · garantia acaba",go:"carro",alert:30,past:"Acabou"})}));
   bills.filter(b=>b.kind==="home"&&b.date&&b.war).forEach(h=>{const w=hmWarEnd(h);if(w)L.push({date:w,t:`Garantia: ${h.name}`,m:"Garantia acaba",go:"casa",alert:60,past:"Acabou"})});
   bills.filter(b=>b.kind==="hold"&&b.end).forEach(h=>L.push({date:h.end,t:`${h.type}: ${h.name}`,m:"Poupança vence",go:"poupancas",alert:30,past:"Venceu"}));
+  /* Pedido (05/11): 2 dias antes do fecho do extrato, aviso com o que já vai no cartão */
+  if(typeof cardSpendGroups==="function")cardSpendGroups(ymOf(new Date())).forEach(g=>{const d=daysTo(g.close);if(g.c.cd&&g.tot>0&&d>=0&&d<=2)L.push({date:g.close,t:`Extrato ${g.c.name}: vais em ${eur(g.tot)}`,m:`Fecha o extrato${g.debit?` · débito a ${dShort(g.debit)}`:""}`,go:"despesas",alert:2,past:"Fechou"})});
   bills.filter(b=>b.kind==="card"&&b.exp).forEach(c=>L.push({date:cardEnd(c),t:`Cartão ${c.name}${c.who?` (${c.who})`:""}`,m:"Cartão termina",go:"cartoes",alert:30,past:"Terminou"}));
   return L}
 const fmtN=v=>String(Math.round(+v||0)).replace(/\B(?=(\d{3})+(?!\d))/g,".");
@@ -6085,7 +6094,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v291";
+const APPV="casa-v292";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
