@@ -2697,6 +2697,9 @@ let editAcc="";
 const isBud=b=>b.kind==="budget", fixas=()=>contas().filter(b=>!isBud(b));
 const spends=(b,k)=>(b.spent&&b.spent[k])||[];
 const spentOf=(b,k)=>spends(b,k).reduce((s,x)=>s+(+x.v||0),0);
+/* Pedido (05/11): compras no cartão de crédito podem contar no gasto da categoria (x.card); nos totais do mês e na previsão do banco
+   contam só pela fatura do cartão (no dia do débito) — por isso aqui ficam de fora, para não contar duas vezes */
+const spentCash=(b,k)=>spends(b,k).reduce((s,x)=>s+(x.card?0:(+x.v||0)),0), spentCard=(b,k)=>spentOf(b,k)-spentCash(b,k);
 /* Valor de um mês: amounts[mês] (só nesse mês), senão o valor em vigor desde from[mês] (meses seguintes), senão amount.
    Versões antigas guardavam o valor pago em paid[mês] como número: ainda conta. */
 const baseAmt=(b,k)=>{let v=+b.amount||0;if(b.from)for(const m of Object.keys(b.from).sort())if(m<=k)v=+b.from[m]||0;return v};
@@ -2709,8 +2712,8 @@ const isPaid=(b,k)=>{const p=b.paid&&b.paid[k];if(p!=null)return p!==false;if(!b
   if(!isInc(b)){const pv=ymOf(new Date(now.getFullYear(),now.getMonth()-1,1));return k<pv}
   const cur=ymOf(now);if(k!==cur)return k<cur;return Math.min(b.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())<=now.getDate()};
 const paidAmt=(b,k)=>isPaid(b,k)?monthAmt(b,k):0;
-const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k),spentOf(b,k)):monthAmt(b,k);
-const doneOf=(b,k)=>isBud(b)?spentOf(b,k):paidAmt(b,k);
+const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k)-spentCard(b,k),spentCash(b,k)):monthAmt(b,k);
+const doneOf=(b,k)=>isBud(b)?spentCash(b,k):paidAmt(b,k);
 let openBud="", editSpend="";
 /* A app começa a contar a 1 de novembro de 2026: antes disso não há contas atrasadas nem meses para ver */
 const START="2026-11";
@@ -2911,11 +2914,11 @@ function renderBills(){
     return `<div class="budget">
       <div class="head">
         <button class="plus" type="button" data-spend="${b.id}" aria-label="Juntar gasto em ${esc(b.name)}">+</button>
-        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${lim?`Gasto ${eur(sp)} de ${eur(lim)}`:"Sem limite"}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}</div></span></button>
+        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${lim?`Gasto ${eur(sp)} de ${eur(lim)}`:"Sem limite"}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}${spentCard(b,k)>0.004?` · 💳 ${eur(spentCard(b,k))} no cartão`:""}</div></span></button>
         <div class="amt">${!lim?eur(sp):left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${!lim?"gasto":left>=0?"disponível":"acima"}</small></div>
       </div>
       ${lim?`<div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>`:""}
-      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
+      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${x.card?"💳 ":""}${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");
@@ -3192,6 +3195,9 @@ document.addEventListener("submit",e=>{
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
   const L=[...spends(b,k)], old=L[+i]||{}, had=+old.ab||0, oldK=old.abk||(had?b.acc:""), bk=e.target.bk?e.target.bk.value:oldK;
+  if(old.card){L[+i]={v,d,...(n?{n}:{}),card:old.card,cb:old.cb};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
+    const c=cards().find(x=>x.id===old.card), y=c&&(c.buys||[]).find(z=>z.id===old.cb);if(y){const dv=Math.round((v-y.v)*100)/100;putBill({...c,buys:c.buys.map(z=>z.id===old.cb?{...z,v,n:n||z.n,d:k+"-"+String(d).padStart(2,"0")}:z),...(c.used!=null&&dv?{used:Math.max(0,Math.round(((+c.used||0)+dv)*100)/100),usedAt:Date.now()}:{})})}
+    toast("Gasto corrigido (também no cartão)");return}
   L[+i]={v,d,...(n?{n}:{}),...(bk?{ab:v,abk:bk}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
   if(oldK===bk)spendBank(b,v-had,bk);else{if(had)spendBank(b,-had,oldK);if(bk)spendBank(b,v,bk)}toast("Gasto corrigido");
 });
@@ -3925,6 +3931,7 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
       <input name="d" type="date" value="${ymd(new Date())}">
       <input name="n" placeholder="Onde (ex.: Continente)" style="grid-column:1/-1" autocapitalize="words">
+      ${isCredit(c)?`<label class="f" style="grid-column:1/-1">Conta nos gastos do mês<select name="bud"><option value="">Não (só no cartão)</option>${contas().filter(isBud).map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join("")}</select></label>`:""}
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
@@ -4052,13 +4059,17 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
     const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));if(!n||n<=0)return;cardMove(c,-n,ymd(new Date()),"Pagamento da fatura")}
   else if(t.dataset.delbuy){const [cid,bid]=t.dataset.delbuy.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.buys||[]).find(y=>y.id===bid);if(!x)return;
     if(!confirm(`Apagar "${x.n||(x.v<0?"Pagamento":"Compra")}" de ${eur(Math.abs(x.v))}?`))return;
-    const used=c.used!=null?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid),...(used!=null?{used,usedAt:Date.now()}:{})});renderCards();toast("Apagado")}},true);
-function cardMove(c,v,d,n){const buys=[...(c.buys||[]),{id:uid(),v:Math.round(v*100)/100,d,...(n?{n}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
+    const used=c.used!=null?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid),...(used!=null?{used,usedAt:Date.now()}:{})});
+    if(x.bud){const B=bills.find(y=>y.id===x.bud);if(B&&B.spent){const sp={};Object.entries(B.spent).forEach(([k,L])=>sp[k]=(L||[]).filter(y=>y.cb!==bid));putBill({...B,spent:sp});safe("Contas",renderBills)}}
+    renderCards();toast("Apagado")}},true);
+function cardMove(c,v,d,n,bud){const bid=uid(), B=bud&&bills.find(x=>x.id===bud&&isBud(x));
+  if(B){const k=d.slice(0,7);putBill({...B,spent:{...(B.spent||{}),[k]:[...spends(B,k),{v:Math.round(v*100)/100,d:+d.slice(8,10),...(n?{n}:{}),card:c.id,cb:bid}]}});setTimeout(()=>toast(`${B.name}: +${eur(v)} (no cartão ${c.name})`),900)}
+  const buys=[...(c.buys||[]),{id:bid,v:Math.round(v*100)/100,d,...(n?{n}:{}),...(B?{bud:B.id}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
   const used=Math.max(0,Math.round(((+c.used||0)+v)*100)/100);cardBuy="";putBill({...c,buys,used,usedAt:Date.now()});renderCards();
   toast(v>0?`${c.name}: +${eur(v)}${c.limit?` · livre ${eur(Math.max(0,c.limit-used))}`:""}`:`${c.name}: pagamento de ${eur(-v)}`)}
 document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardbuy;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
   const v=parseFloat(String(f.v.value).replace(",","."));if(!v||v<=0)return;const op=e.submitter&&e.submitter.value==="-1"?-1:1;
-  cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""))});
+  cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""),op>0&&f.bud?f.bud.value:"")});
 document.addEventListener("change",async e=>{const t=e.target;if(!t.dataset||!t.dataset.cardphoto)return;const file=t.files&&t.files[0];t.value="";if(!file)return;const f=t.closest("form");
   let L;try{L=await cardColors(file)}catch(err){toast("Não foi possível abrir essa foto.");return}
   const ps=photoStyle(L.join(","));if(!ps)return;f.pc.value=L.join(",");f.st.value="foto";
@@ -5051,11 +5062,11 @@ const mShort=k=>MES[+k.slice(5)-1], mFull=k=>MESL[+k.slice(5)-1]+" de "+k.slice(
 function chartData(){const end=ymOf(new Date())<START?START:ymOf(new Date());
   const months=[];for(let i=vRange-1;i>=0;i--){const k=mOff(end,-i);if(k>=START)months.push(k)}
   const buds=contas().filter(isBud), tot={};
-  buds.forEach(b=>tot[b.id]=months.reduce((t,k)=>t+spentOf(b,k),0));
+  buds.forEach(b=>tot[b.id]=months.reduce((t,k)=>t+spentCash(b,k),0));
   const top=buds.filter(b=>tot[b.id]>0||months.length===1).sort((a,b)=>tot[b.id]-tot[a.id]).slice(0,4), rest=buds.filter(b=>!top.includes(b));
   const cats=[{id:"contas",name:"Contas",col:"var(--s1)",val:k=>fixas().reduce((t,b)=>t+monthAmt(b,k),0),items:k=>fixas().map(b=>({n:b.name,v:monthAmt(b,k)}))},
-    ...top.map((b,i)=>({id:b.id,name:b.name,col:`var(--s${i+2})`,val:k=>spentOf(b,k),items:k=>spends(b,k).map(x=>({n:x.n||fmtD(x.d)||b.name,v:+x.v||0}))})),
-    ...(rest.length?[{id:"outros",name:"Outros gastos",col:"var(--s0)",val:k=>rest.reduce((t,b)=>t+spentOf(b,k),0),items:k=>rest.map(b=>({n:b.name,v:spentOf(b,k)}))}]:[])];
+    ...top.map((b,i)=>({id:b.id,name:b.name,col:`var(--s${i+2})`,val:k=>spentCash(b,k),items:k=>spends(b,k).filter(x=>!x.card).map(x=>({n:x.n||fmtD(x.d)||b.name,v:+x.v||0}))})),
+    ...(rest.length?[{id:"outros",name:"Outros gastos",col:"var(--s0)",val:k=>rest.reduce((t,b)=>t+spentCash(b,k),0),items:k=>rest.map(b=>({n:b.name,v:spentOf(b,k)}))}]:[])];
   return{months,cats,inc:k=>bills.filter(isInc).reduce((t,b)=>t+monthAmt(b,k),0)}}
 function renderChart(){const el=document.getElementById("vChart");if(!el)return;
   document.querySelectorAll("[data-vrange]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.vrange===vRange));
@@ -6049,7 +6060,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v288";
+const APPV="casa-v289";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
