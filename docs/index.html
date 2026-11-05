@@ -816,6 +816,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .ccard .cbot b{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;opacity:.75}
 .cinfo{background:var(--surface);border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.autod{border-radius:12px;background:var(--fill);padding:10px 12px}.autod>summary{cursor:pointer;font-size:15px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}.autod>summary::-webkit-details-marker{display:none}.autod>summary::after{content:"⌄";margin-left:auto;color:var(--muted)}.autod[open]>summary::after{content:"⌃"}.autod>summary small{font-weight:500;color:var(--muted);font-size:13px}.autod .autob{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
 .cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
 .cfrh .cfrt{display:flex;align-items:center;gap:6px}.cfrh .mcount{font-size:12px;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-weight:700}
@@ -4041,10 +4042,11 @@ function autoFields(c){const A=(c&&c.auto)||[], ab=A.find(a=>a.bill), sl=i=>A.fi
       <label class="f">Tipo<select name="a${i}t"><option value="pag"${a.t!=="compra"?" selected":""}>− Pagamento</option><option value="compra"${a.t==="compra"?" selected":""}>+ Compra</option></select></label>
       <label class="f">Valor (€)<input name="a${i}v" type="number" step="0.01" min="0" inputmode="decimal" value="${a.v!=null?a.v:""}"></label>
       <label class="f">Dia do mês<input name="a${i}d" type="number" min="1" max="31" inputmode="numeric" value="${a.day||""}"></label></div>`};
-  return`<div class="f wide" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--fg);font-weight:600">🔁 Automáticos</div>
+  const on=A.filter(a=>!a.bill&&a.n).length+(A.some(a=>a.bill)?1:0);
+  return`<details class="wide autod"${A.some(a=>!a.bill&&a.n)?" open":""}><summary>🔁 Automáticos <small>${on?`${on} ligado${on===1?"":"s"}`:"nenhum"}</small></summary><div class="autob">
     <label class="tick wide"><input type="checkbox" class="switch" name="ab"${!c||ab||(!A.length&&c.bill)?" checked":""}> A prestação da linha nas Contas abate sozinha ao cartão no dia do débito</label>
     ${slot(1)}${slot(2)}
-    <p class="note wide" style="margin:0">Entram sozinhos todos os meses no dia escolhido (mesmo com a app fechada) e acertam o “usado”. Começam na próxima vez que o dia chegar.</p>`}
+    <p class="note wide" style="margin:0">Entram sozinhos todos os meses no dia escolhido (mesmo com a app fechada) e acertam o “usado”. Começam na próxima vez que o dia chegar.</p></div></details>`}
 const nextSince=day=>{const d=new Date(), k=ymOf(d);if(day>d.getDate())return k;const n=new Date(d.getFullYear(),d.getMonth()+1,1);return ymOf(n)};
 function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
   return`<form class="bill-edit" data-cardform="${c?c.id:"new"}" autocomplete="off">
@@ -6096,7 +6098,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v293";
+const APPV="casa-v294";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
