@@ -821,6 +821,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cinfo{background:var(--surface);border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
 .autod{border-radius:12px;background:var(--fill);padding:10px 12px}.autod>summary{cursor:pointer;font-size:15px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}.autod>summary::-webkit-details-marker{display:none}.autod>summary::after{content:"⌄";margin-left:auto;color:var(--muted)}.autod[open]>summary::after{content:"⌃"}.autod>summary small{font-weight:500;color:var(--muted);font-size:13px}.autod .autob{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.acdonerow{width:100%;font:inherit;color:var(--fg);grid-template-columns:auto 1fr auto!important}
 .amtfix{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px;cursor:pointer}
 .cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
 .cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
@@ -2992,12 +2993,16 @@ function renderBills(){
   /* Acerto com outra pessoa (ex.: Mãe): no início do mês ela passa metade da Medicare desse mês e desconta a Água do mês anterior (que os pais pagaram) */
   const acL=[];
   {const box=document.getElementById("acertoBox"), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm), whos=[...new Set(AC.map(b=>b.ac))];
+    /* Pedido (05/11): acerto já feito desce para baixo das receitas e fica numa linha (toca para abrir) */
+    {const allDn=whos.length&&whos.every(w=>{const rc=bills.find(x=>x.kind==="acerto"&&x.who===w);return rc&&rc.done&&rc.done[k]}), sec=document.getElementById("incSec");
+     const tl=document.getElementById("timeline");if(sec&&tl){if(allDn)sec.after(box);else tl.before(box)}}
     const pk=ymOf(new Date(viewY,viewM-1,1)), pName=new Date(viewY,viewM-1,1).toLocaleDateString("pt-PT",{month:"long"});
     box.innerHTML=whos.map(w=>{const L=AC.filter(b=>b.ac===w), rec=bills.find(x=>x.kind==="acerto"&&x.who===w), dn=rec&&rec.done&&rec.done[k];
       const rows=L.map(b=>{if(b.id===editBill)return editRow(b,"Despesa");const half=b.acm==="half", kk=half?k:pk, v=half?monthAmt(b,k)/2:monthAmt(b,kk), cf=half||(b.conf&&b.conf[kk]);
         return {v:half?v:-v,h:`<div class="bill"><button type="button" class="bname wi" data-editbill="${b.id}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}${half?" (metade)":` de ${pName}`}</div><div class="meta">${half?`${esc(w)} paga metade · dia ${b.day||1}`:`pago por ${esc(w)} · ${cf?'<span class="ok">valor confirmado ✓</span>':`<span class="loanlink" data-acval="${b.id}|${kk}" role="button">confirmar o valor ›</span>`}`}</div></span></button><div class="amt"${half?' style="color:var(--good)"':""}>${half?"+":"−"}${eur(v)}</div></div>`}});
       const tot0=rows.reduce((t,x)=>t+(x.v||0),0), tot=dn&&dn.v!=null?+dn.v:tot0;acL.push({w,tot,dn:!!dn});
-      return `<div class="acbox"><div class="ach">🤝 Acerto com ${esc(w)} · dia ${AC_DAY} de ${mName}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
+      if(dn&&!ACO().has(w+k))return`<button type="button" class="bill acdonerow" data-actog="${esc(w)}|${k}"><span class="bic" style="background:#34c759;font-size:18px;display:grid;place-items:center;width:36px;height:36px;border-radius:10px">🤝</span><span class="bt" style="text-align:left"><div class="name">Acerto com ${esc(w)}</div><div class="meta"><span class="ok">${tot>=0?"Recebido":"Pago"} ✓</span>${dn.at>1?` · ${new Date(dn.at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}`:""}</div></span><span class="amt" style="color:${tot>=0?"var(--good)":"inherit"}">${tot>=0?"+":"−"}${eur(Math.abs(tot))}</span></button>`;
+      return `<div class="acbox"><div class="ach"${dn?` data-actog="${esc(w)}|${k}" role="button" style="cursor:pointer"`:""}>🤝 Acerto com ${esc(w)} · dia ${AC_DAY} de ${mName}${dn?" ⌃":""}</div><div class="group" style="gap:0">${rows.map(x=>x.h||x).join("")}</div>
         <div class="act"><span>${tot>=0?`${esc(w)} passa-te`:`Passas a ${esc(w)}`}${dn&&dn.v!=null&&Math.abs(dn.v-tot0)>.004?` <small style="color:var(--muted)">(contas davam ${eur(Math.abs(tot0))})</small>`:""}</span>${dn?`<button type="button" class="amtfix" style="font-weight:700" data-acfix="${esc(w)}|${k}|${tot0}">${eur(Math.abs(tot))}</button>`:`<b>${eur(Math.abs(tot))}</b>`}</div>
         ${dn?`<button type="button" class="back" data-acdone="${esc(w)}|${k}|0">✓ Acertado${rec.done[k].at?" a "+new Date(rec.done[k].at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"}):""} · desfazer</button>`:`<button type="button" class="btn" data-acdone="${esc(w)}|${k}|1|${tot}">✓ Já acertámos</button>`}</div>`}).join("")}
   /* Os 3 quadrados (A pagar · Receitas · Gastos) e a linha do tempo do mês, com o que fica nas contas depois de cada dia */
@@ -3080,7 +3085,8 @@ document.getElementById("bType").addEventListener("change",e=>{const t=e.target.
   document.getElementById("bDay").disabled=t==="budget";renderBills()});
 /* As caixas Entra e Sai levam às receitas e às despesas */
 /* Contas em três separadores (A pagar · Receitas · Gastos); cada telemóvel lembra-se do último */
-let cTab="mes", paidOpen=false, tlPaidOpen=false;
+let cTab="mes", paidOpen=false, tlPaidOpen=false;const ACO=()=>window.__aco||(window.__aco=new Set());
+document.addEventListener("click",e=>{const t=e.target.closest("[data-actog]");if(!t)return;const [w,k]=t.dataset.actog.split("|");if(ACO().has(w+k))ACO().delete(w+k);else ACO().add(w+k);renderBills()});
 function applyCTab(){const sec=document.getElementById("tab-despesas");if(sec)sec.dataset.ct=cTab;document.querySelectorAll(".ctabs [data-ctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ctab===cTab));
   const t=document.getElementById("cttlT");if(t)t.textContent={pagar:"A pagar",receitas:"Receitas",gastos:"Gastos do mês",cartao:"Gastos com cartão de crédito"}[cTab]||"";
   const ab=document.getElementById("billAddOpen");if(ab&&document.getElementById("billAddBox").hidden)ab.textContent={pagar:"＋ Adicionar conta a pagar",receitas:"＋ Adicionar receita",gastos:"＋ Adicionar gastos do mês"}[cTab]||"＋ Adicionar"}
@@ -6170,7 +6176,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v301";
+const APPV="casa-v302";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
