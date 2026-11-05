@@ -2804,6 +2804,11 @@ function fer26(snap){if(fer26Done||!bills.length||(snap&&snap.metadata&&snap.met
     const S=[["Hotel",[3064.18]],["Almoços + Bebidas",[671.33]],["Supermercado",[14.19,12.53]],["Loja Vila Galé",[49.95,72.90,22.45,37.10,3.50,16.50,-20.00,21.90,5.00,19.00]],["Roupas",[116.90,97.00,6.30,60.07,110.00,40.00]],["Portagens",[23.05,23.05,3.45,3.15]],["Acuario",[49.00,36.85,3.95,-20.00]],["Farmácia",[42.71,29.60]],["Fotos",[105]],["Refeições",[23.20,9.75,27.30,10.05,92.10]],["Pulseiras + Others",[16,20,12,20,8.99]]];
     putBill({id:"trip-ferias-2026",kind:"trip",name:"Férias 2026",year:2026,pack:[],spend:S.map(([n,P],i)=>({id:"f26-"+i,n,...(P.length>1?{parts:P}:{}),v:Math.round(P.reduce((a,b)=>a+b,0)*100)/100}))});toast("Férias 2026 juntadas às Viagens, com os gastos")}
   putBill({id:"flag-fer26-1",kind:"flag",at:Date.now()})}
+/* Pedido (05/11): compras da Casa nos cartões passam a ter Onde = loja e O quê = 🏠 nome (uma vez) */
+let hmBuyDone=false;
+function hmBuyFix(snap){if(hmBuyDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;hmBuyDone=true;if(bills.some(b=>b.id==="flag-hmbuy-1"))return;
+  cards().forEach(c=>{if(!(c.buys||[]).some(y=>y.hm&&!y.w))return;putBill({...c,buys:c.buys.map(y=>{if(!y.hm||y.w)return y;const h=bills.find(b=>b.id===y.hm);return{...y,n:(h&&h.shop)||"Casa",w:y.n||("🏠 "+(h?h.name:""))}})})});
+  putBill({id:"flag-hmbuy-1",kind:"flag",at:Date.now()})}
 let restDone=false;
 function restTidy(snap){if(restDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;restDone=true;
   if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}});
@@ -3464,7 +3469,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -3934,16 +3939,16 @@ const cdDay=(cd,y,m)=>Math.min(cd,new Date(y,m,0).getDate());
 function stmtK(c,ds){const d=ds?new Date(ds+"T12:00"):new Date(), y=d.getFullYear(), m=d.getMonth()+1;if(d.getDate()<=cdDay(c.cd,y,m))return`${y}-${String(m).padStart(2,"0")}`;const n=new Date(y,m,1);return ymOf(n)}
 const stmtLabel=(c,k)=>{const [y,m]=k.split("-").map(Number);return`${cdDay(c.cd,y,m)} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`};
 function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(x=>stmtK(c,x.d)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1)):buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
-  const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n).map(x=>x.n))].slice(0,6);
+  const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n&&!x.auto&&!/^🏠/.test(x.n)).map(x=>x.n))].slice(0,8);
   const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
       <input name="d" type="date" value="${ymd(new Date())}">
-      <input name="n" placeholder="Onde (ex.: Continente)" style="grid-column:1/-1" autocapitalize="words">
+      <input name="n" placeholder="Onde (ex.: Amazon)" autocapitalize="words"><input name="w" placeholder="O quê (ex.: bicicleta)" autocapitalize="sentences">
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
       <button class="back" type="button" data-cardbuycancel="1" style="grid-column:1/-1;justify-self:start">Cancelar</button></form>`
     :`<div class="sbtns" style="display:flex;gap:8px"><button class="btn" type="button" data-cardbuyopen="${c.id}" style="flex:1;padding:10px">+ Compra</button>${isCredit(c)?`<button class="btn ghost" type="button" data-cardpay="${c.id}" style="flex:1;padding:10px">Paguei a fatura</button>`:""}</div>`;
-  const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
+  const rows=L.slice(0,cardAll===c.id?99:4).map(x=>`<button type="button" class="row" data-delbuy="${c.id}|${x.id}" style="background:transparent;padding:4px 0;color:var(--fg);font:inherit;text-align:left;border-top:1px solid var(--sep,rgba(0,0,0,.08))"><span>${fmtD(x.d).replace(/ \d{4}$/,"")} · ${x.auto?"🔁 ":""}${esc(x.n||(x.v<0?"Pagamento":"Compra"))}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}</span><span style="font-weight:600;${x.v<0?"color:var(--good)":""}">${x.v<0?"−":""}${eur(Math.abs(x.v))}</span></button>`).join("");
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
@@ -3968,7 +3973,7 @@ function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);
       <div class="amt">${eur(tot)}<small>no extrato</small></div>
     </div>
     ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}${g.debit?` · débito a ${dShort(g.debit)}`:""}</span><span>${eur(g.tot)}</span></div>
-      ${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
+      ${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
       <button class="back" type="button" data-cardspadd="${g.c.id}" style="align-self:flex-start">+ Compra no ${esc(g.c.name)}</button>`).join(""):""}
   </div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardspadd]");if(!t)return;e.preventDefault();e.stopPropagation();const id=t.dataset.cardspadd;
@@ -4098,14 +4103,14 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
     const used=c.used!=null?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid),...(used!=null?{used,usedAt:Date.now()}:{})});
     if(x.bud){const B=bills.find(y=>y.id===x.bud);if(B&&B.spent){const sp={};Object.entries(B.spent).forEach(([k,L])=>sp[k]=(L||[]).filter(y=>y.cb!==bid));putBill({...B,spent:sp});safe("Contas",renderBills)}}
     renderCards();toast("Apagado")}},true);
-function cardMove(c,v,d,n,bud){const bid=uid(), B=bud&&bills.find(x=>x.id===bud&&isBud(x));
+function cardMove(c,v,d,n,bud,w){const bid=uid(), B=bud&&bills.find(x=>x.id===bud&&isBud(x));
   if(B){const k=d.slice(0,7);putBill({...B,spent:{...(B.spent||{}),[k]:[...spends(B,k),{v:Math.round(v*100)/100,d:+d.slice(8,10),...(n?{n}:{}),card:c.id,cb:bid}]}});setTimeout(()=>toast(`${B.name}: +${eur(v)} (no cartão ${c.name})`),900)}
-  const buys=[...(c.buys||[]),{id:bid,v:Math.round(v*100)/100,d,...(n?{n}:{}),...(B?{bud:B.id}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
+  const buys=[...(c.buys||[]),{id:bid,v:Math.round(v*100)/100,d,...(n?{n}:{}),...(w?{w}:{}),...(B?{bud:B.id}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
   const used=Math.max(0,Math.round(((+c.used||0)+v)*100)/100);cardBuy="";putBill({...c,buys,used,usedAt:Date.now()});renderCards();
   toast(v>0?`${c.name}: +${eur(v)}${c.limit?` · livre ${eur(Math.max(0,c.limit-used))}`:""}`:`${c.name}: pagamento de ${eur(-v)}`)}
 document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardbuy;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
   const v=parseFloat(String(f.v.value).replace(",","."));if(!v||v<=0)return;const op=e.submitter&&e.submitter.value==="-1"?-1:1;
-  cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""),op>0&&f.bud?f.bud.value:"")});
+  cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""),op>0&&f.bud?f.bud.value:"",f.w?f.w.value.trim():"")});
 document.addEventListener("change",async e=>{const t=e.target;if(!t.dataset||!t.dataset.cardphoto)return;const file=t.files&&t.files[0];t.value="";if(!file)return;const f=t.closest("form");
   let L;try{L=await cardColors(file)}catch(err){toast("Não foi possível abrir essa foto.");return}
   const ps=photoStyle(L.join(","));if(!ps)return;f.pc.value=L.join(",");f.st.value="foto";
@@ -4739,10 +4744,10 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)r
   for(const [k,v] of [["date",f.d.value||null],["value",num(f.v.value)],["shop",f.s.value.trim()||null],["war",+f.w.value||null],["wv",num(f.wv.value)],["wx",+f.wx.value||null],["pay",f.pay.value||null],["payc",f.payc.checked&&f.pay.value?1:null],["frn",+f.frn.value||null],["frf",+f.frn.value&&f.frf.value||null],["frp",+f.frn.value?num(f.frp.value):null],["brand",f.b.value.trim()||null],["notes",f.x.value.trim()||null]])if(v==null)delete h[k];else h[k]=v;
   editHm="";openHm=h.id;putBill(h);const cc=hmCardSync(h);renderHome();toast(cc?`Guardado e lançado no ${cc}`:old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
 /* Pedido (03/11): compra da Casa paga com cartão de crédito entra nos movimentos do cartão e soma ao usado (acerta se mudar; sai se apagar) */
-function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n="🏠 "+h.name+(+h.frn?` (${h.frn}×)`:"");
-  const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0;if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n){out="";return}
+function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n=h.shop||"Casa", w="🏠 "+h.name+(+h.frn?` (${h.frn}×)`:"");
+  const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0;if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n&&had[0].w===w){out="";return}
   let buys=(c.buys||[]).filter(y=>y.hm!==h.id), used=c.used!=null?(+c.used||0)-had.reduce((t,y)=>t+(+y.v||0),0):null;
-  if(add){buys=[...buys,{id:uid(),v:nv,d,n,hm:h.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);used=(used||0)+nv}
+  if(add){buys=[...buys,{id:uid(),v:nv,d,n,w,hm:h.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);used=(used||0)+nv}
   putBill({...c,buys,...(used!=null?{used:Math.max(0,Math.round(used*100)/100),usedAt:Date.now()}:{})})});renderCards&&safe("Cartões",renderCards);return out}
 /* ---------- Seguro da casa (kind:"hins") ----------
    {name (seguradora), what, value, per ("mes"|"trim"|"sem"|"ano"), renew "AAAA-MM-DD", notes, files} — aviso 60, 30, 7 dias e no dia */
@@ -6036,7 +6041,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6098,7 +6103,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v294";
+const APPV="casa-v295";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
