@@ -822,6 +822,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .cinfo .lbar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden}.cinfo .lbar span{display:block;height:100%;border-radius:4px;background:var(--accent)}
 .autod{border-radius:12px;background:var(--fill);padding:10px 12px}.autod>summary{cursor:pointer;font-size:15px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}.autod>summary::-webkit-details-marker{display:none}.autod>summary::after{content:"⌄";margin-left:auto;color:var(--muted)}.autod[open]>summary::after{content:"⌃"}.autod>summary small{font-weight:500;color:var(--muted);font-size:13px}.autod .autob{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .acdonerow{width:100%;font:inherit;color:var(--fg);grid-template-columns:auto 1fr auto!important}
+.mlchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.mlc{text-transform:none;letter-spacing:0}.mlc input{position:absolute;opacity:0;pointer-events:none}.mlc span{display:inline-block;padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--fg);font-size:15px;font-weight:600;cursor:pointer}.mlc input:checked+span{background:var(--accent);color:#fff}
 .amtfix{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px;cursor:pointer}
 .cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
 .cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
@@ -2705,6 +2706,7 @@ let editAcc="";
 /* Gastos do mês (kind:"budget"): orçamento mensal com vários gastos em spent["AAAA-MM"]=[{v,d,n}] */
 const isBud=b=>b.kind==="budget", fixas=()=>contas().filter(b=>!isBud(b));
 const spends=(b,k)=>(b.spent&&b.spent[k])||[];
+const isRest=b=>b&&(b.id==="bud-rest"||/restaura/i.test(b.name||""));const MEALS=[["Almoço","🍽️"],["Jantar","🌙"],["Take-away","🥡"]];
 const spentOf=(b,k)=>spends(b,k).reduce((s,x)=>s+(+x.v||0),0);
 /* Pedido (05/11): compras no cartão de crédito podem contar no gasto da categoria (x.card); nos totais do mês e na previsão do banco
    contam só pela fatura do cartão (no dia do débito) — por isso aqui ficam de fora, para não contar duas vezes */
@@ -2921,11 +2923,13 @@ function renderBills(){
     return e.length>1?`<p class="shops" style="margin:0">${e.map(([n,v])=>`${esc(n)} ${eur(v)}`).join(" · ")}</p>`:""};
   const suggest=b=>{const used={};Object.values(b.spent||{}).flat().forEach(x=>{if(x&&x.n)used[x.n]=(used[x.n]||0)+1});
     const base=/super|continente|mercado|compras/i.test(b.name)?SHOPS.super:/restaura|comer|almo|jantar/i.test(b.name)?SHOPS.rest:/\bg[aá]s\b|galp|bilha/i.test(b.name)?["Galp","Bilha de gás"]:[];
-    return [...new Set([...Object.keys(used).sort((a,c)=>used[c]-used[a]),...base])].slice(0,8)};
+    return [...new Set([...Object.keys(used).sort((a,c)=>used[c]-used[a]),...base])].filter(n=>!isRest(b)||!/^(almo[cç]o|jantar|take.?away|lanche|caf[eé])$/i.test(n)).slice(0,8)};
+  /* Pedido (05/11): nos Restaurantes escolhe-se a refeição (almoço, jantar, take-away) e o local */
   const spendForm=(b,x,mode)=>`<form class="spend-add" data-${mode==="add"?"spendform":"spendedit"}="${mode==="add"?b.id:b.id+"|"+x.i}" autocomplete="off">
         <label class="f">Valor (€)<input name="v" type="number" min="0" step="0.01" inputmode="decimal" placeholder="35,90" value="${mode==="edit"?x.v:""}" required></label>
         <label class="f">Dia<input name="d" type="number" min="1" max="31" inputmode="numeric" value="${x.d||""}"></label>
-        <label class="f wide">Onde / o quê (opcional)<input name="n" maxlength="40" placeholder="ex.: Continente" value="${mode==="edit"?esc(x.n||""):""}"></label>
+        ${isRest(b)?`<div class="f wide">Refeição<div class="mlchips">${MEALS.map(([k,e])=>`<label class="mlc"><input type="radio" name="ml" value="${k}"${(mode==="edit"?x.ml:"")===k?" checked":""}><span>${e} ${k}</span></label>`).join("")}</div></div>`:""}
+        <label class="f wide">${isRest(b)?"Local (restaurante)":"Onde / o quê (opcional)"}<input name="n" maxlength="40" placeholder="${isRest(b)?"ex.: O Manel":"ex.: Continente"}" value="${mode==="edit"?esc(x.n||""):""}"></label>
         ${accounts().length?`<label class="f wide">Pago com (desconta no saldo)<select name="bk"><option value="">Não descontar</option>${accounts().map(a=>`<option value="${a.id}"${((mode==="edit"?x.abk||(x.ab?b.acc:""):b.acc)||"")===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`:""}
         ${suggest(b).length?`<div class="chips wide">${suggest(b).map(n=>`<button type="button" class="chip" data-note="${esc(n)}">${esc(n)}</button>`).join("")}</div>`:""}
         ${mode==="add"?`<button class="btn wide" type="submit">Juntar gasto</button>`:`<button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelspend="1">Cancelar</button><button class="btn danger wide" type="button" data-delspend="${b.id}|${x.i}">Apagar este gasto</button>`}
@@ -2941,7 +2945,7 @@ function renderBills(){
         <div class="amt">${!lim?eur(sp):left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${!lim?"gasto":left>=0?"disponível":"acima"}</small></div>
       </div>
       ${lim?`<div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>`:""}
-      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${x.card?"💳 ":""}${esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
+      ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${x.card?"💳 ":""}${x.ml?`${(MEALS.find(m=>m[0]===x.ml)||["","🍽️"])[1]} ${esc(x.ml)}${x.n?" · ":""}`:""}${x.ml&&!x.n?"":esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
       ${spendForm(b,{d:today2},"add")}
       <button class="back" type="button" data-editbill="${b.id}" style="align-self:flex-start;font-weight:500">Editar ${esc(b.name)}</button>`:""}
     </div>`}).join("");{const cb=document.getElementById("cardSpBox");if(cb)cb.innerHTML=cardSpendBox(k)}
@@ -3279,7 +3283,8 @@ document.addEventListener("submit",e=>{
   if(old.card){L[+i]={v,d,...(n?{n}:{}),card:old.card,cb:old.cb};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
     const c=cards().find(x=>x.id===old.card), y=c&&(c.buys||[]).find(z=>z.id===old.cb);if(y){const dv=Math.round((v-y.v)*100)/100;putBill({...c,buys:c.buys.map(z=>z.id===old.cb?{...z,v,n:n||z.n,d:k+"-"+String(d).padStart(2,"0")}:z),...(c.used!=null&&dv?{used:Math.max(0,Math.round(((+c.used||0)+dv)*100)/100),usedAt:Date.now()}:{})})}
     toast("Gasto corrigido (também no cartão)");return}
-  L[+i]={v,d,...(n?{n}:{}),...(bk?{ab:v,abk:bk}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
+  const ml=(e.target.querySelector("[name=ml]:checked")||{}).value||"";
+  L[+i]={v,d,...(n?{n}:{}),...(ml?{ml}:{}),...(bk?{ab:v,abk:bk}:{})};editSpend="";putBill({...b,spent:{...(b.spent||{}),[k]:L}});
   if(oldK===bk)spendBank(b,v-had,bk);else{if(had)spendBank(b,-had,oldK);if(bk)spendBank(b,v,bk)}toast("Gasto corrigido");
 });
 /* Juntar um gasto a uma despesa de "vários gastos" */
@@ -3289,7 +3294,8 @@ document.addEventListener("submit",e=>{
   const v=parseFloat(e.target.v.value), d=Math.min(Math.max(parseInt(e.target.d.value)||1,1),31), n=e.target.n.value.trim();
   if(isNaN(v)||v<=0)return;
   const bk=e.target.bk?e.target.bk.value:(b.acc||"");
-  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{}),...(bk?{ab:v,abk:bk}:{})}]}});
+  const ml=e.target.ml?(e.target.querySelector("[name=ml]:checked")||{}).value:"";
+  const k=mKey();putBill({...b,spent:{...(b.spent||{}),[k]:[...spends(b,k),{v,d,...(n?{n}:{}),...(ml?{ml}:{}),...(bk?{ab:v,abk:bk}:{})}]}});
   toast(`${eur(v)} em ${b.name}`);if(bk)spendBank(b,v,bk);
 });
 document.getElementById("payAll").addEventListener("click",()=>{
@@ -6176,7 +6182,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v302";
+const APPV="casa-v303";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
