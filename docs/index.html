@@ -2809,6 +2809,15 @@ let hmBuyDone=false;
 function hmBuyFix(snap){if(hmBuyDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;hmBuyDone=true;if(bills.some(b=>b.id==="flag-hmbuy-1"))return;
   cards().forEach(c=>{if(!(c.buys||[]).some(y=>y.hm&&!y.w))return;putBill({...c,buys:c.buys.map(y=>{if(!y.hm||y.w)return y;const h=bills.find(b=>b.id===y.hm);return{...y,n:(h&&h.shop)||"Casa",w:y.n||("🏠 "+(h?h.name:""))}})})});
   putBill({id:"flag-hmbuy-1",kind:"flag",at:Date.now()})}
+/* Pedido (05/11): compras automáticas (ex.: Netflix) cujo dia já passou dentro do extrato em aberto e que ainda não entraram
+   (porque o automático foi ligado depois) entram no extrato com o mesmo id do serviço (não duplica). Não mexem no "usado":
+   o usado escreve-se com o valor do banco, que já as inclui. */
+let autoFillDone=false;
+function autoFill(snap){if(autoFillDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;autoFillDone=true;const td=ymd(new Date());
+  cards().filter(c=>isCredit(c)&&c.cd&&(c.auto||[]).some(a=>a.t==="compra"&&!a.bill&&+a.v>0)).forEach(c=>{const sk=stmtK(c), [y,m]=sk.split("-").map(Number), add=[];
+    for(const mk of [ymOf(new Date(y,m-2,1)),sk])for(const a of c.auto){if(a.t!=="compra"||a.bill||!(+a.v>0))continue;const [yy,mm]=mk.split("-").map(Number), d=`${mk}-${String(Math.min(+a.day||1,new Date(yy,mm,0).getDate())).padStart(2,"0")}`, id=`auto-${a.id}-${mk}`;
+      if(d>=td||stmtK(c,d)!==sk||(c.buys||[]).some(x=>x.id===id)||add.some(x=>x.id===id))continue;add.push({id,v:Math.round(+a.v*100)/100,d,n:a.n||"Compra automática",auto:true})}
+    if(add.length){putBill({...c,buys:[...(c.buys||[]),...add].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)});setTimeout(()=>toast(`${c.name}: ${add.map(x=>x.n+" "+dShort(x.d)).join(", ")} juntado ao extrato`),1200)}})}
 let restDone=false;
 function restTidy(snap){if(restDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;restDone=true;
   if(!bills.some(b=>b.id==="bud-rest"||(b.kind==="budget"&&/restaura/i.test(b.name||""))))putBill({id:"bud-rest",name:"Restaurantes",amount:0,day:0,kind:"budget",spent:{}});
@@ -3469,7 +3478,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -6046,7 +6055,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
