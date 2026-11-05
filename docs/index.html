@@ -368,7 +368,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .cltot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid rgba(255,255,255,.15);margin-top:6px;padding-top:8px}.cltot span{font-weight:600}.cltot b{font-size:19px;font-weight:800}
 .clits small.clw{display:block;font-size:12px;font-weight:600}.clw.ok{color:var(--good)}.clw.warn{color:var(--warn)}.clw.bad{color:var(--bad)}
 #mLabel .mrange{display:block;font-size:13px;font-weight:500;color:var(--muted);text-align:center;margin-top:2px}
-.bill .amt:has(.paybtn){display:flex;flex-direction:column;align-items:flex-end}.paybtn{margin-top:6px;white-space:nowrap;padding:6px 14px;border-radius:999px;background:#34c759;color:#fff;font-weight:600;font-size:14px;box-shadow:0 2px 6px rgba(52,199,89,.35)}
+.bill.nochk{grid-template-columns:1fr auto auto}.bill .amt:has(.paybtn){display:flex;flex-direction:column;align-items:flex-end}.paybtn.undo{background:color-mix(in srgb,#34c759 16%,transparent)!important;color:#1e8f3a!important;box-shadow:none!important}.paybtn{margin-top:6px;white-space:nowrap;padding:6px 14px;border-radius:999px;background:#34c759;color:#fff;font-weight:600;font-size:14px;box-shadow:0 2px 6px rgba(52,199,89,.35)}
 .algrp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .alrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;background:none;color:var(--fg);text-align:left;padding:10px 12px;font:inherit;position:relative}
 .alrow+.alrow::before{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--line)}
@@ -2982,10 +2982,9 @@ function renderBills(){
     const r=rdState(b,rk);
     if(r)when+=`<br><span class="rdlink${r.done?" ok":r.left<0&&rCur?" bad":r.left<=3&&rCur?" warn":""}" data-rd="${b.id}" data-rdk="${rk}" role="button">${r.done?"📟 Contagem dada ✓":`📟 Contagem até dia ${r.d}${rk!==k?" de "+mFull(rk).split(" de ")[0]:""}${rCur&&r.left<=3?" · tocar quando der":""}`}</span>`;
     if(b.id===editBill)return editRow(b,"Despesa");
-    return `<div class="bill${p?" paid":""}">
-      <input type="checkbox" data-pay="${b.id}" ${p?"checked":""} aria-label="Marcar ${esc(b.name)} como paga">
+    return `<div class="bill nochk${p?" paid":""}">
       <button type="button" class="bname wi" data-editbill="${b.id}" aria-label="Editar ${esc(b.name)}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${when}</div></span></button>
-      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">${eur(monthAmt(b,k))}</button>${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Pago</button>`:""}</div>
+      <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">${eur(monthAmt(b,k))}</button>${!p?`<button type="button" class="paybtn" data-payask="${b.id}">✓ Pago</button>`:`<button type="button" class="paybtn undo" data-unpay="${b.id}">Paga ✓</button>`}</div>
     </div>`};
   /* por pagar à vista; as pagas recolhidas numa linha que abre */
   const unp=list.filter(b=>!isPaid(b,k)), pd=list.filter(b=>isPaid(b,k)), pOpen=paidOpen||pd.some(b=>b.id===editBill);
@@ -3220,6 +3219,10 @@ function valAsk(b,k){const inc=isInc(b), paid=isPaid(b,k), old=Math.round(monthA
       if(b.acc===aid&&nb.accd&&nb.accd[k]!=null&&nb.accd[k]!==0)nb.accd={...nb.accd,[k]:Math.round(n*100)/100}}
     putBill(nb);renderBills();toast(`${b.name}: ${eur(n)}${Math.abs(dif)>.004?` (${dif>0?"+":"−"}${eur(Math.abs(dif))})`:""}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#fvV");if(i){i.focus();i.select()}},50)}
+/* Pedido (05/11): marca-se pelo botão ✓ Pago (sem bola); "Paga ✓" volta a pôr por pagar */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-unpay]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.unpay);if(!b)return;const k=mKey();
+  if(!confirm(`Pôr "${b.name}" outra vez por pagar?`))return;const paid={...(b.paid||{})}, nb={...b};if(b.dd)paid[k]=false;else delete paid[k];
+  if(b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}if(!b.acc&&nb.accd&&nb.accd[k]!=null){nb.accd={...nb.accd};delete nb.accd[k]}nb.paid=paid;putBill(nb);toast(`${b.name}: por pagar`)},true);
 document.addEventListener("click",e=>{const t=e.target.closest("[data-fixval]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.fixval);if(b)valAsk(b,mKey())},true);
 /* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
 function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
@@ -6142,7 +6145,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v298";
+const APPV="casa-v299";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
