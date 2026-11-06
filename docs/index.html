@@ -3455,7 +3455,7 @@ function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(a.bk)
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
-function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
+function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
   return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
@@ -3491,8 +3491,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
   if(td>=AC_DAY-1&&mk>=START)acertoTotals(mk).filter(x=>!x.done).forEach(x=>A.push({o:td>=AC_DAY?1:3,cls:td>AC_DAY?"warn":"",dot:"bl",go:"despesas",acr:1,
     name:`Acerto com ${x.w}${td<AC_DAY?" amanhã":td===AC_DAY?" hoje":""}`,meta:x.tot>=0?`${x.w} passa-te ${eur(x.tot)}`:`Passas a ${x.w} ${eur(-x.tot)}`}));
-  bdays().forEach(b=>cakesOf(b).forEach(c=>{const d=cakeDate(c);if(!d)return;const dd=Math.round((d-new Date(new Date().toDateString()))/864e5);if(dd<0||dd>1)return;
-    A.push({o:dd===0?1:2,cls:"warn",dot:"ex",go:"anos",name:`🎂 Levantar ${c.nome?"o bolo “"+c.nome+"”":"o bolo"} de ${b.name} ${dd===0?"hoje":"amanhã"}${c.hora?" às "+c.hora:""}`,meta:[c.past,c.quem,c.enc?"":"⚠️ ainda não está encomendado"].filter(Boolean).join(" · ")||"Bolo de aniversário"})}));
+  bdays().forEach(b=>cakesOf(b).forEach(c=>{const d=cakeDate(c);if(!d||c.got)return;const dd=Math.round((d-new Date(new Date().toDateString()))/864e5);if(dd<0||dd>1)return;
+    A.push({o:dd===0?1:2,cls:"warn",dot:"ex",go:"anos",cake:b.id+"|"+c.id,name:`🎂 Levantar ${c.nome?"o bolo “"+c.nome+"”":"o bolo"} de ${b.name} ${dd===0?"hoje":"amanhã"}${c.hora?" às "+c.hora:""}`,meta:[c.past,c.quem,c.enc?"":"⚠️ ainda não está encomendado"].filter(Boolean).join(" · ")||"Bolo de aniversário"})}));
   if(typeof bkDue==="function"&&bkDue()&&store)A.push({o:5,cls:"",dot:"bl",go:"definicoes",bk:1,name:"Fazer a cópia de segurança",meta:"⚙️ Geral → Exportar"});
   /* Escola: hoje/amanhã sem aulas (férias ou feriado marcados na Escola) */
   [[todayS,"Hoje"],[tomS,"Amanhã"]].forEach(([ds,lb])=>{const wd=new Date(ds+"T12:00").getDay();if(wd===0||wd===6)return;
@@ -3506,7 +3506,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alertSec").hidden=!A.length;
-  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" ${a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
+  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" ${a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
   const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
   safe("Agenda",renderAgenda);
@@ -4403,13 +4403,22 @@ function cakeForm(b,n,c,cid){c=c||{};const v=x=>x==null?"":esc(x), area=k=>/rech
     <label class="f">Quem levanta<input name="quem" value="${v(c.quem)}" placeholder="ex.: Luís Martins" autocapitalize="words"></label>
     <label class="f">Pastelaria<input name="past" value="${v(c.past)}" placeholder="Moinho d'Água" autocapitalize="words"></label>
     <label class="tick wide"><input type="checkbox" class="switch" name="enc"${c.enc?" checked":""}> Já encomendei</label>
+    ${cid==="new"?"":`<button class="btn${c.got?" ghost":""} wide" type="button" data-cakegot="${key}|${c.got?0:1}">${c.got?"↩︎ Afinal ainda não levantei":"✓ Já levantei o bolo"}</button>`}
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cakepeek="${key}">👁️ Ver o pedido</button>
     <button class="btn ghost" type="button" data-cakesend="${key}">📤 Enviar à pastelaria</button>
     <button class="btn ghost${cid==="new"?" wide":""}" type="button" data-cakeclose="1">Fechar</button>
     ${cid==="new"?"":`<button class="btn danger" type="button" data-cakedel="${key}">Apagar bolo</button>`}</form>`}
+/* Pedido (06/11): "Já levantei" no bolo — sai dos alertas */
+function cakeGot(bid,cid,on){const b=bdays().find(x=>x.id===bid);if(!b)return;const L=cakesOf(b).map(x=>x.id===cid?{...x,...(on?{got:Date.now()}:{got:null})}:x);
+  const nb={...b,cakes:L};delete nb.cake;putBill(nb);toast(on?"🎂 Bolo levantado ✓":"Bolo por levantar");safe("Aniversários",renderAnos);safe("Alertas",renderAlerts)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cakegot]");if(!t)return;e.preventDefault();const [bid,cid,on]=t.dataset.cakegot.split("|");cakeGot(bid,cid,on==="1")});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-cakeask]");if(!t)return;e.preventDefault();e.stopPropagation();const [bid,cid]=t.dataset.cakeask.split("|"), b=bdays().find(x=>x.id===bid), c=b&&cakesOf(b).find(x=>x.id===cid);if(!c)return;
+  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">🎂 ${esc(c.nome||"Bolo")} de ${esc(b.name)}</div><div class="rdm">${[c.past,c.hora?"às "+c.hora:"",c.quem].filter(Boolean).map(esc).join(" · ")||"Bolo de aniversário"}</div>
+    <button type="button" class="btn" data-ck="got" style="background:#34c759">✓ Já levantei</button><button type="button" class="btn ghost" data-ck="see">Ver o bolo</button><button type="button" class="btn ghost" data-ck="x">Fechar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ck]");if(ev.target!==o&&!q)return;o.remove();if(!q||q.dataset.ck==="x")return;if(q.dataset.ck==="got")cakeGot(bid,cid,true);else{show("anos");cakeOpen=bid+"|"+cid;safe("Aniversários",renderAnos)}});document.body.appendChild(o)},true);
 const cakeBtn=(b,c)=>{const d=cakeDate(c), fut=d&&d>=new Date(new Date().toDateString());
-  return`<button type="button" class="cakeb" data-cakeopen="${b.id}|${c.id}">🎂 <b>${esc(c.nome||"Bolo")}</b><span>${(c.enc?"Encomendado":"Por encomendar")+(fut?` · levantar ${d.toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}${c.hora?" às "+c.hora:""}`:"")}</span>${CIMG.some(([k])=>c[k])?"🖼️":""}<i>›</i></button>`};
+  return`<button type="button" class="cakeb" data-cakeopen="${b.id}|${c.id}">🎂 <b>${esc(c.nome||"Bolo")}</b><span>${c.got?"Levantado ✓":((c.enc?"Encomendado":"Por encomendar")+(fut?` · levantar ${d.toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}${c.hora?" às "+c.hora:""}`:""))}</span>${CIMG.some(([k])=>c[k])?"🖼️":""}<i>›</i></button>`};
 function bdNext(b){const t=new Date(), y=t.getFullYear(), [m,d]=b.md.split("-").map(Number);let n=new Date(y,m-1,d);
   const td=new Date(y,t.getMonth(),t.getDate());if(n<td)n=new Date(y+1,m-1,d);const days=Math.round((n-td)/864e5);return{date:n,days,age:b.year?n.getFullYear()-b.year:null}}
 function anosForm(b){const v=x=>x==null?"":esc(x), [m,d]=b?b.md.split("-").map(Number):[0,0];
@@ -6203,7 +6212,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v305";
+const APPV="casa-v306";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
