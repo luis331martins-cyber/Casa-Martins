@@ -2909,6 +2909,12 @@ function renderBills(){
       ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
       ${isInc(b)||isBud(b)||!b.acm?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
+      ${isInc(b)||isBud(b)?"":(()=>{const P=b.part||{};return`<details class="wide autod"${P.v?" open":""}><summary>➗ Dividir esta conta <small>${P.v?`${esc(P.n||"parte")} ${eur(+P.v)}/mês`:"ex.: mensalidade + prestação do telemóvel"}</small></summary><div class="autob" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label class="f" style="grid-column:1/-1">Parte que vem dentro desta conta<input name="pn" value="${esc(P.n||"")}" placeholder="ex.: iPhone"></label>
+        <label class="f">Valor por mês (€)<input name="pv" type="number" step="0.01" min="0" inputmode="decimal" value="${P.v||""}" placeholder="ex.: 41,00"></label>
+        <label class="f">Nº de prestações<input name="pc" type="number" min="0" max="120" inputmode="numeric" value="${P.cnt||""}" placeholder="vazio = sem fim"></label>
+        <label class="f" style="grid-column:1/-1">1.ª prestação<input name="pf" type="month" value="${esc(P.first||ymOf(new Date()))}"></label>
+        <p class="note" style="margin:0;grid-column:1/-1">O resto do valor da conta conta como ${esc(b.name)}. Deixa o valor vazio para não dividir.</p></div></details>`})()}
       ${isInc(b)||isBud(b)?"":`<label class="f wide">📟 Dar a contagem até ao dia<input name="rd" type="number" min="0" max="31" inputmode="numeric" value="${b.rd||""}" placeholder="Sem contagem (ex.: água, luz, gás)"></label>`}
       <p class="note wide" style="margin:0">Os meses antes de ${mName} não mudam.</p>
       <button class="btn" type="submit">Guardar</button>
@@ -2971,12 +2977,16 @@ function renderBills(){
       <div class="amt"><button type="button" class="amtfix" data-fixval="${b.id}" aria-label="Corrigir o valor">+${eur(monthAmt(b,k))}</button>${g?`<button type="button" class="paybtn undo" data-unrecv="${b.id}">Recebida ✓</button>`:`<button type="button" class="paybtn" data-recv="${b.id}">✓ Recebido</button>`}</div>${cxl?`<div class="cxls">${cxl}</div>`:""}
     </div>`};
   document.getElementById("incomes").innerHTML=inc.length?inc.map(incRow).join(""):`<div class="empty">Ainda não há receitas.<br>Toca em <b>＋ Adicionar</b> para juntar os ordenados e veres quanto sobra.</div>`;
+  /* Pedido (06/11): uma conta pode trazer uma parte fixa dentro (ex.: Vodafone = mensalidade + prestação do iPhone) */
+  const partTxt=(b,k)=>{const P=b.part;if(!P||!P.v)return"";if(P.first&&k<P.first)return"";const st=P.cnt?frState(P.cnt,P.first,+P.v):null;
+    if(st&&mIdx(k)>mIdx(st.last))return` · <span class="warn">${esc(P.n)} terminou (${mLong(st.last)}) — confirma o valor</span>`;
+    const rest=Math.round((monthAmt(b,k)-P.v)*100)/100;return`<br>📱 ${esc(P.n)} ${eur(+P.v)}${st?` (${st.paid}/${st.n} · até ${mLong(st.last).replace(" de "," ")})`:""} + ${esc(b.name)} ${eur(rest)}`};
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.askPay?"Uma vez por mês · marca quando comprares":b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
     if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
-    when+=only;
+    when+=only+partTxt(b,k);
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
     if(ln){const st=loanState(ln);when+=` · <span class="loanlink" data-goloan="${ln.id}" role="link">Crédito ${st.paid}/${st.n} ›</span>`}
     const cd=typeof cards==="function"&&cards().find(c=>c.bill===b.id);
@@ -3318,6 +3328,7 @@ document.addEventListener("submit",e=>{
   if(e.target.emp){const em=parseFloat(e.target.emp.value);if(em>0)nb.emp=Math.round(em*100)/100;else delete nb.emp}
   if(e.target.askd){const ad=parseInt(e.target.askd.value)||0;nb.askDay=ad>0?Math.min(ad,31):0}
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
+  if(e.target.pv){const pv=parseFloat(String(e.target.pv.value).replace(",","."));if(pv>0)nb.part={n:e.target.pn.value.trim()||"Prestação",v:Math.round(pv*100)/100,...(+e.target.pc.value>0?{cnt:Math.round(+e.target.pc.value)}:{}),first:e.target.pf.value||ymOf(new Date())};else delete nb.part}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
   if(e.target.acc){const a=e.target.acc.value;if(a!==(b.acc||"")){if(a&&isBud(nb)){nb.acc=a}else if(a){nb.acc=a;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}else{delete nb.acc;delete nb.accd}}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
@@ -6182,7 +6193,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v303";
+const APPV="casa-v304";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
