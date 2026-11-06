@@ -3429,6 +3429,16 @@ function renderCal(){
   document.getElementById("dayList").innerHTML=rows||`<p class="note" style="margin:0">Nada marcado para este dia.</p>`;
   renderAlerts();
 }
+/* Pedido (06/11): no dia do aniversário, tocar no alerta faz uma festa com confetis */
+function party(name){if(document.getElementById("partyCv"))return;const cv=document.createElement("canvas");cv.id="partyCv";cv.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none";
+  const W=cv.width=innerWidth*devicePixelRatio, H=cv.height=innerHeight*devicePixelRatio, g=cv.getContext("2d"), C=["#ff3b30","#ff9500","#ffcc00","#34c759","#0a84ff","#af52de","#ff2d55"];
+  const P=Array.from({length:180},(_,i)=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*W*.018,vy:-Math.random()*H*.018-H*.006,r:(6+Math.random()*8)*devicePixelRatio,a:Math.random()*6,va:(Math.random()-.5)*.3,c:C[i%C.length],s:Math.random()<.3}));
+  const msg=document.createElement("div");msg.textContent=`🎉 Parabéns${name?", "+name:""}! 🎂`;msg.style.cssText="position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:61;pointer-events:none;font-size:26px;font-weight:800;color:#fff;padding:14px 22px;border-radius:22px;background:linear-gradient(135deg,#ff2d55,#af52de);box-shadow:0 10px 30px rgba(175,82,222,.45);white-space:nowrap;transition:transform .5s cubic-bezier(.2,1.6,.4,1),opacity .6s";
+  document.body.append(cv,msg);requestAnimationFrame(()=>msg.style.transform="translate(-50%,-50%) scale(1)");try{navigator.vibrate&&navigator.vibrate([30,40,30])}catch(e){}
+  const t0=performance.now();(function f(t){const el=t-t0;g.clearRect(0,0,W,H);P.forEach(p=>{p.vy+=H*.00045;p.vx*=.995;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;g.save();g.translate(p.x,p.y);g.rotate(p.a);g.fillStyle=p.c;g.globalAlpha=Math.max(0,1-el/3600);
+    if(p.s){g.beginPath();g.arc(0,0,p.r/2,0,7);g.fill()}else g.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);g.restore()});
+    if(el>1800)msg.style.opacity="0";if(el<3800)requestAnimationFrame(f);else{cv.remove();msg.remove()}})(t0)}
+document.addEventListener("click",e=>{const t=e.target.closest('[data-go="anos"]');if(!t)return;const m=(t.textContent||"").match(/Hoje é o aniversário de ([^\n·]+?)(?:\s{2,}|Dá os parabéns|$)/);if(m)setTimeout(()=>party(m[1].trim()),60)},true);
 /* Estilo dos alertas no Início (cada telemóvel escolhe na ⚙️): A lista de cartões, B um só cartão estilo iPhone, C quadrados */
 const alStyle=()=>{try{return localStorage.getItem("casa-alertas")||"C"}catch(e){return"C"}};
 const ALI={euro:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10.5h8M5 13.5h8"/>',bank:'<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3.5 19.5h17"/>',
@@ -6193,7 +6203,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v304";
+const APPV="casa-v305";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
