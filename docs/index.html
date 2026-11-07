@@ -1200,6 +1200,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <button class="app" data-go="escola"><span class="ico i-esc ios" style="--g1:#d7e8ff;--g2:#6aa8ff;--v1:#3a78c9;--v2:#1f4f8f"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mBag" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><rect x="8" y="13" width="8" height="4.6" rx="1.2" fill="#000"/><rect x="8" y="14.8" width="8" height="1" fill="#fff"/></mask></defs><path d="M9.5 4.2a2.5 2.5 0 0 1 5 0v1h-1.6v-1a.9.9 0 0 0-1.8 0v1H9.5z"/><path mask="url(#mBag)" d="M8 5.6h8a4 4 0 0 1 4 4V19a2.4 2.4 0 0 1-2.4 2.4H6.4A2.4 2.4 0 0 1 4 19V9.6a4 4 0 0 1 4-4z"/></svg><img class="e3d" src="icons/3d/escola.webp" alt="" draggable="false"><span class="nbadge" id="escolaBadge" hidden></span></span><span class="lbl">Escola</span></button>
         <button class="app" data-go="anos"><span class="ico i-anos ios" style="--g1:#ffd9e2;--g2:#ff8aa6;--v1:#d4486a;--v2:#9b2445"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="mCake" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M4.6 14.6c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0" fill="none" stroke="#000" stroke-width="1.4" stroke-linecap="round"/></mask></defs><path d="M12 2.2c1 1.1 1.5 2 1.5 2.7a1.5 1.5 0 0 1-3 0c0-.7.5-1.6 1.5-2.7z"/><rect x="11.2" y="6.9" width="1.6" height="3.4" rx=".6"/><path mask="url(#mCake)" d="M5 11.2h14a1.5 1.5 0 0 1 1.5 1.5V19H3.5v-6.3A1.5 1.5 0 0 1 5 11.2z"/><rect x="2.3" y="19.6" width="19.4" height="2" rx=".9"/></svg><img class="e3d" src="icons/3d/anos.webp" alt="" draggable="false"><span class="nbadge" id="anosBadge" hidden></span></span><span class="lbl">Aniversários</span></button>
         <button class="app" data-go="viagens"><span class="ico i-trip ios" style="--g1:#d3ecff;--g2:#6cb8ff;--v1:#3d97e0;--v2:#1d5fa3"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 3.1c.8.8.6 2.1-.3 3l-3.6 3.5 2 8.7c.1.4 0 .8-.3 1.1l-.9.9c-.4.4-1.1.3-1.4-.2l-3.6-6.5-3.4 3.3.4 2.7c0 .3 0 .6-.3.8l-.7.7c-.4.4-1 .3-1.3-.2l-1.6-3-3-1.6c-.5-.3-.6-.9-.2-1.3l.7-.7c.2-.2.5-.3.8-.3l2.7.4 3.3-3.4-6.5-3.6c-.5-.3-.6-1-.2-1.4l.9-.9c.3-.3.7-.4 1.1-.3l8.7 2 3.5-3.6c.9-.9 2.2-1.1 3-.3z"/></svg><img class="e3d" src="icons/3d/viagens.webp" alt="" draggable="false"><span class="nbadge" id="viagensBadge" hidden></span></span><span class="lbl">Viagens</span></button>
+        <button class="app" data-go="eventos"><span class="ico i-evt ios" style="--g1:#ffe2f0;--g2:#ff8ac2;--v1:#d6338a;--v2:#9b1f60"><svg class="sf" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.2 20.8 8 7.5l8.5 8.5zM14 3.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3zM19.5 9.5l.6 1.2 1.3.2-.9.9.2 1.3-1.2-.6-1.2.6.2-1.3-.9-.9 1.3-.2zM10.5 3.2c1 .9 1.2 2.4.5 3.6M20.8 13.5c-.9-1-2.4-1.2-3.6-.5"/></svg><img class="e3d" src="icons/3d/eventos.webp" alt="" draggable="false"><span class="nbadge" id="eventosBadge" hidden></span></span><span class="lbl">Eventos</span></button>
       </div>
       <h3 data-fh="patrimonio">Património</h3>
       <div class="apps" data-fold="patrimonio" data-fname="Património">
@@ -1537,6 +1538,15 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <label class="f wide">Lista da mala habitual (uma coisa por linha; “Maria: pijama” para dizer de quem é)<textarea name="t" rows="10"></textarea></label>
       <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" id="tplCancel">Cancelar</button></form>
     <p class="note" style="margin:0">Cada viagem nova começa com a lista da mala habitual. As datas vão para o calendário e a app avisa uma semana antes e na véspera, com quanto falta arrumar.</p>
+  </section>
+  <section id="tab-eventos" class="group" style="gap:12px" hidden>
+    <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Eventos</span><span></span></nav>
+    <h1 class="large">Eventos</h1>
+    <div id="evtList"></div>
+    <button class="btn ghost" type="button" id="addEvt">+ Novo evento</button>
+    <div id="evtNew"></div>
+    <div id="evtPast"></div>
+    <p class="note" style="margin:0">Festas, jantares, casamentos, batizados… a que vamos. Vão para o calendário e a app avisa na véspera e no dia (e lembra o presente, se ainda não estiver comprado).</p>
   </section>
 
   <section id="tab-casa" class="group" style="gap:12px" hidden>
@@ -2420,8 +2430,8 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
       upsert(n);put(n);shopEdit=editItem=n.id;render();toast(`${n.name} juntado à lista · acerta os detalhes`);setTimeout(()=>{const e=document.querySelector(".sedit");if(e)e.scrollIntoView({block:"start",behavior:"smooth"})},60)}
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;if(addToCart){addToCart=false;f.n.placeholder="＋ Juntar à lista (ex.: atum, pilhas…)"}})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
-const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
-const SR_KIND={med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
+const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",eventos:"Eventos",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
+const SR_KIND={evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
 const srNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 let srFrom="inicio";
 function srIndex(){const R=[];Object.entries(SR_TABS).forEach(([t,n])=>{if(document.getElementById("tab-"+t))R.push({t:n,s:"Abrir",ic:"📂",go:t})});
@@ -2530,12 +2540,12 @@ function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().so
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)||boxBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
-function show(tab){if(tab==="carne"){tab="despensa";catSel.p="";}["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
+function show(tab){if(tab==="carne"){tab="despensa";catSel.p="";}["login","setup","inicio","chat","definicoes","despensa","carne","lista","comer","plano","meds","creditos","cartoes","poupancas","anos","escola","viagens","eventos","casa","graficos","carro","docs","saude","videos","jogos","jogo","snake","cswitch","g2048","sudoku","galo","memoria","despesas","calendario"].forEach(x=>{document.getElementById("tab-"+x).hidden=x!==tab});window.scrollTo(0,0);if(tab==="despesas")requestAnimationFrame(fitTotals);
   setTimeout(()=>{if(tab!=="videos"&&typeof stopVideo==="function")stopVideo();if(tab==="jogo")safe("Jogo",gOpen);if(tab==="snake")safe("Snake",sOpen);else if(typeof sPause==="function")sPause();if(tab==="cswitch")safe("Color Switch",csOpen);else if(typeof csPause==="function")csPause();
-    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="casa")safe("Casa",renderHome);if(tab==="viagens")safe("Viagens",renderTrips);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
+    if(tab==="jogos")safe("Jogos",renderGames);if(tab==="g2048")safe("2048",tOpen);if(tab==="sudoku")safe("Sudoku",kOpen);else if(typeof kStop==="function")kStop();if(tab==="galo")safe("Galo",xOpen);if(tab==="memoria")safe("Memória",mOpen);if(tab==="meds")safe("Medicamentos",renderMeds);if(tab==="plano")safe("Plano",renderPlan);if(tab==="creditos")safe("Créditos",renderLoans);if(tab==="cartoes")safe("Cartões",renderCards);if(tab==="anos")safe("Aniversários",renderAnos);if(tab==="casa")safe("Casa",renderHome);if(tab==="viagens")safe("Viagens",renderTrips);if(tab==="eventos")safe("Eventos",renderEvts);if(tab==="escola")safe("Escola",renderEscola);if(tab==="poupancas")safe("Poupanças",renderSavs);if(tab==="graficos")safe("Gráficos",renderChart);if(tab==="carro")safe("Carro",renderCars);if(tab==="docs")safe("Documentos",renderDocs);if(tab==="saude")safe("Saúde",renderHealth);if(tab==="videos")safe("Vídeos",renderVideos);safe("Mensagens",chatOpened)},0)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
 /* Atalhos do ícone e das notificações: ...#compras, #calendario, etc. */
-const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#casa":"casa","#viagens":"viagens","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
+const ROUTES={"#comer":"comer","#plano":"plano","#medicamentos":"meds","#videos":"videos","#jogo":"jogo","#snake":"snake","#jogos":"jogos","#creditos":"creditos","#cartoes":"cartoes","#aniversarios":"anos","#anos":"anos","#escola":"escola","#casa":"casa","#viagens":"viagens","#eventos":"eventos","#poupancas":"poupancas","#graficos":"graficos","#carro":"carro","#documentos":"docs","#docs":"docs","#saude":"saude","#chat":"chat","#mensagens":"chat","#inicio":"inicio","#definicoes":"definicoes","#despensa":"despensa","#carne":"carne","#compras":"lista","#despesas":"despesas","#contas":"despesas","#calendario":"calendario"};
 /* Links para juntar dados de uma vez (os dados vêm só no link, não no código):
    #juntar-aula:Nome|09:15|17:00|Quem   → aula de segunda a sexta
    #juntar-material:item1|item2|…        → material já comprado */
@@ -3080,7 +3090,7 @@ function renderBills(){
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
   document.getElementById("addAcc").hidden=editAcc==="new";
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
-  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);safe("Casa",renderHome);safe("Viagens",renderTrips);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
+  if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Eventos",renderEvts);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);safe("Casa",renderHome);safe("Viagens",renderTrips);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
   document.getElementById("billChips").innerHTML=Q.filter(n=>!have.has(n.toLowerCase())).map(n=>`<button type="button" class="chip" data-bq="${esc(n)}">+ ${esc(n)}</button>`).join("")||`<span class="note">Já tens as habituais.</span>`;
 }
@@ -3453,7 +3463,7 @@ function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(a.bk)
   /* prazos (seguro, garantias, carro, documentos, cartões): vermelho se já passou */
   const late=a.cls==="bad", dl={casa:[/seguro/i.test(n)?"shield":"house","#a2845e"],carro:["car","#30b0c7"],docs:["idc","#5e5ce6"],cartoes:["card","#af52de"],poupancas:["cash","#34c759"]}[a.go];
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
-  return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
+  return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],eventos:["gift","#ff2d87"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
 function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
@@ -3486,6 +3496,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",acr:1,lev:x.b.id+"|"+x.k,name:`Levantar ${eur(x.v)}`,meta:`${x.v<x.tot-0.004?`Falta de ${eur(x.tot)} · `:"Para a empresa · "}${x.b.name} de fim de ${mFull(prevK(x.k)).split(" de ")[0]}`}));
   if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>1)return;
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
+  if(typeof evts==="function")evts().forEach(x=>{const d=x.date?daysTo(x.date):null;if(d==null||d<0||d>1)return;
+    A.push({o:d===0?1:2,cls:d<=1?"warn":"",dot:"bl",go:"eventos",name:`${evtEmo(x.type)} ${x.name} ${d===0?"é hoje":"é amanhã"}${x.time?" às "+x.time:""}`,meta:[x.place,x.gift&&!x.giftOk?"🎁 falta o presente":""].filter(Boolean).join(" · ")||x.type});});
   if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>1)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
     A.push({o:d<=1?1:3,cls:d<=1&&n?"warn":"",dot:"bl",go:"viagens",name:`✈️ ${t.name} ${d===0?"é hoje":d===1?"é amanhã":`daqui a ${d} dias`}`,meta:P.length?(n?`Falta arrumar ${n} de ${P.length} coisas na mala`:"Mala pronta ✓"):"Sem lista da mala"})});
   /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
@@ -4634,6 +4646,57 @@ function renderTrips(){const el=document.getElementById("tripList");if(!el)retur
   const bb=document.getElementById("viagensBadge");if(bb){const n=up.filter(t=>{const d=tripDays(t);return d!=null&&d<=1&&d>=0&&(t.pack||[]).some(x=>!x.done)}).length;bb.hidden=!n;bb.textContent=n}}
 function tripPut(t){putBill(t);renderTrips()}
 const tripById=id=>trips().find(x=>x.id===id);
+/* ---------- Eventos (kind:"evento") — Pedido (07/11): festas e marcações a que vamos ----------
+   {name, type, date, time, place, who, gift, giftOk, giftV, notes, ev (calendário)} */
+const EVT_TYPES=[["Aniversário","🎂"],["Festa","🎉"],["Jantar","🍽️"],["Casamento","💍"],["Batizado","👶"],["Escola","🏫"],["Outro","📌"]];
+const evts=()=>bills.filter(b=>b.kind==="evento"), evtById=id=>evts().find(x=>x.id===id), evtEmo=t=>(EVT_TYPES.find(x=>x[0]===t)||EVT_TYPES[6])[1];
+let editEvt="", openEvt="";
+function evtForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" data-evtform="${x?x.id:"new"}" autocomplete="off">
+    <label class="f wide">O quê<input name="n" required value="${x?esc(x.name):""}" placeholder="ex.: Aniversário do Tomás" autocapitalize="sentences"></label>
+    <label class="f">Tipo<select name="t">${EVT_TYPES.map(([t,e])=>`<option value="${t}"${(x?x.type:"Aniversário")===t?" selected":""}>${e} ${t}</option>`).join("")}</select></label>
+    <label class="f">Quem vai<input name="w" value="${x?v(x.who):""}" placeholder="ex.: Maria, todos" autocapitalize="words"></label>
+    <label class="f">Dia<input name="d" type="date" required value="${x?v(x.date):""}"></label>
+    <label class="f">Hora<input name="h" type="time" value="${x?v(x.time):""}"></label>
+    <label class="f wide">Onde<input name="p" value="${x?v(x.place):""}" placeholder="ex.: Parque infantil Kids Fun, Setúbal" autocapitalize="sentences"></label>
+    <label class="f wide">Presente<input name="g" value="${x?v(x.gift):""}" placeholder="opcional (ex.: Lego, 20 €)"></label>
+    <label class="f">Gastei no presente (€)<input name="gv" type="number" step="0.01" min="0" inputmode="decimal" value="${x?v(x.giftV):""}" placeholder="opcional"></label>
+    <label class="tick"><input type="checkbox" class="switch" name="gok"${x&&x.giftOk?" checked":""}> Presente comprado</label>
+    <label class="tick wide"><input type="checkbox" class="switch" name="cal"${!x||x.ev?" checked":""}> Pôr no calendário</label>
+    <label class="f wide">Notas<input name="x" value="${x?v(x.notes):""}" placeholder="ex.: levar fato de banho, confirmar até dia 10"></label>
+    <button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-cancelevt="1">Cancelar</button>
+    ${x?`<button class="btn danger wide" type="button" data-delevt="${x.id}">Apagar evento</button>`:""}</form>`}
+function evtCard(x){const d=x.date?daysTo(x.date):null, past=d!=null&&d<0, open=openEvt===x.id;
+  const when=d==null?"":d>1?`Faltam ${d} dias`:d===1?"Amanhã!":d===0?"Hoje! 🎉":"Já foi";
+  const dt=x.date?new Date(x.date+"T12:00").toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"}):"";
+  return`<div class="trip"><button type="button" class="th" data-openevt="${x.id}" aria-expanded="${open}"><span class="tem" style="background:color-mix(in srgb,#ff2d87 14%,transparent)">${evtEmo(x.type)}</span>
+      <span style="min-width:0;flex:1"><span class="tn" style="display:block">${esc(x.name)}</span><span class="tm">${[dt+(x.time?" · "+x.time:""),x.place?esc(x.place):""].filter(Boolean).join(" · ")}</span></span>
+      <span style="text-align:right">${when?`<span class="due ${past?"ok":d<=1?"warn":"ok"}">${when}</span>`:""}${x.gift&&!past?`<span class="tm" style="display:block;margin-top:4px">${x.giftOk?"🎁 ✓":"🎁 por comprar"}</span>`:""}</span></button>
+    ${open?`<div class="tb">
+      ${x.who?`<div class="tm" style="font-size:14px">👥 ${esc(x.who)}</div>`:""}
+      ${x.gift?`<div class="tm" style="font-size:14px">🎁 ${esc(x.gift)}${x.giftV?` · ${eur(+x.giftV)}`:""} · ${x.giftOk?'<span class="ok">comprado ✓</span>':'<b style="color:var(--warn)">por comprar</b>'}</div>`:""}
+      ${x.notes?`<div class="tm" style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}
+      <div class="tacts"><button class="btn ghost" type="button" data-editevt="${x.id}">Editar</button>${x.gift&&!x.giftOk?`<button class="btn ghost" type="button" data-evtgift="${x.id}">🎁 Já comprei</button>`:""}${x.place?`<a class="btn ghost" href="https://maps.apple.com/?q=${encodeURIComponent(x.place)}" target="_blank" rel="noopener">🗺️ Mapa</a>`:""}</div>
+    </div>`:""}</div>`}
+function renderEvts(){const el=document.getElementById("evtList");if(!el)return;const td=ymd(new Date());
+  const L=evts().sort((a,b)=>(a.date||"9").localeCompare(b.date||"9")||(a.time||"").localeCompare(b.time||"")), up=L.filter(x=>(x.date||"9")>=td), past=L.filter(x=>(x.date||"9")<td).reverse();
+  el.innerHTML=up.map(x=>x.id===editEvt?evtForm(x):evtCard(x)).join("")||(editEvt==="new"?"":`<div class="empty">Ainda não há eventos.<br>Toca em “Novo evento” para juntar uma festa, um jantar, um casamento…</div>`);
+  document.getElementById("evtNew").innerHTML=editEvt==="new"?evtForm(null):"";document.getElementById("addEvt").hidden=editEvt==="new";
+  document.getElementById("evtPast").innerHTML=past.length?`<h2 style="margin:8px 0">Já foram</h2>`+past.slice(0,20).map(x=>x.id===editEvt?evtForm(x):evtCard(x)).join(""):"";
+  const bb=document.getElementById("eventosBadge");if(bb){const n=up.filter(x=>{const d=daysTo(x.date);return d!=null&&d<=1}).length;bb.hidden=!n;bb.textContent=n}}
+function evtPut(x){putBill(x);renderEvts()}
+document.getElementById("addEvt").addEventListener("click",()=>{editEvt="new";renderEvts();const f=document.querySelector('[data-evtform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const ds=t.dataset;
+  if(ds.openevt){openEvt=openEvt===ds.openevt?"":ds.openevt;renderEvts()}
+  else if(ds.editevt){editEvt=ds.editevt;renderEvts()}
+  else if(ds.cancelevt){editEvt="";renderEvts()}
+  else if(ds.evtgift){const x=evtById(ds.evtgift);if(x){evtPut({...x,giftOk:true});toast("🎁 Presente comprado ✓")}}
+  else if(ds.delevt){const x=evtById(ds.delevt);if(x&&confirm(`Apagar "${x.name}"?`)){if(x.ev)delEv(x.ev);editEvt="";delBill(x.id);renderEvts();toast("Apagado")}}});
+document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.evtform;if(!id)return;e.preventDefault();const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};
+  const old=id==="new"?null:evtById(id), x={...(old||{}),id:old?old.id:uid(),kind:"evento",name:f.n.value.trim(),type:f.t.value,date:f.d.value};
+  for(const [k,v] of [["time",f.h.value||null],["place",f.p.value.trim()||null],["who",f.w.value.trim()||null],["gift",f.g.value.trim()||null],["giftV",num(f.gv.value)],["giftOk",f.gok.checked||null],["notes",f.x.value.trim()||null]])if(v==null)delete x[k];else x[k]=v;
+  if(f.cal.checked){const evId=x.ev||"e-"+x.id;x.ev=evId;events=events.filter(y=>y.id!==evId);putEv({id:evId,date:x.date,time:x.time||"",title:`${evtEmo(x.type)} ${x.name}${x.place?" · "+x.place:""}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})})}
+  else if(x.ev){delEv(x.ev);delete x.ev}
+  editEvt="";openEvt=x.id;evtPut(x);toast(old?"Evento guardado":"Evento juntado"+(f.cal.checked?" e posto no calendário":""))});
 document.getElementById("addTrip").addEventListener("click",()=>{editTrip="new";renderTrips();const f=document.querySelector('[data-tripform="new"] [name=n]');if(f){f.scrollIntoView({block:"center",behavior:"smooth"});f.focus()}});
 document.getElementById("tplBtn").addEventListener("click",()=>{const f=document.getElementById("tplForm");f.hidden=!f.hidden;if(!f.hidden)f.t.value=packTpl().map(x=>(x.w?x.w+": ":"")+x.t).join("\n")});
 document.getElementById("tplCancel").addEventListener("click",()=>{document.getElementById("tplForm").hidden=true});
@@ -6212,7 +6275,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v306";
+const APPV="casa-v307";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
