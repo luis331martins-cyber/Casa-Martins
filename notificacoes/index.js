@@ -508,6 +508,12 @@ async function house(code, now) {
       confSent.add(key);
       jobs.push(() => send(code, {title: `📟 ${b.name}: hoje é o último dia para dar a contagem`, body: "Já deste? Toca para marcar como dada.", go: "despesas", tag: "contagem-" + b.id}));
     }
+    /* Pedido (09/11): às 21h pergunta o que se gastou hoje em casa, se ninguém respondeu ainda na app (doc "useask") */
+    if (now.min >= 21 * 60 && bs.length) {
+      const ua = bs.find((b) => b.id === "useask"), key = `use|${now.date}`;
+      if (!(ua && ua.last === now.date) && !confSent.has(key)) { confSent.add(key);
+        jobs.push(() => send(code, {title: "🍽️ O que se gastou hoje em casa?", body: "Dá baixa ao que se usou ou acabou (ou diz que não houve nada).", go: "inicio", tag: "useask-" + now.date})); }
+    }
     if (mkC >= START && bs.length) {
       for (const b of bs) {
         if ((b.kind && b.kind !== "income") || !b.dd || !b.day || b.acm === "all" || Math.min(b.day, lastC) !== now.d) continue;
