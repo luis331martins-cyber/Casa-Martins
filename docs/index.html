@@ -2967,8 +2967,8 @@ function renderBills(){
     return `<div class="budget">
       <div class="head">
         <button class="plus" type="button" data-spend="${b.id}" aria-label="Juntar gasto em ${esc(b.name)}">+</button>
-        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${lim?`Gasto ${eur(sp)} de ${eur(lim)}`:"Sem limite"}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}${spentCard(b,k)>0.004?` · 💳 ${eur(spentCard(b,k))} no cartão`:""}</div></span></button>
-        <div class="amt">${!lim?eur(sp):left>=0?eur(left):`<span style="color:var(--bad)">${eur(-left)}</span>`}<small>${!lim?"gasto":left>=0?"disponível":"acima"}</small></div>
+        <button type="button" class="bname wi" data-openbud="${b.id}" aria-expanded="${open}">${billIc(b)}<span class="bt"><div class="name">${esc(b.name)}</div><div class="meta">${lim?(left>=0?`Ainda podes ${eur(left)}`:`<span style="color:var(--bad)">${eur(-left)} acima</span>`):"Sem limite"}${L.length?` · ${L.length} gasto${L.length===1?"":"s"}`:""}${spentCard(b,k)>0.004?` · 💳 ${eur(spentCard(b,k))} no cartão`:""}</div></span></button>
+        <div class="amt">${lim&&left<0?`<span style="color:var(--bad)">${eur(sp)}</span>`:eur(sp)}<small>${lim?`gasto de ${eur(lim).replace(",00","")}`:"gasto"}</small></div>
       </div>
       ${lim?`<div class="minibar${left<0?" over":""}" aria-hidden="true"><span style="width:${pct}%"></span></div>`:""}
       ${open?`${shopSum(L)}${L.map(x=>`${b.id}|${x.i}`===editSpend?spendForm(b,x,"edit"):`<button type="button" class="spend" data-editspend="${b.id}|${x.i}"><span class="t">Dia ${x.d||"—"}</span><span>${x.card?"💳 ":""}${x.ml?`${(MEALS.find(m=>m[0]===x.ml)||["","🍽️"])[1]} ${esc(x.ml)}${x.n?" · ":""}`:""}${x.ml&&!x.n?"":esc(x.n||"Gasto")}${x.abk&&accounts().length>1?` <small style="color:var(--muted)">· ${esc(bankLabel((bills.find(a=>a.id===x.abk)||{}).name||""))}</small>`:""}</span><b>${eur(+x.v||0)}</b><span class="t">›</span></button>`).join("")||`<p class="note" style="margin:0">Ainda não há gastos em ${mName}.</p>`}
@@ -3046,7 +3046,7 @@ function renderBills(){
     document.getElementById("ctiles").innerHTML=tile("pagar","euro","#ff6b5e","#c4231b","A pagar",e0(sum(uB)),uB.length?`${uB.length} por pagar`:"tudo pago ✓",late)+
       /* Receitas: tudo o que entra no mês (recebido + por receber + acerto) */
       tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(inc)+acL.reduce((t,x)=>t+Math.max(0,x.tot),0)),(()=>{const fl=sum(uI)+acL.filter(x=>!x.dn).reduce((t,x)=>t+Math.max(0,x.tot),0);return fl>0.004?`falta receber ${e0(fl)}`:"tudo recebido ✓"})(),0)+
-      tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(bLeft),buds.length?"disponível":"sem gastos do mês",0)+
+      tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(buds.reduce((t,b)=>t+spentOf(b,k),0)),buds.length?(buds.some(b=>monthAmt(b,k)>0)?`ainda podes ${e0(bLeft)}`:"gasto este mês"):"sem gastos do mês",0)+
       (cards().some(isCredit)?(()=>{const G=cardSpendGroups(k), x=cardSpendSum(k), one=G.length===1, g=G[0];
         const sub=one?`fecha ${dShort(g.close)}${g.debit?` · débito ${dShort(g.debit)}`:""}`:G.map(g=>`${esc(g.c.name.split(" ")[0])} ${e0(g.tot)} · ${dShort(g.close)}`).join("<br>");
         return tile("cartao","card","#a78bfa","#5b3fd6",one?`Cartão ${esc(g.c.name)}`:"Cartões",e0(x.tot),sub,0)})():"");
@@ -6287,7 +6287,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v309";
+const APPV="casa-v310";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
