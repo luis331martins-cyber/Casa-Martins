@@ -2883,7 +2883,8 @@ function incShift(){if(incShiftDone)return;incShiftDone=true;
     putBill(n)})}
 /* Nome mostrado no cartão do banco (o nome guardado não muda) */
 const bankLabel=n=>/^\s*cgd\s*$/i.test(n||"")?"C. Geral de Depósitos":n;
-function renderBills(){
+let hbsT=0;
+function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBillSync==="function")safe("Poupança ligada",holdBillSync)},300);
   const k=mKey();
   const label=new Date(viewY,viewM,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"});
   {const [a,b]=houseRange(mKey()), f=d=>`${d.getDate()} ${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
@@ -3588,7 +3589,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4346,7 +4347,7 @@ function renderHolds(){const el=document.getElementById("holdList");if(!el)retur
     return`<button type="button" class="hold" data-edithold="${h.id}" style="--hc:${c}" aria-label="Editar ${esc(h.name)}"><span class="hemo">${hEmo(h.type)}</span>
       <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hm">${esc(meta)}</span></span>
       <span class="hv">${eur(+h.val||0)}${at?`<span class="hm" style="display:block;font-weight:400">${at}</span>`:""}${d!=null&&d<=30?`<span style="display:block">${dueTag(h.end,30)}</span>`:""}</span></button>
-      <div class="holdact"><button type="button" class="back" data-htx="${h.id}">➕ Transferir para aqui</button>${h.auto?`<span>🔁 ${eur(+h.auto.v)} todos os dias ${h.auto.day}${(accounts().find(a=>a.id===h.auto.from)||{}).name?` da ${esc(bankLabel(accounts().find(a=>a.id===h.auto.from).name))}`:""}</span>`:""}</div>`}).join("")
+      <div class="holdact"><button type="button" class="back" data-htx="${h.id}">➕ Transferir para aqui</button><button type="button" class="back" data-hlink="${h.id}">🔗 ${h.bill?"Ligada":"Ligar a uma conta do mês"}</button>${(()=>{const b=h.bill&&bills.find(x=>x.id===h.bill);return b?`<span style="flex-basis:100%">🔗 Soma aqui quando pagas «${esc(b.name)}» (${eur(monthAmt(b,mKey()))})</span>`:""})()}${h.auto?`<span>🔁 ${eur(+h.auto.v)} todos os dias ${h.auto.day}${(accounts().find(a=>a.id===h.auto.from)||{}).name?` da ${esc(bankLabel(accounts().find(a=>a.id===h.auto.from).name))}`:""}</span>`:""}</div>`}).join("")
     +(editHold==="new"?holdForm(null):"")||`<div class="empty">Junta aqui o que tens poupado: conta poupança, depósitos, certificados de aforro, PPR…</div>`;
   if(!L.length&&editHold==="new")el.innerHTML=holdForm(null);
   document.getElementById("addHold").hidden=editHold==="new"}
@@ -4387,6 +4388,26 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-htx]");if(
     putBill(n);renderSavs();const fa=from&&bills.find(x=>x.id===from);
     toast(a==="now"?`+${eur(v)} em ${h.name}${fa?` · ${bankLabel(fa.name)} ${eur(+fa.bal||0)}`:""}${rep?` · repete dia ${day}`:""}`:`Programado: ${eur(v)} todos os dias ${day}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#htV");if(i)i.focus()},50)},true);
+/* Pedido (11/11): ligar a poupança a uma conta das Contas (ex.: "Poupança Maria 50 €"): quando essa conta fica paga num mês, o valor soma na poupança
+   (h.bill, h.billSince "AAAA-MM", h.billDone[mês]=valor); se se desmarcar, tira. O banco desce pela própria conta (✓ Pago / débito direto). */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-hlink]");if(!t)return;e.preventDefault();e.stopPropagation();const h=holds().find(x=>x.id===t.dataset.hlink);if(!h)return;
+  const F=fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")), sug=F.find(b=>noAcc(b.name).includes(noAcc((h.who||h.name).split(" ")[0]))||/poupan/i.test(b.name)), o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">🔗 ${esc(h.name)}</div><div class="rdm">Escolhe a conta das Contas que é a transferência para aqui. Quando a marcares como paga (ou o débito sair), o valor soma nesta poupança.</div>
+    <label class="f">Conta do mês<select id="hlB"><option value="">Nenhuma</option>${F.map(b=>`<option value="${b.id}"${(h.bill||(sug&&sug.id))===b.id?" selected":""}>${esc(b.name)} · ${eur(monthAmt(b,mKey()))}${b.day?" · dia "+b.day:""}</option>`).join("")}</select></label>
+    <label class="tick"><input type="checkbox" class="switch" id="hlNow"${h.bill?"":" checked"}> Contar já o deste mês (se já estiver paga)</label>
+    <button type="button" class="btn" data-hl="ok">Guardar</button><button type="button" class="btn ghost" data-hl="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-hl]");if(ev.target!==o&&!q)return;o.remove();if(!q||q.dataset.hl==="x")return;
+    const bid=o.querySelector("#hlB").value, now=o.querySelector("#hlNow").checked, mk=ymOf(new Date()), n={...h};
+    if(!bid){delete n.bill;delete n.billSince;delete n.billDone;putBill(n);renderSavs();toast("Desligada");return}
+    if(n.bill!==bid){n.bill=bid;n.billSince=now?mk:ymOf(new Date(new Date().getFullYear(),new Date().getMonth()+1,1));n.billDone={}}
+    if(n.auto){delete n.auto;setTimeout(()=>toast("A transferência mensal da poupança foi parada: agora conta pela conta do mês"),1200)}
+    putBill(n);holdBillSync();renderSavs();toast("Ligada ✓")});document.body.appendChild(o)},true);
+function holdBillSync(){const td=new Date(), ks=[ymOf(new Date(td.getFullYear(),td.getMonth()-1,1)),ymOf(td)];
+  holds().filter(h=>h.bill).forEach(h=>{const b=bills.find(x=>x.id===h.bill);if(!b)return;let n=null;const done={...(h.billDone||{})};
+    ks.forEach(k=>{if(h.billSince&&k<h.billSince)return;const p=isPaid(b,k), had=done[k]!=null;
+      if(p&&!had){const v=Math.round(monthAmt(b,k)*100)/100;if(!(v>0))return;n=n||{...h};n.val=Math.round(((+n.val||0)+v)*100)/100;n.valAt=Date.now();n.log=[...(n.log||[]),{v,d:ymd(td),bill:b.id}].slice(-60);done[k]=v}
+      else if(!p&&had){n=n||{...h};n.val=Math.round(((+n.val||0)-done[k])*100)/100;n.valAt=Date.now();delete done[k]}});
+    if(n){n.billDone=done;putBill(n)}})}
 /* aplica as transferências mensais cujo dia já chegou (uma vez por mês; a marca fica no documento, por isso não repete noutro telemóvel) */
 let holdAutoDone=false;
 function holdAuto(snap){if(holdAutoDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;holdAutoDone=true;const t=new Date(), mk=ymOf(t);
@@ -6258,7 +6279,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6320,7 +6341,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v311";
+const APPV="casa-v312";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
