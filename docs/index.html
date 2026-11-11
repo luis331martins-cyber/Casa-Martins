@@ -3825,7 +3825,8 @@ function renderMeds(){
     const dl=medDays(m), low=medLow(m);
     return `<div class="item" style="flex-wrap:wrap"><button type="button" class="bname" data-editmed="${m.id}" aria-label="Editar ${esc(m.name)}"><div class="name">${esc(m.name)} <span class="tag">${esc(m.who)}</span></div>
       <div class="meta">${(()=>{const P=medPlan(m,ymd(now));return m.phases&&m.phases.length?esc([m.dose,P?`Fase ${P.idx+1} de ${P.n}: ${String(P.per).replace(".",",")} às ${P.times.join(", ")}${P.until?" até "+fmtD(P.until):""}`:"fases terminadas"].filter(Boolean).join(" · ")):[m.dose,(m.times||[]).join(", "),st].filter(Boolean).map(esc).join(" · ")})()}${m.stock!=null?` · <span style="${low?"color:var(--bad);font-weight:600":""}">restam ${String(m.stock).replace(".",",")}${dl!=null?` (dá para ${dl} dia${dl===1?"":"s"})`:""}</span>`:""}${low?" · nas Compras":""}${m.notes?"<br>"+esc(m.notes):""}</div></button>
-      ${m.box?`<button type="button" class="bump" data-medbuy="${m.id}" style="margin-left:auto;white-space:nowrap">+ Comprei 1 caixa (${m.box})</button>`:""}</div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
+      ${m.box&&medActive(m,d)?`<button type="button" class="bump" data-medbuy="${m.id}" style="margin-left:auto;white-space:nowrap">+ Comprei 1 caixa (${m.box})</button>`:""}
+      ${medActive(m,d)||m.start>d?`<button type="button" class="bump" data-medend="${m.id}" style="${m.box?"":"margin-left:auto;"}white-space:nowrap">✓ Já acabei</button>`:m.doneAt?`<button type="button" class="bump" data-medagain="${m.id}" style="margin-left:auto;white-space:nowrap">↩︎ Voltar a tomar</button>`:""}</div>`}).join(""):`<div class="empty">Ainda não há medicamentos${medWho?" para "+esc(medWho):""}.</div>`;
   document.getElementById("medNew").innerHTML=editMed==="new"?medForm(null):"";
   document.getElementById("addMed").hidden=editMed==="new";
 }
@@ -3835,6 +3836,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   else if(t.dataset.editmed){editMed=t.dataset.editmed;renderMeds()}
   else if(t.dataset.cancelmed){editMed="";renderMeds()}
   else if(t.dataset.medwho){const f=t.closest("form");if(f)f.w.value=t.dataset.medwho}
+  /* Pedido (11/11): "Já acabei" termina o medicamento hoje (deixa de aparecer nas tomas, avisos e compras); "Voltar a tomar" desfaz */
+  else if(t.dataset.medend){const m=meds().find(x=>x.id===t.dataset.medend);if(m&&confirm(`${m.who}: acabou "${m.name}"? Deixa de aparecer nas tomas e nos avisos.`)){const y=ymd(new Date(Date.now()-864e5));
+    putBill({...m,end:m.start&&m.start>y?m.start:y,doneAt:ymd(new Date()),...(m.end?{endWas:m.end}:{})});renderMeds();if(typeof medShopSync==="function")medShopSync();safe("Já tomou?",renderTakeAsk);toast(`✓ ${m.name} terminado`)}}
+  else if(t.dataset.medagain){const m=meds().find(x=>x.id===t.dataset.medagain);if(m){const n={...m};delete n.doneAt;if(n.endWas){n.end=n.endWas;delete n.endWas}else n.end="";putBill(n);renderMeds();toast(`${m.name}: volta a contar`)}}
   else if(t.dataset.delmed){const m=meds().find(x=>x.id===t.dataset.delmed);if(m&&confirm(`Apagar "${m.name}" (${m.who})?`)){editMed="";delBill(m.id);renderMeds();toast(m.name+" apagado")}}
 });
 document.addEventListener("change",e=>{const v=e.target.dataset&&e.target.dataset.take;if(!v)return;const [id,t]=v.split("|");medTake(id,t,e.target.checked)});
@@ -6351,7 +6356,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v313";
+const APPV="casa-v314";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
