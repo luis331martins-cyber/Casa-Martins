@@ -824,6 +824,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .acdonerow{width:100%;font:inherit;color:var(--fg);grid-template-columns:auto 1fr auto!important}
 .mlchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.mlc{text-transform:none;letter-spacing:0}.mlc input{position:absolute;opacity:0;pointer-events:none}.mlc span{display:inline-block;padding:8px 14px;border-radius:999px;background:var(--fill);color:var(--fg);font-size:15px;font-weight:600;cursor:pointer}.mlc input:checked+span{background:var(--accent);color:#fff}
 .amtfix{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px;cursor:pointer}
+.holdact{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:-4px 4px 10px;font-size:13px;color:var(--muted)}
 .cfrbox{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--fill));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
 .cfrh{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 8px;background:none;border:0;padding:0;font:inherit;color:var(--fg);text-align:left;width:100%}
 .cfrh .cfrt{display:flex;align-items:center;gap:6px}.cfrh .mcount{font-size:12px;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-weight:700}
@@ -3587,7 +3588,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4344,7 +4345,8 @@ function renderHolds(){const el=document.getElementById("holdList");if(!el)retur
     const at=h.valAt?(daysTo(ymd(new Date(h.valAt)))===0?"atualizado hoje":`atualizado há ${-daysTo(ymd(new Date(h.valAt)))} dias`):"";
     return`<button type="button" class="hold" data-edithold="${h.id}" style="--hc:${c}" aria-label="Editar ${esc(h.name)}"><span class="hemo">${hEmo(h.type)}</span>
       <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hm">${esc(meta)}</span></span>
-      <span class="hv">${eur(+h.val||0)}${at?`<span class="hm" style="display:block;font-weight:400">${at}</span>`:""}${d!=null&&d<=30?`<span style="display:block">${dueTag(h.end,30)}</span>`:""}</span></button>`}).join("")
+      <span class="hv">${eur(+h.val||0)}${at?`<span class="hm" style="display:block;font-weight:400">${at}</span>`:""}${d!=null&&d<=30?`<span style="display:block">${dueTag(h.end,30)}</span>`:""}</span></button>
+      <div class="holdact"><button type="button" class="back" data-htx="${h.id}">➕ Transferir para aqui</button>${h.auto?`<span>🔁 ${eur(+h.auto.v)} todos os dias ${h.auto.day}${(accounts().find(a=>a.id===h.auto.from)||{}).name?` da ${esc(bankLabel(accounts().find(a=>a.id===h.auto.from).name))}`:""}</span>`:""}</div>`}).join("")
     +(editHold==="new"?holdForm(null):"")||`<div class="empty">Junta aqui o que tens poupado: conta poupança, depósitos, certificados de aforro, PPR…</div>`;
   if(!L.length&&editHold==="new")el.innerHTML=holdForm(null);
   document.getElementById("addHold").hidden=editHold==="new"}
@@ -4360,6 +4362,37 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.holdform;if(!id
   if(!old||old.val!==h.val)h.valAt=Date.now();
   for(const [k,v] of [["who",f.w.value||null],["rate",num(f.r.value)],["end",f.e.value||null],["color",f.c.value||null]])if(v==null)delete h[k];else h[k]=v;
   editHold="";putBill(h);renderSavs();toast("Guardado")});
+/* Pedido (11/11): transferir da conta à ordem para uma poupança (ex.: conta poupança da Maria); pode repetir todos os meses no mesmo dia.
+   h.auto={v,from,day,since "AAAA-MM"}; h.autoDone[mês]=true; h.log=[{v,d,from}] */
+function holdMove(h,v,from,d,auto){const a=from&&bills.find(x=>x.id===from);if(a)putBill({...a,bal:Math.round(((+a.bal||0)-v)*100)/100,at:Date.now()});
+  return{...h,val:Math.round(((+h.val||0)+v)*100)/100,valAt:Date.now(),log:[...(h.log||[]),{v,d,...(from?{from}:{}),...(auto?{auto:1}:{})}].slice(-60)}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-htx]");if(!t)return;e.preventDefault();e.stopPropagation();const h=holds().find(x=>x.id===t.dataset.htx);if(!h)return;
+  const A=accounts(), def=(h.auto&&h.auto.from)||((A.find(a=>/cgd|caixa/i.test(a.name))||A[0]||{}).id||""), o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">➕ Transferir para ${esc(h.name)}</div><div class="rdm">Agora tem ${eur(+h.val||0)}${h.auto?` · já transferes ${eur(+h.auto.v)} todos os dias ${h.auto.day}`:""}</div>
+    <label class="f">Valor (€)<input id="htV" type="text" inputmode="decimal" value="${h.auto?String(h.auto.v).replace(".",","):""}" placeholder="ex.: 50"></label>
+    ${A.length?`<label class="f">Sai da conta<select id="htA">${A.map(a=>`<option value="${a.id}"${a.id===def?" selected":""}>${esc(bankLabel(a.name))} · ${eur(+a.bal||0)}</option>`).join("")}<option value="">Não descontar</option></select></label>`:""}
+    <label class="tick"><input type="checkbox" class="switch" id="htR"${h.auto?" checked":""}> Repetir todos os meses</label>
+    <label class="f" id="htDl">Em que dia do mês<input id="htD" type="number" min="1" max="28" inputmode="numeric" value="${h.auto?h.auto.day:new Date().getDate()>28?28:new Date().getDate()}"></label>
+    <button type="button" class="btn" data-ht="now">Transferir agora</button>
+    <button type="button" class="btn ghost" data-ht="auto">Só programar (a partir do próximo dia)</button>
+    ${h.auto?`<button type="button" class="btn danger" data-ht="stop">Parar a transferência mensal</button>`:""}
+    <button type="button" class="btn ghost" data-ht="x">Cancelar</button></div>`;
+  const sync=()=>{const on=o.querySelector("#htR").checked;o.querySelector("#htDl").hidden=!on;o.querySelector('[data-ht="auto"]').hidden=!on};sync();o.querySelector("#htR").addEventListener("change",sync);
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ht]");if(ev.target!==o&&!q)return;const a=q?q.dataset.ht:"x";if(a==="x"){o.remove();return}
+    if(a==="stop"){o.remove();const n={...h};delete n.auto;putBill(n);renderSavs();toast("Transferência mensal parada");return}
+    const v=numIn(o.querySelector("#htV").value);if(!(v>0)){toast("Escreve o valor");return}const sel=o.querySelector("#htA"), from=sel?sel.value:"", rep=o.querySelector("#htR").checked, day=Math.min(28,Math.max(1,Math.round(+o.querySelector("#htD").value)||1));o.remove();
+    const mk=ymOf(new Date());let n={...h};
+    if(a==="now"){n=holdMove(n,v,from,ymd(new Date()),false)}
+    if(rep){n.auto={v,from,day,since:a==="now"||new Date().getDate()>=day?ymOf(new Date(new Date().getFullYear(),new Date().getMonth()+1,1)):mk};if(a==="now")n.autoDone={...(n.autoDone||{}),[mk]:true}}else delete n.auto;
+    putBill(n);renderSavs();const fa=from&&bills.find(x=>x.id===from);
+    toast(a==="now"?`+${eur(v)} em ${h.name}${fa?` · ${bankLabel(fa.name)} ${eur(+fa.bal||0)}`:""}${rep?` · repete dia ${day}`:""}`:`Programado: ${eur(v)} todos os dias ${day}`)});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#htV");if(i)i.focus()},50)},true);
+/* aplica as transferências mensais cujo dia já chegou (uma vez por mês; a marca fica no documento, por isso não repete noutro telemóvel) */
+let holdAutoDone=false;
+function holdAuto(snap){if(holdAutoDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;holdAutoDone=true;const t=new Date(), mk=ymOf(t);
+  holds().filter(h=>h.auto&&+h.auto.v>0).forEach(h=>{if((h.autoDone||{})[mk]||(h.auto.since&&mk<h.auto.since)||t.getDate()<h.auto.day)return;
+    const n=holdMove(h,+h.auto.v,h.auto.from,`${mk}-${String(h.auto.day).padStart(2,"0")}`,true);n.autoDone={...(h.autoDone||{}),[mk]:true};putBill(n);
+    setTimeout(()=>toast(`🔁 ${eur(+h.auto.v)} transferidos para ${h.name}`),1500)})}
 /* ---------- Aniversários (kind:"bday") ----------
    {name, md "MM-DD", year (opcional), rel, ideas:[{id,t,done}]} — avisa 7 dias antes, na véspera e no dia */
 const bdays=()=>bills.filter(b=>b.kind==="bday");
@@ -6225,7 +6258,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6287,7 +6320,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v310";
+const APPV="casa-v311";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
