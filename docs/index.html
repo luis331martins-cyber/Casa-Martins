@@ -1478,6 +1478,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     </div>
     <h2 style="margin-top:4px">O que tenho</h2>
     <div id="holdList"></div>
+    <button class="btn" type="button" id="holdTx" style="background:#34c759">💸 Transferir para uma poupança</button>
     <button class="btn ghost" type="button" id="addHold">+ Juntar poupança</button>
     <h2 style="margin-top:12px">Objetivos</h2>
     <div id="savList"></div>
@@ -4347,7 +4348,7 @@ function renderHolds(){const el=document.getElementById("holdList");if(!el)retur
     return`<button type="button" class="hold" data-edithold="${h.id}" style="--hc:${c}" aria-label="Editar ${esc(h.name)}"><span class="hemo">${hEmo(h.type)}</span>
       <span style="min-width:0"><span class="hn" style="display:block">${esc(h.name)}</span><span class="hm">${esc(meta)}</span></span>
       <span class="hv">${eur(+h.val||0)}${at?`<span class="hm" style="display:block;font-weight:400">${at}</span>`:""}${d!=null&&d<=30?`<span style="display:block">${dueTag(h.end,30)}</span>`:""}</span></button>
-      <div class="holdact"><button type="button" class="back" data-htx="${h.id}">➕ Transferir para aqui</button><button type="button" class="back" data-hlink="${h.id}">🔗 ${h.bill?"Ligada":"Ligar a uma conta do mês"}</button>${(()=>{const b=h.bill&&bills.find(x=>x.id===h.bill);return b?`<span style="flex-basis:100%">🔗 Soma aqui quando pagas «${esc(b.name)}» (${eur(monthAmt(b,mKey()))})</span>`:""})()}${h.auto?`<span>🔁 ${eur(+h.auto.v)} todos os dias ${h.auto.day}${(accounts().find(a=>a.id===h.auto.from)||{}).name?` da ${esc(bankLabel(accounts().find(a=>a.id===h.auto.from).name))}`:""}</span>`:""}</div>`}).join("")
+      <div class="holdact"${h.bill||h.auto?"":" hidden"}>${(()=>{const b=h.bill&&bills.find(x=>x.id===h.bill);return b?`<span style="flex-basis:100%">🔗 Soma aqui quando pagas «${esc(b.name)}» (${eur(monthAmt(b,mKey()))})</span>`:""})()}${h.auto?`<span>🔁 ${eur(+h.auto.v)} todos os dias ${h.auto.day}${(accounts().find(a=>a.id===h.auto.from)||{}).name?` da ${esc(bankLabel(accounts().find(a=>a.id===h.auto.from).name))}`:""}</span>`:""}</div>`}).join("")
     +(editHold==="new"?holdForm(null):"")||`<div class="empty">Junta aqui o que tens poupado: conta poupança, depósitos, certificados de aforro, PPR…</div>`;
   if(!L.length&&editHold==="new")el.innerHTML=holdForm(null);
   document.getElementById("addHold").hidden=editHold==="new"}
@@ -4408,6 +4409,15 @@ function holdBillSync(){const td=new Date(), ks=[ymOf(new Date(td.getFullYear(),
       if(p&&!had){const v=Math.round(monthAmt(b,k)*100)/100;if(!(v>0))return;n=n||{...h};n.val=Math.round(((+n.val||0)+v)*100)/100;n.valAt=Date.now();n.log=[...(n.log||[]),{v,d:ymd(td),bill:b.id}].slice(-60);done[k]=v}
       else if(!p&&had){n=n||{...h};n.val=Math.round(((+n.val||0)-done[k])*100)/100;n.valAt=Date.now();delete done[k]}});
     if(n){n.billDone=done;putBill(n)}})}
+/* Pedido (11/11): um só botão — escolhe-se a poupança e depois transferir agora/todos os meses ou ligar a uma conta do mês */
+document.getElementById("holdTx").addEventListener("click",()=>{const H=holds();if(!H.length){toast("Junta primeiro uma poupança");return}
+  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">💸 Transferir para uma poupança</div>
+    <label class="f">Para<select id="htP">${H.map(h=>`<option value="${h.id}">${hEmo(h.type)} ${esc(h.name)} · ${eur(+h.val||0)}</option>`).join("")}</select></label>
+    <button type="button" class="btn" data-hc="tx">➕ Transferir (agora ou todos os meses)</button>
+    <button type="button" class="btn ghost" data-hc="link">🔗 Ligar a uma conta do mês (ex.: 50 € nas Contas)</button>
+    <button type="button" class="btn ghost" data-hc="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-hc]");if(ev.target!==o&&!q)return;const id=o.querySelector("#htP").value;o.remove();if(!q||q.dataset.hc==="x")return;
+    const tmp=document.createElement("button");tmp.dataset[q.dataset.hc==="tx"?"htx":"hlink"]=id;tmp.hidden=true;document.body.appendChild(tmp);tmp.click();tmp.remove()});document.body.appendChild(o)});
 /* aplica as transferências mensais cujo dia já chegou (uma vez por mês; a marca fica no documento, por isso não repete noutro telemóvel) */
 let holdAutoDone=false;
 function holdAuto(snap){if(holdAutoDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;holdAutoDone=true;const t=new Date(), mk=ymOf(t);
@@ -6341,7 +6351,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v312";
+const APPV="casa-v313";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
