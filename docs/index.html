@@ -4069,7 +4069,7 @@ function cardPending(c){const t=new Date(), mk=ymOf(t), last=new Date(t.getFullY
   return(c.auto||[]).filter(a=>a.t==="compra"&&!a.bill&&+a.v>0&&!(a.since&&mk<a.since)).map(a=>{const day=Math.min(+a.day||1,last), d=`${mk}-${String(day).padStart(2,"0")}`;
     return(c.buys||[]).some(x=>x.id===`auto-${a.id}-${mk}`)||day<t.getDate()?null:{n:a.n||"Compra automática",v:+a.v,d,next:!!(c.cd&&stmtK(c,d)!==stmtK(c))}}).filter(Boolean)}
 const pendRow=x=>`<div class="row" style="padding:4px 0;color:var(--muted);border-top:1px dashed var(--sep,rgba(0,0,0,.12));font-size:14px"><span>${dShort(x.d)} · 🔁 ${esc(x.n)} <small>(previsto${x.next?" · extrato seguinte":""})</small></span><span>${eur(x.v)}</span></div>`;
-function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(x=>stmtK(c,x.d)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1)):buysOf(c,mk), tot=L.filter(x=>x.v>0).reduce((t,x)=>t+x.v,0);
+function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(x=>stmtK(c,x.d)===mk).sort((a,b)=>b.d.localeCompare(a.d)||(b.id>a.id?1:-1)):buysOf(c,mk), tot=L.filter(x=>x.v>0&&!x.adj).reduce((t,x)=>t+x.v,0);
   const places=[...new Set(buysOf(c).filter(x=>x.v>0&&x.n&&!x.auto&&!/^🏠/.test(x.n)).map(x=>x.n))].slice(0,8);
   const form=cardBuy===c.id?`<form class="spend-add" data-cardbuy="${c.id}" autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Valor (€)" required>
@@ -4090,10 +4090,10 @@ function stmtDates(c,sk){const [y,m]=sk.split("-").map(Number), cd=c.cd?cdDay(c.
   const b=c.bill&&bills.find(x=>x.id===c.bill), dd=+c.ddb||(b&&+b.day);let debit=null;if(dd){let d=new Date(y,m-1,Math.min(dd,new Date(y,m,0).getDate()));if(ymd(d)<=close){const n=new Date(y,m,1);d=new Date(n.getFullYear(),n.getMonth(),Math.min(dd,new Date(n.getFullYear(),n.getMonth()+1,0).getDate()))}debit=ymd(d)}
   return{close,debit}}
 const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
+function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
 const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
-  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
     return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
@@ -4219,7 +4219,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.cstyle){const f=t.closest("form");f.st.value=t.dataset.cstyle;f.querySelectorAll("[data-cstyle]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
   else if(t.dataset.delcard){const c=cards().find(x=>x.id===t.dataset.delcard);if(c&&confirm(`Apagar o cartão "${c.name}"?`)){editCard="";delBill(c.id);renderCards();toast("Cartão apagado")}}
   else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;const v=prompt(`Saldo usado do ${c.name} (o valor que aparece na app do banco), em €:`,c.used!=null?String(c.used).replace(".",","):"");if(v===null)return;
-    const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;putBill({...c,used:n,usedAt:Date.now()});renderCards();toast(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`)}
+    const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;
+    /* Pedido (14/11): a diferença para o valor do banco (juros, saldo de meses anteriores…) fica registada como "Acerto com o banco" nos movimentos — não conta como compra do extrato */
+    const dif=c.used!=null?Math.round((n-(+c.used||0))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco",adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
+    putBill({...c,used:n,usedAt:Date.now(),...(buys?{buys}:{})});renderCards();toast((Math.abs(dif)>.004?`${dif>0?"+":"−"}${eur(Math.abs(dif))} de acerto · `:"")+(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`))}
   else if(t.dataset.gocard){e.preventDefault();e.stopPropagation();show("cartoes");setTimeout(()=>{const c=document.querySelector(`[data-editcard="${t.dataset.gocard}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)}
   else if(t.dataset.gocontas){show("despesas")}
   else if(t.dataset.cardbuyopen){cardBuy=t.dataset.cardbuyopen;renderCards();const i=document.querySelector(`[data-cardbuy="${cardBuy}"] [name=v]`);if(i)i.focus()}
@@ -6356,7 +6359,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v314";
+const APPV="casa-v315";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
