@@ -4109,7 +4109,9 @@ function fatCalc(c,sk){const buys=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&stmtK(c,
   const pr=(c.frs||[]).filter(x=>inM(x.first,+x.cnt)).reduce((t,x)=>t+(+x.pay||0),0)+homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf&&inM(h.frf,+h.frn)).reduce((t,h)=>t+(hmFr(h)||{pay:0}).pay,0);
   return{buys:Math.round(buys*100)/100,pr:Math.round(pr*100)/100,v:Math.round((buys+pr)*100)/100}}
 function fatDue(){const td=ymd(new Date());return cards().filter(c=>isCredit(c)&&c.cd&&c.bill&&bills.some(b=>b.id===c.bill)).map(c=>{const sk=skPrev(stmtK(c)), D=stmtDates(c,sk);
-    if((c.fatOk||{})[sk]!=null||D.close>td||(D.debit&&D.debit<td))return null;const f=fatCalc(c,sk);return f.v>0?{c,sk,...f,debit:D.debit}:null}).filter(Boolean)}
+    if((c.fatOk||{})[sk]!=null||D.close>td||(D.debit&&D.debit<td))return null;
+    /* se a linha do cartão nas Contas já está paga (ou o valor já foi confirmado) nesse mês, não pergunta */
+    const b=bills.find(x=>x.id===c.bill), km=(D.debit||td).slice(0,7);if(b&&(isPaid(b,km)||(b.conf&&b.conf[km])))return null;const f=fatCalc(c,sk);return f.v>0?{c,sk,...f,debit:D.debit}:null}).filter(Boolean)}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-fatask]");if(!t)return;e.preventDefault();e.stopPropagation();const [cid,sk]=t.dataset.fatask.split("|"), c=cards().find(x=>x.id===cid);if(!c)return;
   const f=fatCalc(c,sk), D=stmtDates(c,sk), b=bills.find(x=>x.id===c.bill), km=(D.debit||ymd(new Date())).slice(0,7), o=document.createElement("div");o.className="rdovl";
   o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">💳 ${esc(c.name)}: fechou o extrato de ${dShort(D.close)}</div>
@@ -6414,7 +6416,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v324";
+const APPV="casa-v325";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
