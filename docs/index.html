@@ -4121,6 +4121,8 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
 /* Pôr o usado igual ao do banco: aceita "812,40" ou "L 2687,60" (livre). A diferença fica nos movimentos como acerto (juros / saldo anterior), fora das compras */
+/* Pedido (14/11): ao fracionar uma compra fica nas compras uma linha igual a negativo ("Fracionada: …") — a compra conta uma vez nos gastos do mês e o valor passa para as prestações */
+const frNeg=(x,frId)=>({id:uid(),v:-Math.round(x.v*100)/100,d:ymd(new Date()),n:"Fracionada: "+(x.w||x.n||"Compra"),frx:frId});
 function cardSetUsed(c,v,label){const isL=/^\s*l/i.test(v);v=String(v).replace(/^\s*l(ivre)?\s*/i,"");
   let n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return false;if(isL){if(!c.limit){toast("Escreve primeiro o plafond do cartão (Editar)");return false}n=Math.round((+c.limit-n)*100)/100}
   const rem=!c.frOnly&&!c.frNoUse?frRem(c):0, dif=c.used!=null?Math.round((n-cardUsed(c))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:label||(dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco"),adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
@@ -4238,7 +4240,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
    /* Pedido (14/11): com o dia da compra, a compra fracionada aparece nas compras do cartão (quadro roxo) nesse extrato, marcada; não mexe no usado nem na fatura */
    /* Pedido (14/11): ligar a uma compra já registada — fica marcada como fracionada e sai do usado pelo valor todo (conta pelas prestações) */
    const lk=f.lnk?f.lnk.value:"";if(lk){const old=(nc.buys||[]).find(y=>y.frid===item.id&&y.id!==lk), x=(nc.buys||[]).find(y=>y.id===lk);
-     if(x&&!x.frid){if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100;nc.buys=(nc.buys||[]).filter(y=>!(old&&y.id===old.id)).map(y=>y.id===lk?{...y,frid:item.id}:y)}}
+     if(x&&!x.frid){if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100;nc.buys=[...(nc.buys||[]).filter(y=>!(old&&y.id===old.id)&&!(old&&y.frx===item.id)).map(y=>y.id===lk?{...y,frid:item.id}:y),frNeg(x,item.id)]}}
    else if(f.cdd&&f.cdd.value){const bv=Math.round((fv||pay*cnt)*100)/100, ex=(nc.buys||[]).find(y=>y.frid===item.id);
      nc.buys=ex?(nc.buys||[]).map(y=>y.frid===item.id?{...y,v:bv,d:f.cdd.value,n:item.n}:y):[...(nc.buys||[]),{id:uid(),v:bv,d:f.cdd.value,n:item.n,frid:item.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)}
    putBill(nc)}cardFrOpen="";cardFrEdit="";renderCards();
@@ -4331,7 +4333,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.delbuy){const [cid,bid]=t.dataset.delbuy.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.buys||[]).find(y=>y.id===bid);if(!x)return;
     if(!confirm(`Apagar "${x.n||(x.v<0?"Pagamento":"Compra")}" de ${eur(Math.abs(x.v))}?`))return;
     /* compra fracionada: não estava no usado (conta pelas prestações), por isso apagar não mexe no usado */
-    const used=c.used!=null&&!x.frid?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid),...(used!=null&&!x.frid?{used,usedAt:Date.now()}:{})});
+    const pair=x.frid?(c.buys||[]).find(y=>y.frx===x.frid):x.frx?(c.buys||[]).find(y=>y.frid===x.frx):null, skip=x.frid||x.frx;
+    const used=c.used!=null&&!skip?Math.max(0,Math.round(((+c.used||0)-x.v)*100)/100):c.used;
+    putBill({...c,buys:(c.buys||[]).filter(y=>y.id!==bid&&!(pair&&y.id===pair.id)).map(y=>x.frx&&y.frid===x.frx?(({frid,...r2})=>r2)(y):y),...(used!=null&&!skip?{used,usedAt:Date.now()}:{})});
+    if(x.frx){const c2=cards().find(z=>z.id===cid);if(c2&&c2.used!=null){/* desfazer a fracionada: a compra volta a contar pelo valor todo */const orig=(c.buys||[]).find(y=>y.frid===x.frx);if(orig)putBill({...cards().find(z=>z.id===cid),used:Math.round(((+c2.used||0)+orig.v)*100)/100})}}
     if(x.bud){const B=bills.find(y=>y.id===x.bud);if(B&&B.spent){const sp={};Object.entries(B.spent).forEach(([k,L])=>sp[k]=(L||[]).filter(y=>y.cb!==bid));putBill({...B,spent:sp});safe("Contas",renderBills)}}
     renderCards();toast("Apagado")}},true);
 function cardMove(c,v,d,n,bud,w){const bid=uid(), B=bud&&bills.find(x=>x.id===bud&&isBud(x));
@@ -4351,7 +4356,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardbuy;if
     const item={id:uid(),n:nm2,pay,cnt,first:f.ff.value||ymOf(new Date()),...(fv?{fv}:{}),...(M.length?{from:M.map(x=>({n:x.n,w:x.w,v:x.v,d:x.d}))}:{})};
     /* a compra continua nas compras do cartão (quadro roxo), marcada como fracionada; deixa de contar no usado pelo valor todo (ActivoBank conta pelas prestações que faltam; CGD não conta) */
     const d0=f.d.value||ymd(new Date()), newBuy=M.length?null:{id:uid(),v:Math.round((fv||pay*cnt)*100)/100,d:d0,...(f.n.value.trim()?{n:f.n.value.trim()}:{}),...(f.w.value.trim()?{w:f.w.value.trim()}:{}),frid:item.id};
-    const B2=(c.buys||[]).map(x=>ids.includes(x.id)?{...x,frid:item.id}:x);if(newBuy)B2.push(newBuy);
+    const B2=(c.buys||[]).map(x=>ids.includes(x.id)?{...x,frid:item.id}:x);M.forEach(x=>B2.push(frNeg(x,item.id)));if(newBuy){B2.push(newBuy);B2.push({...frNeg(newBuy,item.id),d:newBuy.d})}
     const nc={...c,frs:[...(c.frs||[]),item],buys:B2.sort((a,b)=>a.d.localeCompare(b.d)).slice(-80),...(M.length&&c.used!=null?{used:Math.round(((+c.used||0)-mSum)*100)/100}:{})};putBill(nc);cardBuy="";
     try{localStorage.setItem("casa-fro-"+c.id,"1")}catch(err){}renderCards();const st=frState(cnt,item.first,pay,frDay(c));
     toast(`${nm2}: ${cnt}× ${eur(pay)}${M.length?` · ${M.length} compra${M.length===1?"":"s"} juntas`:""}${!c.frOnly?` · usado ${eur(cardUsed(nc))}`:""}`);return}
@@ -6473,7 +6478,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v338";
+const APPV="casa-v339";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
