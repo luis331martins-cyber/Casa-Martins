@@ -4234,8 +4234,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.cancelcard){editCard="";renderCards()}
   else if(t.dataset.cstyle){const f=t.closest("form");f.st.value=t.dataset.cstyle;f.querySelectorAll("[data-cstyle]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
   else if(t.dataset.delcard){const c=cards().find(x=>x.id===t.dataset.delcard);if(c&&confirm(`Apagar o cartão "${c.name}"?`)){editCard="";delBill(c.id);renderCards();toast("Cartão apagado")}}
-  else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;const v=prompt(`Saldo usado do ${c.name} (o valor que aparece na app do banco), em €:`,c.used!=null||!c.frNoUse?String(cardUsed(c)).replace(".",","):"");if(v===null)return;
-    const n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;
+  else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;/* Pedido (14/11): pode escrever-se o "livre" que o banco mostra em vez do usado (usado = plafond − livre) */
+    let v=prompt(`${c.name}: escreve o USADO que a app do banco mostra${c.limit?`\n(ou o LIVRE com um L antes, ex.: L 2662,24)`:""}, em €:`,c.used!=null||!c.frNoUse?String(cardUsed(c)).replace(".",","):"");if(v===null)return;
+    const isL=/^\s*l/i.test(v);v=v.replace(/^\s*l(ivre)?\s*/i,"");
+    let n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;if(isL){if(!c.limit){toast("Escreve primeiro o plafond do cartão (Editar)");return}n=Math.round((+c.limit-n)*100)/100}
     /* Pedido (14/11): a diferença para o valor do banco (juros, saldo de meses anteriores…) fica registada como "Acerto com o banco" nos movimentos — não conta como compra do extrato */
     const rem=!c.frOnly&&!c.frNoUse?frRem(c):0, dif=c.used!=null?Math.round((n-cardUsed(c))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco",adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
     putBill({...c,used:Math.round((n-rem)*100)/100,usedAt:Date.now(),...(buys?{buys}:{})});renderCards();toast((Math.abs(dif)>.004?`${dif>0?"+":"−"}${eur(Math.abs(dif))} de acerto · `:"")+(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`))}
@@ -6375,7 +6377,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v318";
+const APPV="casa-v319";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
