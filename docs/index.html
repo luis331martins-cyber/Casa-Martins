@@ -2846,6 +2846,10 @@ function autoFill(snap){if(autoFillDone||!bills.length||(snap&&snap.metadata&&sn
     for(const mk of [ymOf(new Date(y,m-2,1)),sk])for(const a of c.auto){if(a.t!=="compra"||a.bill||!(+a.v>0))continue;const [yy,mm]=mk.split("-").map(Number), d=`${mk}-${String(Math.min(+a.day||1,new Date(yy,mm,0).getDate())).padStart(2,"0")}`, id=`auto-${a.id}-${mk}`;
       if(d>=td||stmtK(c,d)!==sk||(c.buys||[]).some(x=>x.id===id)||add.some(x=>x.id===id))continue;add.push({id,v:Math.round(+a.v*100)/100,d,n:a.n||"Compra automática",auto:true})}
     if(add.length){putBill({...c,buys:[...(c.buys||[]),...add].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)});setTimeout(()=>toast(`${c.name}: ${add.map(x=>x.n+" "+dShort(x.d)).join(", ")} juntado ao extrato`),1200)}})}
+/* Pedido (14/11): os cartões WiZink fecham o extrato a 17 (uma vez; só nos que ainda não têm dia de fecho) */
+let wzDone=false;
+function wzFix(snap){if(wzDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;wzDone=true;if(bills.some(b=>b.id==="flag-wz17-1"))return;
+  const L=cards().filter(c=>/wizink/i.test(c.name||"")&&!c.cd);L.forEach(c=>putBill({...c,cd:17}));putBill({id:"flag-wz17-1",kind:"flag",at:Date.now()});if(L.length)setTimeout(()=>toast(`${L.map(c=>c.name).join(" e ")}: fecho do extrato a 17`),1600)}
 let frFixDone=false;
 function frFix(snap){if(frFixDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frFixDone=true;if(bills.some(b=>b.id==="flag-frfix-1"))return;
   homes().filter(h=>+h.frn&&h.pay).forEach(h=>hmCardSync(h));putBill({id:"flag-frfix-1",kind:"flag",at:Date.now()})}
@@ -3600,7 +3604,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -6357,7 +6361,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6419,7 +6423,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v327";
+const APPV="casa-v328";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
