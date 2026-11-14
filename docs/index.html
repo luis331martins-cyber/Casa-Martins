@@ -4095,6 +4095,12 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${cardPending(c).map(pendRow).join("")}${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
+/* Pôr o usado igual ao do banco: aceita "812,40" ou "L 2687,60" (livre). A diferença fica nos movimentos como acerto (juros / saldo anterior), fora das compras */
+function cardSetUsed(c,v,label){const isL=/^\s*l/i.test(v);v=String(v).replace(/^\s*l(ivre)?\s*/i,"");
+  let n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return false;if(isL){if(!c.limit){toast("Escreve primeiro o plafond do cartão (Editar)");return false}n=Math.round((+c.limit-n)*100)/100}
+  const rem=!c.frOnly&&!c.frNoUse?frRem(c):0, dif=c.used!=null?Math.round((n-cardUsed(c))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:label||(dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco"),adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
+  putBill({...c,used:Math.round((n-rem)*100)/100,usedAt:Date.now(),...(buys?{buys}:{})});if(typeof renderCards==="function")renderCards();
+  setTimeout(()=>toast((Math.abs(dif)>.004?`${dif>0?"+":"−"}${eur(Math.abs(dif))} de acerto · `:"")+(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`)),900);return true}
 /* Pedido (14/11): quando fecha o extrato de um cartão de crédito ligado a uma linha das Contas, a app propõe o valor da fatura
    = compras desse extrato + prestações cobradas nesse mês; confirma-se (ou corrige-se) e fica na linha das Contas no mês do débito. c.fatOk[extrato]=valor */
 const skPrev=sk=>{const [y,m]=sk.split("-").map(Number);return ymOf(new Date(y,m-2,1))};
@@ -4109,11 +4115,12 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-fatask]");
   o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">💳 ${esc(c.name)}: fechou o extrato de ${dShort(D.close)}</div>
     <div class="rdm">Compras ${eur(f.buys)} + prestações ${eur(f.pr)} = <b>${eur(f.v)}</b>${D.debit?` · débito a ${dShort(D.debit)}`:""}</div>
     <label class="f">Valor a pagar (o que diz o extrato do banco)<input id="ftV" type="text" inputmode="decimal" value="${f.v.toFixed(2).replace(".",",")}"></label>
+    <label class="f">Usado no banco agora (ou L e o livre) · opcional<input id="ftU" type="text" inputmode="text" placeholder="ex.: 812,40 ou L 2687,60 — a diferença fica como juros/acerto"></label>
     <button type="button" class="btn" data-ft="ok">✓ Fica este valor em ${esc(b?b.name:"Contas")}</button><button type="button" class="btn ghost" data-ft="x">Depois</button></div>`;
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ft]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ft==="x"){o.remove();return}
     const v=numIn(o.querySelector("#ftV").value);if(isNaN(v)||v<0){toast("Escreve o valor");return}o.remove();
     const b2=bills.find(x=>x.id===c.bill);if(b2){const am={...(b2.amounts||{})};am[km]=Math.round(v*100)/100;putBill({...b2,amounts:am,conf:{...(b2.conf||{}),[km]:true}})}
-    putBill({...c,fatOk:{...(c.fatOk||{}),[sk]:Math.round(v*100)/100}});safe("Alertas",renderAlerts);renderCards&&safe("Cartões",renderCards);toast(`${b2?b2.name:c.name}: ${eur(v)} a pagar${D.debit?" a "+dShort(D.debit):""}`)});
+    putBill({...c,fatOk:{...(c.fatOk||{}),[sk]:Math.round(v*100)/100}});const u=o.querySelector("#ftU").value.trim();if(u)setTimeout(()=>{const c2=cards().find(x=>x.id===c.id);if(c2)cardSetUsed(c2,u,"Juros / acerto do extrato de "+dShort(D.close))},60);safe("Alertas",renderAlerts);renderCards&&safe("Cartões",renderCards);toast(`${b2?b2.name:c.name}: ${eur(v)} a pagar${D.debit?" a "+dShort(D.debit):""}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#ftV");if(i)i.select()},50)},true);
 /* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
    Só para ver: não conta nos totais nem nos gastos do mês (conta a fatura, quando é debitada). Fecha no dia de fecho do extrato (sem dia: no fim do mês). */
@@ -4266,11 +4273,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-goc
   else if(t.dataset.delcard){const c=cards().find(x=>x.id===t.dataset.delcard);if(c&&confirm(`Apagar o cartão "${c.name}"?`)){editCard="";delBill(c.id);renderCards();toast("Cartão apagado")}}
   else if(t.dataset.cardused){const c=cards().find(x=>x.id===t.dataset.cardused);if(!c)return;/* Pedido (14/11): pode escrever-se o "livre" que o banco mostra em vez do usado (usado = plafond − livre) */
     let v=prompt(`${c.name}: escreve o USADO que a app do banco mostra${c.limit?`\n(ou o LIVRE com um L antes, ex.: L 2662,24)`:""}, em €:`,c.used!=null||!c.frNoUse?String(cardUsed(c)).replace(".",","):"");if(v===null)return;
-    const isL=/^\s*l/i.test(v);v=v.replace(/^\s*l(ivre)?\s*/i,"");
-    let n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return;if(isL){if(!c.limit){toast("Escreve primeiro o plafond do cartão (Editar)");return}n=Math.round((+c.limit-n)*100)/100}
-    /* Pedido (14/11): a diferença para o valor do banco (juros, saldo de meses anteriores…) fica registada como "Acerto com o banco" nos movimentos — não conta como compra do extrato */
-    const rem=!c.frOnly&&!c.frNoUse?frRem(c):0, dif=c.used!=null?Math.round((n-cardUsed(c))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco",adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
-    putBill({...c,used:Math.round((n-rem)*100)/100,usedAt:Date.now(),...(buys?{buys}:{})});renderCards();toast((Math.abs(dif)>.004?`${dif>0?"+":"−"}${eur(Math.abs(dif))} de acerto · `:"")+(c.limit?`Livre: ${eur(Math.max(0,(+c.limit||0)-n))}`:`Usado: ${eur(n)}`))}
+    cardSetUsed(c,v);}
   else if(t.dataset.gocard){e.preventDefault();e.stopPropagation();show("cartoes");setTimeout(()=>{const c=document.querySelector(`[data-editcard="${t.dataset.gocard}"]`);if(c){c.scrollIntoView({block:"center",behavior:"smooth"});c.animate([{transform:"scale(1.03)"},{transform:"scale(1)"}],{duration:500})}},60)}
   else if(t.dataset.gocontas){show("despesas")}
   else if(t.dataset.cardbuyopen){cardBuy=t.dataset.cardbuyopen;renderCards();const i=document.querySelector(`[data-cardbuy="${cardBuy}"] [name=v]`);if(i)i.focus()}
@@ -6407,7 +6410,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v322";
+const APPV="casa-v323";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
