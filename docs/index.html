@@ -1771,9 +1771,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
       <div class="tot hbig" id="fcBox"><div class="k" id="fcLabel">Fim do mês</div><div class="v" id="vFc"></div></div>
       <div class="ctri">
         <button class="tot" type="button" data-scroll="accSec"><div class="k">Hoje</div><div class="v" id="vBal"></div></button>
-        <button class="tot paid" type="button" data-mbreak="in"><div class="k">Entra ›</div><div class="v" id="vIn"></div></button>
-        <button class="tot" type="button" data-mbreak="out"><div class="k">Sai ›</div><div class="v" id="vTot"></div></button>
-        <div class="tot" id="totLeft"><div class="k">Balanço</div><div class="v" id="vLeft"></div></div>
+        <button class="tot paid" type="button" data-ctab="receitas"><div class="k">Entra</div><div class="v" id="vIn"></div></button>
+        <button class="tot" type="button" data-ctab="pagar"><div class="k">Sai</div><div class="v" id="vTot"></div></button>
+        <div class="tot" id="totLeft"><div class="k">Sobra</div><div class="v" id="vLeft"></div></div>
       </div>
       <div class="bar" aria-hidden="true"><span id="barFill" style="width:0"></span></div>
       <p class="note" style="margin:0">Pago <b id="vPaid"></b> · Falta <b id="vDue" style="color:var(--bad)"></b></p>
@@ -3129,17 +3129,7 @@ document.getElementById("bType").addEventListener("change",e=>{const t=e.target.
   document.getElementById("bDay").disabled=t==="budget";renderBills()});
 /* As caixas Entra e Sai levam às receitas e às despesas */
 /* Contas em três separadores (A pagar · Receitas · Gastos); cada telemóvel lembra-se do último */
-let cTab="mes", paidOpen=false, tlPaidOpen=false;
-/* Pedido (14/11): tocar em Entra / Sai mostra o que está a somar (cada conta, receita e gasto do mês, pago ou não) */
-document.addEventListener("click",e=>{const t=e.target.closest("[data-mbreak]");if(!t)return;e.preventDefault();e.stopPropagation();const k=mKey(), out=t.dataset.mbreak==="out";
-  const L=(out?contas():bills.filter(isInc)).map(b=>{const v=Math.round(planned(b,k)*100)/100, p=isBud(b)?null:isPaid(b,k);
-    const why=isBud(b)?(monthAmt(b,k)>0?(spentCash(b,k)>monthAmt(b,k)-spentCard(b,k)?"gasto (passou o limite)":`limite ${eur(monthAmt(b,k))}${spentCard(b,k)>0?` − ${eur(spentCard(b,k))} no cartão`:""} · gasto ${eur(spentCash(b,k))}`):"sem limite: o que já se gastou"):(p?(out?"paga":"recebida"):(out?"por pagar":"por receber"));
-    return{b,v,why,p}}).filter(x=>x.v>0.004).sort((a,c)=>c.v-a.v), tot=L.reduce((s2,x)=>s2+x.v,0);
-  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog" style="max-height:85vh;overflow:auto"><div class="rdh">${out?"Sai":"Entra"} em ${esc(mFull(k))}: ${eur(tot)}</div>
-    <div class="rdm">${out?"Todas as contas do mês (pagas e por pagar) e os gastos do mês (pelo limite, ou pelo que já se gastou se passou ou não tem limite). As compras no cartão de crédito contam pela linha do cartão.":"Todas as receitas do mês, recebidas ou por receber (o acerto com a Mãe não entra aqui)."}</div>
-    ${L.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:6px;gap:10px"><span style="min-width:0">${esc(x.b.name)}<small style="display:block;color:var(--muted)">${esc(x.why)}</small></span><b style="white-space:nowrap">${eur(x.v)}</b></div>`).join("")}
-    <button type="button" class="btn ghost" data-mb="x">Fechar</button></div>`;
-  o.addEventListener("click",ev=>{if(ev.target===o||ev.target.closest("[data-mb]"))o.remove()});document.body.appendChild(o)},true);const ACO=()=>window.__aco||(window.__aco=new Set());
+let cTab="mes", paidOpen=false, tlPaidOpen=false;const ACO=()=>window.__aco||(window.__aco=new Set());
 document.addEventListener("click",e=>{const t=e.target.closest("[data-actog]");if(!t)return;const [w,k]=t.dataset.actog.split("|");if(ACO().has(w+k))ACO().delete(w+k);else ACO().add(w+k);renderBills()});
 function applyCTab(){const sec=document.getElementById("tab-despesas");if(sec)sec.dataset.ct=cTab;document.querySelectorAll(".ctabs [data-ctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ctab===cTab));
   const t=document.getElementById("cttlT");if(t)t.textContent={pagar:"A pagar",receitas:"Receitas",gastos:"Gastos do mês",cartao:"Gastos com cartão de crédito"}[cTab]||"";
@@ -6433,7 +6423,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v329";
+const APPV="casa-v328";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
