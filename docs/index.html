@@ -2869,6 +2869,19 @@ function frAutoLink(snap){if(frLinkDone||!bills.length||(snap&&snap.metadata&&sn
       const x=B.find(y=>y.v>0&&!y.adj&&!y.auto&&!y.hm&&!y.frid&&Math.abs(y.v-(+fr.fv))<0.015&&(!nm||[y.n,y.w].some(t=>t&&nm.includes(noAcc(String(t).toLowerCase())))));if(!x)return;
       nc=nc||{...c};nc.buys=[...B.map(y=>y.id===x.id?{...y,frid:fr.id}:y),frNeg(x,fr.id)];if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100});
     if(nc){putBill(nc);setTimeout(()=>toast(`${c.name}: compra fracionada ligada à prestação (deixou de contar 2x)`),1800)}})}
+let frBillDone=false;
+function frBill(snap){if(frBillDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frBillDone=true;const td=ymd(new Date());
+  cards().filter(c=>isCredit(c)&&c.cd&&!c.frNoUse&&!c.frOnly).forEach(c=>{const s0=stmtK(c), skc=stmtDates(c,s0).close<=td?s0:skPrev(s0);
+    if(!c.frbFrom){putBill({...c,frbFrom:stmtK(c)});return}/* começa no próximo fecho (o passado já está no usado) */
+    if(skc<c.frbFrom)return;const B=c.buys||[], add=[];
+    frList(c).forEach(x=>{const i=mIdx(skc)-mIdx(x.first);if(i<0||i>=x.cnt)return;const id=`frb-${x.id}-${skc}`;if(B.some(y=>y.id===id))return;
+      add.push({id,v:Math.round(x.pay*100)/100,d:stmtDates(c,skc).close,n:`Prestação ${x.n} (${i+1}/${x.cnt})`,frb:1})});
+    if(add.length){const tot=add.reduce((t,y)=>t+y.v,0);putBill({...c,buys:[...B,...add].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80),used:Math.round(((+c.used||0)+tot)*100)/100,usedAt:Date.now()})}})}
+/* a mudança (plafond = capital; juros só no fecho) não mexe no usado que se vê (uma vez) */
+let cap3Done=false;
+function cap3Fix(snap){if(cap3Done||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;cap3Done=true;if(bills.some(b=>b.id==="flag-frcap-3"))return;
+  cards().filter(c=>isCredit(c)&&!c.frNoUse&&!c.frOnly&&c.used!=null).forEach(c=>{const old=Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*x.st.pay),0)*100)/100, d=Math.round((old-frRem(c))*100)/100;if(Math.abs(d)>.004)putBill({...c,used:Math.round(((+c.used||0)+d)*100)/100})});
+  putBill({id:"flag-frcap-3",kind:"flag",at:Date.now()})}
 let frFixDone=false;
 function frFix(snap){if(frFixDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frFixDone=true;if(bills.some(b=>b.id==="flag-frfix-1"))return;
   homes().filter(h=>+h.frn&&h.pay).forEach(h=>hmCardSync(h));putBill({id:"flag-frfix-1",kind:"flag",at:Date.now()})}
@@ -3623,7 +3636,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações com juros",()=>cap2Fix(snap));safe("Ligar fracionadas",()=>frAutoLink(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações com juros",()=>cap2Fix(snap));safe("Ligar fracionadas",()=>frAutoLink(snap));setTimeout(()=>safe("Prestações faturadas",()=>frBill(snap)),400);if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4082,7 +4095,11 @@ const cardEnd=c=>{const [y,m]=String(c.exp).split("-").map(Number);return ymd(ne
 /* Pedido (14/11): no ActivoBank o plafond conta as prestações que faltam COM juros (prestação × as que faltam) — é o que o banco mostra */
 const frCap=x=>x.st.pay;
 const frCapOld=x=>x.cap!=null?x.cap:(x.fv?x.fv/x.st.n:x.st.pay);
-const frRem=c=>Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*frCap(x)),0)*100)/100;
+/* Pedido (14/11, ActivoBank): no plafond conta o CAPITAL das prestações ainda não faturadas (valor da compra ÷ nº);
+   quando o extrato fecha, a prestação desse mês (capital + juros) passa a ser um movimento do extrato ("Prestação …"), que sai com o pagamento da fatura */
+function frList(c){return[...(c.frs||[]).map(x=>({id:x.id,n:x.n,cnt:+x.cnt,first:x.first,pay:+x.pay,cap:x.fv?(+x.fv)/(+x.cnt):+x.pay,pt:x.pt})),
+  ...homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf).map(h=>{const F=hmFr(h);return F?{id:h.id,n:"🏠 "+h.name,cnt:+h.frn,first:h.frf,pay:F.pay,cap:hmVal(h)/(+h.frn)}:null}).filter(Boolean)]}
+const frRem=c=>Math.round(frList(c).reduce((t,x)=>{const st=frState(x.cnt,x.first,x.pay,c.cd||frDay(c),x.pt);return t+(st.done?0:st.left*x.cap)},0)*100)/100;
 const cardUsed=c=>c.frOnly?frRem(c):c.frNoUse?(+c.used||0):Math.round(((+c.used||0)+frRem(c))*100)/100;
 const cardFree=c=>Math.max(0,(+c.limit||0)-cardUsed(c));
 const isCredit=c=>c.type!=="debito";
@@ -4118,7 +4135,7 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
         <label class="f">Cada prestação (€)<input name="fp" type="number" step="0.01" min="0" inputmode="decimal" placeholder="ex.: 41,50"></label>
         <label class="f">Nº de prestações<input name="fc" type="number" min="1" max="120" inputmode="numeric" placeholder="ex.: 12"></label>
         <label class="f" style="grid-column:1/-1">1.ª prestação (mês)<input name="ff" type="month" value="${c.cd?stmtK(c):ymOf(new Date())}"></label>
-        ${(()=>{const B=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.auto&&!x.hm&&!x.frid).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,12);return B.length?`<div class="f" style="grid-column:1/-1">Ou juntar compras que já registaste (várias no mesmo fracionamento)<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;text-transform:none;letter-spacing:0;font-weight:500">${B.map(x=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--fg)"><input type="checkbox" name="frb" value="${x.id}" data-frbv="${x.v}"><span style="flex:1">${dShort(x.d)} · ${esc(x.n||"Compra")}${x.w?" · "+esc(x.w):""}</span><b>${eur(x.v)}</b></label>`).join("")}</div></div>`:""})()}
+        ${(()=>{const B=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.auto&&!x.hm&&!x.frid&&!x.frb).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,12);return B.length?`<div class="f" style="grid-column:1/-1">Ou juntar compras que já registaste (várias no mesmo fracionamento)<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;text-transform:none;letter-spacing:0;font-weight:500">${B.map(x=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--fg)"><input type="checkbox" name="frb" value="${x.id}" data-frbv="${x.v}"><span style="flex:1">${dShort(x.d)} · ${esc(x.n||"Compra")}${x.w?" · "+esc(x.w):""}</span><b>${eur(x.v)}</b></label>`).join("")}</div></div>`:""})()}
         <p class="note" style="margin:0;grid-column:1/-1;font-size:12.5px">Conta nos gastos do cartão só a prestação de cada mês. O "Valor" em cima é o total da compra (opcional, serve para ver os juros).</p></div>`:""}
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
@@ -4139,7 +4156,7 @@ function cardSetUsed(c,v,label){const isL=/^\s*l/i.test(v);v=String(v).replace(/
 /* Pedido (14/11): quando fecha o extrato de um cartão de crédito ligado a uma linha das Contas, a app propõe o valor da fatura
    = compras desse extrato + prestações cobradas nesse mês; confirma-se (ou corrige-se) e fica na linha das Contas no mês do débito. c.fatOk[extrato]=valor */
 const skPrev=sk=>{const [y,m]=sk.split("-").map(Number);return ymOf(new Date(y,m-2,1))};
-function fatCalc(c,sk){const buys=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frid&&stmtK(c,x.d)===sk).reduce((t,x)=>t+x.v,0);
+function fatCalc(c,sk){const buys=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frid&&!x.frb&&stmtK(c,x.d)===sk).reduce((t,x)=>t+x.v,0);
   const inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt};
   const pr=(c.frs||[]).filter(x=>inM(x.first,+x.cnt)).reduce((t,x)=>t+(+x.pay||0),0)+homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf&&inM(h.frf,+h.frn)).reduce((t,h)=>t+(hmFr(h)||{pay:0}).pay,0);
   return{buys:Math.round(buys*100)/100,pr:Math.round(pr*100)/100,v:Math.round((buys+pr)*100)/100}}
@@ -4172,10 +4189,10 @@ const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
 function frInStmt(c,sk){const D=stmtDates(c,sk), d=(D.close||sk+"-28"), inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt?i+1:0};
   return[...(c.frs||[]).map(x=>{const i=inM(x.first,+x.cnt);return i?{id:"fr-"+x.id,v:+x.pay,d,n:`💳 ${x.n} (${i}/${x.cnt})`,fr:1}:null}),
     ...homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf).map(h=>{const i=inM(h.frf,+h.frn), F=hmFr(h);return i&&F?{id:"fr-"+h.id,v:F.pay,d,n:`💳 🏠 ${h.name} (${i}/${h.frn})`,fr:1}:null})].filter(Boolean)}
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
+function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
 const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
-  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
     return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
@@ -4255,7 +4272,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
-    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam</span></div>`)}
+    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam (sem juros)</span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
   if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
@@ -6424,7 +6441,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações com juros",cap2Fix);safe("Ligar fracionadas",frAutoLink);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações com juros",cap2Fix);safe("Ligar fracionadas",frAutoLink);setTimeout(()=>safe("Prestações faturadas",frBill),400);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6486,7 +6503,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v340";
+const APPV="casa-v341";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
