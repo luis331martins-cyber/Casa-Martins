@@ -1758,7 +1758,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <h1 class="large">Contas</h1>
     <div id="accSec" class="group" style="gap:8px">
       <div id="accounts" class="group"></div>
-      <button class="back" type="button" id="addAcc" style="align-self:flex-start">+ Juntar conta bancária</button>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><button class="back" type="button" id="addAcc" style="align-self:flex-start">+ Juntar conta bancária</button><button class="back" type="button" id="accXfer" hidden>⇄ Transferir entre contas</button></div>
     </div>
     <div class="month">
       <button class="nav-m" id="mPrev" aria-label="Mês anterior">‹</button>
@@ -3143,7 +3143,7 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
       <button type="button" class="bname" data-editacc="${a.id}" aria-label="Atualizar ${esc(a.name)}"><div class="name">${esc(bankLabel(a.name))}</div></button>
       <div class="amt"${(+a.bal||0)<0&&!c?' style="color:var(--bad)"':""}>${eur(+a.bal||0)}</div>
     </div>`}).join("")+(editAcc==="new"?accForm(null):"")||`<div class="empty">Ainda não há contas bancárias.<br>Junta a conta (ou as contas) e o saldo de hoje.</div>`;
-  document.getElementById("addAcc").hidden=editAcc==="new";
+  document.getElementById("addAcc").hidden=editAcc==="new";document.getElementById("accXfer").hidden=accs.length<2||!!editAcc;
   if(typeof renderMeals==="function")safe("O que comer",renderMeals);
   if(typeof renderMeds==="function"){safe("Medicamentos",renderMeds);safe("Medicamentos (compras)",medShopSync);safe("Vídeos",renderVideos);safe("Jogo",gRenderBest);safe("Mensagens",renderChat);safe("Já tomou?",renderTakeAsk);safe("Atualizar valores",renderAsk);safe("Fim do mês",renderIncAsk);if(!document.getElementById("tab-plano").hidden)safe("Plano",renderPlan);safe("Créditos",renderLoans);safe("Eventos",renderEvts);safe("Cartões",renderCards);safe("Poupanças",renderSavs);safe("Aniversários",renderAnos);safe("Escola",renderEscola);safe("Casa",renderHome);safe("Viagens",renderTrips);if(!document.getElementById("tab-graficos").hidden)safe("Gráficos",renderChart);safe("Carro",renderCars);safe("Documentos",renderDocs);safe("Saúde",renderHealth);safe("Snake",sRenderBest);if(!document.getElementById("tab-jogos").hidden)safe("Jogos",renderGames)}
   const ty=document.getElementById("bType").value, Q=ty==="budget"?BUDQUICK:ty==="income"?INCQUICK:BQUICK;
@@ -3177,6 +3177,25 @@ const AC_DAY=5;
 function acertoTotals(k){const pk=ymOf(new Date(+k.slice(0,4),+k.slice(5)-2,1)), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm);
   return [...new Set(AC.map(b=>b.ac))].map(w=>{const rec=bills.find(x=>x.kind==="acerto"&&x.who===w);
     return {w,done:!!(rec&&rec.done&&rec.done[k]),tot:AC.filter(b=>b.ac===w).reduce((t,b)=>t+(b.acm==="half"?monthAmt(b,k)/2:-monthAmt(b,pk)),0)}})}
+/* Pedido (14/11): transferir de um banco para o outro (ex.: o ordenado da Bianca entra na CGD e passa para o ActivoBank);
+   escreve-se o valor que passou mesmo — desce num saldo e sobe no outro. Fica a nota na conta de origem: a.xf=[{v,d,to}] */
+document.getElementById("accXfer").addEventListener("click",()=>{const A=accounts();if(A.length<2)return;
+  const fr=(A.find(a=>/cgd|caixa/i.test(a.name))||A[0]).id, to=(A.find(a=>a.id!==fr&&/activo/i.test(a.name))||A.find(a=>a.id!==fr)).id, k=ymOf(new Date());
+  const opt=sel=>A.map(a=>`<option value="${a.id}"${a.id===sel?" selected":""}>${esc(bankLabel(a.name))} · ${eur(+a.bal||0)}</option>`).join("");
+  const hint=()=>{const f=o.querySelector("#xfF").value, R=bills.filter(b=>isInc(b)&&b.acc===f&&isPaid(b,k));return R.length?`Entrou este mês em ${esc(bankLabel((A.find(a=>a.id===f)||{}).name||""))}: ${R.map(b=>`${esc(b.name)} ${eur(monthAmt(b,k))}`).join(" · ")}`:""};
+  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">⇄ Transferir entre contas</div><div class="rdm" id="xfH"></div>
+    <label class="f">De<select id="xfF">${opt(fr)}</select></label>
+    <label class="f">Para<select id="xfT">${opt(to)}</select></label>
+    <label class="f">Quanto passou (€)<input id="xfV" type="text" inputmode="decimal" placeholder="ex.: 950"></label>
+    <button type="button" class="btn" data-xf="ok">⇄ Transferir</button><button type="button" class="btn ghost" data-xf="x">Cancelar</button></div>`;
+  const upd=()=>{o.querySelector("#xfH").innerHTML=hint()};upd();o.querySelector("#xfF").addEventListener("change",upd);
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-xf]");if(ev.target!==o&&!q)return;if(!q||q.dataset.xf==="x"){o.remove();return}
+    const f=o.querySelector("#xfF").value, t=o.querySelector("#xfT").value, v=Math.round(numIn(o.querySelector("#xfV").value)*100)/100;
+    if(f===t){toast("Escolhe duas contas diferentes");return}if(!(v>0)){toast("Escreve o valor");return}o.remove();
+    const a=bills.find(x=>x.id===f), b=bills.find(x=>x.id===t);if(!a||!b)return;
+    const na={...a,bal:Math.round(((+a.bal||0)-v)*100)/100,at:Date.now(),xf:[...(a.xf||[]),{v,d:ymd(new Date()),to:t}].slice(-30)}, nb={...b,bal:Math.round(((+b.bal||0)+v)*100)/100,at:Date.now()};
+    putBill(na);putBill(nb);toast(`${eur(v)}: ${bankLabel(a.name)} ${eur(na.bal)} → ${bankLabel(b.name)} ${eur(nb.bal)}`)});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#xfV");if(i)i.focus()},50)});
 /* Acerto: confirmar o valor da conta paga pela outra pessoa, e marcar o mês como acertado */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-acval]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=t.dataset.acval.split("|"), b=bills.find(x=>x.id===id);if(!b)return;
   const v=prompt(`Valor da ${b.name} de ${mFull(k).split(" de ")[0]} (€):`,String(Math.round(monthAmt(b,k)*100)/100).replace(".",","));if(v===null)return;
@@ -6509,7 +6528,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v346";
+const APPV="casa-v347";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
