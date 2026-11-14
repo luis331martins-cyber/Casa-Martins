@@ -323,7 +323,7 @@ async function cardAuto(code, now) {
           const day = Math.min(+(linha ? linha.day : a.day) || 1, last);
           if (mk === curK && now.d < day) continue;
           const id = `auto-${a.id}-${mk}`;
-          if (buys.some((x) => x.id === id)) continue;
+          if (buys.some((x) => x.id === id || (a.bill && card.bill && x.id === `pay-${card.bill}-${mk}`))) continue; // já abatido ao marcar a conta como paga na app
           const v = Math.round((linha ? monthAmt(linha, mk) : +a.v || 0) * 100) / 100;
           if (!v) continue;
           const mov = a.t === "compra" ? v : -v;

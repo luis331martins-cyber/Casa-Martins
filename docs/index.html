@@ -3264,7 +3264,13 @@ function spendBank(b,d,accId){accId=accId||b.acc;if(!accId||Math.abs(d)<0.005)re
 document.addEventListener("click",e=>{const t=e.target.closest("[data-payask]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.payask);if(b)payNow(b,mKey())},true);
 /* Pedido (05/11): tocar na bola (ou ✓ Pago) dá logo como paga, com o valor do mês e o banco da conta; o aviso tem "Corrigir valor".
    Compras de "marca quando comprares" (ex.: bilha) continuam a pedir o valor. */
-function payNow(b,k){if(b.askPay){payAsk(b,k);return}const nb={...b,paid:{...(b.paid||{}),[k]:true}};putBill(nb);
+/* Pedido (14/11): pagar a linha do cartão nas Contas abate logo ao usado do cartão (se o automático do dia ainda não o fez); desmarcar repõe */
+function cardBillPay(b,k,on){if(typeof cards!=="function")return;const c=cards().find(x=>x.bill===b.id&&isCredit(x));if(!c)return;const id=`pay-${b.id}-${k}`, B=c.buys||[];
+  if(on){if(B.some(x=>x.id===id||x.id===`auto-bill-${k}`))return;const v=Math.round(monthAmt(b,k)*100)/100;if(!(v>0))return;
+    const buys=[...B,{id,v:-v,d:ymd(new Date()),n:"Pagamento da fatura"}].sort((a,c2)=>a.d.localeCompare(c2.d)).slice(-80);putBill({...c,buys,used:Math.max(0,Math.round(((+c.used||0)-v)*100)/100),usedAt:Date.now()});
+    setTimeout(()=>toast(`${c.name}: −${eur(v)} no usado · livre ${eur(cardFree(cards().find(x=>x.id===c.id)))}`),1400)}
+  else{const x=B.find(y=>y.id===id);if(!x)return;putBill({...c,buys:B.filter(y=>y.id!==id),used:Math.round(((+c.used||0)-x.v)*100)/100,usedAt:Date.now()})}}
+function payNow(b,k){if(b.askPay){payAsk(b,k);return}const nb={...b,paid:{...(b.paid||{}),[k]:true}};putBill(nb);cardBillPay(nb,k,true);
   setTimeout(()=>{const a=b.acc&&bills.find(x=>x.id===b.acc&&x.kind==="account"), el=document.getElementById("toast");
     el.innerHTML=`${esc(b.name)}: ${eur(monthAmt(b,k))} pago${a?` · ${esc(bankLabel(a.name))} ${eur(+a.bal||0)}`:""}<button type="button" class="tundo" data-tfix="1">Corrigir valor</button>`;el.hidden=false;
     undoFn=null;clearTimeout(tt);tt=setTimeout(()=>{el.hidden=true},6000);el.querySelector("[data-tfix]").onclick=ev=>{ev.stopPropagation();el.hidden=true;const x=bills.find(y=>y.id===b.id);if(x)valAsk(x,k)}},500)}
@@ -3281,7 +3287,7 @@ function valAsk(b,k){const inc=isInc(b), paid=isPaid(b,k), old=Math.round(monthA
     const dif=Math.round((n-old)*100)/100;
     if(paid&&Math.abs(dif)>.004&&aid){const a=bills.find(x=>x.id===aid);if(a){const na={...a,bal:Math.round(((+a.bal||0)+(inc?dif:-dif))*100)/100,at:Date.now()};putBill(na);setTimeout(()=>toast(`${bankLabel(a.name)}: ${(inc?dif:-dif)>0?"+":"−"}${eur(Math.abs(dif))} · saldo ${eur(na.bal)}`),900)}
       if(b.acc===aid&&nb.accd&&nb.accd[k]!=null&&nb.accd[k]!==0)nb.accd={...nb.accd,[k]:Math.round(n*100)/100}}
-    putBill(nb);renderBills();toast(`${b.name}: ${eur(n)}${Math.abs(dif)>.004?` (${dif>0?"+":"−"}${eur(Math.abs(dif))})`:""}`)});
+    putBill(nb);if(paid&&!inc&&Math.abs(dif)>.004){cardBillPay(b,k,false);setTimeout(()=>cardBillPay(bills.find(x=>x.id===b.id)||nb,k,true),50)}renderBills();toast(`${b.name}: ${eur(n)}${Math.abs(dif)>.004?` (${dif>0?"+":"−"}${eur(Math.abs(dif))})`:""}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#fvV");if(i){i.focus();i.select()}},50)}
 /* Pedido (05/11): receitas também por botão — ✓ Recebido / Recebida ✓ (volta a pôr por receber) */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-recv],[data-unrecv]");if(!t)return;e.preventDefault();e.stopPropagation();const on=!!t.dataset.recv, b=bills.find(x=>x.id===(t.dataset.recv||t.dataset.unrecv));if(!b)return;const k=mKey();
@@ -3293,7 +3299,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-recv],[dat
 /* Pedido (05/11): marca-se pelo botão ✓ Pago (sem bola); "Paga ✓" volta a pôr por pagar */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-unpay]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.unpay);if(!b)return;const k=mKey();
   if(!confirm(`Pôr "${b.name}" outra vez por pagar?`))return;const paid={...(b.paid||{})}, nb={...b};if(b.dd)paid[k]=false;else delete paid[k];
-  if(b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}if(!b.acc&&nb.accd&&nb.accd[k]!=null){nb.accd={...nb.accd};delete nb.accd[k]}nb.paid=paid;putBill(nb);toast(`${b.name}: por pagar`)},true);
+  if(b.askPay&&nb.amounts){nb.amounts={...nb.amounts};delete nb.amounts[k]}if(!b.acc&&nb.accd&&nb.accd[k]!=null){nb.accd={...nb.accd};delete nb.accd[k]}nb.paid=paid;putBill(nb);cardBillPay(b,k,false);toast(`${b.name}: por pagar`)},true);
 document.addEventListener("click",e=>{const t=e.target.closest("[data-fixval]");if(!t)return;e.preventDefault();e.stopPropagation();const b=bills.find(x=>x.id===t.dataset.fixval);if(b)valAsk(b,mKey())},true);
 /* Contas confirmadas na compra (bilha de gás): janela com o valor pago e o banco de onde saiu */
 function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";const v0=(Math.round(monthAmt(b,k)*100)/100).toFixed(2).replace(".",",");
@@ -3307,7 +3313,7 @@ function payAsk(b,k){const o=document.createElement("div");o.className="rdovl";c
     /* este mês desconta sempre no banco escolhido (apaga marcas antigas de "já estava no saldo") */
     {const accd={...(b.accd||{})};delete accd[k];if(acc){if(acc!==b.acc)Object.keys(nb.paid).forEach(m=>{if(m!==k&&nb.paid[m]===true&&accd[m]==null)accd[m]=0});nb.acc=acc;nb.accd=accd}
      else{nb.accd={...accd,[k]:0}}}
-    putBill(nb);if(!acc)toast(`${b.name}: ${eur(n)} pago`)});
+    putBill(nb);cardBillPay(nb,k,true);if(!acc)toast(`${b.name}: ${eur(n)} pago`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#paV");if(i){i.focus();i.select()}},50)}
 /* Corrigir um gasto já registado */
 document.addEventListener("submit",e=>{
@@ -6369,7 +6375,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v317";
+const APPV="casa-v318";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
