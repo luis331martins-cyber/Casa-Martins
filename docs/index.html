@@ -4148,7 +4148,8 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
     ${c.frNoUse?"":`<label class="tick" style="font-size:13px;margin-top:4px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado desce sozinho)</label>`}</div>`}
 /* Pedido (14/11): em alguns bancos (CGD) as compras fracionadas não ocupam o usado do cartão; aí as da Casa não somam ao usado */
 document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.cardfruse)return;const c=cards().find(x=>x.id===t.dataset.cardfruse);if(!c)return;
-  const n={...c};if(t.checked)delete n.frNoUse;else{n.frNoUse=true;delete n.frOnly}putBill(n);
+  /* mudar a opção não mexe no usado que se vê (só muda como é calculado) */
+  const before=cardUsed(c), n={...c};if(t.checked)delete n.frNoUse;else{n.frNoUse=true;delete n.frOnly}n.used=Math.round((before-(n.frNoUse?0:frRem(n)))*100)/100;putBill(n);
   setTimeout(()=>{homes().filter(h=>h.pay===c.id&&+h.frn).forEach(h=>hmCardSync(h));renderCards();toast(t.checked?`${c.name}: as prestações contam no usado`:`${c.name}: as prestações já não contam no usado`)},50)});
 const frIsOpen=id=>{try{return localStorage.getItem("casa-fro-"+id)==="1"}catch(e){return false}};
 document.addEventListener("click",e=>{const b=e.target.closest("[data-frtog]");if(!b)return;const id=b.dataset.frtog, o=frIsOpen(id);try{localStorage.setItem("casa-fro-"+id,o?"0":"1")}catch(err){}if(o&&cardFrOpen===id)cardFrOpen="";renderCards()});
@@ -6377,7 +6378,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v319";
+const APPV="casa-v320";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
