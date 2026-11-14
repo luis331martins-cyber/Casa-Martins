@@ -2856,6 +2856,11 @@ let capDone=false;
 function capFix(snap){if(capDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;capDone=true;if(bills.some(b=>b.id==="flag-frcap-1"))return;
   cards().filter(c=>isCredit(c)&&!c.frNoUse&&!c.frOnly&&c.used!=null).forEach(c=>{const old=Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.leftAmt),0)*100)/100, d=Math.round((old-frRem(c))*100)/100;if(Math.abs(d)>.004)putBill({...c,used:Math.round(((+c.used||0)+d)*100)/100})});
   putBill({id:"flag-frcap-1",kind:"flag",at:Date.now()})}
+/* volta a contar com juros sem mexer no usado que se vê (só nos telemóveis onde a versão "sem juros" chegou a acertar o usado) */
+let cap2Done=false;
+function cap2Fix(snap){if(cap2Done||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;cap2Done=true;if(bills.some(b=>b.id==="flag-frcap-2"))return;
+  if(bills.some(b=>b.id==="flag-frcap-1"))cards().filter(c=>isCredit(c)&&!c.frNoUse&&!c.frOnly&&c.used!=null).forEach(c=>{const capR=Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*frCapOld(x)),0)*100)/100, d=Math.round((capR-frRem(c))*100)/100;if(Math.abs(d)>.004)putBill({...c,used:Math.round(((+c.used||0)+d)*100)/100})});
+  putBill({id:"flag-frcap-1",kind:"flag",at:Date.now()});putBill({id:"flag-frcap-2",kind:"flag",at:Date.now()})}
 let frFixDone=false;
 function frFix(snap){if(frFixDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frFixDone=true;if(bills.some(b=>b.id==="flag-frfix-1"))return;
   homes().filter(h=>+h.frn&&h.pay).forEach(h=>hmCardSync(h));putBill({id:"flag-frfix-1",kind:"flag",at:Date.now()})}
@@ -3610,7 +3615,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações sem juros",()=>capFix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações com juros",()=>cap2Fix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4066,8 +4071,9 @@ function cardStyle(c){const n=noAcc(c.name||"");if(c.style==="foto"){const ps=ph
 const cardEnd=c=>{const [y,m]=String(c.exp).split("-").map(Number);return ymd(new Date(y,m,0))};
 /* Pedido (04/11): cartão só para prestações (ex.: WiZink Flex) → o usado é o que falta pagar das prestações e desce sozinho todos os meses */
 /* Pedido (14/11): nos cartões em que o banco conta as prestações no usado (ActivoBank), o usado = o resto (c.used) + o que falta das prestações, e vai descendo sozinho */
-/* Pedido (14/11): no plafond conta o capital que falta (valor da compra ÷ nº de prestações × as que faltam), não os juros; sem valor da compra, conta a prestação */
-const frCap=x=>x.cap!=null?x.cap:(x.fv?x.fv/x.st.n:x.st.pay);
+/* Pedido (14/11): no ActivoBank o plafond conta as prestações que faltam COM juros (prestação × as que faltam) — é o que o banco mostra */
+const frCap=x=>x.st.pay;
+const frCapOld=x=>x.cap!=null?x.cap:(x.fv?x.fv/x.st.n:x.st.pay);
 const frRem=c=>Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*frCap(x)),0)*100)/100;
 const cardUsed=c=>c.frOnly?frRem(c):c.frNoUse?(+c.used||0):Math.round(((+c.used||0)+frRem(c))*100)/100;
 const cardFree=c=>Math.max(0,(+c.limit||0)-cardUsed(c));
@@ -4235,7 +4241,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
-    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam (sem juros)</span></div>`)}
+    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam</span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
   if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
@@ -6401,7 +6407,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações sem juros",capFix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações com juros",cap2Fix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6463,7 +6469,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v336";
+const APPV="casa-v337";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
