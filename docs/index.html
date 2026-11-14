@@ -4133,7 +4133,12 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
       <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" data-cardfropen="">Cancelar</button></form>`
     :`<button type="button" class="back" data-cardfropen="${c.id}" style="align-self:flex-start">+ Prestação</button>`;
   return`<div class="cfrbox">${head}${rows}${form}
-    <label class="tick" style="font-size:13px;margin-top:4px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado desce sozinho)</label></div>`}
+    <label class="tick" style="font-size:13px;margin-top:4px"><input type="checkbox" class="switch" data-cardfruse="${c.id}"${c.frNoUse?"":" checked"}> No banco, as prestações que faltam contam no usado do cartão (ex.: ActivoBank sim, CGD não)</label>
+    ${c.frNoUse?"":`<label class="tick" style="font-size:13px;margin-top:4px"><input type="checkbox" class="switch" data-cardfronly="${c.id}"${c.frOnly?" checked":""}> Só uso este cartão para prestações (o usado desce sozinho)</label>`}</div>`}
+/* Pedido (14/11): em alguns bancos (CGD) as compras fracionadas não ocupam o usado do cartão; aí as da Casa não somam ao usado */
+document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.cardfruse)return;const c=cards().find(x=>x.id===t.dataset.cardfruse);if(!c)return;
+  const n={...c};if(t.checked)delete n.frNoUse;else{n.frNoUse=true;delete n.frOnly}putBill(n);
+  setTimeout(()=>{homes().filter(h=>h.pay===c.id&&+h.frn).forEach(h=>hmCardSync(h));renderCards();toast(t.checked?`${c.name}: as prestações contam no usado`:`${c.name}: as prestações já não contam no usado`)},50)});
 const frIsOpen=id=>{try{return localStorage.getItem("casa-fro-"+id)==="1"}catch(e){return false}};
 document.addEventListener("click",e=>{const b=e.target.closest("[data-frtog]");if(!b)return;const id=b.dataset.frtog, o=frIsOpen(id);try{localStorage.setItem("casa-fro-"+id,o?"0":"1")}catch(err){}if(o&&cardFrOpen===id)cardFrOpen="";renderCards()});
 document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.cardfronly)return;const c=cards().find(x=>x.id===t.dataset.cardfronly);if(!c)return;
@@ -5001,7 +5006,7 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.hmform;if(!id)r
   editHm="";openHm=h.id;putBill(h);const cc=hmCardSync(h);renderHome();toast(cc?`Guardado e lançado no ${cc}`:old?"Guardado":"Guardado. Toca nele para juntar a fatura.")});
 /* Pedido (03/11): compra da Casa paga com cartão de crédito entra nos movimentos do cartão e soma ao usado (acerta se mudar; sai se apagar) */
 function hmCardSync(h,del){let out="";cards().forEach(c=>{const had=(c.buys||[]).filter(y=>y.hm===h.id), nv=Math.round(hmVal(h)*100)/100, d=h.date||ymd(new Date()), n=h.shop||"Casa", w="🏠 "+h.name+(+h.frn?` (${h.frn}×)`:"");
-  const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0;if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n&&had[0].w===w){out="";return}
+  const add=!del&&h.payc&&h.pay===c.id&&isCredit(c)&&nv>0&&!(+h.frn&&c.frNoUse);if(add)out=c.name;if(!had.length&&!add)return;if(add&&had.length===1&&had[0].v===nv&&had[0].d===d&&had[0].n===n&&had[0].w===w){out="";return}
   let buys=(c.buys||[]).filter(y=>y.hm!==h.id), used=c.used!=null?(+c.used||0)-had.reduce((t,y)=>t+(+y.v||0),0):null;
   if(add){buys=[...buys,{id:uid(),v:nv,d,n,w,hm:h.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);used=(used||0)+nv}
   putBill({...c,buys,...(used!=null?{used:Math.max(0,Math.round(used*100)/100),usedAt:Date.now()}:{})})});renderCards&&safe("Cartões",renderCards);return out}
@@ -6359,7 +6364,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v315";
+const APPV="casa-v316";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
