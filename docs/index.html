@@ -4190,14 +4190,16 @@ document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.datase
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfreditb]");if(!t)return;const [cid,id]=t.dataset.cardfreditb.split("|");cardFrOpen=cid;cardFrEdit=id;try{localStorage.setItem("casa-fro-"+cid,"1")}catch(err){}renderCards();setTimeout(()=>{const f=document.querySelector(`[data-cardfr="${cid}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},40)});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardfropen],[data-cardfrdel]");if(!t)return;
   if(t.dataset.cardfrdel!=null){const [cid,id]=t.dataset.cardfrdel.split("|"), c=cards().find(x=>x.id===cid), x=c&&(c.frs||[]).find(y=>y.id===id);
-    if(x&&confirm(`Apagar a prestação "${x.n}"?`)){putBill({...c,frs:c.frs.filter(y=>y.id!==id)});renderCards();toast("Apagada")}}
+    if(x&&confirm(`Apagar a prestação "${x.n}"?`)){{const before=cardUsed(c), nc={...c,frs:c.frs.filter(y=>y.id!==id)};if(c.used!=null&&!c.frOnly&&!c.frNoUse)nc.used=Math.round((before-frRem(nc))*100)/100;putBill(nc)};renderCards();toast("Apagada")}}
   else{cardFrOpen=t.dataset.cardfropen;cardFrEdit="";renderCards();if(cardFrOpen)setTimeout(()=>{const i=document.querySelector(`[data-cardfr="${cardFrOpen}"] [name=n]`);if(i)i.focus()},30)}});
 document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
   const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))};const pay=num(f.p.value), cnt=Math.round(+f.c.value), fv=num(f.v.value), lf=f.lf&&f.lf.value!==""?Math.round(+f.lf.value):null;if(!pay||!cnt||!f.a.value)return;
   /* "faltam N" como o banco diz: a deste mês já conta como paga e a última é daqui a N meses */
   let first=f.a.value, pt=null;if(lf!=null&&lf<=cnt){const fi=mIdx(ymOf(new Date()))+1-(cnt-lf);first=`${Math.floor(fi/12)}-${String(fi%12+1).padStart(2,"0")}`;pt=ymOf(new Date())}
   const eid=f.dataset.cardfredit, item={id:eid||uid(),n:f.n.value.trim(),pay,cnt,first,...(fv?{fv}:{}),...(pt?{pt}:{})};
-  putBill({...c,frs:eid?(c.frs||[]).map(y=>y.id===eid?item:y):[...(c.frs||[]),item]});cardFrOpen="";cardFrEdit="";renderCards();
+  {const before=cardUsed(c), nc={...c,frs:eid?(c.frs||[]).map(y=>y.id===eid?item:y):[...(c.frs||[]),item]};
+   /* corrigir uma prestação (nº, meses, valor) não muda o usado que se vê; juntar uma nova só muda se o banco a contar no usado */
+   if(eid&&c.used!=null&&!c.frOnly&&!c.frNoUse)nc.used=Math.round((before-frRem(nc))*100)/100;putBill(nc)}cardFrOpen="";cardFrEdit="";renderCards();
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
@@ -4250,7 +4252,7 @@ function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
     <label class="f">Débito da fatura (dia)<input name="ddb" type="number" min="1" max="31" inputmode="numeric" value="${c?v(c.ddb):""}" placeholder="ex.: 5 · só crédito"></label>
     <label class="f">Fecho do extrato (dia)<input name="cd" type="number" min="1" max="31" inputmode="numeric" value="${c?v(c.cd):""}" placeholder="ex.: 15 · só crédito"></label>
     <label class="f">Plafond (€)<input name="lim" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.limit):""}" placeholder="só crédito"></label>
-    <label class="f">Já usado (€)<input name="u" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.used):""}" placeholder="só crédito"></label>
+    <label class="f">Já usado (€)<input name="u" type="number" step="0.01" min="0" inputmode="decimal" value="${c&&(c.used!=null||c.frs)?v(cardUsed(c)):""}" placeholder="só crédito"></label>
     <label class="f wide">Linha nas Contas (o que pagas por mês)<select name="b">${c?"":'<option value="auto" selected>Automática (pelo nome)</option>'}<option value="">Não ligar</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${c&&(c.bill===b.id||!c.bill&&!c.nolink&&sameName(c.name,b.name))||!c&&false?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
     ${autoFields(c)}
     <button class="btn" type="submit">Guardar</button>
@@ -4316,7 +4318,9 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.cardform;if(!id
       const a={id:"s"+i,n:f["a"+i+"n"].value.trim()||(f["a"+i+"t"].value==="compra"?"Compra automática":"Pagamento automático"),t:f["a"+i+"t"].value,v,day:Math.min(31,Math.max(1,d))};
       a.since=keep(a.id,a)||nextSince(a.day);A.push(a)}
     if(A.length)c.auto=A;else delete c.auto}
-  if(c.used!=null&&(!old||old.used!==c.used))c.usedAt=Date.now();
+  /* o "Já usado" é o que se vê (o do banco): guarda-se sem a parte das prestações, que a app soma; mudar o dia do débito/fecho não mexe no que se vê */
+  if(c.used!=null&&!c.frOnly&&!c.frNoUse)c.used=Math.round((c.used-frRem(c))*100)/100;
+  if(c.used!=null&&(!old||cardUsed(old)!==cardUsed(c)))c.usedAt=Date.now();
   editCard="";putBill(c);renderCards();toast("Cartão guardado")});
 
 /* ---------- Poupanças (kind:"saving") ----------
@@ -6410,7 +6414,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v323";
+const APPV="casa-v324";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
