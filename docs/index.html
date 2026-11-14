@@ -3487,7 +3487,7 @@ function alKind(a){const n=a.name||"";if(a.acr)return["cash","#34c759"];if(a.bk)
   if(dl)return[dl[0],late?"#ff453a":dl[1]];
   return {escola:["bag","#ffb800"],meds:["pill","#34c759"],anos:["gift","#ff375f"],viagens:["plane","#5ac8fa"],eventos:["gift","#ff2d87"],lista:["cart","#ff9f0a"],despensa:["clock","#ff9f0a"],calendario:["clock","#5e5ce6"]}[a.go]||["bell","#8e8e93"]}
 const alClean=t=>String(t||"").replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?\s*/u,"");
-function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:a.uask?`data-useask="1"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
+function alertsHTML(A){const st=alStyle(), at=a=>a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:a.uask?`data-useask="1"`:a.fat?`data-fatask="${a.fat}"`:`data-go="${a.go}"${a.acr?' data-ctab="receitas"':""}${a.bk?' data-sp="geral"':""}${a.day?` data-alday="${a.day}"`:""}`;
   if(st==="C")return `<div class="altiles">${A.map(a=>{const [k,c]=alKind(a);return `<button class="altile" ${at(a)} style="--c:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg><span class="atn">${esc(alClean(a.name))}</span><span class="atm">${esc(a.meta)}</span></button>`}).join("")}</div>`;
   return `<div class="algrp">${A.map(a=>{const [k,c]=alKind(a);return `<button class="alrow" ${at(a)}><span class="alic" style="background:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ALI[k]}</svg></span><span class="alt"><span class="name">${esc(alClean(a.name))}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`}).join("")}</div>`}
 function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")safe("Pastas",renderFolders);if(typeof renderConf==="function")safe("Confirmar",renderConf)},0);
@@ -3518,6 +3518,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(typeof levPending==="function")levPending().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"despesas",acr:1,lev:x.b.id+"|"+x.k,name:`Levantar ${eur(x.v)}`,meta:`${x.v<x.tot-0.004?`Falta de ${eur(x.tot)} · `:"Para a empresa · "}${x.b.name} de fim de ${mFull(prevK(x.k)).split(" de ")[0]}`}));
   if(typeof bdays==="function")bdays().forEach(b=>{const n=bdNext(b);if(n.days>1)return;
     A.push({o:n.days===0?0:2,cls:n.days<=1?"warn":"",dot:"ex",go:"anos",name:n.days===0?`🎂 Hoje é o aniversário de ${b.name}`:`🎂 Aniversário de ${b.name}`,meta:(n.days===0?"Dá os parabéns!":n.days===1?"É amanhã":`Daqui a ${n.days} dias · ${fmtD(ymd(n.date))}`)+(n.age!=null?` · faz ${n.age} anos`:"")+((b.ideas||[]).some(x=>!x.done)?` · ${(b.ideas||[]).filter(x=>!x.done).length} ideia(s) de presente`:"")})});
+  if(typeof fatDue==="function")fatDue().forEach(x=>A.push({o:1,cls:"warn",dot:"ex",go:"cartoes",fat:x.c.id+"|"+x.sk,name:`💳 Fechou o extrato ${x.c.name}`,meta:`Proposta: ${eur(x.v)} a pagar${x.debit?" a "+dShort(x.debit):""} · toca para confirmar`}));
   if(typeof useAskDue==="function"&&useAskDue())A.push({o:2,cls:"",dot:"bl",go:"despensa",uask:1,name:"🍽️ O que se gastou hoje em casa?",meta:"Toca para dar baixa (ou dizer que não houve nada)"});
   if(typeof evts==="function")evts().forEach(x=>{const d=x.date?daysTo(x.date):null;if(x.went||d==null||d<0||d>1)return;
     A.push({o:d===0?1:2,cls:d<=1?"warn":"",dot:"bl",go:"eventos",name:`${evtEmo(x.type)} ${x.name} ${d===0?"é hoje":"é amanhã"}${x.time?" às "+x.time:""}`,meta:[x.place,x.gift&&!x.giftOk?"🎁 falta o presente":""].filter(Boolean).join(" · ")||x.type});});
@@ -3541,7 +3542,7 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(toBuy)A.push({o:4,cls:"",dot:"ex",go:"lista",name:`${toBuy} produto${toBuy===1?"":"s"} para comprar`,meta:"Ver a lista de compras"});
   A.sort((a,b)=>a.o-b.o);
   document.getElementById("alertSec").hidden=!A.length;
-  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" ${a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:a.uask?`data-useask="1"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
+  document.getElementById("alerts").innerHTML=A.length&&alStyle()!=="A"?alertsHTML(A):A.length?A.map(a=>`<button class="alert ${a.cls}" ${a.lev?`data-levask="${a.lev}"`:a.rd?`data-rdask="${a.rd}|${a.rdk}"`:a.cake?`data-cakeask="${a.cake}"`:a.uask?`data-useask="1"`:a.fat?`data-fatask="${a.fat}"`:`data-go="${a.go}"${a.day?` data-alday="${a.day}"`:""}`}><i class="adot ${a.dot}"></i><span style="min-width:0"><span class="name" style="display:block">${esc(a.name)}</span><span class="meta">${esc(a.meta)}</span></span><span class="go">›</span></button>`).join(""):`<div class="empty">Está tudo em dia. Sem contas, validades ou marcações para hoje e amanhã.</div>`;
   const nToday=events.filter(e=>evOn(e,todayS)).length;
   const cb=document.getElementById("calBadge");cb.hidden=!nToday;cb.textContent=nToday;
   safe("Agenda",renderAgenda);
@@ -4094,6 +4095,26 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
   return`<div class="row" style="font-weight:600;margin-top:4px"><span>${c.cd?`Extrato que fecha a ${stmtLabel(c,mk)}`:`Compras em ${kName(mk)}`}</span><span>${eur(tot)}</span></div>${cardPending(c).map(pendRow).join("")}${rows}
     ${L.length>4&&cardAll!==c.id?`<button type="button" class="back" data-cardall="${c.id}" style="align-self:flex-start">Ver as ${L.length} ›</button>`:""}${form}`}
 let cardAll="";
+/* Pedido (14/11): quando fecha o extrato de um cartão de crédito ligado a uma linha das Contas, a app propõe o valor da fatura
+   = compras desse extrato + prestações cobradas nesse mês; confirma-se (ou corrige-se) e fica na linha das Contas no mês do débito. c.fatOk[extrato]=valor */
+const skPrev=sk=>{const [y,m]=sk.split("-").map(Number);return ymOf(new Date(y,m-2,1))};
+function fatCalc(c,sk){const buys=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&stmtK(c,x.d)===sk).reduce((t,x)=>t+x.v,0);
+  const inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt};
+  const pr=(c.frs||[]).filter(x=>inM(x.first,+x.cnt)).reduce((t,x)=>t+(+x.pay||0),0)+homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf&&inM(h.frf,+h.frn)).reduce((t,h)=>t+(hmFr(h)||{pay:0}).pay,0);
+  return{buys:Math.round(buys*100)/100,pr:Math.round(pr*100)/100,v:Math.round((buys+pr)*100)/100}}
+function fatDue(){const td=ymd(new Date());return cards().filter(c=>isCredit(c)&&c.cd&&c.bill&&bills.some(b=>b.id===c.bill)).map(c=>{const sk=skPrev(stmtK(c)), D=stmtDates(c,sk);
+    if((c.fatOk||{})[sk]!=null||D.close>td||(D.debit&&D.debit<td))return null;const f=fatCalc(c,sk);return f.v>0?{c,sk,...f,debit:D.debit}:null}).filter(Boolean)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-fatask]");if(!t)return;e.preventDefault();e.stopPropagation();const [cid,sk]=t.dataset.fatask.split("|"), c=cards().find(x=>x.id===cid);if(!c)return;
+  const f=fatCalc(c,sk), D=stmtDates(c,sk), b=bills.find(x=>x.id===c.bill), km=(D.debit||ymd(new Date())).slice(0,7), o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">💳 ${esc(c.name)}: fechou o extrato de ${dShort(D.close)}</div>
+    <div class="rdm">Compras ${eur(f.buys)} + prestações ${eur(f.pr)} = <b>${eur(f.v)}</b>${D.debit?` · débito a ${dShort(D.debit)}`:""}</div>
+    <label class="f">Valor a pagar (o que diz o extrato do banco)<input id="ftV" type="text" inputmode="decimal" value="${f.v.toFixed(2).replace(".",",")}"></label>
+    <button type="button" class="btn" data-ft="ok">✓ Fica este valor em ${esc(b?b.name:"Contas")}</button><button type="button" class="btn ghost" data-ft="x">Depois</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ft]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ft==="x"){o.remove();return}
+    const v=numIn(o.querySelector("#ftV").value);if(isNaN(v)||v<0){toast("Escreve o valor");return}o.remove();
+    const b2=bills.find(x=>x.id===c.bill);if(b2){const am={...(b2.amounts||{})};am[km]=Math.round(v*100)/100;putBill({...b2,amounts:am,conf:{...(b2.conf||{}),[km]:true}})}
+    putBill({...c,fatOk:{...(c.fatOk||{}),[sk]:Math.round(v*100)/100}});safe("Alertas",renderAlerts);renderCards&&safe("Cartões",renderCards);toast(`${b2?b2.name:c.name}: ${eur(v)} a pagar${D.debit?" a "+dShort(D.debit):""}`)});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#ftV");if(i)i.select()},50)},true);
 /* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
    Só para ver: não conta nos totais nem nos gastos do mês (conta a fatura, quando é debitada). Fecha no dia de fecho do extrato (sem dia: no fim do mês). */
 /* data de fecho do extrato sk e data do débito da fatura (dia da linha do cartão nas Contas, a seguir ao fecho) */
@@ -6386,7 +6407,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v321";
+const APPV="casa-v322";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
