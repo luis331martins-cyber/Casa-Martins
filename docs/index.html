@@ -4137,10 +4137,14 @@ function stmtDates(c,sk){const [y,m]=sk.split("-").map(Number), cd=c.cd?cdDay(c.
   const b=c.bill&&bills.find(x=>x.id===c.bill), dd=+c.ddb||(b&&+b.day);let debit=null;if(dd){let d=new Date(y,m-1,Math.min(dd,new Date(y,m,0).getDate()));if(ymd(d)<=close){const n=new Date(y,m,1);d=new Date(n.getFullYear(),n.getMonth(),Math.min(dd,new Date(n.getFullYear(),n.getMonth()+1,0).getDate()))}debit=ymd(d)}
   return{close,debit}}
 const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
+/* Pedido (14/11): as prestações cobradas nesse extrato também contam nos gastos do cartão (quadro Cartões), como no banco */
+function frInStmt(c,sk){const D=stmtDates(c,sk), d=(D.close||sk+"-28"), inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt?i+1:0};
+  return[...(c.frs||[]).map(x=>{const i=inM(x.first,+x.cnt);return i?{id:"fr-"+x.id,v:+x.pay,d,n:`💳 ${x.n} (${i}/${x.cnt})`,fr:1}:null}),
+    ...homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf).map(h=>{const i=inM(h.frf,+h.frn), F=hmFr(h);return i&&F?{id:"fr-"+h.id,v:F.pay,d,n:`💳 🏠 ${h.name} (${i}/${h.frn})`,fr:1}:null})].filter(Boolean)}
+function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=[...(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)),...frInStmt(c,sk)];return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
 const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
-  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=[...(c.buys||[]).filter(x=>x.v>0&&!x.adj&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d)),...frInStmt(c,sk)];
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
     return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
@@ -6423,7 +6427,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v330";
+const APPV="casa-v331";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
