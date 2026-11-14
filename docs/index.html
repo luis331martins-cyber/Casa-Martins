@@ -4108,7 +4108,7 @@ function fatCalc(c,sk){const buys=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&stmtK(c,
   const inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt};
   const pr=(c.frs||[]).filter(x=>inM(x.first,+x.cnt)).reduce((t,x)=>t+(+x.pay||0),0)+homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf&&inM(h.frf,+h.frn)).reduce((t,h)=>t+(hmFr(h)||{pay:0}).pay,0);
   return{buys:Math.round(buys*100)/100,pr:Math.round(pr*100)/100,v:Math.round((buys+pr)*100)/100}}
-function fatDue(){const td=ymd(new Date());return cards().filter(c=>isCredit(c)&&c.cd&&c.bill&&bills.some(b=>b.id===c.bill)).map(c=>{const sk=skPrev(stmtK(c)), D=stmtDates(c,sk);
+function fatDue(){const td=ymd(new Date());return cards().filter(c=>isCredit(c)&&c.cd&&c.bill&&bills.some(b=>b.id===c.bill)).map(c=>{const s0=stmtK(c), sk=stmtDates(c,s0).close<=td?s0:skPrev(s0), D=stmtDates(c,sk);
     if((c.fatOk||{})[sk]!=null||D.close>td||(D.debit&&D.debit<td))return null;
     /* se a linha do cartão nas Contas já está paga (ou o valor já foi confirmado) nesse mês, não pergunta */
     const b=bills.find(x=>x.id===c.bill), km=(D.debit||td).slice(0,7);if(b&&(isPaid(b,km)||(b.conf&&b.conf[km])))return null;const f=fatCalc(c,sk);return f.v>0?{c,sk,...f,debit:D.debit}:null}).filter(Boolean)}
@@ -5470,7 +5470,7 @@ function deadlines(){const L=[];
   bills.filter(b=>b.kind==="home"&&b.date&&b.war).forEach(h=>{const w=hmWarEnd(h);if(w)L.push({date:w,t:`Garantia: ${h.name}`,m:"Garantia acaba",go:"casa",alert:60,past:"Acabou"})});
   bills.filter(b=>b.kind==="hold"&&b.end).forEach(h=>L.push({date:h.end,t:`${h.type}: ${h.name}`,m:"Poupança vence",go:"poupancas",alert:30,past:"Venceu"}));
   /* Pedido (05/11): 2 dias antes do fecho do extrato, aviso com o que já vai no cartão */
-  if(typeof cardSpendGroups==="function")cardSpendGroups(ymOf(new Date())).forEach(g=>{const d=daysTo(g.close);if(g.c.cd&&g.tot>0&&d>=0&&d<=2)L.push({date:g.close,t:`Extrato ${g.c.name}: vais em ${eur(g.tot)}`,m:`Fecha o extrato${g.debit?` · débito a ${dShort(g.debit)}`:""}`,go:"despesas",alert:2,past:"Fechou"})});
+  if(typeof cardSpendGroups==="function")cardSpendGroups(ymOf(new Date())).forEach(g=>{const d=daysTo(g.close);if(g.c.cd&&g.tot>0&&d>=1&&d<=2&&!(g.c.bill&&isCredit(g.c)&&d===0))L.push({date:g.close,t:`Extrato ${g.c.name}: vais em ${eur(g.tot)}`,m:`Fecha o extrato${g.debit?` · débito a ${dShort(g.debit)}`:""}`,go:"despesas",alert:2,past:"Fechou"})});
   bills.filter(b=>b.kind==="card"&&b.exp).forEach(c=>L.push({date:cardEnd(c),t:`Cartão ${c.name}${c.who?` (${c.who})`:""}`,m:"Cartão termina",go:"cartoes",alert:30,past:"Terminou"}));
   return L}
 const fmtN=v=>String(Math.round(+v||0)).replace(/\B(?=(\d{3})+(?!\d))/g,".");
@@ -5863,8 +5863,8 @@ function askMonths(){const d=new Date(), cur=ymOf(d), L=[];
   if(d.getDate()>=20){const nx=ymOf(new Date(d.getFullYear(),d.getMonth()+1,1));if(nx>=START)L.push(nx)}
   if(cur<START&&d.getDate()>=20&&!L.includes(START))L.push(START);
   return L}
-function askPending(){const L=[], td=new Date();
-  [...fixas(),...others()].filter(askBill).forEach(b=>{if(askDayOf(b)==null){if(b.acm!=="all")askMonths().forEach(k=>{if(!(b.conf&&b.conf[k]))L.push({b,k})});return}
+function askPending(){const L=[], td=new Date(), viaCard=new Set((typeof cards==="function"?cards():[]).filter(c=>c.cd&&c.bill&&isCredit(c)).map(c=>c.bill));
+  [...fixas(),...others()].filter(askBill).filter(b=>!viaCard.has(b.id)).forEach(b=>{if(askDayOf(b)==null){if(b.acm!=="all")askMonths().forEach(k=>{if(!(b.conf&&b.conf[k]))L.push({b,k})});return}
     const k=askTarget(b,td);if(k&&k>=START&&!(b.conf&&b.conf[k]))L.push({b,k})});return L}
 function renderAsk(){const box=document.getElementById("askBox");if(!box)return;const P=askPending();box.hidden=!P.length;if(!P.length){box.innerHTML="";return}
   const ks=[...new Set(P.map(x=>x.k))];
@@ -6419,7 +6419,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v326";
+const APPV="casa-v327";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

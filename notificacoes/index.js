@@ -218,7 +218,13 @@ async function morning(code, now) {
       if (!d) return b.acm === "all" ? null : (now.d >= 25 ? nx : null);
       if (now.d >= d) { const k = tgt(cur, nx); return k === cur && b.acm !== "all" && b.day && now.d > b.day ? null : k; }
       return tgt(pv, cur) === cur && (!b.day || now.d <= b.day) ? cur : null; };
-    const faltam = bills.map((b) => ({b, k: pede(b) ? alvo(b) : null})).filter((x) => x.k && x.k >= START && !(x.b.conf && x.b.conf[x.k]));
+    /* linhas ligadas a um cartão de crédito com dia de fecho: em vez de "confirma o valor", avisa no dia em que fecha o extrato (a app pergunta tudo numa janela) */
+    const viaCard = new Set(bills.filter((c) => c.kind === "card" && c.type !== "debito" && c.cd && c.bill).map((c) => c.bill));
+    for (const c of bills.filter((c) => c.kind === "card" && c.type !== "debito" && c.cd && c.bill)) {
+      const last = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
+      if (Math.min(+c.cd, last) === now.d) partes.push({title: `💳 Fechou o extrato ${c.name}`, body: "Confirma na app o total, quanto vais pagar e o usado do banco.", go: "inicio", tag: "extrato-" + c.id + "-" + now.date});
+    }
+    const faltam = bills.map((b) => ({b, k: pede(b) && !viaCard.has(b.id) ? alvo(b) : null})).filter((x) => x.k && x.k >= START && !(x.b.conf && x.b.conf[x.k]));
     if (faltam.length) {
       partes.push({title: `📝 Confirma ${plural(faltam.length, "valor", "valores")}`,
         body: faltam.map((x) => x.b.name).join(", "), go: "despesas", tag: "valores-" + now.date});
