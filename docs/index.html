@@ -4097,6 +4097,7 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
         <label class="f">Cada prestação (€)<input name="fp" type="number" step="0.01" min="0" inputmode="decimal" placeholder="ex.: 41,50"></label>
         <label class="f">Nº de prestações<input name="fc" type="number" min="1" max="120" inputmode="numeric" placeholder="ex.: 12"></label>
         <label class="f" style="grid-column:1/-1">1.ª prestação (mês)<input name="ff" type="month" value="${c.cd?stmtK(c):ymOf(new Date())}"></label>
+        ${(()=>{const B=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.auto&&!x.hm).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,12);return B.length?`<div class="f" style="grid-column:1/-1">Ou juntar compras que já registaste (várias no mesmo fracionamento)<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;text-transform:none;letter-spacing:0;font-weight:500">${B.map(x=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--fg)"><input type="checkbox" name="frb" value="${x.id}" data-frbv="${x.v}"><span style="flex:1">${dShort(x.d)} · ${esc(x.n||"Compra")}${x.w?" · "+esc(x.w):""}</span><b>${eur(x.v)}</b></label>`).join("")}</div></div>`:""})()}
         <p class="note" style="margin:0;grid-column:1/-1;font-size:12.5px">Conta nos gastos do cartão só a prestação de cada mês. O "Valor" em cima é o total da compra (opcional, serve para ver os juros).</p></div>`:""}
       ${places.length?`<div class="chips" style="grid-column:1/-1">${places.map(p=>`<button type="button" class="chip" data-buyplace="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:""}
       <button class="btn" type="submit" name="op" value="1">Juntar compra</button><button class="btn ghost" type="submit" name="op" value="-1">Foi um pagamento</button>
@@ -4315,14 +4316,19 @@ function cardMove(c,v,d,n,bud,w){const bid=uid(), B=bud&&bills.find(x=>x.id===bu
   const buys=[...(c.buys||[]),{id:bid,v:Math.round(v*100)/100,d,...(n?{n}:{}),...(w?{w}:{}),...(B?{bud:B.id}:{})}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80);
   const used=Math.max(0,Math.round(((+c.used||0)+v)*100)/100);cardBuy="";putBill({...c,buys,used,usedAt:Date.now()});renderCards();
   toast(v>0?`${c.name}: +${eur(v)}${c.limit?` · livre ${eur(Math.max(0,c.limit-used))}`:""}`:`${c.name}: pagamento de ${eur(-v)}`)}
+document.addEventListener("change",e=>{const t=e.target;if(t.name!=="frb")return;const f=t.closest("form");const sel=[...f.querySelectorAll("[name=frb]:checked")];if(sel.length)f.v.value=String(Math.round(sel.reduce((s2,x)=>s2+(+x.dataset.frbv||0),0)*100)/100)});
 document.addEventListener("change",e=>{const t=e.target;if(!t.dataset||!t.dataset.frx)return;const f=t.closest("form"), bx=f&&f.querySelector(".frxbox");if(bx)bx.hidden=!t.checked;const sb=f.querySelector('button[value="1"]');if(sb)sb.textContent=t.checked?"Juntar compra fracionada":"Juntar compra";const pb=f.querySelector('button[value="-1"]');if(pb)pb.hidden=t.checked});
 document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardbuy;if(!id)return;e.preventDefault();const c=cards().find(x=>x.id===id);if(!c)return;
   /* Pedido (14/11): compra fracionada pelo + Compra — fica nas prestações do cartão (conta a prestação de cada mês) */
   if(f.frx&&f.frx.checked){const num=y=>{y=String(y).trim();return y===""?null:parseFloat(y.replace(",","."))}, pay=num(f.fp.value), cnt=Math.round(+f.fc.value), fv=num(f.v.value);
     if(!pay||!cnt){toast("Escreve o valor de cada prestação e quantas são");return}const nm=[f.n.value.trim(),f.w.value.trim()].filter(Boolean).join(" · ")||"Compra fracionada";
-    const before=cardUsed(c), item={id:uid(),n:nm,pay,cnt,first:f.ff.value||ymOf(new Date()),...(fv?{fv}:{})}, nc={...c,frs:[...(c.frs||[]),item]};putBill(nc);cardBuy="";
+    /* compras já registadas que passam a ser este fracionamento: saem das compras (deixam de contar pelo valor todo) e ficam guardadas na prestação */
+    const ids=[...f.querySelectorAll("[name=frb]:checked")].map(x=>x.value), M=(c.buys||[]).filter(x=>ids.includes(x.id)), mSum=Math.round(M.reduce((t,x)=>t+x.v,0)*100)/100;
+    const nm2=M.length&&!f.n.value.trim()&&!f.w.value.trim()?M.map(x=>x.w||x.n||"Compra").join(" + "):nm;
+    const item={id:uid(),n:nm2,pay,cnt,first:f.ff.value||ymOf(new Date()),...(fv?{fv}:{}),...(M.length?{from:M.map(x=>({n:x.n,w:x.w,v:x.v,d:x.d}))}:{})};
+    const nc={...c,frs:[...(c.frs||[]),item],...(M.length?{buys:(c.buys||[]).filter(x=>!ids.includes(x.id)),...(c.used!=null?{used:Math.round(((+c.used||0)-mSum)*100)/100}:{})}:{})};putBill(nc);cardBuy="";
     try{localStorage.setItem("casa-fro-"+c.id,"1")}catch(err){}renderCards();const st=frState(cnt,item.first,pay,frDay(c));
-    toast(`${nm}: ${cnt}× ${eur(pay)}${!c.frNoUse&&!c.frOnly?` · usado ${eur(cardUsed(nc))}`:""}`);return}
+    toast(`${nm2}: ${cnt}× ${eur(pay)}${M.length?` · ${M.length} compra${M.length===1?"":"s"} juntas`:""}${!c.frOnly?` · usado ${eur(cardUsed(nc))}`:""}`);return}
   const v=parseFloat(String(f.v.value).replace(",","."));if(!v||v<=0){toast("Escreve o valor");return}const op=e.submitter&&e.submitter.value==="-1"?-1:1;
   cardMove(c,op*v,f.d.value||ymd(new Date()),f.n.value.trim()||(op<0?"Pagamento":""),op>0&&f.bud?f.bud.value:"",f.w?f.w.value.trim():"")});
 document.addEventListener("change",async e=>{const t=e.target;if(!t.dataset||!t.dataset.cardphoto)return;const file=t.files&&t.files[0];t.value="";if(!file)return;const f=t.closest("form");
@@ -6441,7 +6447,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v332";
+const APPV="casa-v333";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
