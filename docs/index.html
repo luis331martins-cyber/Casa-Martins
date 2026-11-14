@@ -4235,6 +4235,7 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
       <label class="f">Nº de prestações<input name="c" type="number" min="1" max="120" inputmode="numeric" required placeholder="ex.: 12" value="${E?ev(E.cnt):""}"></label>
       <label class="f">1.ª prestação<input name="a" type="month" required value="${E?ev(E.first):ymOf(new Date())}"></label>
       <label class="f">Valor da compra (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="p/ ver os juros" value="${E?ev(E.fv):""}"></label>
+      ${E&&cards().filter(isCredit).length>1?`<label class="f" style="grid-column:1/-1">Cartão<select name="mv">${cards().filter(isCredit).map(k=>`<option value="${k.id}"${k.id===c.id?" selected":""}>${esc(k.name)}</option>`).join("")}</select></label>`:""}
       <label class="f">Dia da compra<input name="cdd" type="date" value="${E?ev(((c.buys||[]).find(y=>y.frid===E.id)||{}).d):""}"></label>
       ${(()=>{const B=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.auto&&!x.hm&&(!x.frid||(E&&x.frid===E.id))).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,15);return B.length?`<label class="f" style="grid-column:1/-1">É uma compra que já juntei? (deixa de contar duas vezes)<select name="lnk"><option value="">Não</option>${B.map(x=>`<option value="${x.id}"${E&&x.frid===E.id?" selected":""}>${dShort(x.d)} · ${esc(x.n||"Compra")}${x.w?" · "+esc(x.w):""} · ${eur(x.v)}</option>`).join("")}</select></label>`:""})()}
       <label class="f" style="grid-column:1/-1">Ou: quantas faltam pagar (como diz o banco)<input name="lf" type="number" min="0" max="120" inputmode="numeric" placeholder="ex.: 1 — acerta a 1.ª prestação sozinha"></label>
@@ -4271,6 +4272,11 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
      if(x&&!x.frid){if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100;nc.buys=[...(nc.buys||[]).filter(y=>!(old&&y.id===old.id)&&!(old&&y.frx===item.id)).map(y=>y.id===lk?{...y,frid:item.id}:y),frNeg(x,item.id)]}}
    else if(f.cdd&&f.cdd.value){const bv=Math.round((fv||pay*cnt)*100)/100, ex=(nc.buys||[]).find(y=>y.frid===item.id);
      nc.buys=ex?(nc.buys||[]).map(y=>y.frid===item.id?{...y,v:bv,d:f.cdd.value,n:item.n}:y):[...(nc.buys||[]),{id:uid(),v:bv,d:f.cdd.value,n:item.n,frid:item.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)}
+   /* Pedido (14/11): mudar a prestação (e a compra ligada) para outro cartão */
+   const mv=f.mv?f.mv.value:"";if(eid&&mv&&mv!==c.id){const T=cards().find(k=>k.id===mv);if(T){const it=(nc.frs||[]).find(y=>y.id===eid), mb=(nc.buys||[]).filter(y=>y.frid===eid||y.frx===eid);
+     const bA=cardUsed(nc);nc.frs=(nc.frs||[]).filter(y=>y.id!==eid);nc.buys=(nc.buys||[]).filter(y=>!mb.includes(y));if(nc.used!=null&&!nc.frOnly&&!nc.frNoUse)nc.used=Math.round((bA-frRem(nc))*100)/100;
+     const tA=cardUsed(T), nt={...T,frs:[...(T.frs||[]),it],buys:[...(T.buys||[]),...mb].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)};if(nt.used!=null&&!nt.frOnly&&!nt.frNoUse)nt.used=Math.round((tA-frRem(nt))*100)/100;
+     putBill(nc);putBill(nt);cardFrOpen="";cardFrEdit="";renderCards();toast(`${it.n}: passou para ${T.name}`);return}}
    putBill(nc)}cardFrOpen="";cardFrEdit="";renderCards();
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
@@ -6506,7 +6512,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v343";
+const APPV="casa-v344";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
