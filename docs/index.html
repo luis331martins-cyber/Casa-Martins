@@ -2861,6 +2861,14 @@ let cap2Done=false;
 function cap2Fix(snap){if(cap2Done||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;cap2Done=true;if(bills.some(b=>b.id==="flag-frcap-2"))return;
   if(bills.some(b=>b.id==="flag-frcap-1"))cards().filter(c=>isCredit(c)&&!c.frNoUse&&!c.frOnly&&c.used!=null).forEach(c=>{const capR=Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*frCapOld(x)),0)*100)/100, d=Math.round((capR-frRem(c))*100)/100;if(Math.abs(d)>.004)putBill({...c,used:Math.round(((+c.used||0)+d)*100)/100})});
   putBill({id:"flag-frcap-1",kind:"flag",at:Date.now()});putBill({id:"flag-frcap-2",kind:"flag",at:Date.now()})}
+/* Pedido (14/11): prestação e compra com o mesmo valor (valor da compra = compra registada) são a mesma coisa — liga-as sozinho (linha a negativo, sai do usado) */
+let frLinkDone=false;
+function frAutoLink(snap){if(frLinkDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frLinkDone=true;
+  cards().filter(c=>isCredit(c)&&(c.frs||[]).length&&(c.buys||[]).length).forEach(c=>{let nc=null;
+    (c.frs||[]).forEach(fr=>{const B=(nc||c).buys||[];if(B.some(y=>y.frid===fr.id)||!(+fr.fv>0))return;const nm=noAcc(String(fr.n||"").toLowerCase());
+      const x=B.find(y=>y.v>0&&!y.adj&&!y.auto&&!y.hm&&!y.frid&&Math.abs(y.v-(+fr.fv))<0.015&&(!nm||[y.n,y.w].some(t=>t&&nm.includes(noAcc(String(t).toLowerCase())))));if(!x)return;
+      nc=nc||{...c};nc.buys=[...B.map(y=>y.id===x.id?{...y,frid:fr.id}:y),frNeg(x,fr.id)];if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100});
+    if(nc){putBill(nc);setTimeout(()=>toast(`${c.name}: compra fracionada ligada à prestação (deixou de contar 2x)`),1800)}})}
 let frFixDone=false;
 function frFix(snap){if(frFixDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frFixDone=true;if(bills.some(b=>b.id==="flag-frfix-1"))return;
   homes().filter(h=>+h.frn&&h.pay).forEach(h=>hmCardSync(h));putBill({id:"flag-frfix-1",kind:"flag",at:Date.now()})}
@@ -3615,7 +3623,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações com juros",()=>cap2Fix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações com juros",()=>cap2Fix(snap));safe("Ligar fracionadas",()=>frAutoLink(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -6416,7 +6424,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações com juros",cap2Fix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações com juros",cap2Fix);safe("Ligar fracionadas",frAutoLink);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6478,7 +6486,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v339";
+const APPV="casa-v340";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
