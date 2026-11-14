@@ -2851,6 +2851,11 @@ function autoFill(snap){if(autoFillDone||!bills.length||(snap&&snap.metadata&&sn
 let wzDone=false;
 function wzFix(snap){if(wzDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;wzDone=true;if(bills.some(b=>b.id==="flag-wz17-1"))return;
   const L=cards().filter(c=>/wizink/i.test(c.name||"")&&!c.cd);L.forEach(c=>putBill({...c,cd:17}));putBill({id:"flag-wz17-1",kind:"flag",at:Date.now()});if(L.length)setTimeout(()=>toast(`${L.map(c=>c.name).join(" e ")}: fecho do extrato a 17`),1600)}
+/* a mudança para contar só o capital das prestações não mexe no usado que se vê (uma vez) */
+let capDone=false;
+function capFix(snap){if(capDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;capDone=true;if(bills.some(b=>b.id==="flag-frcap-1"))return;
+  cards().filter(c=>isCredit(c)&&!c.frNoUse&&!c.frOnly&&c.used!=null).forEach(c=>{const old=Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.leftAmt),0)*100)/100, d=Math.round((old-frRem(c))*100)/100;if(Math.abs(d)>.004)putBill({...c,used:Math.round(((+c.used||0)+d)*100)/100})});
+  putBill({id:"flag-frcap-1",kind:"flag",at:Date.now()})}
 let frFixDone=false;
 function frFix(snap){if(frFixDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frFixDone=true;if(bills.some(b=>b.id==="flag-frfix-1"))return;
   homes().filter(h=>+h.frn&&h.pay).forEach(h=>hmCardSync(h));putBill({id:"flag-frfix-1",kind:"flag",at:Date.now()})}
@@ -3605,7 +3610,7 @@ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.sta
 function listen(){
   store.collection("items").onSnapshot(snap=>{items=fixNames(snap.docs.map(d=>({...d.data()})));local.save();safe("Mercearia",render);safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Despensa (limpar)",despWipe);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()})},
     ()=>{store=null;items=local.load();render()});
-  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
+  store.collection("bills").onSnapshot(snap=>{bills=fixNames(snap.docs.map(d=>({...d.data()})));billLocal.save();safe("Contas",renderBills);safe("Gás (bilha)",gasTidy);safe("Restaurantes",()=>restTidy(snap));safe("Break",()=>breakTidy(snap));safe("Mobílias",()=>mobDate(snap));safe("Mobílias março",()=>mobMar(snap));safe("Férias 2025",()=>fer25(snap));safe("Férias 2026",()=>fer26(snap));safe("Compras da Casa",()=>hmBuyFix(snap));safe("Automáticos",()=>autoFill(snap));safe("Poupança mensal",()=>holdAuto(snap));safe("Prestações no usado",()=>frFix(snap));safe("WiZink 17",()=>wzFix(snap));safe("Prestações sem juros",()=>capFix(snap));if(!(snap&&snap.metadata&&snap.metadata.fromCache))safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)},
     ()=>{store=null;bills=billLocal.load();renderBills()});
   store.collection("events").onSnapshot(snap=>{events=snap.docs.map(d=>({...d.data()}));evLocal.save();safe("Calendário",renderCal)},
     ()=>{store=null;events=evLocal.load();renderCal()});
@@ -4061,7 +4066,9 @@ function cardStyle(c){const n=noAcc(c.name||"");if(c.style==="foto"){const ps=ph
 const cardEnd=c=>{const [y,m]=String(c.exp).split("-").map(Number);return ymd(new Date(y,m,0))};
 /* Pedido (04/11): cartão só para prestações (ex.: WiZink Flex) → o usado é o que falta pagar das prestações e desce sozinho todos os meses */
 /* Pedido (14/11): nos cartões em que o banco conta as prestações no usado (ActivoBank), o usado = o resto (c.used) + o que falta das prestações, e vai descendo sozinho */
-const frRem=c=>Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.leftAmt),0)*100)/100;
+/* Pedido (14/11): no plafond conta o capital que falta (valor da compra ÷ nº de prestações × as que faltam), não os juros; sem valor da compra, conta a prestação */
+const frCap=x=>x.cap!=null?x.cap:(x.fv?x.fv/x.st.n:x.st.pay);
+const frRem=c=>Math.round(cardFrs(c).reduce((t,x)=>t+(x.st.done?0:x.st.left*frCap(x)),0)*100)/100;
 const cardUsed=c=>c.frOnly?frRem(c):c.frNoUse?(+c.used||0):Math.round(((+c.used||0)+frRem(c))*100)/100;
 const cardFree=c=>Math.max(0,(+c.limit||0)-cardUsed(c));
 const isCredit=c=>c.type!=="debito";
@@ -4176,7 +4183,7 @@ const frDay=c=>c?(+c.ddb||+c.cd||0):0;
 function frState(cnt,first,pay,cd,pt){const t=new Date(), cur=Math.max(mIdx(ymOf(t))-mIdx(first)+(cd&&t.getDate()<cdDay(cd,t.getFullYear(),t.getMonth()+1)?0:1),pt?mIdx(pt)-mIdx(first)+1:0), paid=Math.max(0,Math.min(cnt,cur)), left=cnt-paid, lm=mIdx(first)+cnt-1;
   return{n:cnt,pay,paid,left,leftAmt:Math.round(left*pay*100)/100,done:!left,last:`${Math.floor(lm/12)}-${String(lm%12+1).padStart(2,"0")}`}}
 function cardFrs(c){return[...(c.frs||[]).map(x=>({...x,own:1,st:frState(+x.cnt,x.first,+x.pay,frDay(c),x.pt),jur:x.fv?Math.round((x.cnt*x.pay-x.fv)*100)/100:null})),
-  ...homes().filter(h=>h.pay===c.id&&hmFr(h)).map(h=>{const st=hmFr(h);return{id:h.id,n:"🏠 "+h.name,st,jur:+h.frp?Math.round((st.n*st.pay-hmVal(h))*100)/100:null}})]}
+  ...homes().filter(h=>h.pay===c.id&&hmFr(h)).map(h=>{const st=hmFr(h);return{id:h.id,n:"🏠 "+h.name,st,cap:hmVal(h)/st.n,jur:+h.frp?Math.round((st.n*st.pay-hmVal(h))*100)/100:null}})]}
 function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduce((t,x)=>t+x.st.pay,0), falta=A.reduce((t,x)=>t+x.st.leftAmt,0);
   const open=cardFrOpen===c.id||frIsOpen(c.id), tot=A.reduce((t,x)=>t+x.st.n*x.st.pay,0), pct=tot?Math.round((tot-falta)/tot*100):0, end=A.map(x=>x.st.last).sort().pop();
   const head=`<button type="button" class="cfrh" data-frtog="${c.id}" aria-expanded="${open}"><span class="cfrt"><b>💳 Prestações</b>${A.length?`<span class="mcount">${A.length}</span>`:""}</span><span class="cfrv">${A.length?`${eur(mes)}<small>/mês</small>`:`<small>nenhuma</small>`}</span><i>${open?"⌃":"⌄"}</i>
@@ -4228,7 +4235,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
   if(isCredit(c)&&c.limit){const pct=Math.min(100,Math.round(cardUsed(c)/c.limit*100));
-    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam</span></div>`)}
+    L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b> de ${eur(+c.limit)}</span><span style="color:var(--good);font-weight:600">Livre ${eur(cardFree(c))}</span></div><div class="lbar"><span style="width:${pct}%;${pct>=80?"background:var(--bad)":""}"></span></div>`);if(!c.frOnly&&!c.frNoUse&&frRem(c)>0)L.push(`<div class="row" style="font-size:13px;color:var(--muted)"><span>inclui ${eur(frRem(c))} das prestações que faltam (sem juros)</span></div>`)}
   if(b)L.push(`<div class="row"><span>A pagar em ${kName(k)}: <b>${eur(monthAmt(b,k))}</b>${b.day?` · dia ${b.day}`:""}</span><span>${isPaid(b,k)?'<span class="ok">Paga ✓</span>':'<span class="loanlink" data-gocontas="1" role="link">Contas ›</span>'}</span></div>`);
   if(c.exp){const d=daysTo(cardEnd(c));if(d<=60)L.push(`<div class="row"><span>Termina em ${fmtD(cardEnd(c))}</span>${dueTag(cardEnd(c),30)}</div>`)}
   if(isCredit(c)&&!c.limit)L.push(`<div class="row"><span>Usado <b>${eur(cardUsed(c))}</b></span><span style="color:var(--muted);font-size:13px">sem plafond escrito</span></div>`);
@@ -6394,7 +6401,7 @@ function meatTidy(){if(meatTidyDone)return;meatTidyDone=true;
   render()}
 /* ---------- arranque ---------- */
 items=fixNames(local.load());bills=fixNames(billLocal.load());events=(Array.isArray(events=evLocal.load())?events:[]).filter(e=>e&&e.date);
-safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
+safe("Mercearia",render);safe("Contas",renderBills);safe("Calendário",renderCal);if(!hasFb||ls.get("casa-local")){safe("Carne (acerto)",meatTidy);safe("Despensa (reserva)",resTidy);safe("Gás (bilha)",gasTidy);safe("Restaurantes",restTidy);safe("Break",breakTidy);safe("Mobílias",mobDate);safe("Mobílias março",mobMar);safe("Férias 2025",fer25);safe("Férias 2026",fer26);safe("Compras da Casa",hmBuyFix);safe("Automáticos",autoFill);safe("Poupança mensal",holdAuto);safe("Prestações no usado",frFix);safe("WiZink 17",wzFix);safe("Prestações sem juros",capFix);safe("Poupança ligada",holdBillSync);safe("Categorias",catRename);safe("Talvez comprar",()=>{alwaysTidy();alwaysTidy2();alwaysTidy3();alwaysTidy4();alwaysTidy5()});safe("Despensa (limpar)",despWipe);safe("Receitas (mês)",incShift)}
 if(!hasFb)document.getElementById("sub").textContent=SUB_LOCAL;
 else if(ls.get("casa-local")&&!houseCode){document.getElementById("sub").textContent=SUB_LOCAL;renderHouse()}
 else startAuth().catch(e=>{showFatal("Entrada: "+(e&&e.message||e));document.getElementById("sub").textContent=SUB_LOCAL});
@@ -6456,7 +6463,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v335";
+const APPV="casa-v336";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
