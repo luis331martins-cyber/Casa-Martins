@@ -4206,6 +4206,7 @@ function cardFrBox(c){const F=cardFrs(c), A=F.filter(x=>!x.st.done), mes=A.reduc
       <label class="f">1.ª prestação<input name="a" type="month" required value="${E?ev(E.first):ymOf(new Date())}"></label>
       <label class="f">Valor da compra (€)<input name="v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="p/ ver os juros" value="${E?ev(E.fv):""}"></label>
       <label class="f">Dia da compra<input name="cdd" type="date" value="${E?ev(((c.buys||[]).find(y=>y.frid===E.id)||{}).d):""}"></label>
+      ${(()=>{const B=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.auto&&!x.hm&&(!x.frid||(E&&x.frid===E.id))).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,15);return B.length?`<label class="f" style="grid-column:1/-1">É uma compra que já juntei? (deixa de contar duas vezes)<select name="lnk"><option value="">Não</option>${B.map(x=>`<option value="${x.id}"${E&&x.frid===E.id?" selected":""}>${dShort(x.d)} · ${esc(x.n||"Compra")}${x.w?" · "+esc(x.w):""} · ${eur(x.v)}</option>`).join("")}</select></label>`:""})()}
       <label class="f" style="grid-column:1/-1">Ou: quantas faltam pagar (como diz o banco)<input name="lf" type="number" min="0" max="120" inputmode="numeric" placeholder="ex.: 1 — acerta a 1.ª prestação sozinha"></label>
       <button class="btn" type="submit">${E?"Guardar":"Juntar"}</button><button class="btn ghost" type="button" data-cardfropen="">Cancelar</button></form>`
     :`<button type="button" class="back" data-cardfropen="${c.id}" style="align-self:flex-start">+ Prestação</button>`;
@@ -4235,7 +4236,10 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
    /* corrigir uma prestação (nº, meses, valor) não muda o usado que se vê; juntar uma nova só muda se o banco a contar no usado */
    if(eid&&c.used!=null&&!c.frOnly&&!c.frNoUse)nc.used=Math.round((before-frRem(nc))*100)/100;
    /* Pedido (14/11): com o dia da compra, a compra fracionada aparece nas compras do cartão (quadro roxo) nesse extrato, marcada; não mexe no usado nem na fatura */
-   if(f.cdd&&f.cdd.value){const bv=Math.round((fv||pay*cnt)*100)/100, ex=(nc.buys||[]).find(y=>y.frid===item.id);
+   /* Pedido (14/11): ligar a uma compra já registada — fica marcada como fracionada e sai do usado pelo valor todo (conta pelas prestações) */
+   const lk=f.lnk?f.lnk.value:"";if(lk){const old=(nc.buys||[]).find(y=>y.frid===item.id&&y.id!==lk), x=(nc.buys||[]).find(y=>y.id===lk);
+     if(x&&!x.frid){if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100;nc.buys=(nc.buys||[]).filter(y=>!(old&&y.id===old.id)).map(y=>y.id===lk?{...y,frid:item.id}:y)}}
+   else if(f.cdd&&f.cdd.value){const bv=Math.round((fv||pay*cnt)*100)/100, ex=(nc.buys||[]).find(y=>y.frid===item.id);
      nc.buys=ex?(nc.buys||[]).map(y=>y.frid===item.id?{...y,v:bv,d:f.cdd.value,n:item.n}:y):[...(nc.buys||[]),{id:uid(),v:bv,d:f.cdd.value,n:item.n,frid:item.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)}
    putBill(nc)}cardFrOpen="";cardFrEdit="";renderCards();
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
@@ -6469,7 +6473,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v337";
+const APPV="casa-v338";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
