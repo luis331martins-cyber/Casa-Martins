@@ -4116,13 +4116,15 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-fatask]");
   const f=fatCalc(c,sk), D=stmtDates(c,sk), b=bills.find(x=>x.id===c.bill), km=(D.debit||ymd(new Date())).slice(0,7), o=document.createElement("div");o.className="rdovl";
   o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">💳 ${esc(c.name)}: fechou o extrato de ${dShort(D.close)}</div>
     <div class="rdm">Compras ${eur(f.buys)} + prestações ${eur(f.pr)} = <b>${eur(f.v)}</b>${D.debit?` · débito a ${dShort(D.debit)}`:""}</div>
-    <label class="f">Valor a pagar (o que diz o extrato do banco)<input id="ftV" type="text" inputmode="decimal" value="${f.v.toFixed(2).replace(".",",")}"></label>
+    <label class="f">Total do extrato (o que diz o banco)<input id="ftT" type="text" inputmode="decimal" value="${f.v.toFixed(2).replace(".",",")}"></label>
+    <label class="f">Vou pagar (sai da conta no dia do débito)<input id="ftV" type="text" inputmode="decimal" value="${(c.minPay?Math.min(+c.minPay,f.v):f.v).toFixed(2).replace(".",",")}"></label>
+    <p class="note" style="margin:-4px 0 0;font-size:12.5px">${c.minPay?`Pagas ${eur(+c.minPay)} por mês (está no cartão). O que fica por pagar continua no usado e pode ter juros.`:"Se pagas só o mínimo ou um valor fixo, escreve-o em “Pago todos os meses” no Editar do cartão e passa a vir já preenchido."}</p>
     <label class="f">Usado no banco agora (ou L e o livre) · opcional<input id="ftU" type="text" inputmode="text" placeholder="ex.: 812,40 ou L 2687,60 — a diferença fica como juros/acerto"></label>
     <button type="button" class="btn" data-ft="ok">✓ Fica este valor em ${esc(b?b.name:"Contas")}</button><button type="button" class="btn ghost" data-ft="x">Depois</button></div>`;
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ft]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ft==="x"){o.remove();return}
-    const v=numIn(o.querySelector("#ftV").value);if(isNaN(v)||v<0){toast("Escreve o valor");return}o.remove();
+    const v=numIn(o.querySelector("#ftV").value);if(isNaN(v)||v<0){toast("Escreve quanto vais pagar");return}
     const b2=bills.find(x=>x.id===c.bill);if(b2){const am={...(b2.amounts||{})};am[km]=Math.round(v*100)/100;putBill({...b2,amounts:am,conf:{...(b2.conf||{}),[km]:true}})}
-    putBill({...c,fatOk:{...(c.fatOk||{}),[sk]:Math.round(v*100)/100}});const u=o.querySelector("#ftU").value.trim();if(u)setTimeout(()=>{const c2=cards().find(x=>x.id===c.id);if(c2)cardSetUsed(c2,u,"Juros / acerto do extrato de "+dShort(D.close))},60);safe("Alertas",renderAlerts);renderCards&&safe("Cartões",renderCards);toast(`${b2?b2.name:c.name}: ${eur(v)} a pagar${D.debit?" a "+dShort(D.debit):""}`)});
+    const tt=numIn(o.querySelector("#ftT").value);o.remove();putBill({...c,fatOk:{...(c.fatOk||{}),[sk]:Math.round(v*100)/100},...(!isNaN(tt)?{fatTot:{...(c.fatTot||{}),[sk]:Math.round(tt*100)/100}}:{})});const u=o.querySelector("#ftU").value.trim();if(u)setTimeout(()=>{const c2=cards().find(x=>x.id===c.id);if(c2)cardSetUsed(c2,u,"Juros / acerto do extrato de "+dShort(D.close))},60);safe("Alertas",renderAlerts);renderCards&&safe("Cartões",renderCards);toast(`${b2?b2.name:c.name}: ${eur(v)} a pagar${D.debit?" a "+dShort(D.debit):""}`)});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#ftV");if(i)i.select()},50)},true);
 /* Pedido (05/11): nas Contas, um quadro "Gastos com cartão de crédito" com as compras do extrato em aberto de cada cartão de crédito.
    Só para ver: não conta nos totais nem nos gastos do mês (conta a fatura, quando é debitada). Fecha no dia de fecho do extrato (sem dia: no fim do mês). */
@@ -4251,6 +4253,7 @@ function cardForm(c){const v=x=>x==null?"":esc(x), st=c?cardStyle(c)[0]:"";
     <label class="f">Titular<select name="w"><option value="">—</option>${PEOPLE.map(p=>`<option${c&&c.who===p?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
     <label class="f">Últimos 4 dígitos<input name="l4" inputmode="numeric" pattern="\\d{4}" maxlength="4" value="${c?v(c.last4):""}" placeholder="opcional"></label>
     <label class="f">Válido até<input name="e" type="month" value="${c?v(c.exp):""}"></label>
+    <label class="f">Pago todos os meses (€)<input name="mp" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.minPay):""}" placeholder="vazio = o total do extrato"></label>
     <label class="f">Débito da fatura (dia)<input name="ddb" type="number" min="1" max="31" inputmode="numeric" value="${c?v(c.ddb):""}" placeholder="ex.: 5 · só crédito"></label>
     <label class="f">Fecho do extrato (dia)<input name="cd" type="number" min="1" max="31" inputmode="numeric" value="${c?v(c.cd):""}" placeholder="ex.: 15 · só crédito"></label>
     <label class="f">Plafond (€)<input name="lim" type="number" step="0.01" min="0" inputmode="decimal" value="${c?v(c.limit):""}" placeholder="só crédito"></label>
@@ -4312,7 +4315,7 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.cardform;if(!id
   const old=id==="new"?null:cards().find(x=>x.id===id);
   const c={...(old||{}),id:old?old.id:uid(),kind:"card",name:f.n.value.trim(),type:f.t.value};
   const pc=f.pc.value&&photoStyle(f.pc.value)?f.pc.value:null;if(pc)c.pc=pc;else delete c.pc;
-  for(const [k,v] of [["style",f.st.value==="foto"&&!pc?null:f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["cd",Math.min(31,Math.max(0,Math.round(+f.cd.value)||0))||null],["ddb",Math.min(31,Math.max(0,Math.round(+f.ddb.value)||0))||null],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
+  for(const [k,v] of [["style",f.st.value==="foto"&&!pc?null:f.st.value||null],["who",f.w.value||null],["last4",l4||null],["exp",f.e.value||null],["limit",num(f.lim.value)],["cd",Math.min(31,Math.max(0,Math.round(+f.cd.value)||0))||null],["ddb",Math.min(31,Math.max(0,Math.round(+f.ddb.value)||0))||null],["minPay",num(f.mp.value)||null],["used",num(f.u.value)],["bill",f.b.value==="auto"?((fixas().find(b=>!b.kind&&sameName(f.n.value,b.name))||{}).id||null):f.b.value||null]])if(v==null)delete c[k];else c[k]=v;
   if(!c.bill)c.nolink=true;else delete c.nolink;
   {const A=[], oldA=(old&&old.auto)||[], keep=(id,a)=>{const o=oldA.find(x=>x.id===id);return o&&o.v===a.v&&o.day===a.day&&o.t===a.t?o.since:null};
     if(f.ab.checked&&c.bill){const b=bills.find(x=>x.id===c.bill), a={id:"bill",bill:true,n:"Prestação "+c.name,t:"pag"};a.since=keep("bill",a)||nextSince(b&&b.day||1);A.push(a)}
@@ -6416,7 +6419,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v325";
+const APPV="casa-v326";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
