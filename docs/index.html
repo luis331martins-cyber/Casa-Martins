@@ -4192,10 +4192,13 @@ const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
 function frInStmt(c,sk){const D=stmtDates(c,sk), d=(D.close||sk+"-28"), inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt?i+1:0};
   return[...(c.frs||[]).map(x=>{const i=inM(x.first,+x.cnt);return i?{id:"fr-"+x.id,v:+x.pay,d,n:`💳 ${x.n} (${i}/${x.cnt})`,fr:1}:null}),
     ...homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf).map(h=>{const i=inM(h.frf,+h.frn), F=hmFr(h);return i&&F?{id:"fr-"+h.id,v:F.pay,d,n:`💳 🏠 ${h.name} (${i}/${h.frn})`,fr:1}:null})].filter(Boolean)}
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
+/* Pedido (14/11): a compra fracionada não entra em nenhuma fatura, por isso conta nos gastos do mês em que se fez a compra
+   (mesmo que esse extrato já tenha fechado); as outras compras contam no extrato do cartão */
+const spIn=(c,x,k,sk)=>x.frid?x.d.slice(0,7)===k:(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk);
+function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
 const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
-  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk)).sort((a,b)=>b.d.localeCompare(a.d));
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk)).sort((a,b)=>b.d.localeCompare(a.d));
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
     return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
@@ -4270,7 +4273,7 @@ document.addEventListener("submit",e=>{const f=e.target, id=f.dataset.cardfr;if(
    const lk=f.lnk?f.lnk.value:"";if(lk){const old=(nc.buys||[]).find(y=>y.frid===item.id&&y.id!==lk), x=(nc.buys||[]).find(y=>y.id===lk);
      if(x&&!x.frid){if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100;nc.buys=[...(nc.buys||[]).filter(y=>!(old&&y.id===old.id)&&!(old&&y.frx===item.id)).map(y=>y.id===lk?{...y,frid:item.id}:y),frNeg(x,item.id)]}}
    else if(f.cdd&&f.cdd.value){const bv=Math.round((fv||pay*cnt)*100)/100, ex=(nc.buys||[]).find(y=>y.frid===item.id);
-     nc.buys=ex?(nc.buys||[]).map(y=>y.frid===item.id?{...y,v:bv,d:f.cdd.value,n:item.n}:y):[...(nc.buys||[]),{id:uid(),v:bv,d:f.cdd.value,n:item.n,frid:item.id}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)}
+     nc.buys=ex?(nc.buys||[]).map(y=>y.frid===item.id?{...y,v:bv,d:f.cdd.value,n:item.n}:y.frx===item.id?{...y,v:-bv,d:f.cdd.value,n:"Fracionada: "+item.n}:y):(()=>{const b={id:uid(),v:bv,d:f.cdd.value,n:item.n,frid:item.id};return[...(nc.buys||[]),b,frNeg(b,item.id)]})().sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)}
    putBill(nc)}cardFrOpen="";cardFrEdit="";renderCards();
   const st=frState(cnt,first,pay,frDay(c),pt);toast((eid?"Guardada":"Juntada")+(st.done?" (já terminou)":`: faltam ${st.left} prestaç${st.left===1?"ão":"ões"} (${eur(st.leftAmt)})`))});
 function cardInfo(c){const L=[];const b=c.bill&&bills.find(x=>x.id===c.bill), k=cardK();
@@ -6506,7 +6509,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v345";
+const APPV="casa-v346";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
