@@ -4147,7 +4147,7 @@ function cardBuys(c){const mk=c.cd?stmtK(c):cardK(), L=c.cd?(c.buys||[]).filter(
 let cardAll="";
 /* Pôr o usado igual ao do banco: aceita "812,40" ou "L 2687,60" (livre). A diferença fica nos movimentos como acerto (juros / saldo anterior), fora das compras */
 /* Pedido (14/11): ao fracionar uma compra fica nas compras uma linha igual a negativo ("Fracionada: …") — a compra conta uma vez nos gastos do mês e o valor passa para as prestações */
-const frNeg=(x,frId)=>({id:uid(),v:-Math.round(x.v*100)/100,d:ymd(new Date()),n:"Fracionada: "+(x.w||x.n||"Compra"),frx:frId});
+const frNeg=(x,frId)=>({id:uid(),v:-Math.round(x.v*100)/100,d:x.d||ymd(new Date()),n:"Fracionada: "+(x.w||x.n||"Compra"),frx:frId});
 function cardSetUsed(c,v,label){const isL=/^\s*l/i.test(v);v=String(v).replace(/^\s*l(ivre)?\s*/i,"");
   let n=parseFloat(String(v).replace(/\s/g,"").replace(/\.(?=\d{3}\b)/g,"").replace(",","."));if(isNaN(n))return false;if(isL){if(!c.limit){toast("Escreve primeiro o plafond do cartão (Editar)");return false}n=Math.round((+c.limit-n)*100)/100}
   const rem=!c.frOnly&&!c.frNoUse?frRem(c):0, dif=c.used!=null?Math.round((n-cardUsed(c))*100)/100:0, buys=Math.abs(dif)>.004?[...(c.buys||[]),{id:uid(),v:dif,d:ymd(new Date()),n:label||(dif>0?"Acerto com o banco (juros / saldo anterior)":"Acerto com o banco"),adj:1}].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80):c.buys;
@@ -6503,7 +6503,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v341";
+const APPV="casa-v342";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
