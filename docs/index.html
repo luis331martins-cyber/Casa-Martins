@@ -2864,7 +2864,10 @@ function cap2Fix(snap){if(cap2Done||!bills.length||(snap&&snap.metadata&&snap.me
 /* Pedido (14/11): prestação e compra com o mesmo valor (valor da compra = compra registada) são a mesma coisa — liga-as sozinho (linha a negativo, sai do usado) */
 let frLinkDone=false;
 function frAutoLink(snap){if(frLinkDone||!bills.length||(snap&&snap.metadata&&snap.metadata.fromCache))return;frLinkDone=true;
-  cards().filter(c=>isCredit(c)&&(c.frs||[]).length&&(c.buys||[]).length).forEach(c=>{let nc=null;
+  /* compras já marcadas como fracionadas (versões anteriores) sem a linha a negativo: junta a linha (o usado já tinha sido acertado) */
+  cards().filter(c=>(c.buys||[]).some(y=>y.frid&&!(c.buys||[]).some(z=>z.frx===y.frid))).forEach(c=>{const B=c.buys||[], add=B.filter(y=>y.frid&&y.v>0&&!B.some(z=>z.frx===y.frid)).map(y=>frNeg(y,y.frid));
+    if(add.length)putBill({...c,buys:[...B,...add].sort((a,b)=>a.d.localeCompare(b.d)).slice(-80)})});
+  cards().filter(c=>isCredit(c)&&(c.frs||[]).length&&(c.buys||[]).length).forEach(c0=>{const c=cards().find(z=>z.id===c0.id)||c0;let nc=null;
     (c.frs||[]).forEach(fr=>{const B=(nc||c).buys||[];if(B.some(y=>y.frid===fr.id)||!(+fr.fv>0))return;const nm=noAcc(String(fr.n||"").toLowerCase());
       const x=B.find(y=>y.v>0&&!y.adj&&!y.auto&&!y.hm&&!y.frid&&Math.abs(y.v-(+fr.fv))<0.015&&(!nm||[y.n,y.w].some(t=>t&&nm.includes(noAcc(String(t).toLowerCase())))));if(!x)return;
       nc=nc||{...c};nc.buys=[...B.map(y=>y.id===x.id?{...y,frid:fr.id}:y),frNeg(x,fr.id)];if(nc.used!=null)nc.used=Math.round(((+nc.used||0)-x.v)*100)/100});
@@ -6503,7 +6506,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v342";
+const APPV="casa-v343";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
