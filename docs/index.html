@@ -1454,6 +1454,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div id="loanList"></div>
     <button class="btn ghost" type="button" id="addLoan">+ Juntar crédito</button>
     <div id="loanNew"></div>
+    <div id="loanSim"></div>
     <p class="note" style="margin:0">Escreve o que está no contrato: a prestação, o dia do débito e o mês da primeira e da última prestação. A app conta as prestações pagas à medida que os meses passam (a do mês atual já conta como paga). <b>Em dívida</b> é o capital que ainda deves (o valor que a app do banco mostra); <b>juros que ainda vais pagar</b> são as prestações que faltam menos esse capital. Para estas contas, escreve o montante pedido.</p>
   </section>
 
@@ -4080,8 +4081,51 @@ function renderLoans(){const el=document.getElementById("loanList");if(!el)retur
           <div class="row" style="margin-top:2px;opacity:.8"><span>Pedido ${eur(+l.amount)} · juros no total ${eur(a.intTotal)}</span><span>custo ~${a.rate.toFixed(2).replace(".",",")}%/ano</span></div>`})()}
     </button>`}).join("")+(editLoan==="new"?loanForm(null):"")||`<div class="empty">Ainda não há créditos.<br>Toca em “Juntar crédito”.</div>`;
   if(!L.length&&editLoan==="new")el.innerHTML=loanForm(null);
-  document.getElementById("addLoan").hidden=editLoan==="new"}
+  document.getElementById("addLoan").hidden=editLoan==="new";renderLoanSim()}
 document.getElementById("addLoan").addEventListener("click",()=>{editLoan="new";renderLoans()});
+/* Pedido (15/11): simulação — amortizar já um valor e/ou pagar mais por mês. "O mais caro primeiro": o dinheiro vai para o crédito com maior custo
+   e, quando um crédito acaba, a prestação dele passa para o seguinte. Taxa mensal tirada do custo de cada crédito; sem juros nos de família.
+   Comissão de amortização antecipada (crédito ao consumo): 0,5% do valor amortizado (0,25% se falta menos de 1 ano). Não conta com meses de carência. */
+let simOpen=false, simV={t:"auto",l:"",x:"",m:"prazo",rl:true};
+function simBase(){return loans().map(l=>({l,s:loanState(l)})).filter(x=>!x.s.done&&+x.l.pay>0).map(({l,s})=>{const a=s.fam?null:loanAmort(l,s), ok=a&&!a.bad, r=ok?Math.pow(1+a.rate/100,1/12)-1:0;
+  return{id:l.id,name:l.name,pay:+l.pay,debt:ok?a.debt:s.leftAmt,r,rate:ok?a.rate:0,left:s.left}})}
+function simRun(B,lump,extra,t,mode,roll){const S=B.map(x=>({...x,int:0,end:0,pay0:x.pay})), act=()=>S.filter(o=>o.debt>0.005);
+  const ord=()=>t==="none"?[]:t==="auto"||roll&&!act().some(o=>o.id===t)?act().sort((a,b)=>b.rate-a.rate||a.debt-b.debt):act().filter(o=>o.id===t);let com=0;
+  for(const o of ord()){if(lump<=0)break;const k=Math.min(lump,o.debt);if(o.r>0)com+=k*(o.left>12?0.005:0.0025);o.debt-=k;lump-=k;if(o.debt<=0.005){o.debt=0;o.end=0}
+    if(mode==="prest"&&t!=="auto"&&o.debt>0){const n=Math.max(1,o.left);o.pay=o.r?o.debt*o.r/(1-Math.pow(1+o.r,-n)):o.debt/n}}
+  for(let m=1;m<=720&&act().length;m++){let pool=extra;
+    S.forEach(o=>{if(o.debt<=0.005){if(roll)pool+=o.pay;return}const i=o.debt*o.r;o.int+=i;o.debt+=i;const p=Math.min(o.pay,o.debt);o.debt-=p;if(o.debt<=0.005){o.debt=0;o.end=m;if(roll)pool+=o.pay-p}});
+    for(const o of ord()){if(pool<=0)break;const k=Math.min(pool,o.debt);o.debt-=k;pool-=k;if(o.debt<=0.005){o.debt=0;o.end=m}}}
+  return{S,int:S.reduce((a,o)=>a+o.int,0),end:Math.max(0,...S.map(o=>o.end)),com}}
+const simMon=m=>{const i=mIdx(ymOf(new Date()))+m;return mLong(`${Math.floor(i/12)}-${String(i%12+1).padStart(2,"0")}`)};
+function renderLoanSim(){const el=document.getElementById("loanSim");if(!el)return;const B=simBase();if(!B.length){el.innerHTML="";return}
+  if(!simOpen){el.innerHTML=`<button class="btn" type="button" data-simtog="1" style="background:#5856d6">🧮 Simular: amortizar ou pagar mais</button>`;return}
+  if(simV.t!=="auto"&&!B.some(o=>o.id===simV.t))simV.t="auto";
+  el.innerHTML=`<div class="chero"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">🧮 Simulação</b><button class="back" type="button" data-simtog="1">Fechar</button></div>
+    <label class="f">Onde pôr o dinheiro<select id="simT"><option value="auto">O mais caro primeiro (recomendado)</option>${B.map(o=>`<option value="${o.id}"${simV.t===o.id?" selected":""}>${esc(o.name)}${o.r?` · ~${o.rate.toFixed(1).replace(".",",")}%/ano`:" · sem juros"}</option>`).join("")}</select></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="f">Amortizar já (€)<input id="simL" type="text" inputmode="decimal" placeholder="ex.: 1000" value="${esc(simV.l)}"></label>
+    <label class="f">Mais por mês (€)<input id="simX" type="text" inputmode="decimal" placeholder="ex.: 50" value="${esc(simV.x)}"></label></div>
+    <label class="f" id="simMl"${simV.t==="auto"?" hidden":""}>Ao amortizar<select id="simM"><option value="prazo">Acabar mais cedo (mesma prestação)</option><option value="prest"${simV.m==="prest"?" selected":""}>Baixar a prestação (mesmo prazo)</option></select></label>
+    ${B.length>1?`<label class="tick"><input type="checkbox" class="switch" id="simRl"${simV.rl?" checked":""}> Quando um crédito acaba, a prestação dele passa para o mais caro que falta</label>`:""}
+    <div id="simR"></div></div>`;
+  simCalc()}
+function simCalc(){const r=document.getElementById("simR");if(!r)return;const B=simBase(), lump=Math.max(0,numIn(simV.l)||0), extra=Math.max(0,numIn(simV.x)||0), mode=simV.t==="auto"?"prazo":simV.m;
+  const base=simRun(B,0,0,"none"), roll=!!simV.rl&&B.length>1, sim=simRun(B,lump,extra,simV.t,mode,roll), top=[...B].sort((a,b)=>b.rate-a.rate)[0], fam=B.filter(o=>!o.r);
+  const rows=B.map(o=>{const a=base.S.find(x=>x.id===o.id), b=sim.S.find(x=>x.id===o.id), d=a.end-b.end, pc=Math.abs(b.pay-a.pay0)>.005;
+    return`<div class="row" style="flex-wrap:wrap;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line)"><b style="flex-basis:100%">${esc(o.name)}</b>
+      <span>Termina ${b.end?simMon(b.end):"já"}${d>0?` <b style="color:var(--good)">(${d} ${d===1?"mês":"meses"} mais cedo)</b>`:""}</span>
+      ${o.r?`<span>Juros ${eur(b.int)}${a.int-b.int>.005?` <b style="color:var(--good)">(−${eur(a.int-b.int)})</b>`:""}</span>`:""}
+      ${pc?`<span style="flex-basis:100%">Prestação passa de ${eur(a.pay0)} para <b>${eur(b.pay)}</b></span>`:""}</div>`}).join("");
+  const save=base.int-sim.int-sim.com, dm=base.end-sim.end;
+  r.innerHTML=(lump||extra||roll?`<div style="background:color-mix(in srgb,var(--good) 14%,transparent);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+      <div>Poupas em juros <b>${eur(Math.max(0,base.int-sim.int))}</b>${sim.com>.005?` · comissão ~${eur(sim.com)}`:""}</div>
+      ${save>.005?`<div>Ganho líquido <b style="color:var(--good)">${eur(save)}</b></div>`:""}
+      <div>Sem créditos em <b>${sim.end?simMon(sim.end):"já"}</b>${dm>0?` (${dm} meses mais cedo)`:""}</div></div>`
+    :`<p class="note" style="margin:0">Hoje: sem créditos em <b>${simMon(base.end)}</b> · juros que faltam ${eur(base.int)}. Escreve um valor para ver a diferença.</p>`)+rows+
+    `<p class="note" style="margin:6px 0 0">${top&&top.r?`O que custa mais é o <b>${esc(top.name)}</b> (~${top.rate.toFixed(1).replace(".",",")}%/ano): é o primeiro a amortizar. `:""}${fam.length?`${fam.map(o=>esc(o.name)).join(", ")} não ${fam.length>1?"têm":"tem"} juros: amortizar não poupa nada, só acaba mais cedo. `:""}Valores aproximados. A comissão (0,5%, ou 0,25% no último ano) é a habitual no crédito ao consumo; confirma com o banco. Não conta com meses de carência.</p>`}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-simtog]");if(!t)return;simOpen=!simOpen;renderLoanSim();if(simOpen)setTimeout(()=>{const x=document.getElementById("loanSim");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},50)});
+document.addEventListener("input",e=>{const id=e.target.id;if(!["simT","simL","simX","simM","simRl"].includes(id))return;simV={...simV,[{simT:"t",simL:"l",simX:"x",simM:"m",simRl:"rl"}[id]]:id==="simRl"?e.target.checked:e.target.value};
+  if(id==="simT"){const m=document.getElementById("simMl");if(m)m.hidden=simV.t==="auto"}simCalc()});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   if(t.dataset.editloan){editLoan=t.dataset.editloan;renderLoans()}
   else if(t.dataset.cancelloan){editLoan="";renderLoans()}
@@ -6547,7 +6591,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v350";
+const APPV="casa-v351";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
