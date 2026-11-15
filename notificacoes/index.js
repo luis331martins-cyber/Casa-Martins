@@ -28,6 +28,19 @@ function lisbonNow() {
 const addDays = (ds, n) => {
   const d = new Date(ds + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
 };
+/* Débito direto ao sábado, domingo ou feriado só sai no dia útil seguinte (como na app): dia do mês em que sai (último + n se passar de mês) */
+const FIXOS_PT = ["01-01", "04-25", "05-01", "06-10", "08-15", "10-05", "11-01", "12-01", "12-08", "12-25"];
+function pascoaPT(y) { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+  h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+  mo = Math.floor((h + l - 7 * m + 114) / 31), da = (h + l - 7 * m + 114) % 31 + 1; return `${y}-${String(mo).padStart(2, "0")}-${String(da).padStart(2, "0")}`; }
+const naoUtil = (ds) => [0, 6].includes(new Date(ds + "T12:00:00Z").getUTCDay()) || FIXOS_PT.includes(ds.slice(5)) || [-2, 0, 60].some((n) => addDays(pascoaPT(+ds.slice(0, 4)), n) === ds);
+function ddDay(b, y, m) {
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate(), d0 = Math.min(b.day, last);
+  if (!b.dd) return d0;
+  let ds = `${y}-${String(m).padStart(2, "0")}-${String(d0).padStart(2, "0")}`;
+  while (naoUtil(ds)) ds = addDays(ds, 1);
+  return +ds.slice(5, 7) === m ? +ds.slice(8) : last + +ds.slice(8);
+}
 const daysBetween = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
 /* 3.589,57 € — ponto nos milhares e vírgula nos cêntimos, como na app */
 const eur = (v) => {
@@ -109,7 +122,7 @@ async function morning(code, now) {
     const p = b.paid && b.paid[mk];
     if (p != null && p !== false) continue;
     const dd = b.dd && p !== false;
-    const d = Math.min(b.day, last);
+    const d = dd ? ddDay(b, now.y, now.m) : Math.min(b.day, last);
     const v = eur(monthAmt(b, mk));
     if (d < now.d) {
       if (!dd) contas.push({o: 0, t: `Atrasada: ${b.name} · ${v}`});
@@ -150,7 +163,7 @@ async function morning(code, now) {
     if (mk >= START) for (const b of bills) {
       if ((b.kind && b.kind !== "income") || !b.dd || !b.day) continue;
       const p = b.paid && b.paid[mk];
-      if (p === false || (b.ok && b.ok[mk]) || Math.min(b.day, last) >= now.d) continue;
+      if (p === false || (b.ok && b.ok[mk]) || ddDay(b, now.y, now.m) >= now.d) continue;
       conf.push(`${b.name} (${b.kind === "income" ? "entrou?" : "saiu?"})`);
     }
     const lim = addDays(now.date, -7);
@@ -522,7 +535,7 @@ async function house(code, now) {
     }
     if (mkC >= START && bs.length) {
       for (const b of bs) {
-        if ((b.kind && b.kind !== "income") || !b.dd || !b.day || b.acm === "all" || Math.min(b.day, lastC) !== now.d) continue;
+        if ((b.kind && b.kind !== "income") || !b.dd || !b.day || b.acm === "all" || ddDay(b, now.y, now.m) !== now.d) continue;
         if ((b.paid && b.paid[mkC] != null) || (b.ok && b.ok[mkC])) continue; // já respondido (saiu/não saiu ou marcado à mão)
         const key = `b|${b.id}|${now.date}`;
         if (confSent.has(key)) continue;

@@ -2744,7 +2744,7 @@ const ymOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
    meses antes do anterior contam como pagos. As receitas automáticas continuam a contar como recebidas no dia. */
 const isPaid=(b,k)=>{const p=b.paid&&b.paid[k];if(p!=null)return p!==false;if(!b.dd||!b.day)return false;
   if(!isInc(b)){const pv=ymOf(new Date(now.getFullYear(),now.getMonth()-1,1));return k<pv}
-  const cur=ymOf(now);if(k!==cur)return k<cur;return Math.min(b.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())<=now.getDate()};
+  const cur=ymOf(now);if(k!==cur)return k<cur;return ddD(b,cur)<=now.getDate()};
 const paidAmt=(b,k)=>isPaid(b,k)?monthAmt(b,k):0;
 const planned=(b,k)=>isBud(b)?Math.max(monthAmt(b,k)-spentCard(b,k),spentCash(b,k)):monthAmt(b,k);
 const doneOf=(b,k)=>isBud(b)?spentCash(b,k):paidAmt(b,k);
@@ -3049,7 +3049,9 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
   const billRow=b=>{
     const p=isPaid(b,k), only=b.amounts&&b.amounts[k]!=null?` · só em ${mName}`:"";
     let when=b.day?`${b.dd?"Débito direto · dia":"Dia"} ${b.day}`:b.askPay?"Uma vez por mês · marca quando comprares":b.needDay?`<span class="warn">Falta o dia do débito — toca para o escrever</span>`:"Sem dia fixo";
-    if(!p&&isCur&&b.day){ if(b.day<=today&&b.dd) when=`<span class="warn">Débito ${b.day===today?"hoje":"dia "+b.day} · confirma se saiu</span>`; else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
+    if(!p&&isCur&&b.day&&b.dd){const D=ddD(b,k), mv=D!==Math.min(b.day,new Date(viewY,viewM+1,0).getDate())?` (dia ${b.day} não é dia útil)`:"";
+      if(D<=today) when=`<span class="warn">Débito ${D===today?"hoje":"dia "+D}${mv} · confirma se saiu</span>`; else if(D-today<=3||mv) when=`<span class="warn">Débito ${D>new Date(viewY,viewM+1,0).getDate()?"no início do mês seguinte":"dia "+D}${mv}</span>`}
+    else if(!p&&isCur&&b.day){ if(false); else if(b.day<today) when=`<span class="bad">Atrasada · dia ${b.day}</span>`; else if(b.day-today<=3) when=`<span class="warn">${b.dd?"Débito ":""}${b.day===today?(b.dd?"hoje":"Vence hoje"):(b.dd?"dia ":"Vence dia ")+b.day}</span>`; }
     if(p) when=`<span class="ok">Paga</span>${b.dd?" · débito direto":""}`;
     when+=only+partTxt(b,k);
     const ln=typeof loans==="function"&&loans().find(l=>l.bill===b.id);
@@ -3097,9 +3099,9 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
         return tile("cartao","card","#a78bfa","#5b3fd6",one?`Cartão ${esc(g.c.name)}`:"Cartões",e0(x.tot),sub,0)})():"");
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
     let run=accs0.reduce((s2,a)=>s2+(+a.bal||0),0);
-    const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.day<today&&b.dd):[], groups={};
+    const lateL=isCur?uB.filter(b=>b.day&&b.day<today&&!b.dd):[], confL=isCur?uB.filter(b=>b.day&&b.dd&&ddD(b,k)<today):[], groups={};
     const lbd=lastBizDay(viewY,viewM).getDate();
-    [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(b.day,lastD):isInc(b)&&askInc(b)?0:99;(groups[d]=groups[d]||[]).push(b)});
+    [...uB.filter(b=>!lateL.includes(b)&&!confL.includes(b)),...uI].forEach(b=>{const d=b.day?Math.min(ddD(b,k),lastD):isInc(b)&&askInc(b)?0:99;(groups[d]=groups[d]||[]).push(b)});
     acL.filter(x=>!x.dn).forEach(x=>{const d=isCur?Math.max(AC_DAY,today):AC_DAY;(groups[d]=groups[d]||[]).push({acerto:x,name:"Acerto com "+x.w})});
     const dlab=d=>{if(d===99)return"Sem dia fixo";if(d===0){const pv=new Date(viewY,viewM-1,1);return`Fim de ${pv.toLocaleDateString("pt-PT",{month:"long"})} (para este mês)`}const dt=new Date(viewY,viewM,d);if(isCur&&d===today)return"Hoje";if(isCur&&d===today+1)return"Amanhã · "+dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});
       const w=dt.toLocaleDateString("pt-PT",{weekday:"long",day:"numeric"});return w[0].toUpperCase()+w.slice(1)};
@@ -3487,7 +3489,7 @@ hello();
 document.getElementById("nameForm").addEventListener("submit",e=>{e.preventDefault();
   const n=document.getElementById("myName").value.trim();if(!n)return;setMyName(n);toast("Olá, "+myName()+"!");show("inicio")});
 function billsOn(dateStr){if(dateStr.slice(0,7)<START)return[];const d=new Date(dateStr+"T00:00");const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-  return fixas().filter(b=>b.day&&Math.min(b.day,last)===d.getDate())}
+  return fixas().filter(b=>b.day&&(b.dd?ymd(new Date(d.getFullYear(),d.getMonth(),ddD(b,dateStr.slice(0,7))))===dateStr:Math.min(b.day,last)===d.getDate()))}
 /* Marcações de vários dias: {date (primeiro dia), end (último dia)} */
 const evEnd=e=>e.end&&e.end>e.date?e.end:e.date, evOn=(e,ds)=>ds>=e.date&&ds<=evEnd(e);
 const dDiff=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
@@ -4985,7 +4987,7 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;
 function confPending(){const L=[], t=new Date(), td=ymd(t), cur=ymOf(t), prev=ymOf(new Date(t.getFullYear(),t.getMonth()-1,1));
   for(const k of [prev,cur]){if(k<START)continue;const last=new Date(+k.slice(0,4),+k.slice(5),0).getDate();
     bills.filter(b=>(!b.kind||b.kind==="income")&&b.dd&&b.day&&b.acm!=="all").forEach(b=>{const p=b.paid&&b.paid[k];if(p===false||p===true||(b.ok&&b.ok[k]))return;
-      const d=Math.min(b.day,last), ds=`${k}-${String(d).padStart(2,"0")}`;if(ds>td)return;
+      const ds=ymd(new Date(+k.slice(0,4),+k.slice(5)-1,ddD(b,k)));if(ds>td)return;
       L.push({type:"bill",b,k,ds,inc:isInc(b)})})}
   const nm=minsNow(), lim=ymd(new Date(t.getFullYear(),t.getMonth(),t.getDate()-10));
   events.filter(e=>!e.done&&!e.skip&&!/^🎒.*(Férias|Feriado)/.test(e.title||"")).forEach(e=>{const end=evEnd(e);
@@ -6198,6 +6200,10 @@ const INC_ASK=/ordenado|salario|vencimento|break|caixa/;
 const askInc=b=>isInc(b)&&(b.ask!=null?!!b.ask:INC_ASK.test(noAcc(b.name||"")));
 const PT_FIXOS=["01-01","04-25","05-01","06-10","08-15","10-05","11-01","12-01","12-08","12-25"];
 function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=(h+l-7*m+114)%31+1;return new Date(y,mo-1,da)}
+/* Pedido (15/11): débito direto (ou entrada automática) que calha ao sábado, domingo ou feriado só sai no dia útil seguinte.
+   Devolve o dia do mês em que sai (se passar para o mês seguinte, devolve último dia + n, para não contar como atrasado) */
+function ddD(b,k){const y=+k.slice(0,4), m=+k.slice(5)-1, last=new Date(y,m+1,0).getDate(), d0=Math.min(b.day,last);if(!b.dd)return d0;
+  const d=new Date(y,m,d0);while(d.getDay()===0||d.getDay()===6||feriado(d))d.setDate(d.getDate()+1);return d.getMonth()===m?d.getDate():last+d.getDate()}
 function feriado(d){const md=ymd(d).slice(5);if(PT_FIXOS.includes(md))return true;const e=easter(d.getFullYear());
   return[-2,0,60].some(n=>{const x=new Date(e);x.setDate(x.getDate()+n);return ymd(x)===ymd(d)})}
 /* Mês da casa (k "AAAA-MM"): começa no último dia útil do mês anterior (entra o ordenado) e acaba no penúltimo dia útil do mês */
@@ -6528,7 +6534,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v347";
+const APPV="casa-v348";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
