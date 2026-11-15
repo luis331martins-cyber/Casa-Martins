@@ -918,6 +918,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .loan .lbar{height:8px;border-radius:4px;background:rgba(255,255,255,.28);overflow:hidden;margin:12px 0 6px}
 .loan .lbar span{display:block;height:100%;background:#fff;border-radius:4px}
 .loan.lightbk .lbar{background:rgba(0,0,0,.14)}.loan.lightbk .lbar span{background:var(--bkfg)}
+.lplan{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-top:-6px;padding:4px 0;max-height:380px;overflow:auto;font-size:13px;font-variant-numeric:tabular-nums}
+.lplan table{width:100%;border-collapse:collapse}.lplan th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:600;text-align:right;padding:6px 6px;font-size:12px}
+.lplan td{text-align:right;padding:5px 6px;border-top:1px solid var(--line);white-space:nowrap}.lplan td:first-child,.lplan th:first-child{text-align:left}
+.lplan tr.pd td{color:var(--muted)}.lplan tr.now td{background:color-mix(in srgb,#5856d6 14%,transparent);font-weight:700}
+.lplanb{align-self:flex-start;margin:-4px 0 6px}
 .loan .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
 .loan.done{--bk:#8e8e93}
 .loanlink{color:var(--accent);font-weight:600;white-space:nowrap}
@@ -4079,10 +4084,22 @@ function renderLoans(){const el=document.getElementById("loanList");if(!el)retur
         return`<div class="row" style="margin-top:6px;font-size:15px"><span><b>Em dívida ao banco</b></span><b>${eur(a.debt)}</b></div>
           <div class="row"><span>Juros que ainda vais pagar</span><span>${eur(a.intLeft)}</span></div>
           <div class="row" style="margin-top:2px;opacity:.8"><span>Pedido ${eur(+l.amount)} · juros no total ${eur(a.intTotal)}</span><span>custo ~${a.rate.toFixed(2).replace(".",",")}%/ano</span></div>`})()}
-    </button>`}).join("")+(editLoan==="new"?loanForm(null):"")||`<div class="empty">Ainda não há créditos.<br>Toca em “Juntar crédito”.</div>`;
+    </button>${s.done?"":`<button class="back lplanb" type="button" data-loanplan="${l.id}" aria-expanded="${loanPlanOpen===l.id}">📄 Plano financeiro ${loanPlanOpen===l.id?"▴":"▾"}</button>${loanPlanOpen===l.id?loanPlan(l,s):""}`}`}).join("")+(editLoan==="new"?loanForm(null):"")||`<div class="empty">Ainda não há créditos.<br>Toca em “Juntar crédito”.</div>`;
   if(!L.length&&editLoan==="new")el.innerHTML=loanForm(null);
   document.getElementById("addLoan").hidden=editLoan==="new";renderLoanSim()}
 document.getElementById("addLoan").addEventListener("click",()=>{editLoan="new";renderLoans()});
+/* Pedido (15/11): plano financeiro de cada crédito — cada prestação com o mês, juros, capital e o que fica em dívida (as pagas a cinzento, a deste mês em destaque).
+   Empréstimo sem juros com "Já paguei": o que já se pagou numa linha e depois cada mês até acabar (os meses de carência a 0). */
+let loanPlanOpen="";
+function loanPlan(l,s){const pay=+l.pay||0, cur=ymOf(new Date()), mk=i=>`${Math.floor(i/12)}-${String(i%12+1).padStart(2,"0")}`, ml=k=>new Date(+k.slice(0,4),+k.slice(5)-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")+" "+k.slice(2,4);const R=[];
+  if(s.fam){let bal=s.leftAmt;const car=l.car?mIdx(l.car):-1;R.push(`<tr class="pd"><td>Até ${ml(cur)}</td><td>${eur(s.paidAmt)}</td><td>${eur(bal)}</td></tr>`);
+    for(let m=mIdx(cur)+1,g=0;bal>0.004&&g<600;m++,g++){const p=m<=car?0:Math.min(pay,bal);bal=Math.round((bal-p)*100)/100;R.push(`<tr><td>${ml(mk(m))}</td><td>${p?eur(p):"sem pagar"}</td><td>${eur(bal)}</td></tr>`)}}
+  else{const a=loanAmort(l,s);let r=0;if(a&&!a.bad)r=Math.pow(1+a.rate/100,1/12)-1;let bal=a&&!a.bad?+l.amount:s.n*pay;const f=mIdx(l.first);
+    for(let i=1;i<=s.n;i++){const j=r?bal*r:0;let c=pay-j;if(i===s.n)c=bal;bal=Math.max(0,bal-c);const k=mk(f+i-1);
+      R.push(`<tr class="${k<cur?"pd":k===cur?"now":""}"><td>${i} · ${ml(k)}</td><td>${r?eur(j):"—"}</td><td>${eur(c)}</td><td>${eur(bal)}</td></tr>`)}}
+  return`<div class="lplan" data-lplan="${l.id}"><table><thead><tr>${s.fam?"<th>Mês</th><th>Paga</th>":"<th>Prestação</th><th>Juros</th><th>Capital</th>"}<th>Em dívida</th></tr></thead><tbody>${R.join("")}</tbody></table></div>`}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-loanplan]");if(!t)return;loanPlanOpen=loanPlanOpen===t.dataset.loanplan?"":t.dataset.loanplan;renderLoans();
+  if(loanPlanOpen)setTimeout(()=>{const b=document.querySelector(`[data-lplan="${loanPlanOpen}"]`), n=b&&b.querySelector("tr.now,tr:not(.pd)");if(b&&n)b.scrollTop=Math.max(0,n.offsetTop-80)},30)});
 /* Pedido (15/11): simulação — amortizar já um valor e/ou pagar mais por mês. "O mais caro primeiro": o dinheiro vai para o crédito com maior custo
    e, quando um crédito acaba, a prestação dele passa para o seguinte. Taxa mensal tirada do custo de cada crédito; sem juros nos de família.
    Comissão de amortização antecipada (crédito ao consumo): 0,5% do valor amortizado (0,25% se falta menos de 1 ano). Não conta com meses de carência. */
@@ -6591,7 +6608,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v351";
+const APPV="casa-v352";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
