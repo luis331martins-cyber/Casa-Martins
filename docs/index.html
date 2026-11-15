@@ -4019,7 +4019,16 @@ const loans=()=>bills.filter(b=>b.kind==="loan");
 const mIdx=k=>{const [y,m]=String(k||"").split("-").map(Number);return y*12+m-1};
 const mLong=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"long",year:"numeric"})};
 /* Prestações pagas até hoje: meses desde a primeira, contando já a deste mês como paga */
-function loanState(l){const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
+/* Pedido (15/11): empréstimo com meses sem pagar (ex.: dos pais) — l.pdv = quanto já se pagou até l.pdAt ("AAAA-MM", o mês em que se escreveu),
+   l.car = "sem pagar até" (carência; esses meses não contam). Total = montante pedido (sem juros) ou prestação × meses.
+   A partir de pdAt soma uma prestação por mês (a deste mês já conta); o fim calcula-se pelo que falta. */
+function loanFam(l){const cur=mIdx(ymOf(new Date())), pay=+l.pay||0, at=mIdx(l.pdAt||ymOf(new Date())), car=l.car?mIdx(l.car):-1;
+  const tot=+l.amount>0?+l.amount:Math.max(1,mIdx(l.last)-mIdx(l.first)+1)*pay;let paidAmt=+l.pdv||0;
+  for(let m=at+1;m<=cur;m++)if(m>car)paidAmt+=pay;paidAmt=Math.min(tot,paidAmt);
+  const leftAmt=Math.round((tot-paidAmt)*100)/100, left=pay?Math.ceil(leftAmt/pay-1e-9):0, paid=pay?Math.round(paidAmt/pay):0;
+  let m=cur,k=left;while(k>0){m++;if(m>car)k--}const last=left?`${Math.floor(m/12)}-${String(m%12+1).padStart(2,"0")}`:ymOf(new Date());
+  return{fam:true,tot,paidAmt,n:paid+left,paid,left,leftAmt,done:leftAmt<=0.004,last,car:l.car&&mIdx(l.car)>=cur?l.car:null}}
+function loanState(l){if(l.pdv!=null)return loanFam(l);const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
   let paid=mIdx(ymOf(d))-mIdx(l.first)+1;paid=Math.max(0,Math.min(n,paid));
   const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
 /* Capital em dívida (o que o banco mostra) e juros que faltam, pelo método francês (prestação constante):
@@ -4041,27 +4050,30 @@ function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data
     <label class="f">Última prestação<input name="b" type="month" required value="${l?v(l.last):""}"></label>
     <label class="f">Montante pedido (€)<input name="m" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.amount):""}" placeholder="opcional"></label>
     <label class="f">TAEG (%)<input name="t" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.taeg):""}" placeholder="opcional"></label>
+    <label class="f">Já paguei até hoje (€)<input name="pv" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.pdv):""}" placeholder="se houve meses sem pagar"></label>
+    <label class="f">Sem pagar até (carência)<input name="cr" type="month" value="${l?v(l.car):""}"></label>
+    <p class="note wide" style="margin:-4px 2px 0">Para um empréstimo com meses sem pagar (ex.: dos pais): escreve quanto já pagaste no total. A app soma a prestação de cada mês a partir de agora (menos os meses de carência) e calcula quando termina. Sem TAEG, conta só o montante pedido.</p>
     <label class="f wide">Linha nas Contas<select name="l"><option value="">Não ligar</option><option value="new"${!l?" selected":""}>Criar uma linha nova nas Contas</option>${fixas().filter(b=>!b.kind).sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(b=>`<option value="${b.id}"${l&&(l.bill===b.id||!l.bill&&sameName(l.name,b.name))?" selected":""}>${esc(b.name)} · dia ${b.day||"—"} · ${eur(+b.amount||0)}</option>`).join("")}</select></label>
     <button class="btn" type="submit">Guardar</button>
     <button class="btn ghost" type="button" data-cancelloan="1">Cancelar</button>
     ${l?`<button class="btn danger wide" type="button" data-delloan="${l.id}">Apagar ${esc(l.name)}</button>`:""}
   </form>`}
 function renderLoans(){const el=document.getElementById("loanList");if(!el)return;
-  const L=loans().map(l=>({l,s:loanState(l)})).sort((a,b)=>a.s.done-b.s.done||a.l.last.localeCompare(b.l.last));
+  const L=loans().map(l=>({l,s:loanState(l)})).sort((a,b)=>a.s.done-b.s.done||(a.s.fam?a.s.last:a.l.last).localeCompare(b.s.fam?b.s.last:b.l.last));
   const act=L.filter(x=>!x.s.done);
   document.getElementById("loanTot").hidden=!act.length;
   document.getElementById("vLoanMonth").textContent=eur(act.reduce((t,x)=>t+(+x.l.pay||0),0));
-  const am=act.map(x=>({x,a:loanAmort(x.l,x.s)}));
+  const am=act.map(x=>({x,a:x.s.fam?null:loanAmort(x.l,x.s)}));
   document.getElementById("vLoanDebt").textContent=eur(am.reduce((t,y)=>t+(y.a&&!y.a.bad?y.a.debt:y.x.s.leftAmt),0));
   document.getElementById("vLoanInt").textContent=eur(am.reduce((t,y)=>t+(y.a&&!y.a.bad?y.a.intLeft:0),0));
   el.innerHTML=L.map(({l,s})=>{if(l.id===editLoan)return loanForm(l);
-    const c=s.done?"":bankColor(l), pct=Math.round(s.paid/s.n*100);
+    const c=s.done?"":bankColor(l), pct=Math.round((s.fam?s.paidAmt/s.tot:s.paid/s.n)*100);
     return`<button type="button" class="loan${s.done?" done":""}${c&&LIGHTBK.has(c)?" lightbk":""}" data-editloan="${l.id}"${c?` style="--bk:${c}${LIGHTBK.has(c)?";--bkfg:"+LIGHTBK.get(c):""}"`:""} aria-label="Editar ${esc(l.name)}">
       <div class="top"><span class="name">${esc(l.name)}</span><span class="amt">${eur(+l.pay||0)}<span style="font-size:13px;font-weight:500">/mês</span></span></div>
-      <div class="meta">${s.done?"Pago ✓ · última prestação em "+mLong(l.last)+(l.bill&&bills.some(b=>b.id===l.bill)?" · já podes apagar a linha nas Contas":""):`Dia ${l.day} · termina em ${mLong(l.last)}${l.bill&&bills.some(b=>b.id===l.bill)?" · nas Contas":""}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
+      <div class="meta">${s.done?"Pago ✓"+(s.fam?"":" · última prestação em "+mLong(l.last))+(l.bill&&bills.some(b=>b.id===l.bill)?" · já podes apagar a linha nas Contas":""):`Dia ${l.day} · termina em ${mLong(s.fam?s.last:l.last)}${s.car?` · sem pagar até ${mLong(s.car)}`:""}${l.bill&&bills.some(b=>b.id===l.bill)?" · nas Contas":""}`}${l.taeg?` · TAEG ${String(l.taeg).replace(".",",")}%`:""}</div>
       <div class="lbar"><span style="width:${pct}%"></span></div>
       <div class="row"><span>${s.paid} de ${s.n} pagas (${pct}%)</span><span>${s.done?"":`Faltam ${s.left} prestações · ${eur(s.leftAmt)}`}</span></div>
-      ${(()=>{const a=s.done?null:loanAmort(l,s);if(!a)return l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:"";
+      ${s.fam?`<div class="row" style="margin-top:6px;font-size:15px"><span><b>Já pagaste</b></span><b>${eur(s.paidAmt)} de ${eur(s.tot)}</b></div><div class="row"><span><b>Ainda deves</b></span><b>${eur(s.leftAmt)}</b></div>`:(()=>{const a=s.done?null:loanAmort(l,s);if(!a)return l.amount?`<div class="row" style="margin-top:2px"><span>Montante pedido ${eur(+l.amount)}</span><span>Total com juros ${eur(s.n*(+l.pay||0))}</span></div>`:"";
         if(a.bad)return`<div class="row" style="margin-top:4px;font-weight:600"><span>⚠️ ${s.n} × ${eur(+l.pay)} = ${eur(s.n*(+l.pay))} é menos do que o montante pedido (${eur(+l.amount)}). Confirma a prestação, o montante e as datas.</span></div>`;
         return`<div class="row" style="margin-top:6px;font-size:15px"><span><b>Em dívida ao banco</b></span><b>${eur(a.debt)}</b></div>
           <div class="row"><span>Juros que ainda vais pagar</span><span>${eur(a.intLeft)}</span></div>
@@ -4079,7 +4091,8 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id
   if(mIdx(last)<mIdx(first)){toast("A última prestação tem de ser depois da primeira.");return}
   const old=id==="new"?null:loans().find(x=>x.id===id);
   const l={...(old||{}),id:old?old.id:uid(),kind:"loan",name:f.n.value.trim(),pay:num(f.p.value)||0,day:Math.min(31,Math.max(1,parseInt(f.d.value)||1)),first,last};
-  for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null]])if(v==null)delete l[k];else l[k]=v;
+  for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null],["car",f.cr.value||null]])if(v==null)delete l[k];else l[k]=v;
+  {const pv=num(f.pv.value);if(pv==null){delete l.pdv;delete l.pdAt}else if(!old||old.pdv!==pv||old.pdAt==null){l.pdv=pv;l.pdAt=ymOf(new Date())}}
   /* Ligação à linha da prestação nas Contas: a prestação e o dia ficam iguais nos dois sítios */
   const lk=f.l.value;
   if(lk==="new"){const b={id:uid(),name:l.name,amount:l.pay,day:l.day,dd:true,paid:{}};putBill(b);l.bill=b.id}
@@ -6534,7 +6547,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v349";
+const APPV="casa-v350";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
