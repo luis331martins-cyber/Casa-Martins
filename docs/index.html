@@ -3094,7 +3094,7 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
       /* Receitas: tudo o que entra no mês (recebido + por receber + acerto) */
       tile("receitas","cash","#4cd964","#1e8f3a","Receitas",e0(sum(inc)+acL.reduce((t,x)=>t+Math.max(0,x.tot),0)),(()=>{const fl=sum(uI)+acL.filter(x=>!x.dn).reduce((t,x)=>t+Math.max(0,x.tot),0);return fl>0.004?`falta receber ${e0(fl)}`:"tudo recebido ✓"})(),0)+
       tile("gastos","cart","#4aa3ff","#0a5bc4","Gastos",e0(buds.reduce((t,b)=>t+spentOf(b,k),0)),buds.length?(buds.some(b=>monthAmt(b,k)>0)?`ainda podes ${e0(bLeft)}`:"gasto este mês"):"sem gastos do mês",0)+
-      (cards().some(isCredit)?(()=>{const G=cardSpendGroups(k), x=cardSpendSum(k), one=G.length===1, g=G[0];
+      (cards().some(isCredit)?(()=>{const G=cardSpendGroups(k,true), x=cardSpendSum(k), one=G.length===1, g=G[0];
         const sub=one?`fecha ${dShort(g.close)}${g.debit?` · débito ${dShort(g.debit)}`:""}`:G.map(g=>`${esc(g.c.name.split(" ")[0])} ${e0(g.tot)} · ${dShort(g.close)}`).join("<br>");
         return tile("cartao","card","#a78bfa","#5b3fd6",one?`Cartão ${esc(g.c.name)}`:"Cartões",e0(x.tot),sub,0)})():"");
     const accs0=accounts(), hasBal=accs0.length&&isCur, lastD=new Date(viewY,viewM+1,0).getDate();
@@ -4213,24 +4213,24 @@ const dShort=ds=>fmtD(ds).replace(/ \d{4}$/,"");
 function frInStmt(c,sk){const D=stmtDates(c,sk), d=(D.close||sk+"-28"), inM=(first,cnt)=>{const i=mIdx(sk)-mIdx(first);return i>=0&&i<cnt?i+1:0};
   return[...(c.frs||[]).map(x=>{const i=inM(x.first,+x.cnt);return i?{id:"fr-"+x.id,v:+x.pay,d,n:`💳 ${x.n} (${i}/${x.cnt})`,fr:1}:null}),
     ...homes().filter(h=>h.pay===c.id&&+h.frn&&h.frf).map(h=>{const i=inM(h.frf,+h.frn), F=hmFr(h);return i&&F?{id:"fr-"+h.id,v:F.pay,d,n:`💳 🏠 ${h.name} (${i}/${h.frn})`,fr:1}:null})].filter(Boolean)}
-/* Pedido (14/11): a compra fracionada não entra em nenhuma fatura, por isso conta nos gastos do mês em que se fez a compra
-   (mesmo que esse extrato já tenha fechado); as outras compras contam no extrato do cartão */
-const spIn=(c,x,k,sk)=>x.frid?x.d.slice(0,7)===k:(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk);
-function cardSpendGroups(k){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
-const cardSpendSum=k=>{const G=cardSpendGroups(k);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
+/* Pedido (15/11): o quadro roxo das Contas mostra o que se gastou no mês (pela data da compra); o plafond e o extrato ficam no separador Cartões.
+   mo=false (avisos do fecho do extrato) conta pelo extrato */
+const spIn=(c,x,k,sk,mo)=>mo?x.d.slice(0,7)===k:(c.cd?stmtK(c,x.d)===sk:x.d.slice(0,7)===sk);
+function cardSpendGroups(k,mo){const cur=ymOf(new Date());return cards().filter(isCredit).map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk,mo));return{c,sk,L,tot:Math.round(L.reduce((t,x)=>t+x.v,0)*100)/100,...stmtDates(c,sk)}})}
+const cardSpendSum=k=>{const G=cardSpendGroups(k,true);return{tot:Math.round(G.reduce((t,g)=>t+g.tot,0)*100)/100,n:G.reduce((t,g)=>t+g.L.length,0)}};
 function cardSpendBox(k){const cur=ymOf(new Date()), C=cards().filter(isCredit);if(!C.length)return"";
-  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk)).sort((a,b)=>b.d.localeCompare(a.d));
+  const G=C.map(c=>{const sk=c.cd?(k===cur?stmtK(c):k):k, L=(c.buys||[]).filter(x=>x.v>0&&!x.adj&&!x.frb&&spIn(c,x,k,sk,true)).sort((a,b)=>b.d.localeCompare(a.d));
     const [y,m]=sk.split("-").map(Number), close=c.cd?stmtLabel(c,sk):`${new Date(y,m,0).getDate()} ${new Date(y,m-1,1).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}`;
     return{c,L,tot:L.reduce((t,x)=>t+x.v,0),close,debit:stmtDates(c,sk).debit}}), tot=G.reduce((t,g)=>t+g.tot,0), n=G.reduce((t,g)=>t+g.L.length,0), open=openBud==="cardsp"||cTab==="cartao";
   const closes=[...new Set(G.map(g=>g.close))];
   return`<div class="budget cardsp">
     <div class="head">
       <button class="plus" type="button" data-cardspadd="${C[0].id}" aria-label="Juntar compra no cartão">+</button>
-      <button type="button" class="bname wi" data-openbud="cardsp" aria-expanded="${open}"><span class="bic" style="font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,#5856d6 16%,transparent);flex:none">💳</span><span class="bt"><div class="name">Gastos com cartão de crédito</div><div class="meta">${n?`${n} compra${n===1?"":"s"} · `:""}fecha a ${closes.join(" / ")} · não conta nos totais</div></span></button>
-      <div class="amt">${eur(tot)}<small>no extrato</small></div>
+      <button type="button" class="bname wi" data-openbud="cardsp" aria-expanded="${open}"><span class="bic" style="font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,#5856d6 16%,transparent);flex:none">💳</span><span class="bt"><div class="name">Gastos com cartão de crédito</div><div class="meta">${n?`${n} compra${n===1?"":"s"} em ${esc(mFull(k).split(" de ")[0])}`:`Sem compras em ${esc(mFull(k).split(" de ")[0])}`} · não conta nos totais</div></span></button>
+      <div class="amt">${eur(tot)}<small>no mês</small></div>
     </div>
     ${open?G.map(g=>`<div style="font-weight:600;font-size:14px;margin:8px 0 2px;display:flex;justify-content:space-between"><span>${esc(g.c.name)} · fecha a ${g.close}${g.debit?` · débito a ${dShort(g.debit)}`:""}</span><span>${eur(g.tot)}</span></div>
-      ${(k===ymOf(new Date())?cardPending(g.c):[]).map(pendRow).join("")}${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}${x.frid?` <small style="color:var(--muted)">(fracionada)</small>`:""}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste extrato.</div>`}
+      ${(k===ymOf(new Date())?cardPending(g.c):[]).map(pendRow).join("")}${g.L.map(x=>`<div class="spend" style="cursor:default"><span class="t">${fmtD(x.d).replace(/ \d{4}$/,"")}</span><span>${esc(x.n||"Compra")}${x.w?` <span style="color:var(--muted)">· ${esc(x.w)}</span>`:""}${x.frid?` <small style="color:var(--muted)">(fracionada)</small>`:""}</span><b>${eur(x.v)}</b></div>`).join("")||`<div class="note" style="margin:2px 0">Sem compras neste mês.</div>`}
       <button class="back" type="button" data-cardspadd="${g.c.id}" style="align-self:flex-start">+ Compra no ${esc(g.c.name)}</button>`).join(""):""}
   </div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-cardspadd]");if(!t)return;e.preventDefault();e.stopPropagation();const id=t.dataset.cardspadd;
@@ -6534,7 +6534,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v348";
+const APPV="casa-v349";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
