@@ -4036,14 +4036,15 @@ function loanFam(l){const cur=mIdx(ymOf(new Date())), pay=+l.pay||0, at=mIdx(l.p
   return{fam:true,tot,paidAmt,n:paid+left,paid,left,leftAmt,done:leftAmt<=0.004,last,car:l.car&&mIdx(l.car)>=cur?l.car:null}}
 function loanState(l){if(l.pdv!=null)return loanFam(l);const n=Math.max(1,mIdx(l.last)-mIdx(l.first)+1), d=new Date();
   let paid=mIdx(ymOf(d))-mIdx(l.first)+1;paid=Math.max(0,Math.min(n,paid));
-  const left=n-paid;return{n,paid,left,leftAmt:left*(+l.pay||0),done:left===0}}
+  const left=n-paid, p1=l.p1!=null&&paid===0?(+l.p1||0)-(+l.pay||0):0;return{n,paid,left,leftAmt:Math.max(0,left*(+l.pay||0)+p1),done:left===0}}
 /* Capital em dívida (o que o banco mostra) e juros que faltam, pelo método francês (prestação constante):
    a taxa mensal tira-se do montante pedido, do nº de prestações e da prestação; o capital em dívida é o que falta amortizar depois das prestações pagas */
-function loanAmort(l,s){const P=+l.amount||0, pay=+l.pay||0, n=s.n;if(!P||!pay)return null;
-  if(n*pay<=P+0.01)return{bad:true};
+/* Pedido (15/11): 1.ª prestação só de juros (l.p1, ex.: 2 € e tal dos dias entre o contrato e o 1.º débito): o capital só começa a ser pago na 2.ª */
+function loanAmort(l,s){const P=+l.amount||0, pay=+l.pay||0, j1=l.p1!=null?1:0, n=s.n-j1;if(!P||!pay||n<1)return null;
+  if(n*pay<=P+0.01)return{bad:true};s={...s,paid:Math.max(0,s.paid-j1)};
   let lo=1e-9,hi=0.1;for(let i=0;i<200;i++){const r=(lo+hi)/2, p=P*r/(1-Math.pow(1+r,-n));if(p<pay)lo=r;else hi=r}
   const r=(lo+hi)/2, g=Math.pow(1+r,s.paid), debt=Math.max(0,P*g-pay*(g-1)/r), left=s.left*pay;
-  return{rate:(Math.pow(1+r,12)-1)*100, debt, intLeft:Math.max(0,left-debt), intTotal:n*pay-P}}
+  return{rate:(Math.pow(1+r,12)-1)*100, debt, intLeft:Math.max(0,s.leftAmt-debt), intTotal:n*pay-P+(j1?+l.p1||0:0)}}
 /* Sugere a linha das Contas com nome parecido (ex.: crédito "Crédito carro" e conta "Carro") */
 const normN=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/cr[eé]dito|prestac[aã]o|emprestimo/g,"").replace(/[^a-z0-9]+/g," ").trim();
 function sameName(a,b){a=normN(a);b=normN(b);return!!a&&!!b&&(a===b||(Math.min(a.length,b.length)>=3&&(a.includes(b)||b.includes(a))))}
@@ -4055,6 +4056,7 @@ function loanForm(l){const v=x=>x==null?"":x;return`<form class="bill-edit" data
     <label class="f">1.ª prestação<input name="a" type="month" required value="${l?v(l.first):""}"></label>
     <label class="f">Última prestação<input name="b" type="month" required value="${l?v(l.last):""}"></label>
     <label class="f">Montante pedido (€)<input name="m" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.amount):""}" placeholder="opcional"></label>
+    <label class="f">1.ª prestação só de juros (€)<input name="j1" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.p1):""}" placeholder="se foi diferente (ex.: 2,35)"></label>
     <label class="f">TAEG (%)<input name="t" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.taeg):""}" placeholder="opcional"></label>
     <label class="f">Já paguei até hoje (€)<input name="pv" type="number" step="0.01" min="0" inputmode="decimal" value="${l?v(l.pdv):""}" placeholder="se houve meses sem pagar"></label>
     <label class="f">Sem pagar até (carência)<input name="cr" type="month" value="${l?v(l.car):""}"></label>
@@ -4095,7 +4097,8 @@ function loanPlan(l,s){const pay=+l.pay||0, cur=ymOf(new Date()), mk=i=>`${Math.
   if(s.fam){let bal=s.leftAmt;const car=l.car?mIdx(l.car):-1;R.push(`<tr class="pd"><td>Até ${ml(cur)}</td><td>${eur(s.paidAmt)}</td><td>${eur(bal)}</td></tr>`);
     for(let m=mIdx(cur)+1,g=0;bal>0.004&&g<600;m++,g++){const p=m<=car?0:Math.min(pay,bal);bal=Math.round((bal-p)*100)/100;R.push(`<tr><td>${ml(mk(m))}</td><td>${p?eur(p):"sem pagar"}</td><td>${eur(bal)}</td></tr>`)}}
   else{const a=loanAmort(l,s);let r=0;if(a&&!a.bad)r=Math.pow(1+a.rate/100,1/12)-1;let bal=a&&!a.bad?+l.amount:s.n*pay;const f=mIdx(l.first);
-    for(let i=1;i<=s.n;i++){const j=r?bal*r:0;let c=pay-j;if(i===s.n)c=bal;bal=Math.max(0,bal-c);const k=mk(f+i-1);
+    for(let i=1;i<=s.n;i++){const k=mk(f+i-1);if(i===1&&l.p1!=null){R.push(`<tr class="${k<cur?"pd":k===cur?"now":""}"><td>1 · ${ml(k)}</td><td>${eur(+l.p1||0)}</td><td>${eur(0)}</td><td>${eur(bal)}</td></tr>`);continue}
+      const j=r?bal*r:0;let c=pay-j;if(i===s.n)c=bal;bal=Math.max(0,bal-c);
       R.push(`<tr class="${k<cur?"pd":k===cur?"now":""}"><td>${i} · ${ml(k)}</td><td>${r?eur(j):"—"}</td><td>${eur(c)}</td><td>${eur(bal)}</td></tr>`)}}
   return`<div class="lplan" data-lplan="${l.id}"><table><thead><tr>${s.fam?"<th>Mês</th><th>Paga</th>":"<th>Prestação</th><th>Juros</th><th>Capital</th>"}<th>Em dívida</th></tr></thead><tbody>${R.join("")}</tbody></table></div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-loanplan]");if(!t)return;loanPlanOpen=loanPlanOpen===t.dataset.loanplan?"":t.dataset.loanplan;renderLoans();
@@ -4152,7 +4155,7 @@ document.addEventListener("submit",e=>{const id=e.target.dataset.loanform;if(!id
   if(mIdx(last)<mIdx(first)){toast("A última prestação tem de ser depois da primeira.");return}
   const old=id==="new"?null:loans().find(x=>x.id===id);
   const l={...(old||{}),id:old?old.id:uid(),kind:"loan",name:f.n.value.trim(),pay:num(f.p.value)||0,day:Math.min(31,Math.max(1,parseInt(f.d.value)||1)),first,last};
-  for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null],["car",f.cr.value||null]])if(v==null)delete l[k];else l[k]=v;
+  for(const [k,v] of [["amount",num(f.m.value)],["taeg",num(f.t.value)],["color",f.c.value||null],["car",f.cr.value||null],["p1",num(f.j1.value)]])if(v==null)delete l[k];else l[k]=v;
   {const pv=num(f.pv.value);if(pv==null){delete l.pdv;delete l.pdAt}else if(!old||old.pdv!==pv||old.pdAt==null){l.pdv=pv;l.pdAt=ymOf(new Date())}}
   /* Ligação à linha da prestação nas Contas: a prestação e o dia ficam iguais nos dois sítios */
   const lk=f.l.value;
@@ -6608,7 +6611,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v352";
+const APPV="casa-v353";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
