@@ -5073,12 +5073,21 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;if(!ds.xgp
   xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:[...g.ideas,{id:uid(),t,...(v>0?{v:Math.round(v*100)/100}:{})}].slice(-30)}:g));setTimeout(()=>{const n=document.querySelector(`[data-xgi="${ds.xgi}"] [name=t]`);if(n)n.focus()},50)});
 /* Pedido (16/11): o valor do presente pode pôr-se depois (toca no valor ou em "+ €"); ao marcar comprado sem valor, pergunta quanto custou (opcional) */
 function xgVal(id,gid,iid,ask){const x=evtById(id), g=x&&(x.gl||[]).find(y=>y.id===gid), i=g&&g.ideas.find(y=>y.id===iid);if(!i)return;
-  const r=prompt(ask||`Quanto custou "${i.t}" (€)?`,+i.v?String(i.v).replace(".",","):"");if(r===null)return;const v=numIn(r);
-  xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.map(z=>{if(z.id!==iid)return z;const n={...z};if(v>0)n.v=Math.round(v*100)/100;else delete n.v;return n})}:y));if(v>0)toast(`${i.t}: ${eur(v)}`)}
+  const o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">${ask?"🎁 Comprado!":"🎁 Valor do presente"}</div><div class="rdm">${esc(i.t)} · para ${esc(g.p)}</div>
+    <label class="f">Quanto custou<span style="display:flex;align-items:center;gap:8px"><input id="xgvV" type="text" inputmode="decimal" placeholder="0,00" value="${+i.v?(+i.v).toFixed(2).replace(".",","):""}" style="flex:1;min-width:0;font-size:22px;font-weight:700;text-align:right"><b style="font-size:22px">€</b></span></label>
+    <button type="button" class="btn" data-xgvq="ok">Guardar</button>${+i.v?`<button type="button" class="btn ghost" data-xgvq="del" style="color:var(--bad)">Tirar o valor</button>`:""}<button type="button" class="btn ghost" data-xgvq="x">${ask?"Ponho depois":"Cancelar"}</button></div>`;
+  const set=v=>xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.map(z=>{if(z.id!==iid)return z;const n={...z};if(v>0)n.v=Math.round(v*100)/100;else delete n.v;return n})}:y));
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-xgvq]");if(ev.target!==o&&!q)return;const a=q?q.dataset.xgvq:"x";
+    if(a==="x"){o.remove();if(ask)toast("🎁 Comprado ✓");return}if(a==="del"){o.remove();set(0);toast("Valor tirado");return}
+    const v=numIn(o.querySelector("#xgvV").value);if(!(v>0)){toast("Escreve o valor");return}o.remove();set(v);toast(`${i.t}: ${eur(v)}`)});
+  o.querySelector("#xgvV").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();o.querySelector('[data-xgvq="ok"]').click()}});
+  o.querySelector("#xgvV").addEventListener("blur",ev=>{const v=numIn(ev.target.value);if(v>0)ev.target.value=v.toFixed(2).replace(".",",")});
+  document.body.appendChild(o);setTimeout(()=>{const n=o.querySelector("#xgvV");n.focus();n.select()},50)}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-xgok],[data-xgdel],[data-xgcopy],[data-xgv]");if(!t)return;const ds=t.dataset;
   if(ds.xgv){e.preventDefault();e.stopPropagation();const [id,gid,iid]=ds.xgv.split("|");xgVal(id,gid,iid);return}
   if(ds.xgok){const [id,gid,iid]=ds.xgok.split("|");xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:g.ideas.map(i=>i.id===iid?{...i,ok:t.checked}:i)}:g));
-    if(t.checked){const g=(evtById(id).gl||[]).find(y=>y.id===gid), i=g&&g.ideas.find(y=>y.id===iid);if(i&&!(+i.v>0))setTimeout(()=>xgVal(id,gid,iid,`🎁 Comprado! Quanto custou "${i.t}" (€)? (podes deixar em branco)`),150);else toast("🎁 Comprado ✓")}return}
+    if(t.checked){const g=(evtById(id).gl||[]).find(y=>y.id===gid), i=g&&g.ideas.find(y=>y.id===iid);if(i&&!(+i.v>0))setTimeout(()=>xgVal(id,gid,iid,true),150);else toast("🎁 Comprado ✓")}return}
   if(ds.xgdel){e.preventDefault();const [id,gid,iid]=ds.xgdel.split("|"), x=evtById(id), g=x&&(x.gl||[]).find(y=>y.id===gid);if(!g)return;
     if(iid)xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.filter(i=>i.id!==iid)}:y));else if(confirm(`Tirar ${g.p} da lista do Natal?`))xgPut(id,G=>G.filter(y=>y.id!==gid));return}
   if(ds.xgcopy){const [id,pid]=ds.xgcopy.split("|"), P=evtById(pid);if(P)xgPut(id,()=>(P.gl||[]).map(g=>({id:uid(),p:g.p,ideas:[]})));toast("Pessoas copiadas")}});
@@ -6721,7 +6730,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v357";
+const APPV="casa-v358";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
