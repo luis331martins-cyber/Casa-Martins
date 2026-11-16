@@ -5116,9 +5116,10 @@ function evtForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit${
 /* Pedido (16/11): o Natal tem um cartão diferente, sempre aberto: contagem, presentes comprados e a lista de cada pessoa no mesmo evento */
 function xmasCard(x){const d=x.date?daysTo(x.date):null, S=xgSum(x), past=x.went||(d!=null&&d<0), pct=S.n?Math.round(S.ok/S.n*100):0;
   const when=past?"Já passou":d==null?"":d===0?"É hoje! 🎅":d===1?"É amanhã!":`Faltam ${d} dias`;
-  return`<div class="trip xmas"><div class="xhead"><span class="xe">🎄</span><span style="flex:1;min-width:0"><span class="xt" style="display:block">${esc(x.name)}</span><span class="xd">${when}${S.n?` · 🎁 ${S.ok} de ${S.n} pessoas com presente`:""}${S.v?` · ${eur(S.v)}`:""}</span></span></div>
-    <div class="tb">${S.n?`<div class="xbar"><span style="width:${pct}%"></span></div>`:""}${x.notes?`<div class="tm" style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}${xmasBox(x)}
-      <div class="tacts"><button class="btn ghost" type="button" data-editevt="${x.id}">Editar</button>${past?"":`<button class="btn ghost" type="button" data-evtwent="${x.id}|1">✓ Natal passou</button>`}</div></div></div>`}
+  const open=openEvt===x.id;
+  return`<div class="trip xmas"><button type="button" class="xhead" data-openevt="${x.id}" aria-expanded="${open}" style="width:100%;background:transparent;font:inherit;color:inherit;text-align:left"><span class="xe">🎄</span><span style="flex:1;min-width:0"><span class="xt" style="display:block">${esc(x.name)}</span><span class="xd">${when}${S.n?` · 🎁 ${S.ok} de ${S.n} pessoas com presente`:""}${S.v?` · ${eur(S.v)}`:""}</span></span><span aria-hidden="true" style="font-size:20px;color:var(--muted);transform:rotate(${open?90:0}deg);transition:transform .2s">›</span></button>
+    <div class="tb">${S.n?`<div class="xbar"><span style="width:${pct}%"></span></div>`:""}${open?`${x.notes?`<div class="tm" style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}${xmasBox(x)}
+      <div class="tacts"><button class="btn ghost" type="button" data-editevt="${x.id}">Editar</button>${past?"":`<button class="btn ghost" type="button" data-evtwent="${x.id}|1">✓ Natal passou</button>`}</div>`:""}</div></div>`}
 function evtCard(x){if(x.type==="Natal")return xmasCard(x);const d=x.date?daysTo(x.date):null, past=x.went||(d!=null&&d<0), open=openEvt===x.id;
   const when=x.went?"Fomos ✓":d==null?"":d>1?`Faltam ${d} dias`:d===1?"Amanhã!":d===0?"Hoje! 🎉":"Já foi";
   const dt=x.date?new Date(x.date+"T12:00").toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"}):"";
@@ -6735,7 +6736,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v359";
+const APPV="casa-v360";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
