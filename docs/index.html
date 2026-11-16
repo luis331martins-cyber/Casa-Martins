@@ -5051,7 +5051,7 @@ function xmasBox(x){const G=x.gl||[], S=xgSum(x), prev=!G.length&&evts().filter(
       <div class="xr"><input name="t" placeholder="Presente (ex.: perfume)"><input name="v" class="xgv" inputmode="decimal" placeholder="€"><button class="btn" type="submit" style="padding:8px 14px">+</button></div></form>
     ${G.map(g=>{const ok=xgDone(g);return`<div class="xper${ok?" ok":""}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(g.p)}</b><span style="display:flex;align-items:center;gap:8px">${ok?'<span class="ok">comprado ✓</span>':'<b style="color:var(--warn);font-size:13px">por comprar</b>'}<button type="button" class="back" data-xgdel="${x.id}|${g.id}" aria-label="Tirar ${esc(g.p)}" style="color:var(--muted)">×</button></span></div>
-      ${(g.ideas||[]).map(i=>`<label class="pk${i.ok?" done":""}"><input type="checkbox" data-xgok="${x.id}|${g.id}|${i.id}"${i.ok?" checked":""}><span>${esc(i.t)}${+i.v?` <small style="color:var(--muted)">· ${eur(+i.v)}</small>`:""}</span><button type="button" data-xgdel="${x.id}|${g.id}|${i.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="tm">Ainda sem ideias.</div>`}
+      ${(g.ideas||[]).map(i=>`<label class="pk${i.ok?" done":""}"><input type="checkbox" data-xgok="${x.id}|${g.id}|${i.id}"${i.ok?" checked":""}><span>${esc(i.t)}</span><button type="button" class="back" data-xgv="${x.id}|${g.id}|${i.id}" style="margin-left:auto;white-space:nowrap;font-size:14px;${+i.v?"color:var(--fg)":""}" aria-label="Valor de ${esc(i.t)}">${+i.v?eur(+i.v):"+ €"}</button><button type="button" data-xgdel="${x.id}|${g.id}|${i.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="tm">Ainda sem ideias.</div>`}
       <form class="add" data-xgi="${x.id}|${g.id}" autocomplete="off" style="display:flex;gap:6px"><input name="t" placeholder="Ideia de presente" style="flex:1 1 auto;min-width:0"><input name="v" inputmode="decimal" placeholder="€" class="xgv"><button class="btn" type="submit" style="padding:8px 14px">+</button></form></div>`}).join("")}
     <form class="add" data-xgp="${x.id}" autocomplete="off" style="display:flex;gap:6px"><input name="p" placeholder="Só a pessoa (sem presente ainda)" autocapitalize="words" style="flex:1;min-width:0"><button class="btn ghost" type="submit" style="padding:8px 14px">+ Pessoa</button></form>
     ${(()=>{const y=(x.date||"").slice(0,4), O=evts().filter(z=>z.type!=="Natal"&&z.id!==x.id&&(z.date||"").slice(0,4)===y&&/natal|presente/i.test(z.name||""));return O.length?`<button class="btn" type="button" data-xgmerge="${x.id}" style="background:#1f8a4c">🎄 Juntar aqui os ${O.length} evento${O.length===1?"":"s"} de presentes de Natal</button>`:""})()}
@@ -5071,8 +5071,14 @@ document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;if(!ds.xgp
   if(ds.xgp){const v=f.p.value.trim();if(!v)return;xgPut(ds.xgp,G=>G.some(g=>g.p.toLowerCase()===v.toLowerCase())?G:[...G,{id:uid(),p:v,ideas:[]}].slice(0,60));setTimeout(()=>{const n=document.querySelector(`[data-xgp="${ds.xgp}"] [name=p]`);if(n)n.focus()},50);return}
   const [id,gid]=ds.xgi.split("|"), t=f.t.value.trim(), v=numIn(f.v.value);if(!t)return;
   xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:[...g.ideas,{id:uid(),t,...(v>0?{v:Math.round(v*100)/100}:{})}].slice(-30)}:g));setTimeout(()=>{const n=document.querySelector(`[data-xgi="${ds.xgi}"] [name=t]`);if(n)n.focus()},50)});
-document.addEventListener("click",e=>{const t=e.target.closest("[data-xgok],[data-xgdel],[data-xgcopy]");if(!t)return;const ds=t.dataset;
-  if(ds.xgok){const [id,gid,iid]=ds.xgok.split("|");xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:g.ideas.map(i=>i.id===iid?{...i,ok:t.checked}:i)}:g));if(t.checked)toast("🎁 Comprado ✓");return}
+/* Pedido (16/11): o valor do presente pode pôr-se depois (toca no valor ou em "+ €"); ao marcar comprado sem valor, pergunta quanto custou (opcional) */
+function xgVal(id,gid,iid,ask){const x=evtById(id), g=x&&(x.gl||[]).find(y=>y.id===gid), i=g&&g.ideas.find(y=>y.id===iid);if(!i)return;
+  const r=prompt(ask||`Quanto custou "${i.t}" (€)?`,+i.v?String(i.v).replace(".",","):"");if(r===null)return;const v=numIn(r);
+  xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.map(z=>{if(z.id!==iid)return z;const n={...z};if(v>0)n.v=Math.round(v*100)/100;else delete n.v;return n})}:y));if(v>0)toast(`${i.t}: ${eur(v)}`)}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-xgok],[data-xgdel],[data-xgcopy],[data-xgv]");if(!t)return;const ds=t.dataset;
+  if(ds.xgv){e.preventDefault();e.stopPropagation();const [id,gid,iid]=ds.xgv.split("|");xgVal(id,gid,iid);return}
+  if(ds.xgok){const [id,gid,iid]=ds.xgok.split("|");xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:g.ideas.map(i=>i.id===iid?{...i,ok:t.checked}:i)}:g));
+    if(t.checked){const g=(evtById(id).gl||[]).find(y=>y.id===gid), i=g&&g.ideas.find(y=>y.id===iid);if(i&&!(+i.v>0))setTimeout(()=>xgVal(id,gid,iid,`🎁 Comprado! Quanto custou "${i.t}" (€)? (podes deixar em branco)`),150);else toast("🎁 Comprado ✓")}return}
   if(ds.xgdel){e.preventDefault();const [id,gid,iid]=ds.xgdel.split("|"), x=evtById(id), g=x&&(x.gl||[]).find(y=>y.id===gid);if(!g)return;
     if(iid)xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.filter(i=>i.id!==iid)}:y));else if(confirm(`Tirar ${g.p} da lista do Natal?`))xgPut(id,G=>G.filter(y=>y.id!==gid));return}
   if(ds.xgcopy){const [id,pid]=ds.xgcopy.split("|"), P=evtById(pid);if(P)xgPut(id,()=>(P.gl||[]).map(g=>({id:uid(),p:g.p,ideas:[]})));toast("Pessoas copiadas")}});
@@ -6715,7 +6721,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v356";
+const APPV="casa-v357";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
