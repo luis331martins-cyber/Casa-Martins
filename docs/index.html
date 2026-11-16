@@ -881,6 +881,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .pk input{width:21px;height:21px;flex:none}.pk.done span{text-decoration:line-through;color:var(--muted)}
 .pk button{margin-left:auto;background:transparent;color:var(--muted);padding:0 4px;font-size:18px}
 .pkwho{font-size:12px;font-weight:700;color:var(--accent);margin-top:6px}
+.trip form.add input.xgv{flex:0 0 76px;width:76px}
 .trip form.add{display:flex;gap:8px}.trip form.add input,.trip form.add select{min-width:0}.trip form.add input{flex:1}
 .trip .tacts{display:flex;gap:8px;flex-wrap:wrap}.trip .tacts .btn{padding:9px 12px;font-size:14px;text-decoration:none}
 .confbox{border:2px solid #34c759}
@@ -3588,6 +3589,8 @@ function renderAlerts(){setTimeout(()=>{if(typeof renderFolders==="function")saf
   if(typeof useAskDue==="function"&&useAskDue())A.push({o:2,cls:"",dot:"bl",go:"despensa",uask:1,name:"🍽️ O que se gastou hoje em casa?",meta:"Toca para dar baixa (ou dizer que não houve nada)"});
   if(typeof evts==="function")evts().forEach(x=>{const d=x.date?daysTo(x.date):null;if(x.went||d==null||d<0||d>1)return;
     A.push({o:d===0?1:2,cls:d<=1?"warn":"",dot:"bl",go:"eventos",name:`${evtEmo(x.type)} ${x.name} ${d===0?"é hoje":"é amanhã"}${x.time?" às "+x.time:""}`,meta:[x.place,x.gift&&!x.giftOk?"🎁 falta o presente":""].filter(Boolean).join(" · ")||x.type});});
+  if(typeof evts==="function")evts().filter(x=>x.type==="Natal"&&!x.went).forEach(x=>{const d=x.date?daysTo(x.date):null, S=xgSum(x);if(d==null||d<2||d>30||!S.n||S.ok===S.n)return;
+    A.push({o:3,cls:d<=7?"warn":"",dot:"bl",go:"eventos",name:`🎄 Faltam presentes para ${S.n-S.ok} pessoa${S.n-S.ok===1?"":"s"}`,meta:`${x.name} daqui a ${d} dias · ${S.ok} de ${S.n} comprados`})});
   if(typeof trips==="function")trips().forEach(t=>{const d=tripDays(t);if(d==null||d<0||d>1)return;const P=t.pack||[], n=P.filter(x=>!x.done).length;
     A.push({o:d<=1?1:3,cls:d<=1&&n?"warn":"",dot:"bl",go:"viagens",name:`✈️ ${t.name} ${d===0?"é hoje":d===1?"é amanhã":`daqui a ${d} dias`}`,meta:P.length?(n?`Falta arrumar ${n} de ${P.length} coisas na mala`:"Mala pronta ✓"):"Sem lista da mala"})});
   /* Acerto com a Mãe: a partir do dia 5, até se marcar "Já acertámos" */
@@ -5027,8 +5030,32 @@ function tripPut(t){putBill(t);renderTrips()}
 const tripById=id=>trips().find(x=>x.id===id);
 /* ---------- Eventos (kind:"evento") — Pedido (07/11): festas e marcações a que vamos ----------
    {name, type, date, time, place, who, gift, giftOk, giftV, notes, ev (calendário)} */
-const EVT_TYPES=[["Aniversário","🎂"],["Festa","🎉"],["Jantar","🍽️"],["Casamento","💍"],["Batizado","👶"],["Escola","🏫"],["Outro","📌"]];
-const evts=()=>bills.filter(b=>b.kind==="evento"), evtById=id=>evts().find(x=>x.id===id), evtEmo=t=>(EVT_TYPES.find(x=>x[0]===t)||EVT_TYPES[6])[1];
+const EVT_TYPES=[["Natal","🎄"],["Aniversário","🎂"],["Festa","🎉"],["Jantar","🍽️"],["Casamento","💍"],["Batizado","👶"],["Escola","🏫"],["Outro","📌"]];
+const evts=()=>bills.filter(b=>b.kind==="evento"), evtById=id=>evts().find(x=>x.id===id), evtEmo=t=>(EVT_TYPES.find(x=>x[0]===t)||EVT_TYPES.find(x=>x[0]==="Outro"))[1];
+/* Pedido (16/11): Natal — a quem compramos presentes, as ideias de presente de cada pessoa e se já está comprado.
+   x.gl=[{id,p (pessoa),ideas:[{id,t,v (€, opcional),ok (comprado)}]}]; a pessoa fica ✓ quando uma das ideias está comprada */
+const xgDone=g=>(g.ideas||[]).some(i=>i.ok), xgSum=x=>{const G=x.gl||[];return{n:G.length,ok:G.filter(xgDone).length,v:G.reduce((t,g)=>t+(g.ideas||[]).filter(i=>i.ok&&+i.v).reduce((a,i)=>a+(+i.v),0),0)}};
+function xmasBox(x){const G=x.gl||[], S=xgSum(x), prev=!G.length&&evts().filter(y=>y.type==="Natal"&&y.id!==x.id&&(y.gl||[]).length).sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0];
+  return`<div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><b style="font-size:16px">🎁 Presentes</b><span class="tm">${S.n?`${S.ok} de ${S.n} comprados${S.v?` · ${eur(S.v)}`:""}`:""}</span></div>
+    ${G.map(g=>{const ok=xgDone(g);return`<div style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:4px${ok?";background:color-mix(in srgb,var(--good) 8%,transparent)":""}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(g.p)}</b><span style="display:flex;align-items:center;gap:8px">${ok?'<span class="ok">comprado ✓</span>':'<b style="color:var(--warn);font-size:13px">por comprar</b>'}<button type="button" class="back" data-xgdel="${x.id}|${g.id}" aria-label="Tirar ${esc(g.p)}" style="color:var(--muted)">×</button></span></div>
+      ${(g.ideas||[]).map(i=>`<label class="pk${i.ok?" done":""}"><input type="checkbox" data-xgok="${x.id}|${g.id}|${i.id}"${i.ok?" checked":""}><span>${esc(i.t)}${+i.v?` <small style="color:var(--muted)">· ${eur(+i.v)}</small>`:""}</span><button type="button" data-xgdel="${x.id}|${g.id}|${i.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="tm">Ainda sem ideias.</div>`}
+      <form class="add" data-xgi="${x.id}|${g.id}" autocomplete="off" style="display:flex;gap:6px"><input name="t" placeholder="Ideia de presente" style="flex:1 1 auto;min-width:0"><input name="v" inputmode="decimal" placeholder="€" class="xgv"><button class="btn" type="submit" style="padding:8px 14px">+</button></form></div>`}).join("")}
+    <form class="add" data-xgp="${x.id}" autocomplete="off" style="display:flex;gap:6px"><input name="p" placeholder="A quem vamos dar (ex.: Avó Rosa)" autocapitalize="words" style="flex:1;min-width:0"><button class="btn" type="submit" style="padding:8px 14px">+ Pessoa</button></form>
+    ${prev?`<button class="btn ghost" type="button" data-xgcopy="${x.id}|${prev.id}">📋 Usar as pessoas de ${esc(prev.name)} (${(prev.gl||[]).length})</button>`:""}</div>`}
+function xgPut(id,fn){const x=evtById(id);if(!x)return;evtPut({...x,gl:fn((x.gl||[]).map(g=>({...g,ideas:[...(g.ideas||[])]})))})}
+document.addEventListener("submit",e=>{const f=e.target, ds=f.dataset;if(!ds.xgp&&!ds.xgi)return;e.preventDefault();
+  if(ds.xgp){const v=f.p.value.trim();if(!v)return;xgPut(ds.xgp,G=>G.some(g=>g.p.toLowerCase()===v.toLowerCase())?G:[...G,{id:uid(),p:v,ideas:[]}].slice(0,60));setTimeout(()=>{const n=document.querySelector(`[data-xgp="${ds.xgp}"] [name=p]`);if(n)n.focus()},50);return}
+  const [id,gid]=ds.xgi.split("|"), t=f.t.value.trim(), v=numIn(f.v.value);if(!t)return;
+  xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:[...g.ideas,{id:uid(),t,...(v>0?{v:Math.round(v*100)/100}:{})}].slice(-30)}:g));setTimeout(()=>{const n=document.querySelector(`[data-xgi="${ds.xgi}"] [name=t]`);if(n)n.focus()},50)});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-xgok],[data-xgdel],[data-xgcopy]");if(!t)return;const ds=t.dataset;
+  if(ds.xgok){const [id,gid,iid]=ds.xgok.split("|");xgPut(id,G=>G.map(g=>g.id===gid?{...g,ideas:g.ideas.map(i=>i.id===iid?{...i,ok:t.checked}:i)}:g));if(t.checked)toast("🎁 Comprado ✓");return}
+  if(ds.xgdel){e.preventDefault();const [id,gid,iid]=ds.xgdel.split("|"), x=evtById(id), g=x&&(x.gl||[]).find(y=>y.id===gid);if(!g)return;
+    if(iid)xgPut(id,G=>G.map(y=>y.id===gid?{...y,ideas:y.ideas.filter(i=>i.id!==iid)}:y));else if(confirm(`Tirar ${g.p} da lista do Natal?`))xgPut(id,G=>G.filter(y=>y.id!==gid));return}
+  if(ds.xgcopy){const [id,pid]=ds.xgcopy.split("|"), P=evtById(pid);if(P)xgPut(id,()=>(P.gl||[]).map(g=>({id:uid(),p:g.p,ideas:[]})));toast("Pessoas copiadas")}});
+document.addEventListener("change",e=>{const s=e.target;if(s.name!=="t"||!s.closest("[data-evtform]")||s.value!=="Natal")return;const f=s.form, y=new Date().getMonth()===11&&new Date().getDate()>25?new Date().getFullYear()+1:new Date().getFullYear();
+  if(!f.n.value.trim())f.n.value="Natal "+y;if(!f.d.value)f.d.value=y+"-12-25"});
 let editEvt="", openEvt="";
 function evtForm(x){const v=y=>y==null?"":esc(y);return`<form class="bill-edit" data-evtform="${x?x.id:"new"}" autocomplete="off">
     <label class="f wide">O quê<input name="n" required value="${x?esc(x.name):""}" placeholder="ex.: Aniversário do Tomás" autocapitalize="sentences"></label>
@@ -5049,11 +5076,12 @@ function evtCard(x){const d=x.date?daysTo(x.date):null, past=x.went||(d!=null&&d
   const dt=x.date?new Date(x.date+"T12:00").toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"}):"";
   return`<div class="trip"><button type="button" class="th" data-openevt="${x.id}" aria-expanded="${open}"><span class="tem" style="background:color-mix(in srgb,#ff2d87 14%,transparent)">${evtEmo(x.type)}</span>
       <span style="min-width:0;flex:1"><span class="tn" style="display:block">${esc(x.name)}</span><span class="tm">${[dt+(x.time?" · "+x.time:""),x.place?esc(x.place):""].filter(Boolean).join(" · ")}</span></span>
-      <span style="text-align:right">${when?`<span class="due ${past?"ok":d<=1?"warn":"ok"}">${when}</span>`:""}${x.gift&&!past?`<span class="tm" style="display:block;margin-top:4px">${x.giftOk?"🎁 ✓":"🎁 por comprar"}</span>`:""}</span></button>
+      <span style="text-align:right">${when?`<span class="due ${past?"ok":d<=1?"warn":"ok"}">${when}</span>`:""}${x.type==="Natal"&&(x.gl||[]).length&&!past?(S=>`<span class="tm" style="display:block;margin-top:4px">🎁 ${S.ok}/${S.n}${S.ok===S.n?" ✓":""}</span>`)(xgSum(x)):x.gift&&!past?`<span class="tm" style="display:block;margin-top:4px">${x.giftOk?"🎁 ✓":"🎁 por comprar"}</span>`:""}</span></button>
     ${open?`<div class="tb">
       ${x.who?`<div class="tm" style="font-size:14px">👥 ${esc(x.who)}</div>`:""}
       ${x.gift?`<div class="tm" style="font-size:14px">🎁 ${esc(x.gift)}${x.giftV?` · ${eur(+x.giftV)}`:""} · ${x.giftOk?'<span class="ok">comprado ✓</span>':'<b style="color:var(--warn)">por comprar</b>'}</div>`:""}
       ${x.notes?`<div class="tm" style="font-size:14px">📝 ${esc(x.notes)}</div>`:""}
+      ${x.type==="Natal"?xmasBox(x):""}
       <div class="tacts">${x.went?`<button class="btn ghost" type="button" data-evtwent="${x.id}|0">↩︎ Afinal não fomos</button>`:`<button class="btn" type="button" data-evtwent="${x.id}|1" style="background:#34c759">🎉 Já fomos</button>`}<button class="btn ghost" type="button" data-editevt="${x.id}">Editar</button>${x.gift&&!x.giftOk?`<button class="btn ghost" type="button" data-evtgift="${x.id}">🎁 Já comprei</button>`:""}${x.place?`<a class="btn ghost" href="https://maps.apple.com/?q=${encodeURIComponent(x.place)}" target="_blank" rel="noopener">🗺️ Mapa</a>`:""}</div>
     </div>`:""}</div>`}
 function renderEvts(){const el=document.getElementById("evtList");if(!el)return;const td=ymd(new Date());
@@ -6659,7 +6687,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v354";
+const APPV="casa-v355";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
