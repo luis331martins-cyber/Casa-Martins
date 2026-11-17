@@ -155,6 +155,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .skrow .okc{background:#34c759;color:#fff}.skrow{flex-wrap:wrap}.skrow .mt{flex:1 1 100%}.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
 #useBox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:2px solid #ff9500;border-radius:16px;padding:10px}.useh input{width:100%;padding:11px 12px;border-radius:12px;border:0;background:var(--fill);font-size:16px;color:var(--fg)}
 .usel{display:flex;flex-direction:column;gap:2px}.useh{display:flex;flex-direction:column;gap:8px}.useh b{font-size:18px}
+.usemeals{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.usemeals .chip.on{background:#ff9500;color:#fff}
 .usegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.usecat{position:relative;display:flex;align-items:center;gap:8px;padding:14px 10px;border-radius:14px;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));text-align:left;font-size:15px}.usecat b{font-weight:700}
 .usecat i{position:absolute;top:-6px;right:-6px;font-style:normal;background:#ff3b30;color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;font-weight:800}
 #useBox .catback{align-self:flex-start}.usetog{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;padding:4px 0;text-align:left;color:var(--fg)}.usechk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}.userow.on .usechk{background:#ff9500;border-color:#ff9500}
@@ -2502,7 +2503,16 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-useask]");
     if(q.dataset.ua==="none"){useAskDone();toast("Ok, nada hoje 👍");return}
     show("despensa");setTimeout(()=>{const b=document.getElementById("useBox");if(b&&b.hidden)document.getElementById("useOpen").click();(b||document.body).scrollIntoView({block:"start",behavior:"smooth"})},120)});document.body.appendChild(o)},true);
 /* ---------- Dar baixa: escolher 1 ou vários produtos e quanto se gastou; o stock desce logo ---------- */
-let useSel={}, useQ="", useCat="";
+let useSel={}, useQ="", useCat="", useMeal="", useMealOf={};
+/* Pedido (17/11): para não esquecer nada, o Dar baixa pergunta por refeição (pequeno-almoço, almoço, lanche, jantar) e mostra o que costumam gastar
+   em cada uma. Aprende com as baixas: usestats.m[refeição][produto]=nº de vezes; antes de haver histórico usa palavras habituais. */
+const USE_MEALS=[["pa","☕","Pequeno-almoço",/leite|pao|cereais|iogurte|manteiga|cafe|fiambre|queijo|sumo|compota|torrad|cha\b|bolacha|aveia|fruta|banana|ovo/],
+  ["al","🍽️","Almoço",/arroz|massa|esparguete|batata|carne|frango|peru|porco|vaca|peixe|bacalhau|atum|ovo|legume|cenoura|cebola|alho|tomate|alface|salada|azeite|feij|grao|natas|pao/],
+  ["la","🥪","Lanche",/iogurte|bolacha|pao|fruta|banana|maca|sumo|leite|queijo|fiambre|cereais|chocolate|bolo/],
+  ["ja","🌙","Jantar",/arroz|massa|esparguete|batata|carne|frango|peru|porco|vaca|peixe|bacalhau|atum|ovo|legume|sopa|cenoura|cebola|alho|tomate|alface|salada|azeite|feij|grao|natas|pao|pizza|hamburguer|salsicha/]];
+const useStats=()=>bills.find(b=>b.id==="usestats")||{id:"usestats",kind:"usestats",m:{}};
+function useSug(m,ALL){const st=(useStats().m||{})[m]||{}, M=USE_MEALS.find(x=>x[0]===m);
+  const sc=i=>(st[i.id]||0)*10+(M&&M[3].test(srNorm(i.name))?1:0);return ALL.filter(i=>sc(i)>0).sort((a,b)=>sc(b)-sc(a)||a.name.localeCompare(b.name,"pt")).slice(0,14)}
 const useHas=i=>hasBags(i)?bagSum(i.bags||[])>0:isRes(i)?(i.use||(+i.res||0)>0||(i.res==null&&(i.lvl??2)>0)):(+i.qty||0)>0||i.qty==null&&(i.lvl??2)>0;
 const useAmt=i=>hasBags(i)?`${String(bagSum(i.bags)).replace(".",",")} un.`:isRes(i)?resText(i)||"em uso":i.qty!=null?qtyText(i):"tenho";
 function useApply(it,k){if(!k)return;
@@ -2521,7 +2531,11 @@ function useRender(){const box=document.getElementById("useBox"), q=srNorm(useQ.
   if(q){const L=ALL.filter(i=>srNorm(i.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt"));body=L.map(rowU).join("")||`<p class="srnone">Nada encontrado.</p>`}
   else if(useCat){const L=ALL.filter(i=>i.cat===useCat).sort((a,b)=>a.name.localeCompare(b.name,"pt"));const allOn=L.length&&L.every(i=>useSel[i.id]);body=`<button type="button" class="catback" data-usecat=""><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><div class="usecath"><span>${esc(useCat)}</span><button type="button" class="chip" data-useall="${allOn?0:1}">${allOn?"Tirar todos":"✓ Selecionar todos"}</button></div>`+L.map(rowU).join("")}
   else{const cats=[...new Set([...PCATS,...MEAT,...ALL.map(i=>i.cat)])].filter(c=>ALL.some(i=>i.cat===c));
-    body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
+    const SG=useMeal?useSug(useMeal,ALL):[], M=USE_MEALS.find(x=>x[0]===useMeal), done=Object.values(useMealOf);
+    body=`<div class="usemeals">${USE_MEALS.map(([k,e,n])=>`<button type="button" class="chip${useMeal===k?" on":""}" data-usemeal="${k}">${e} ${n}${done.includes(k)?" ✓":""}</button>`).join("")}</div>
+      ${M?`<div class="usecath"><span>${M[1]} O que se gastou ao ${M[2].toLowerCase()}?</span></div>${SG.map(rowU).join("")||`<p class="note" style="margin:4px 2px">Ainda não sei o que costumam gastar ao ${M[2].toLowerCase()}. Escolhe pelas categorias; da próxima vez já aparece aqui.</p>`}
+        <div class="usecath" style="font-size:15px;margin-top:10px"><span>Outra coisa? Escolhe a categoria</span></div>`:`<p class="note" style="margin:2px">Vai refeição a refeição para não esquecer nada, ou escolhe logo a categoria.</p>`}
+      <div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
       return`<button type="button" class="usecat" data-usecat="${esc(c)}" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span><b>${esc(c)}</b>${k?`<i>${k}</i>`:""}</button>`}).join("")}</div>`}
   box.innerHTML=`<div class="useh"><b>➖ Dar baixa</b><input id="useQ" type="search" placeholder="Procurar produto (ex.: leite)" value="${esc(useQ)}" autocomplete="off"></div>
     ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on">${esc(it.name)} −${v}</span>`:""}).join("")}</div>`:`<p class="note" style="margin:0">Escolhe a categoria (ou procura) e toca nos produtos para os selecionar. Se gastaste mais de 1, acerta com + .</p>`}
@@ -2529,14 +2543,17 @@ function useRender(){const box=document.getElementById("useBox"), q=srNorm(useQ.
     <div class="usebar"><button type="button" class="btn ghost" id="useCancel">Fechar</button><button type="button" class="btn" id="useGo"${n?"":" disabled"}>✓ Dar baixa${n?` de ${n} produto${n===1?"":"s"}`:""}</button></div>`;
   const qi=document.getElementById("useQ");qi.oninput=()=>{useQ=qi.value;const pos=qi.selectionStart;useRender();const nq=document.getElementById("useQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-usetog],[data-useall]");if(!t||!t.closest("#useBox"))return;e.preventDefault();e.stopPropagation();
-  if(t.dataset.usetog){const id=t.dataset.usetog;useSel[id]=useSel[id]?0:1}
-  else{const on=t.dataset.useall==="1";items.filter(i=>!i.med&&useHas(i)&&i.cat===useCat).forEach(i=>{useSel[i.id]=on?(useSel[i.id]||1):0})}
+  if(t.dataset.usetog){const id=t.dataset.usetog;useSel[id]=useSel[id]?0:1;if(useSel[id]&&useMeal)useMealOf[id]=useMeal;else if(!useSel[id])delete useMealOf[id]}
+  else{const on=t.dataset.useall==="1";items.filter(i=>!i.med&&useHas(i)&&i.cat===useCat).forEach(i=>{useSel[i.id]=on?(useSel[i.id]||1):0;if(on&&useMeal&&!useMealOf[i.id])useMealOf[i.id]=useMeal;else if(!on)delete useMealOf[i.id]})}
   useRender()},true);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-usemeal]");if(!t||!t.closest("#useBox"))return;e.preventDefault();e.stopPropagation();useMeal=useMeal===t.dataset.usemeal?"":t.dataset.usemeal;useCat="";useRender()},true);
 document.addEventListener("click",e=>{const t=e.target.closest("[data-usecat]");if(!t||!t.closest("#useBox"))return;e.preventDefault();e.stopPropagation();useCat=t.dataset.usecat;useRender();document.getElementById("useBox").scrollIntoView({block:"start",behavior:"smooth"})},true);
-document.getElementById("useOpen").addEventListener("click",()=>{const b=document.getElementById("useBox");b.hidden=!b.hidden;useSel={};useQ="";useCat="";if(!b.hidden)useRender()});
+document.getElementById("useOpen").addEventListener("click",()=>{const b=document.getElementById("useBox");b.hidden=!b.hidden;useSel={};useQ="";useCat="";useMeal="";useMealOf={};if(!b.hidden)useRender()});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-useq],#useCancel,#useGo");if(!t)return;e.preventDefault();e.stopPropagation();
   if(t.id==="useCancel"){document.getElementById("useBox").hidden=true;useSel={};return}
-  if(t.id==="useGo"){const L=Object.entries(useSel).filter(([,v])=>v>0);if(L.length)useAskDone();L.forEach(([id,k])=>{const it=items.find(i=>i.id===id);if(it)useApply(it,k)});useSel={};document.getElementById("useBox").hidden=true;render();toast(`Baixa dada a ${L.length} produto${L.length===1?"":"s"} ✓`);return}
+  if(t.id==="useGo"){const L=Object.entries(useSel).filter(([,v])=>v>0);if(L.length)useAskDone();
+    if(L.some(([id])=>useMealOf[id])){const st=useStats(), m={...(st.m||{})};L.forEach(([id])=>{const k=useMealOf[id], it=items.find(i=>i.id===id);if(!k||!it||/limpeza|higiene|casa|animal|farm|beb[eé]/i.test(it.cat||""))return;m[k]={...(m[k]||{}),[id]:((m[k]||{})[id]||0)+1}});putBill({...st,m})}
+    useMealOf={};useMeal="";L.forEach(([id,k])=>{const it=items.find(i=>i.id===id);if(it)useApply(it,k)});useSel={};document.getElementById("useBox").hidden=true;render();toast(`Baixa dada a ${L.length} produto${L.length===1?"":"s"} ✓`);return}
   const [id,d]=t.dataset.useq.split("|");useSel[id]=Math.max(0,(useSel[id]||0)+(+d));useRender()},true);
 /* ---------- Rever os produtos: a app verifica cada produto e sugere correções (com "Aplicar") ---------- */
 function revIssues(){const R=[], NOGAUGE=["Congelados","Carne","Frutas e legumes"];
@@ -6736,7 +6753,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v360";
+const APPV="casa-v361";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
