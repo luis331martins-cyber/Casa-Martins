@@ -3451,7 +3451,8 @@ document.addEventListener("submit",e=>{
   const b=bills.find(x=>x.id===id);if(!b)return;
   const name=e.target.n.value.trim(), v=parseFloat(e.target.v.value), day=parseInt(e.target.d.value)||0, k=mKey();
   if(!name||isNaN(v))return;
-  if(moneyDocs().some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  /* só pergunta quando se muda o nome para um que já existe (guardar sem mudar o nome grava sempre) */
+  if(name.toLowerCase()!==String(b.name||"").toLowerCase()&&moneyDocs().some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())&&!confirm(`Já existe "${name}". Ficar com o mesmo nome na mesma?`))return;
   const nb={...b,name,day:Math.min(Math.max(day,0),31)};if(nb.day)delete nb.needDay;
   if(!isInc(b)){const bud=!!(e.target.t&&e.target.t.checked);delete nb.kind;if(bud){nb.kind="budget";nb.spent=nb.spent||{};nb.day=0}}
   delete nb.dd;if(!isBud(nb)&&e.target.dd&&e.target.dd.checked)nb.dd=true;
@@ -6754,7 +6755,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v362";
+const APPV="casa-v363";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
