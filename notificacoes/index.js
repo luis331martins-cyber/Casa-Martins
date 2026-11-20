@@ -223,7 +223,7 @@ async function morning(code, now) {
   {
     const semAcento = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const ym = (y, m) => { const d = new Date(Date.UTC(y, m - 1, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`; };
-    const pede = (b) => !b.kind && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b|vodafone|smas/.test(semAcento(b.name)));
+    const pede = (b) => !b.kind && !b.askPay && (b.ask != null ? !!b.ask : /cgd gold|wizink|activo ?bank gold|\bagua\b|\bluz\b|vodafone|smas/.test(semAcento(b.name)));
     const askDayOf = (b) => { if (b.askDay != null) return +b.askDay || null; const n = semAcento(b.name);
       return /cgd gold|caixa.*gold/.test(n) ? 11 : /wizink/.test(n) ? 17 : /activo ?bank/.test(n) ? 1 : /vodafone/.test(n) ? 25 : /smas|\bagua\b/.test(n) ? 2 : /\bluz\b|galp/.test(n) ? 25 : null; };
     const cur = ym(now.y, now.m), nx = ym(now.y, now.m + 1), pv = ym(now.y, now.m - 1);

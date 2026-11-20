@@ -6189,7 +6189,8 @@ function askTarget(b,td){const d=askDayOf(b);if(!d)return null;const cur=ymOf(td
   const tgt=(m,next)=>b.acm==="all"?m:(b.day&&b.day>d?m:next);
   if(t>=d){const k=tgt(cur,nx);return k===cur&&b.acm!=="all"&&b.day&&t>b.day?null:k}
   const prevT=tgt(ymOf(new Date(td.getFullYear(),td.getMonth()-1,1)),cur);return prevT===cur&&(!b.day||t<=b.day)?cur:null}
-const askBill=b=>!b.kind&&(b.ask!=null?!!b.ask:ASK_DEFAULT.test(noAcc(b.name||"")));
+/* Pedido (20/11): a bilha (Galp Gás, "uma vez por mês") nunca pede o valor à parte: o valor escreve-se quando se marca "comprei" */
+const askBill=b=>!b.kind&&!b.askPay&&(b.ask!=null?!!b.ask:ASK_DEFAULT.test(noAcc(b.name||"")));
 function askMonths(){const d=new Date(), cur=ymOf(d), L=[];
   if(d.getDate()<=7&&cur>=START)L.push(cur);
   if(d.getDate()>=20){const nx=ymOf(new Date(d.getFullYear(),d.getMonth()+1,1));if(nx>=START)L.push(nx)}
@@ -6755,7 +6756,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v363";
+const APPV="casa-v364";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
