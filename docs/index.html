@@ -3192,7 +3192,8 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
 document.getElementById("billForm").addEventListener("submit",e=>{e.preventDefault();
   const name=document.getElementById("bName").value.trim(), amount=parseFloat(document.getElementById("bAmt").value), day=parseInt(document.getElementById("bDay").value)||0;
   if(!name||isNaN(amount))return;
-  if(moneyDocs().some(b=>b.name.toLowerCase()===name.toLowerCase())){toast(name+" já existe");return}
+  /* Pedido (20/11): pode haver duas linhas com o mesmo nome (ex.: a Água paga pela Mãe no acerto e a Água que agora sai da nossa conta) — pergunta antes */
+  {const ex=moneyDocs().find(b=>b.name.toLowerCase()===name.toLowerCase());if(ex&&!confirm(`Já existe "${ex.name}"${ex.acm==="all"?` (paga por ${ex.ac||"outra pessoa"}, entra no acerto)`:ex.kind==="income"?" nas receitas":ex.kind==="budget"?" nos gastos":" nas contas"}.\n\nJuntar outra "${name}" na mesma?`))return}
   const type=document.getElementById("bType").value, d=Math.min(Math.max(day,0),31);
   putBill(type==="budget"?{id:uid(),name,amount,day:0,kind:"budget",spent:{}}:type==="income"?{id:uid(),name,amount,day:d,kind:"income",paid:{}}:{id:uid(),name,amount,day:d,paid:{}});
   ["bName","bAmt","bDay"].forEach(i=>document.getElementById(i).value="");toast(name+" adicionada");
@@ -6753,7 +6754,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v361";
+const APPV="casa-v362";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
