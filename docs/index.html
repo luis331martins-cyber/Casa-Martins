@@ -134,6 +134,9 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .srt{flex:1;min-width:0;display:flex;flex-direction:column}.srt b{font-weight:600;font-size:16px}.srt small{font-size:12.5px;color:var(--muted)}.srgo{color:var(--muted);font-size:20px}.srnone{color:var(--muted);text-align:center;margin-top:30px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
+.bwrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0 6px 30px}.bwch{display:inline-flex;align-items:center;gap:4px;background:var(--fill);border-radius:999px;padding:3px 8px;font-size:13px;color:var(--muted)}
+.bwch input{width:58px;text-align:right;font:inherit;font-size:15px;font-weight:700;color:var(--fg);background:var(--surface);border:0;border-radius:8px;padding:4px 6px}.bwch button{background:none;color:var(--muted);padding:0 2px;font-size:14px}
+.qaddd{margin-top:8px}.qaddd summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 2px}
 .qpcat{margin-top:8px}.qpcat .b2cat{font-size:12px;padding:4px 8px}.qpcat .b2cat+.qprow{border-top:0}
 .sedit{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:10px;margin-bottom:12px}.sedh{font-weight:800;font-size:16px;margin:2px 4px 8px}.sedit .bill-edit{border:0;padding:0}
 .item{position:relative}.item:not(.rsi):has(>.tolist){grid-template-columns:1fr auto auto}.tolist{flex:none;width:38px;height:34px;border-radius:10px;background:var(--fill);font-size:15px;padding:0;display:grid;place-items:center;margin-right:6px}.tolist.on{background:#ff9f0a;color:#fff}
@@ -2261,28 +2264,29 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
+  const bwOf=i=>Array.isArray(i.buyW)&&i.buyW.length?i.buyW:Array(Math.max(1,Math.round(buyAmt(i)))).fill(bagSize(i));
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button>${bagW(i)?`<div class="bwrow">${bwOf(i).map((w,k)=>`<span class="bwch">Saco ${k+1}<input data-bw="${i.id}|${k}" type="text" inputmode="decimal" value="${String(w).replace(".",",")}" aria-label="Peso do saco ${k+1}">${i.bagU}${bwOf(i).length>1?`<button type="button" data-bwdel="${i.id}|${k}" aria-label="Tirar saco ${k+1}">✕</button>`:""}</span>`).join("")}<button type="button" class="chip" data-bwadd="${i.id}">＋ saco</button></div>`:`<div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div>`}</div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
   const byCat=(L,row)=>ALLC.map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2grp">${catHd(c)}${G.map(row).join("")}</div>`:""}).join("");
-  const twoCols=(L,R)=>`<div class="buy2"><div class="bcol"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">Já tens tudo 🎉</p>`}</div>
-    <div class="bcol cart"><h4>🛒 No carrinho <span>${R.length}</span></h4>${R.length&&showQty?`<button type="button" class="b2none" data-qtyopen="1" style="background:none;color:var(--accent);text-align:left;padding:4px 2px">São os mesmos de “Pôr as quantidades”, lá em cima ↑</button>`:byCat(R,rightRow)||`<p class="b2none">Toca num produto para o pôr aqui</p>`}</div></div>`;
-  const qtyPanel=()=>`<div class="qpanel"><h3 style="margin:0">Pôr as quantidades</h3><p class="note" style="margin:2px 0 8px">Acerta quanto trouxeste e toca no <b>✓</b> de cada um à medida que arrumas (fica logo atualizado em casa) · ✏️ edita · ✕ não trouxe. Ou guarda tudo no fim.</p>
-    ${(()=>{const qRow=i=>`<div class="qprow"><button type="button" class="qok" data-qdone="${i.id}" aria-label="Confirmar ${esc(i.name)}: já arrumei">✓</button><span class="qpn">${esc(i.name)}<small style="display:block;color:var(--muted);font-size:12px;font-weight:400">Em casa: ${esc(pickHas(i))}</small></span><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" aria-label="Não trouxe ${esc(i.name)}">✕</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?`${buyAmt(i)===1?"caixa":"caixas"} · ${String(buyAmt(i)*i.packN).replace(".",",")} un.`:unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;return [...new Set([...PCATS,...CATS,...MEAT,...cartL.map(i=>i.cat)])].map(c=>{const G=cartL.filter(i=>i.cat===c);return G.length?`<div class="qpcat">${catHd(c)}${G.map(qRow).join("")}</div>`:""}).join("")})()}
-    ${qDoneNow.length?`<div class="qdone">✓ Já atualizados nesta compra: ${qDoneNow.map(esc).join(", ")}</div>`:""}
+  /* Pedido (22/11): uma só lista do carrinho (em cima), com as quantidades; em baixo só o que falta */
+  const twoCols=(L,R)=>`<div class="bcol" style="margin-top:8px"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">${R.length?"Está tudo no carrinho 🎉":"Já tens tudo 🎉"}</p>`}</div>`;
+  const qtyPanel=()=>`<div class="qpanel bcol cart"><h4>🛒 No carrinho <span>${cartL.length}</span></h4><p class="note" style="margin:2px 0 6px">Acerta quanto trouxeste (sacos em gramas: o peso de cada um). Toca no ✓ verde para tirar do carrinho.</p>
+    ${byCat(cartL,rightRow)}
+    <details class="qaddd"><summary>＋ Trouxe mais alguma coisa?</summary>
     <form class="qadd" data-qadd="1" autocomplete="off"><div class="qah">＋ Trouxe mais alguma coisa?</div>
       <input name="n" list="itemNames" placeholder="Produto (ex.: pilhas)" required autocapitalize="sentences" class="wide">
       <label>Quantidade<input name="q" type="number" min="0" step="any" inputmode="decimal" value="1"></label>
       <label>Unidade<select name="u">${unitOpts("un")}</select></label>
       <label>Categoria<select name="c">${[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option>${c}</option>`).join("")}</select></label>
       <label>Loja<input name="s" list="shopList" placeholder="opcional" autocapitalize="words" value="${catSel.s&&catSel.s!=="~"?esc(catSel.s):""}"></label>
-      <button class="btn" type="submit" style="grid-column:1/-1">Juntar ao carrinho</button></form>
-    <button type="button" class="btn" data-cartdone="1" style="margin-top:8px;width:100%">✓ Guardar quantidades</button></div>`;
+      <button class="btn" type="submit" style="grid-column:1/-1">Juntar ao carrinho</button></form></details>
+    <button type="button" class="btn" data-cartdone="1" style="margin-top:8px;width:100%;background:#34c759">✓ Guardar compras (${cartL.length}) — fica em casa</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
-  const showQty=cartL.length&&(qtyOpen||!want.length);
+  const showQty=cartL.length>0;
   const sEdit=shopEdit&&editItem===shopEdit&&items.find(i=>i.id===shopEdit);if(!sEdit)shopEdit="";
-  shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${(sEdit.lvl??2)<2?`<button type="button" class="btn danger" data-unlist="${sEdit.id}" style="width:100%;margin:0 0 10px">🗑️ Tirar da lista de compras</button>`:""}${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
+  shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${(sEdit.lvl??2)<2?`<button type="button" class="btn danger" data-unlist="${sEdit.id}" style="width:100%;margin:0 0 10px">🗑️ Tirar da lista de compras</button>`:""}${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():"")+
     (!want.length&&!cartL.length?`<div class="empty">A lista está vazia. Junta produtos acima ou com o ＋ em “Tens pouco” e “Talvez comprar”.</div>`:
     catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),cartL):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
@@ -2457,6 +2461,12 @@ document.addEventListener("submit",e=>{const f=e.target;if(!f.dataset||!f.datase
   setTimeout(()=>{const g=document.querySelector("form[data-qadd] [name=n]");if(g)g.focus()},80)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-maybeall]"))return;const L=items.filter(i=>document.querySelector(`.lowbox [data-maybe="${i.id}"]`));
   const st=catSel.s&&catSel.s!=="~"?catSel.s:"";L.forEach(it=>{const n={...it,mb:1};if(st&&!n.shop)n.shop=st;delete n.skip;n.lvl=isRes(n)&&n.res!=null?resLvl(n):1;if(n.lvl>1)n.lvl=1;upsert(n);put(n)});render();toast(`${L.length} produto${L.length===1?"":"s"} juntado${L.length===1?"":"s"} à lista`)});
+/* sacos em gramas no carrinho: o peso de cada saco (buyW) */
+const bwGet=it=>Array.isArray(it.buyW)&&it.buyW.length?[...it.buyW]:Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it));
+document.addEventListener("change",e=>{const t=e.target.closest("[data-bw]");if(!t)return;const [id,k]=t.dataset.bw.split("|"), it=items.find(i=>i.id===id);if(!it)return;const v=numIn(t.value);if(!(v>0)){toast("Escreve o peso do saco");return}
+  const W=bwGet(it);W[+k]=Math.round(v*100)/100;const n={...it,buyW:W,buyNow:W.length};upsert(n);put(n);render()});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-bwadd],[data-bwdel]");if(!t)return;e.preventDefault();e.stopPropagation();const [id,k]=(t.dataset.bwadd||t.dataset.bwdel).split("|"), it=items.find(i=>i.id===id);if(!it)return;
+  const W=bwGet(it);if(t.dataset.bwadd)W.push(bagSize(it));else W.splice(+k,1);const n={...it,buyW:W,buyNow:Math.max(1,W.length)};upsert(n);put(n);render()},true);
 /* "Não comprei" → afinal comprei: passa para o carrinho (entra em Pôr as quantidades) */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-skipbuy]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.skipbuy);if(!it)return;
   const n={...it,cart:1};delete n.skip;qtyOpen=true;upsert(n);render();put(n);toast(`${it.name} no carrinho · acerta a quantidade`)});
@@ -2670,7 +2680,7 @@ document.addEventListener("change",e=>{const s=e.target.closest("[data-bagu]");i
 const lbTag=i=>{if(!i.bt||!i.bt.d)return"";const d=daysTo(i.bt.d);if(d==null||d<-14||d===0)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.bt.d)}${i.bt.h?` · antes tinhas ${esc(i.bt.h)}`:""}</span>`};
 const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
 /* Pedido (22/11): guarda também quanto se comprou (q) e o que ficou (a), para a caixa "O que comprei" nas Compras; duas compras no mesmo dia mantêm o "antes" da primeira */
-const lbQty=it=>{try{const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
+const lbQty=it=>{try{if(bagW(it)&&Array.isArray(it.buyW)&&it.buyW.length){const W=it.buyW.map(Number).filter(x=>x>0);return`+${W.length} ${W.length===1?"saco":"sacos"} (${W.map(x=>String(x).replace(".",",")).join(" + ")} ${it.bagU})`}const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
 function lbMark(n,had,q,prev){if(n){const td=ymd(new Date()), same=n.bt&&n.bt.d===td;n.bt={d:td,h:same&&n.bt.h!=null?n.bt.h:had,q:q||"",a:lbHad(n),...(same&&n.bt.p?{p:n.bt.p}:prev?{p:prev}:{})};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],bt:n.bt};put(items[k])}}}
 const LBF=["qty","bags","use","res","lvl","fill","unit","bagU"];
 function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"", q=it0?lbQty(it0):"", prev=it0?Object.fromEntries(LBF.map(k=>[k,it0[k]===undefined?null:it0[k]])):null;try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had,q,prev)}}
@@ -2687,7 +2697,7 @@ function lbUndo(it){const L=it.bt;if(!L)return null;const n={...it}, num=t=>{con
   const qv=num(L.q)||(df>0?Math.round(df*100)/100:1);n.cart=1;n.buyNow=qv;n.lvl=Math.min(1,n.lvl??1);delete n.bt;delete n.skip;return n}
 function buyDone1(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
-    if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
+    if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...(bagW(it)&&Array.isArray(it.buyW)&&it.buyW.length?it.buyW.map(Number).filter(x=>x>0):Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it)))]);delete n.skip;delete n.buyNow;delete n.buyW;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)||boxBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
@@ -6868,7 +6878,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v383";
+const APPV="casa-v384";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
