@@ -2121,6 +2121,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-boxtog]");
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hmjump]");if(!b)return;const g=b.dataset.hmjump;try{localStorage.setItem("casa-shut-hm-"+g,"0")}catch(err){}renderHome();const el=document.getElementById("hmg-"+g.replace(/\W+/g,""));if(el)el.scrollIntoView({block:"start",behavior:"smooth"})});
 let qtyOpen=false, shopEdit="", addToCart=false, qDoneNow=[], boughtPer="h";
 document.addEventListener("click",e=>{const b=e.target.closest("[data-boughtper]");if(!b)return;boughtPer=b.dataset.boughtper;render()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-lbundo],[data-lbundoall]");if(!b)return;e.preventDefault();
+  const L=b.dataset.lbundo?items.filter(i=>i.id===b.dataset.lbundo):[...document.querySelectorAll(".boughtbox [data-lbundo]")].map(x=>items.find(i=>i.id===x.dataset.lbundo)).filter(Boolean);
+  if(!L.length||!confirm(L.length===1?`Desfazer a compra de ${L[0].name}? Volta ao que tinha antes e fica no carrinho para pores a quantidade certa.`:`Desfazer ${L.length} compras? Voltam ao que tinham antes e ficam no carrinho para pores as quantidades certas.`))return;
+  L.forEach(it=>{const n=lbUndo(it);if(n){upsert(n);put(n)}});catSel.s="";qtyOpen=true;render();window.scrollTo(0,0);toast(`↩︎ ${L.length} no carrinho outra vez · acerta e guarda`)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-shopfold]");if(!b)return;const c=b.dataset.shopfold;shopFold.has(c)?shopFold.delete(c):shopFold.add(c);render()});let qLock=true, itemFormFn=null;const draft={p:null,m:null};
 /* Lojas nas Compras: cor parecida com a da loja e a inicial (sem logótipos) */
 const SHOPCOL=[[/continente.*lidl|lidl.*continente/,"#e30613","#0050aa","#fff"],[/continente/,"#e30613","#e30613","#fff"],[/lidl/,"#0050aa","#0050aa","#ffe500"],
@@ -2302,7 +2306,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     const L=sorted.filter(i=>!i.med&&i.lb&&i.lb.d&&i.lb.d>=wk);if(L.length){const S=L.filter(inP).sort((a,b)=>b.lb.d.localeCompare(a.lb.d)||a.name.localeCompare(b.name,"pt")), shutB=boxShut("bought");
       shop.insertAdjacentHTML("afterbegin",`<div class="mbox boughtbox${shutB?" shut":""}"><button type="button" class="mboxh" data-boxtog="bought" aria-expanded="${!shutB}"><span>🧾 O que comprei</span><span class="mcount">${L.filter(i=>i.lb.d===td).length}</span><i>${shutB?"⌄":"⌃"}</i></button>
         <div class="chips" style="margin:6px 0">${[["h","Hoje"],["o","Ontem"],["s","Últimos 7 dias"]].map(([k,t])=>`<button type="button" class="chip${per===k?" on":""}" data-boughtper="${k}">${t}</button>`).join("")}</div>
-        ${S.map(i=>`<div class="brow"><div class="mt"><b>${esc(i.name)}</b><small>${per==="s"?dShort(i.lb.d)+" · ":""}antes ${esc(i.lb.h||"?")} → agora ${esc(i.lb.a||lbHad(i))}</small></div>${i.lb.q?`<span class="bq">${esc(i.lb.q)}</span>`:""}</div>`).join("")||`<p class="note" style="margin:4px 0">Nada comprado ${per==="h"?"hoje":per==="o"?"ontem":"nestes dias"}.</p>`}</div>`)}}
+        ${S.map(i=>`<div class="brow"><div class="mt"><b>${esc(i.name)}</b><small>${per==="s"?dShort(i.lb.d)+" · ":""}antes ${esc(i.lb.h||"?")} → agora ${esc(i.lb.a||lbHad(i))}</small></div>${i.lb.q?`<span class="bq">${esc(i.lb.q)}</span>`:""}<button type="button" class="b2e" data-lbundo="${i.id}" aria-label="Desfazer a compra de ${esc(i.name)}" title="Desfazer">↩︎</button></div>`).join("")+(S.length>1?`<button type="button" class="btn ghost" data-lbundoall="1" style="width:100%;margin-top:8px">↩︎ Desfazer ${S.length===1?"esta compra":`estas ${S.length} compras`} (voltam ao carrinho)</button>`:"")||`<p class="note" style="margin:4px 0">Nada comprado ${per==="h"?"hoje":per==="o"?"ontem":"nestes dias"}.</p>`}</div>`)}}
   const skipped=sorted.filter(i=>i.lvl<2&&skipOn(i));
   if(skipped.length){const shutS=boxShut("skip");shop.innerHTML+=`<div class="mbox skipbox${shutS?" shut":""}"><button type="button" class="mboxh" data-boxtog="skip" aria-expanded="${!shutS}"><span>✕ Não comprei desta vez</span><span class="mcount">${skipped.length}</span><i>${shutS?"⌄":"⌃"}</i></button>
     <p class="note" style="margin:4px 0 6px">São os que tocaste no ✕ nesta ida às compras. Voltam sozinhos à lista na próxima vez. Se já acertaste em casa, toca em <b>✓ Já tenho</b> e sai daqui; se ainda queres pôr a quantidade, <b>🛒 Comprei</b>.</p>
@@ -2651,8 +2655,20 @@ const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<
 const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
 /* Pedido (22/11): guarda também quanto se comprou (q) e o que ficou (a), para a caixa "O que comprei" nas Compras; duas compras no mesmo dia mantêm o "antes" da primeira */
 const lbQty=it=>{try{const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
-function lbMark(n,had,q){if(n){const td=ymd(new Date()), same=n.lb&&n.lb.d===td;n.lb={d:td,h:same&&n.lb.h!=null?n.lb.h:had,q:q||"",a:lbHad(n)};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],lb:n.lb};put(items[k])}}}
-function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"", q=it0?lbQty(it0):"";try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had,q)}}
+function lbMark(n,had,q,prev){if(n){const td=ymd(new Date()), same=n.lb&&n.lb.d===td;n.lb={d:td,h:same&&n.lb.h!=null?n.lb.h:had,q:q||"",a:lbHad(n),...(same&&n.lb.p?{p:n.lb.p}:prev?{p:prev}:{})};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],lb:n.lb};put(items[k])}}}
+const LBF=["qty","bags","use","res","lvl","fill","unit","bagU"];
+function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"", q=it0?lbQty(it0):"", prev=it0?Object.fromEntries(LBF.map(k=>[k,it0[k]===undefined?null:it0[k]])):null;try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had,q,prev)}}
+/* Pedido (22/11): desfazer uma compra (ou as de um dia) — o produto volta ao que tinha antes e fica outra vez no carrinho para pôr a quantidade certa.
+   Com a fotografia guardada (lb.p) volta exatamente; nas compras antigas lê o "antes" escrito (ex.: "1 un.", "0,5 kg", "2 em stock") */
+function lbUndo(it){const L=it.lb;if(!L)return null;const n={...it}, num=t=>{const m=String(t||"").match(/(\d+(?:[.,]\d+)?)/);return m?parseFloat(m[1].replace(",",".")):0};
+  if(L.p){LBF.forEach(k=>{if(L.p[k]==null)delete n[k];else n[k]=L.p[k]})}
+  else{const h=String(L.h||""), zero=/^nada$/i.test(h);
+    if(hasBags(it)){const bg=[...(it.bags||[])];if(bagW(it)){const want=zero?0:num(h);while(bg.length>want)bg.pop()}else{const want=zero?0:num(h);while(bg.length&&bagSum(bg)-bg[bg.length-1]>=want-1e-9)bg.pop();if(bagSum(bg)>want+1e-9&&bg.length)bg[bg.length-1]=Math.round((bg[bg.length-1]-(bagSum(bg)-want))*100)/100;if(bg.length&&bg[bg.length-1]<=0)bg.pop()}
+      n.bags=bg;n.qty=bagW(it)?bg.length:bagSum(bg)}
+    else if(isRes(it)){const m=h.match(/(\d+)\s*em stock/);n.res=zero?0:m?+m[1]:0;n.use=!zero&&!/nenhum em uso/i.test(h)}
+    else if(it.qty!=null)n.qty=zero?0:num(h)}
+  const df=hasBags(it)?(it.bags||[]).length-(n.bags||[]).length:isRes(it)?((it.use?1:0)+(+it.res||0))-((n.use?1:0)+(+n.res||0)):(+it.qty||0)-(+n.qty||0);
+  const qv=num(L.q)||(df>0?Math.round(df*100)/100:1);n.cart=1;n.buyNow=qv;n.lvl=Math.min(1,n.lvl??1);delete n.lb;delete n.skip;return n}
 function buyDone1(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
@@ -6830,7 +6846,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v375";
+const APPV="casa-v376";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
