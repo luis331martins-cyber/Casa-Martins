@@ -2303,9 +2303,10 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       ${ok.length?`<div class="msec ok"><div class="msh">✓ Ainda chega <span>${ok.length}</span></div>${mGrp(ok)}</div>`:""}</div>`}}
   /* Pedido (22/11): "O que comprei" — o que entrou em casa hoje / ontem / nos últimos 7 dias, com o que havia antes e o que ficou */
   {const td=ymd(new Date()), yd=ymd(new Date(Date.now()-864e5)), wk=ymd(new Date(Date.now()-6*864e5)), per=boughtPer, inP=i=>i.lb&&i.lb.d&&(per==="h"?i.lb.d===td:per==="o"?i.lb.d===yd:i.lb.d>=wk);
-    const L=sorted.filter(i=>!i.med&&i.lb&&i.lb.d&&i.lb.d>=wk);if(L.length){const S=L.filter(inP).sort((a,b)=>b.lb.d.localeCompare(a.lb.d)||a.name.localeCompare(b.name,"pt")), shutB=boxShut("bought");
+    const L=sorted.filter(i=>!i.med&&i.lb&&i.lb.d&&i.lb.d>=wk);if(items.length){const S=L.filter(inP).sort((a,b)=>b.lb.d.localeCompare(a.lb.d)||a.name.localeCompare(b.name,"pt")), shutB=boxShut("bought");
       shop.insertAdjacentHTML("afterbegin",`<div class="mbox boughtbox${shutB?" shut":""}"><button type="button" class="mboxh" data-boxtog="bought" aria-expanded="${!shutB}"><span>🧾 O que comprei</span><span class="mcount">${L.filter(i=>i.lb.d===td).length}</span><i>${shutB?"⌄":"⌃"}</i></button>
         <div class="chips" style="margin:6px 0">${[["h","Hoje"],["o","Ontem"],["s","Últimos 7 dias"]].map(([k,t])=>`<button type="button" class="chip${per===k?" on":""}" data-boughtper="${k}">${t}</button>`).join("")}</div>
+        <button type="button" class="btn ghost" data-lbreg="1" style="width:100%;margin:2px 0 6px">＋ Registar o que comprei (já está em casa)</button>
         ${S.map(i=>`<div class="brow"><div class="mt"><b>${esc(i.name)}</b><small>${per==="s"?dShort(i.lb.d)+" · ":""}antes ${esc(i.lb.h||"?")} → agora ${esc(i.lb.a||lbHad(i))}</small></div>${i.lb.q?`<span class="bq">${esc(i.lb.q)}</span>`:""}<button type="button" class="b2e" data-lbundo="${i.id}" aria-label="Desfazer a compra de ${esc(i.name)}" title="Desfazer">↩︎</button></div>`).join("")+(S.length>1?`<button type="button" class="btn ghost" data-lbundoall="1" style="width:100%;margin-top:8px">↩︎ Desfazer ${S.length===1?"esta compra":`estas ${S.length} compras`} (voltam ao carrinho)</button>`:"")||`<p class="note" style="margin:4px 0">Nada comprado ${per==="h"?"hoje":per==="o"?"ontem":"nestes dias"}.</p>`}</div>`)}}
   const skipped=sorted.filter(i=>i.lvl<2&&skipOn(i));
   if(skipped.length){const shutS=boxShut("skip");shop.innerHTML+=`<div class="mbox skipbox${shutS?" shut":""}"><button type="button" class="mboxh" data-boxtog="skip" aria-expanded="${!shutS}"><span>✕ Não comprei desta vez</span><span class="mcount">${skipped.length}</span><i>${shutS?"⌄":"⌃"}</i></button>
@@ -2558,7 +2559,16 @@ function useApply(it,k){if(!k)return;
   if(it.qty==null){setLevel(it.id,0);return}
   setQty(it.id,(+it.qty||0)-k*(packBuy(it)?1:unitStep(it.unit)))}
 /* Pedido (22/11): nas Compras, escolher produtos vendo quanto há em casa e pôr logo a quantidade que se compra (vão para o carrinho) */
-let pickSel={}, pickQ="", pickCat="";
+let pickSel={}, pickQ="", pickCat="", pickReg=false;
+/* Pedido (22/11): registar compras que já foram arrumadas (sem mexer no stock) — fica em "O que comprei" com o que havia antes e o que se comprou */
+function lbReg(it,v){const st=pickStep(it);let h;
+  if(bagW(it)){const k=Math.max(0,it.bags.length-v);h=k?`${k} ${k===1?"saco":"sacos"}`:"nada"}
+  else if(hasBags(it)){const bg=[...it.bags];let left=v;while(left>0&&bg.length){bg.pop();left--}h=`${String(bagSum(bg)).replace(".",",")} un.`}
+  else if(isRes(it)){const t=Math.max(0,(it.use?1:0)+(+it.res||0)-v);h=t?`${t} un.`:"nada"}
+  else{const q=Math.max(0,Math.round(((+it.qty||0)-v*(boxBuy(it)||packBuy(it)?+it.packN||1:1))*100)/100);h=q?`${String(q).replace(".",",")} ${it.unit&&it.unit!=="un"?it.unit:"un."}`:"nada"}
+  const u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):pickU(it);
+  return{...it,lb:{d:ymd(new Date()),h,q:`+${String(v).replace(".",",")} ${u}`,a:lbHad(it)}}}
+document.addEventListener("click",e=>{if(!e.target.closest("[data-lbreg]"))return;e.preventDefault();pickReg=true;const b=document.getElementById("pickBox");b.hidden=false;pickSel={};pickQ="";pickCat="";pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})});
 const pickStep=i=>isRes(i)||hasBags(i)?1:unitStep(i.unit), pickU=i=>isRes(i)||hasBags(i)||!i.unit||i.unit==="un"?"un.":i.unit;
 const pickHas=i=>{try{return useHas(i)?useAmt(i):"nada"}catch(e){return""}};
 function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pickQ.trim()), ALL=items.filter(i=>!i.med), sel=Object.entries(pickSel).filter(([,v])=>v>0), n=sel.length;
@@ -2570,14 +2580,16 @@ function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pic
   else{const cats=[...new Set([...PCATS,...MEAT,...ALL.map(i=>i.cat)])].filter(c=>ALL.some(i=>i.cat===c));
     body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
       return`<button type="button" class="usecat" data-pickcat="${esc(c)}" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span><b>${esc(c)}</b>${k?`<i>${k}</i>`:""}</button>`}).join("")}</div>`}
-  box.innerHTML=`<div class="useh"><b>🛒 Juntar compras</b><input id="pickQ" type="search" placeholder="Procurar produto (ex.: pernas de frango)" value="${esc(pickQ)}" autocomplete="off"></div>
-    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on" style="background:#34c759">${esc(it.name)} +${String(v).replace(".",",")}</span>`:""}).join("")}</div>`:`<p class="note" style="margin:0">Vês quanto tens em casa; toca no que compras e acerta a quantidade com − / +. Vai tudo para 🛒 No carrinho.</p>`}
+  box.innerHTML=`<div class="useh"><b>${pickReg?"🧾 Registar o que comprei hoje":"🛒 Juntar compras"}</b><input id="pickQ" type="search" placeholder="Procurar produto (ex.: pernas de frango)" value="${esc(pickQ)}" autocomplete="off"></div>
+    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on" style="background:#34c759">${esc(it.name)} +${String(v).replace(".",",")}</span>`:""}).join("")}</div>`:(pickReg?`<p class="note" style="margin:0">Para o que já arrumaste: toca no que compraste hoje e põe quanto foi. <b>Não muda o que tens em casa</b> — só fica registado em “O que comprei”.</p>`:`<p class="note" style="margin:0">Vês quanto tens em casa; toca no que compras e acerta a quantidade com − / +. Vai tudo para 🛒 No carrinho.</p>`)}
     <div class="usel">${body}</div>
-    <div class="usebar"><button type="button" class="btn ghost" id="pickCancel">Fechar</button><button type="button" class="btn" id="pickGo" style="background:#34c759"${n?"":" disabled"}>🛒 Pôr no carrinho${n?` (${n})`:""}</button></div>`;
+    <div class="usebar"><button type="button" class="btn ghost" id="pickCancel">Fechar</button><button type="button" class="btn" id="pickGo" style="background:#34c759"${n?"":" disabled"}>${pickReg?"✓ Registar":"🛒 Pôr no carrinho"}${n?` (${n})`:""}</button></div>`;
   const qi=document.getElementById("pickQ");qi.oninput=()=>{pickQ=qi.value;const pos=qi.selectionStart;pickRender();const nq=document.getElementById("pickQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
-document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
+document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");pickReg=false;b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
   if(t.id==="pickCancel"){document.getElementById("pickBox").hidden=true;pickSel={};return}
+  if(t.id==="pickGo"&&pickReg){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n=lbReg(it,v);upsert(n);put(n)});
+    pickSel={};pickReg=false;document.getElementById("pickBox").hidden=true;boughtPer="h";try{localStorage.setItem("casa-shut-bought","0")}catch(e){}render();setTimeout(()=>{const x=document.querySelector(".boughtbox");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60);toast(`🧾 ${L.length} registado${L.length===1?"":"s"} em “O que comprei”`);return}
   if(t.id==="pickGo"){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n={...it,cart:1,buyNow:isRes(it)?Math.max(1,Math.round(v)):v};delete n.skip;delete n.mb;if((n.lvl??2)===2)n.lvl=1;upsert(n);put(n)});
     pickSel={};document.getElementById("pickBox").hidden=true;qtyOpen=true;render();window.scrollTo(0,0);toast(`🛒 ${L.length} no carrinho · confirma e guarda as quantidades`);return}
   if(ds.pickcat!=null){pickCat=ds.pickcat;pickRender();document.getElementById("pickBox").scrollIntoView({block:"start",behavior:"smooth"});return}
@@ -6852,7 +6864,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v377";
+const APPV="casa-v378";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
