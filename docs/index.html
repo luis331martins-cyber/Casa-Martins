@@ -137,7 +137,9 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .bwrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0 6px 30px}.bwch{display:inline-flex;align-items:center;gap:4px;background:var(--fill);border-radius:999px;padding:3px 8px;font-size:13px;color:var(--muted)}
 .bwch input{width:58px;text-align:right;font:inherit;font-size:15px;font-weight:700;color:var(--fg);background:var(--surface);border:0;border-radius:8px;padding:4px 6px}.bwch button{background:none;color:var(--muted);padding:0 2px;font-size:14px}
 .qaddd{margin-top:8px}.qaddd summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 2px}
-.qpcat{margin-top:8px}.qpcat .b2cat{font-size:12px;padding:4px 8px}.qpcat .b2cat+.qprow{border-top:0}
+.qpcat{margin-top:8px}
+.bnewpill{background:#34c759!important;color:#fff!important;font-weight:700;border:0;font:inherit;font-size:14px}.tdbox{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}
+.tdb{background:color-mix(in srgb,#34c759 14%,var(--surface));border:2px solid #34c759;border-radius:16px;padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;min-width:0;flex:1 1 220px}.tdb small{grid-column:1/-1;color:var(--muted);font-size:12px}.tdq{color:#1f8a4c;font-weight:800;white-space:nowrap}.qpcat .b2cat{font-size:12px;padding:4px 8px}.qpcat .b2cat+.qprow{border-top:0}
 .sedit{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:10px;margin-bottom:12px}.sedh{font-weight:800;font-size:16px;margin:2px 4px 8px}.sedit .bill-edit{border:0;padding:0}
 .item{position:relative}.item:not(.rsi):has(>.tolist){grid-template-columns:1fr auto auto}.tolist{flex:none;width:38px;height:34px;border-radius:10px;background:var(--fill);font-size:15px;padding:0;display:grid;place-items:center;margin-right:6px}.tolist.on{background:#ff9f0a;color:#fff}
 .rsi .tolist{position:absolute;top:8px;right:8px;margin:0}.rsi .bname{padding-right:46px}.revok{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#34c759;color:#fff;font-size:11px;font-weight:800;vertical-align:2px;margin-left:4px}
@@ -2126,6 +2128,7 @@ document.addEventListener("change",e=>{const f=e.target.closest("form[data-itemf
 const catSel={p:"",m:"",s:""};const shopFold=new Set();const boxShut=k=>{try{return localStorage.getItem("casa-shut-"+k)==="1"}catch(e){return false}};
 document.addEventListener("click",e=>{const b=e.target.closest("[data-boxtog]");if(!b)return;const k=b.dataset.boxtog;try{localStorage.setItem("casa-shut-"+k,boxShut(k)?"0":"1")}catch(err){}if(k.startsWith("hm-")){if(typeof renderHome==="function")renderHome()}else render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hmjump]");if(!b)return;const g=b.dataset.hmjump;try{localStorage.setItem("casa-shut-hm-"+g,"0")}catch(err){}renderHome();const el=document.getElementById("hmg-"+g.replace(/\W+/g,""));if(el)el.scrollIntoView({block:"start",behavior:"smooth"})});
+let tdOpen=false;document.addEventListener("click",e=>{if(!e.target.closest("[data-tdopen]"))return;tdOpen=!tdOpen;render()});
 let qtyOpen=false, shopEdit="", addToCart=false, qDoneNow=[], boughtPer="h";
 document.addEventListener("click",e=>{const b=e.target.closest("[data-boughtper]");if(!b)return;boughtPer=b.dataset.boughtper;render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lbundo],[data-lbundoall]");if(!b)return;e.preventDefault();
@@ -2169,13 +2172,17 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 function render(){document.body.classList.toggle("qopen",!qLock);
   const pantry=document.getElementById("pantry"), shop=document.getElementById("shop");
   const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,"pt"));
-  const toBuy=sorted.filter(i=>i.lvl<2&&!skipOn(i));
+  const toBuy=sorted.filter(i=>i.lvl<2&&!skipOn(i)), bToday=sorted.filter(i=>!i.med&&i.bt&&i.bt.d===ymd(new Date()));
   const expiring=items.filter(i=>{const d=daysLeft(i.exp);return d!==null&&d<=3});
 
   document.getElementById("summary").innerHTML=
     `<span class="pill ok">${items.filter(i=>i.lvl===2).length} em casa</span>`+
     `<span class="pill ${toBuy.length?"bad":""}">${toBuy.length} para comprar</span>`+
-    (expiring.length?`<span class="pill warn">${expiring.length} a terminar prazo</span>`:"");
+    (expiring.length?`<span class="pill warn">${expiring.length} a terminar prazo</span>`:"")+
+    (bToday.length?`<button type="button" class="pill bnewpill${tdOpen?" on":""}" data-tdopen="1">🆕 ${bToday.length} comprado${bToday.length===1?"":"s"} hoje ${tdOpen?"▴":"▾"}</button>`:"");
+  /* Pedido (22/11): em Em casa, o botão "🆕 comprados hoje" abre os balões verdes com o que entrou hoje (o que se comprou, o que havia e o que ficou) */
+  {let tb=document.getElementById("todayBox");if(!tb){tb=document.createElement("div");tb.id="todayBox";document.getElementById("summary").insertAdjacentElement("afterend",tb)}
+    tb.innerHTML=tdOpen&&bToday.length?`<div class="tdbox">${bToday.map(i=>`<div class="tdb"><b>${esc(i.name)}</b><span class="tdq">${esc(i.bt.q||"🆕")}</span><small>antes ${esc(i.bt.h||"?")} → agora ${esc(lbHad(i))}</small></div>`).join("")}</div>`:""}
   const b=document.getElementById("shopBadge");b.hidden=!toBuy.length;b.textContent=toBuy.length;
   const pExp=expiring;
   const pb=document.getElementById("pantryBadge");pb.hidden=!pExp.length;pb.textContent=pExp.length;
@@ -2265,14 +2272,14 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
   const bwOf=i=>Array.isArray(i.buyW)&&i.buyW.length?i.buyW:Array(Math.max(1,Math.round(buyAmt(i)))).fill(bagSize(i));
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button>${bagW(i)?`<div class="bwrow">${bwOf(i).map((w,k)=>`<span class="bwch">Saco ${k+1}<input data-bw="${i.id}|${k}" type="text" inputmode="decimal" value="${String(w).replace(".",",")}" aria-label="Peso do saco ${k+1}">${i.bagU}${bwOf(i).length>1?`<button type="button" data-bwdel="${i.id}|${k}" aria-label="Tirar saco ${k+1}">✕</button>`:""}</span>`).join("")}<button type="button" class="chip" data-bwadd="${i.id}">＋ saco</button></div>`:`<div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div>`}</div>`;
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" tabindex="-1" style="cursor:default" aria-label="${esc(i.name)}"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" data-ask="1" aria-label="Tirar ${esc(i.name)} do carrinho">✕</button>${bagW(i)?`<div class="bwrow">${bwOf(i).map((w,k)=>`<span class="bwch">Saco ${k+1}<input data-bw="${i.id}|${k}" type="text" inputmode="decimal" value="${String(w).replace(".",",")}" aria-label="Peso do saco ${k+1}">${i.bagU}${bwOf(i).length>1?`<button type="button" data-bwdel="${i.id}|${k}" aria-label="Tirar saco ${k+1}">✕</button>`:""}</span>`).join("")}<button type="button" class="chip" data-bwadd="${i.id}">＋ saco</button></div>`:`<div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div>`}</div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
   const byCat=(L,row)=>ALLC.map(c=>{const G=L.filter(i=>i.cat===c);return G.length?`<div class="b2grp">${catHd(c)}${G.map(row).join("")}</div>`:""}).join("");
   /* Pedido (22/11): uma só lista do carrinho (em cima), com as quantidades; em baixo só o que falta */
   const twoCols=(L,R)=>`<div class="bcol" style="margin-top:8px"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">${R.length?"Está tudo no carrinho 🎉":"Já tens tudo 🎉"}</p>`}</div>`;
-  const qtyPanel=()=>`<div class="qpanel bcol cart"><h4>🛒 No carrinho <span>${cartL.length}</span></h4><p class="note" style="margin:2px 0 6px">Acerta quanto trouxeste (sacos em gramas: o peso de cada um). Toca no ✓ verde para tirar do carrinho.</p>
+  const qtyPanel=()=>`<div class="qpanel bcol cart"><h4>🛒 No carrinho <span>${cartL.length}</span></h4><p class="note" style="margin:2px 0 6px">Acerta quanto trouxeste (sacos em gramas: o peso de cada um). O ✕ tira do carrinho.</p>
     ${byCat(cartL,rightRow)}
     <details class="qaddd"><summary>＋ Trouxe mais alguma coisa?</summary>
     <form class="qadd" data-qadd="1" autocomplete="off"><div class="qah">＋ Trouxe mais alguma coisa?</div>
@@ -2483,7 +2490,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-tocart]");
   else{n={...it,cart:1};delete n.skip;if((n.lvl??2)===2){n.lvl=1;n.mb=1}toast(`🛒 ${it.name} no carrinho · acerta a quantidade nas Compras`)}
   qtyOpen=true;upsert(n);render();put(n)},true);
 /* Carrinho: ✓ põe no carrinho (sem mexer no stock); no fim "Guardar quantidades" atualiza tudo */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[data-uncart]");if(!b)return;e.preventDefault();const id=b.dataset.cart||b.dataset.uncart, it=items.find(i=>i.id===id);if(!it)return;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[data-uncart]");if(!b)return;e.preventDefault();const id=b.dataset.cart||b.dataset.uncart, it=items.find(i=>i.id===id);if(b.dataset.ask&&it&&!confirm(`Tirar ${it.name} do carrinho?`))return;if(!it)return;
   if(b.closest(".qpanel"))qtyOpen=true;const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-qtyopen]"))return;qtyOpen=true;render();window.scrollTo(0,0)});
 document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))return;const L=items.filter(i=>i.cart&&i.lvl<2);
@@ -6878,7 +6885,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v384";
+const APPV="casa-v385";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
