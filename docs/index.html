@@ -179,6 +179,10 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .lbtag{color:#1f8a4c;font-weight:600}
+/* Pedido (22/11): o que foi comprado hoje fica num balão verde em Em casa */
+.item.bnew{border:2px solid #34c759!important;background:color-mix(in srgb,#34c759 10%,var(--surface))!important;border-radius:14px}
+.bnewp{display:inline-block;max-width:100%;background:#34c759;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:4px}
+.item.rsi.bnew>.tobuys{top:10px}
 .boughtbox{border-color:color-mix(in srgb,#34c759 45%,transparent)}.boughtbox .chip.on{background:#34c759;color:#fff}.boughtbox.shut>:not(.mboxh){display:none}.brow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--line)}.brow .mt{flex:1;min-width:0;display:flex;flex-direction:column}.brow small{color:var(--muted);font-size:13px}.brow .bq{color:#1f8a4c;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
 /* Pedido (22/11): no carrinho os produtos não ficam riscados — nome normal, "Em casa: …" por baixo e a quantidade comprada à direita, em verde */
 .bcol.cart .b2row.in .b2t b{text-decoration:none;color:var(--fg)}.bcol.cart .b2row.in .b2t small{color:var(--muted)}
@@ -2211,13 +2215,13 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const revB=i=>i.rev?` <span class="revok" title="Já atualizado">✓</span>`:"";
   const listB=i=>{const on=(i.lvl??2)<2&&!skipOn(i);return`<button type="button" class="tolist${on?" on":""}" data-tolist="${i.id}" aria-pressed="${on}" aria-label="${on?"Tirar das compras":"Pôr nas compras"}: ${esc(i.name)}">${on?"🛒✓":"🛒"}</button>`};
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e,lbTag(i)].filter(Boolean).join(" · ");
-    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i);
+    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i), bNow=i.lb&&i.lb.d===ymd(new Date()), bTop=bNow?`<span class="bnewp">🆕 Comprado hoje${i.lb.q?` · ${esc(i.lb.q)}`:""}${i.lb.h?` · antes ${esc(i.lb.h)}`:""}</span>`:"";
     /* Pedido (22/11): em Em casa, sem abrir o produto: "Lista" põe na lista de compras e "Carrinho" põe já no carrinho (verde = já está; tocar tira) */
     const tb=`<span class="tobuys"><button type="button" class="tobuy${inL?" on":""}" data-tobuy="${i.id}" aria-label="${inL?"Tirar "+esc(i.name)+" da lista de compras":"Pôr "+esc(i.name)+" na lista de compras"}">📝${inL?"✓":"＋"}</button><button type="button" class="tobuy${i.cart?" on":""}" data-tocart="${i.id}" aria-label="${i.cart?"Tirar "+esc(i.name)+" do carrinho":"Pôr "+esc(i.name)+" no carrinho"}">🛒${i.cart?"✓":"＋"}</button></span>`;
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
-      <div class="item rsi">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div></button>
+      <div class="item rsi${bNow?" bnew":""}">
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}">${bTop}<div class="name">${esc(i.name)}</div></button>
         <div class="rsctl">
           <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${gaugeOn(i)?`<button type="button" class="fillb" data-fill="${i.id}" aria-label="${esc(i.name)}: ${on?FILL[fillOf(i)][0].toLowerCase()+". Toca para mudar":"acabou"}">${fillSVG(i,!on)}</button>`:""}${(i.lvl??2)<2&&!gaugeOn(i)?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
           <div class="qrow" role="group" aria-label="Stock de ${esc(i.name)}"><span class="bql">Stock</span>
@@ -2227,8 +2231,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
         </div>${tb}
       </div>`}
     return `
-      <div class="item">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
+      <div class="item${bNow?" bnew":""}">
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}">${bTop}<div class="name">${esc(i.name)}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
         <div class="qrow" role="group" aria-label="Quantidade de ${esc(i.name)}">
           <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos ${esc(i.name)}">−</button>
           <span class="qv">${i.qty==null?"—":String(i.qty).replace(".",",")}<small>${i.qty==null?"qtd.":bagW(i)?(i.qty===1?"saco":"sacos"):unitShort(i)}</small></span>
@@ -2663,7 +2667,7 @@ function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&item
 document.addEventListener("change",e=>{const s=e.target.closest("[data-bagu]");if(!s)return;const it=items.find(i=>i.id===s.dataset.bagu);if(!it||!hasBags(it)||!it.bags.length)return;
   const u=s.value==="un."?null:s.value;if((it.bagU||null)===u)return;setBags(it,it.bags,{bagU:u});const n=items.find(i=>i.id===it.id);if(n&&!u){const m={...n};delete m.bagU;upsert(m);put(m);render()}toast(`Sacos de ${esc(it.name)} em ${s.value}`)});
 /* Pedido (21/11): saber o que foi comprado agora e o que já cá estava — ao comprar guarda-se lb={d (dia), h (o que havia antes)}; em Em casa aparece "🆕 comprado a …, antes tinhas …" durante 2 semanas */
-const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<-14)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.lb.d)}${i.lb.h?` · antes tinhas ${esc(i.lb.h)}`:""}</span>`};
+const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<-14||d===0)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.lb.d)}${i.lb.h?` · antes tinhas ${esc(i.lb.h)}`:""}</span>`};
 const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
 /* Pedido (22/11): guarda também quanto se comprou (q) e o que ficou (a), para a caixa "O que comprei" nas Compras; duas compras no mesmo dia mantêm o "antes" da primeira */
 const lbQty=it=>{try{const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
@@ -6864,7 +6868,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v378";
+const APPV="casa-v380";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
