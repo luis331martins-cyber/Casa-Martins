@@ -153,12 +153,12 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .mboxh{font-size:18px;font-weight:700;color:var(--fg)}.mboxh .mcount{margin-left:auto;font-size:13px;background:var(--fill);border-radius:999px;padding:2px 10px}
 .lowbox.shut>:not(.lowh),.mbox.shut>:not(.mboxh){display:none}.lowbox.shut{padding:10px 12px}
 .skrow .okc{background:#34c759;color:#fff}.skrow{flex-wrap:wrap}.skrow .mt{flex:1 1 100%}.skrow{display:flex;align-items:center;gap:6px;padding:7px 2px;border-top:1px solid var(--line)}.skrow .mt b{font-size:15px}.skrow .chip{flex:none;padding:7px 10px;font-size:13px}
-#useBox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:2px solid #ff9500;border-radius:16px;padding:10px}.useh input{width:100%;padding:11px 12px;border-radius:12px;border:0;background:var(--fill);font-size:16px;color:var(--fg)}
+#useBox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:2px solid #ff9500;border-radius:16px;padding:10px}#pickBox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:2px solid #34c759;border-radius:16px;padding:10px}#pickBox[hidden]{display:none}.useh input{width:100%;padding:11px 12px;border-radius:12px;border:0;background:var(--fill);font-size:16px;color:var(--fg)}
 .usel{display:flex;flex-direction:column;gap:2px}.useh{display:flex;flex-direction:column;gap:8px}.useh b{font-size:18px}
 .usemeals{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.usemeals .chip.on{background:#ff9500;color:#fff}
 .usegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.usecat{position:relative;display:flex;align-items:center;gap:8px;padding:14px 10px;border-radius:14px;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));text-align:left;font-size:15px}.usecat b{font-weight:700}
 .usecat i{position:absolute;top:-6px;right:-6px;font-style:normal;background:#ff3b30;color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;font-weight:800}
-#useBox .catback{align-self:flex-start}.usetog{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;padding:4px 0;text-align:left;color:var(--fg)}.usechk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}.userow.on .usechk{background:#ff9500;border-color:#ff9500}
+#useBox .catback,#pickBox .catback{align-self:flex-start}.usetog{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;padding:4px 0;text-align:left;color:var(--fg)}.usechk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}.userow.on .usechk{background:#ff9500;border-color:#ff9500}
 .usecath{display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:800;margin:8px 2px 4px}.usesel{display:flex;flex-wrap:wrap;gap:6px}.usesel .chip.on{background:#ff9500;color:#fff;font-size:13px}.usel .b2cat{margin-top:8px}.userow{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line)}.userow.on{background:color-mix(in srgb,#ff9500 12%,transparent);border-radius:10px}
 .userow .mt{flex:1;min-width:0}.usebar{display:grid;grid-template-columns:1fr 2fr;gap:8px;position:sticky;bottom:0}.usebar .btn[disabled]{opacity:.45}
 .hmsum{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:12px}
@@ -1769,6 +1769,8 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <h1 class="large">Compras</h1>
     <p class="note" style="margin:0">No supermercado, toca em cada produto para o passar para <b>🛒 No carrinho</b> (✕ = não comprei). Toca no <b>✏️</b> de um produto para o editar ou tirar da lista. No fim, carrega em <b>pôr as quantidades</b> e fica tudo atualizado em casa.</p>
     <p class="shint">Toca no produto quando o pões no carrinho · ✏️ editar · ✕ não comprei</p>
+    <button type="button" class="btn" id="pickOpen" style="background:#34c759">🛒 Juntar compras (ver o que tenho em casa)</button>
+    <div id="pickBox" class="usebox" hidden></div>
     <form id="shopAdd" class="sadd" autocomplete="off">
       <input name="n" list="itemNames" placeholder="＋ Juntar à lista (ex.: atum, pilhas…)" autocapitalize="sentences" aria-label="Produto a juntar à lista">
       <div class="saddx" hidden><select name="c" aria-label="Categoria"></select><input name="s" list="shopList" placeholder="Loja" autocapitalize="words" aria-label="Loja (opcional)"><button class="btn" type="submit">Juntar</button></div>
@@ -2523,6 +2525,32 @@ function useApply(it,k){if(!k)return;
   if(hasBags(it)){let bg=[...it.bags], left=k;while(left>0&&bg.length){const j=bg.indexOf(Math.min(...bg)), t=Math.min(left,bg[j]);bg[j]=Math.round((bg[j]-t)*100)/100;left-=t;if(bg[j]<=0)bg.splice(j,1)}setBags(it,bg);return}
   if(it.qty==null){setLevel(it.id,0);return}
   setQty(it.id,(+it.qty||0)-k*(packBuy(it)?1:unitStep(it.unit)))}
+/* Pedido (22/11): nas Compras, escolher produtos vendo quanto há em casa e pôr logo a quantidade que se compra (vão para o carrinho) */
+let pickSel={}, pickQ="", pickCat="";
+const pickStep=i=>isRes(i)||hasBags(i)?1:unitStep(i.unit), pickU=i=>isRes(i)||hasBags(i)||!i.unit||i.unit==="un"?"un.":i.unit;
+const pickHas=i=>{try{return useHas(i)?useAmt(i):"nada"}catch(e){return""}};
+function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pickQ.trim()), ALL=items.filter(i=>!i.med), sel=Object.entries(pickSel).filter(([,v])=>v>0), n=sel.length;
+  const row=i=>{const v=pickSel[i.id]||0, st=i.lvl===0?" · <b style=\"color:var(--bad)\">acabou</b>":i.lvl===1?" · <b style=\"color:var(--warn)\">pouco</b>":"";return`<div class="userow${v?" on":""}"><button type="button" class="usetog" data-picktog="${i.id}" aria-pressed="${!!v}"><span class="usechk">${v?"✓":""}</span><span class="mt"><b>${esc(i.name)}</b><small>Tens ${esc(pickHas(i))}${st}${i.cart?" · já no carrinho":""}</small></span></button>
+    ${v?`<div class="qrow"><button type="button" class="qb" data-pickq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(v).replace(".",",")}<small>${pickU(i)}</small></span><button type="button" class="qb" data-pickq="${i.id}|1" aria-label="Mais">+</button></div>`:""}</div>`};
+  let body;
+  if(q){const L=ALL.filter(i=>srNorm(i.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt"));body=(L.map(row).join("")||`<p class="srnone">Não existe. Junta-o na caixa “＋ Juntar à lista” por baixo.</p>`)}
+  else if(pickCat){const L=ALL.filter(i=>i.cat===pickCat).sort((a,b)=>(a.lvl??2)-(b.lvl??2)||a.name.localeCompare(b.name,"pt"));body=`<button type="button" class="catback" data-pickcat=""><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><div class="usecath"><span>${esc(pickCat)}</span></div>`+L.map(row).join("")}
+  else{const cats=[...new Set([...PCATS,...MEAT,...ALL.map(i=>i.cat)])].filter(c=>ALL.some(i=>i.cat===c));
+    body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
+      return`<button type="button" class="usecat" data-pickcat="${esc(c)}" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span><b>${esc(c)}</b>${k?`<i>${k}</i>`:""}</button>`}).join("")}</div>`}
+  box.innerHTML=`<div class="useh"><b>🛒 Juntar compras</b><input id="pickQ" type="search" placeholder="Procurar produto (ex.: pernas de frango)" value="${esc(pickQ)}" autocomplete="off"></div>
+    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on" style="background:#34c759">${esc(it.name)} +${String(v).replace(".",",")}</span>`:""}).join("")}</div>`:`<p class="note" style="margin:0">Vês quanto tens em casa; toca no que compras e acerta a quantidade com − / +. Vai tudo para 🛒 No carrinho.</p>`}
+    <div class="usel">${body}</div>
+    <div class="usebar"><button type="button" class="btn ghost" id="pickCancel">Fechar</button><button type="button" class="btn" id="pickGo" style="background:#34c759"${n?"":" disabled"}>🛒 Pôr no carrinho${n?` (${n})`:""}</button></div>`;
+  const qi=document.getElementById("pickQ");qi.oninput=()=>{pickQ=qi.value;const pos=qi.selectionStart;pickRender();const nq=document.getElementById("pickQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
+document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
+  if(t.id==="pickCancel"){document.getElementById("pickBox").hidden=true;pickSel={};return}
+  if(t.id==="pickGo"){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n={...it,cart:1,buyNow:isRes(it)?Math.max(1,Math.round(v)):v};delete n.skip;delete n.mb;if((n.lvl??2)===2)n.lvl=1;upsert(n);put(n)});
+    pickSel={};document.getElementById("pickBox").hidden=true;qtyOpen=true;render();window.scrollTo(0,0);toast(`🛒 ${L.length} no carrinho · confirma e guarda as quantidades`);return}
+  if(ds.pickcat!=null){pickCat=ds.pickcat;pickRender();document.getElementById("pickBox").scrollIntoView({block:"start",behavior:"smooth"});return}
+  if(ds.picktog){const it=items.find(i=>i.id===ds.picktog);pickSel[ds.picktog]=pickSel[ds.picktog]?0:(it?pickStep(it):1);pickRender();return}
+  const [id,d]=ds.pickq.split("|"), it=items.find(i=>i.id===id), st=it?pickStep(it):1;pickSel[id]=Math.max(0,Math.round(((pickSel[id]||0)+st*(+d))*100)/100);pickRender()},true);
 /* Dar baixa em passos: 1) categoria (ou procurar) 2) produtos dessa categoria 3) confirmar os escolhidos */
 function useRender(){const box=document.getElementById("useBox"), q=srNorm(useQ.trim());
   const ALL=items.filter(i=>!i.med&&useHas(i)), sel=Object.entries(useSel).filter(([,v])=>v>0), n=sel.length;
@@ -6770,7 +6798,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v369";
+const APPV="casa-v370";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
