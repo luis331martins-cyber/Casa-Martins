@@ -135,6 +135,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
 .bwrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0 6px 30px}.bwch{display:inline-flex;align-items:center;gap:4px;background:var(--fill);border-radius:999px;padding:3px 8px;font-size:13px;color:var(--muted)}
+.bwu{font:inherit;font-size:14px;border-radius:999px;padding:4px 8px;border:0;background:var(--fill);color:var(--fg)}
 .bwch input{width:58px;text-align:right;font:inherit;font-size:15px;font-weight:700;color:var(--fg);background:var(--surface);border:0;border-radius:8px;padding:4px 6px}.bwch button{background:none;color:var(--muted);padding:0 2px;font-size:14px}
 .qaddd{margin-top:8px}.qaddd summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 2px}
 .qpcat{margin-top:8px}
@@ -2131,6 +2132,10 @@ const catSel={p:"",m:"",s:""};const shopFold=new Set();const boxShut=k=>{try{ret
 document.addEventListener("click",e=>{const b=e.target.closest("[data-boxtog]");if(!b)return;const k=b.dataset.boxtog;try{localStorage.setItem("casa-shut-"+k,boxShut(k)?"0":"1")}catch(err){}if(k.startsWith("hm-")){if(typeof renderHome==="function")renderHome()}else render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hmjump]");if(!b)return;const g=b.dataset.hmjump;try{localStorage.setItem("casa-shut-hm-"+g,"0")}catch(err){}renderHome();const el=document.getElementById("hmg-"+g.replace(/\W+/g,""));if(el)el.scrollIntoView({block:"start",behavior:"smooth"})});
 let tdOpen=false;document.addEventListener("click",e=>{if(!e.target.closest("[data-tdopen]"))return;tdOpen=!tdOpen;render()});
+let cartEd={};document.addEventListener("click",e=>{const t=e.target.closest("[data-cartbw]");if(!t)return;e.preventDefault();e.stopPropagation();const id=t.dataset.cartbw, it=items.find(i=>i.id===id);if(!it)return;
+  if(cartEd[id]&&!(Array.isArray(it.buyW)&&it.buyW.length)&&!bagW(it)){delete cartEd[id]}else{cartEd[id]=1;if(!(Array.isArray(it.buyW)&&it.buyW.length)&&!bagW(it)){const n={...it,buyW:Array(Math.max(1,Math.round(buyAmt(it)))).fill(500),buyU:"g"};upsert(n);put(n)}}render()},true);
+document.addEventListener("change",e=>{const t=e.target.closest("[data-bwu]");if(!t)return;const it=items.find(i=>i.id===t.dataset.bwu);if(!it)return;const u=t.value==="un."?null:t.value;
+  const W=Array.isArray(it.buyW)&&it.buyW.length?it.buyW:Array(Math.max(1,Math.round(buyAmt(it)))).fill(u?500:1);const n={...it,buyW:W,buyU:u,buyNow:W.length};upsert(n);put(n);render()});
 let qtyOpen=false, shopEdit="", addToCart=false, qDoneNow=[], boughtPer="h";
 document.addEventListener("click",e=>{const b=e.target.closest("[data-boughtper]");if(!b)return;boughtPer=b.dataset.boughtper;render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lbundo],[data-lbundoall]");if(!b)return;e.preventDefault();
@@ -2274,7 +2279,9 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
   const bwOf=i=>Array.isArray(i.buyW)&&i.buyW.length?i.buyW:Array(Math.max(1,Math.round(buyAmt(i)))).fill(bagSize(i));
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" tabindex="-1" style="cursor:default" aria-label="${esc(i.name)}"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-uncart="${i.id}" data-ask="1" aria-label="Tirar ${esc(i.name)} do carrinho">✕</button>${bagW(i)?`<div class="bwrow">${bwOf(i).map((w,k)=>`<span class="bwch">Saco ${k+1}<input data-bw="${i.id}|${k}" type="text" inputmode="decimal" value="${String(w).replace(".",",")}" aria-label="Peso do saco ${k+1}">${i.bagU}${bwOf(i).length>1?`<button type="button" data-bwdel="${i.id}|${k}" aria-label="Tirar saco ${k+1}">✕</button>`:""}</span>`).join("")}<button type="button" class="chip" data-bwadd="${i.id}">＋ saco</button></div>`:`<div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv"><input class="qin" data-bqv="${i.id}" type="text" inputmode="decimal" value="${String(buyAmt(i)).replace(".",",")}" aria-label="Quanto trouxe de ${esc(i.name)}"><small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div>`}</div>`;
+  const bwU=i=>i.buyU!==undefined?(i.buyU||"un."):bagW(i)?i.bagU:"un.", bwOpen=i=>BAGC.includes(i.cat)&&(bagW(i)||cartEd[i.id]||Array.isArray(i.buyW)&&i.buyW.length);
+  const bwEd=i=>`<div class="bwrow">${bwOf(i).map((w,k)=>`<span class="bwch">Saco ${k+1}<input data-bw="${i.id}|${k}" type="text" inputmode="decimal" value="${String(w).replace(".",",")}" aria-label="Saco ${k+1}">${bwU(i)}${bwOf(i).length>1?`<button type="button" data-bwdel="${i.id}|${k}" aria-label="Tirar saco ${k+1}">✕</button>`:""}</span>`).join("")}<button type="button" class="chip" data-bwadd="${i.id}">＋ saco</button><select class="bwu" data-bwu="${i.id}" aria-label="Unidade dos sacos">${["g","kg","un."].map(u=>`<option${bwU(i)===u?" selected":""}>${u}</option>`).join("")}</select></div>`;
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" tabindex="-1" style="cursor:default" aria-label="${esc(i.name)}"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button>${BAGC.includes(i.cat)?`<button type="button" class="b2e" data-cartbw="${i.id}" aria-label="Pesos dos sacos de ${esc(i.name)}">✏️</button>`:`<button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button>`}<button type="button" class="b2x" data-uncart="${i.id}" data-ask="1" aria-label="Tirar ${esc(i.name)} do carrinho">✕</button>${bwOpen(i)?bwEd(i):`<div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv"><input class="qin" data-bqv="${i.id}" type="text" inputmode="decimal" value="${String(buyAmt(i)).replace(".",",")}" aria-label="Quanto trouxe de ${esc(i.name)}"><small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div>`}</div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
@@ -2283,14 +2290,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const twoCols=(L,R)=>`<div class="bcol" style="margin-top:8px"><h4>Falta <span>${L.length}</span></h4>${byCat(L,leftRow)||`<p class="b2none">${R.length?"Está tudo no carrinho 🎉":"Já tens tudo 🎉"}</p>`}</div>`;
   const qtyPanel=()=>`<div class="qpanel bcol cart"><h4>🛒 No carrinho <span>${cartL.length}</span></h4><p class="note" style="margin:2px 0 6px">Acerta quanto trouxeste (sacos em gramas: o peso de cada um). O ✕ tira do carrinho.</p>
     ${byCat(cartL,rightRow)}
-    <details class="qaddd"><summary>＋ Trouxe mais alguma coisa?</summary>
-    <form class="qadd" data-qadd="1" autocomplete="off"><div class="qah">＋ Trouxe mais alguma coisa?</div>
-      <input name="n" list="itemNames" placeholder="Produto (ex.: pilhas)" required autocapitalize="sentences" class="wide">
-      <label>Quantidade<input name="q" type="number" min="0" step="any" inputmode="decimal" value="1"></label>
-      <label>Unidade<select name="u">${unitOpts("un")}</select></label>
-      <label>Categoria<select name="c">${[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option>${c}</option>`).join("")}</select></label>
-      <label>Loja<input name="s" list="shopList" placeholder="opcional" autocapitalize="words" value="${catSel.s&&catSel.s!=="~"?esc(catSel.s):""}"></label>
-      <button class="btn" type="submit" style="grid-column:1/-1">Juntar ao carrinho</button></form></details>
+    <button type="button" class="btn ghost" data-pickgo="1" style="width:100%;margin-top:8px">＋ Trouxe mais alguma coisa? (escolher produto)</button>
     <button type="button" class="btn" data-cartdone="1" style="margin-top:8px;width:100%;background:#34c759">✓ Guardar compras (${cartL.length}) — fica em casa</button></div>`;
   const sk=catSel.s, inShop=sk!==""&&byShop[sk==="~"?"":sk];if(sk&&!inShop)catSel.s="";
   const showQty=cartL.length>0;
@@ -2612,6 +2612,7 @@ function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pic
     <div class="usel">${body}</div>
     <div class="usebar"><button type="button" class="btn ghost" id="pickCancel">Fechar</button><button type="button" class="btn" id="pickGo" style="background:#34c759"${n?"":" disabled"}>${pickReg?"✓ Registar":"🛒 Pôr no carrinho"}${n?` (${n})`:""}</button></div>`;
   const qi=document.getElementById("pickQ");qi.oninput=()=>{pickQ=qi.value;const pos=qi.selectionStart;pickRender();const nq=document.getElementById("pickQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
+document.addEventListener("click",e=>{if(!e.target.closest("[data-pickgo]"))return;e.preventDefault();const b=document.getElementById("pickBox");pickReg=false;b.hidden=false;pickSel={};pickQ="";pickCat="";pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})});
 document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");pickReg=false;b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
   if(t.id==="pickCancel"){document.getElementById("pickBox").hidden=true;pickSel={};return}
@@ -2693,7 +2694,7 @@ document.addEventListener("change",e=>{const s=e.target.closest("[data-bagu]");i
 const lbTag=i=>{if(!i.bt||!i.bt.d)return"";const d=daysTo(i.bt.d);if(d==null||d<-14||d===0)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.bt.d)}${i.bt.h?` · antes tinhas ${esc(i.bt.h)}`:""}</span>`};
 const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
 /* Pedido (22/11): guarda também quanto se comprou (q) e o que ficou (a), para a caixa "O que comprei" nas Compras; duas compras no mesmo dia mantêm o "antes" da primeira */
-const lbQty=it=>{try{if(bagW(it)&&Array.isArray(it.buyW)&&it.buyW.length){const W=it.buyW.map(Number).filter(x=>x>0);return`+${W.length} ${W.length===1?"saco":"sacos"} (${W.map(x=>String(x).replace(".",",")).join(" + ")} ${it.bagU})`}const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
+const lbQty=it=>{try{if(BAGC.includes(it.cat)&&Array.isArray(it.buyW)&&it.buyW.length){const W=it.buyW.map(Number).filter(x=>x>0), u=it.buyU!==undefined?(it.buyU||"un."):(it.bagU||"un.");return`+${W.length} ${W.length===1?"saco":"sacos"} (${W.map(x=>String(x).replace(".",",")).join(" + ")} ${u})`}const v=buyAmt(it), u=bagW(it)||packBuy(it)?(v===1?"saco":"sacos"):boxBuy(it)?(v===1?"caixa":"caixas"):isRes(it)||!it.unit||it.unit==="un"?"un.":it.unit;return`+${String(v).replace(".",",")} ${u}`}catch(e){return""}};
 function lbMark(n,had,q,prev){if(n){const td=ymd(new Date()), same=n.bt&&n.bt.d===td;n.bt={d:td,h:same&&n.bt.h!=null?n.bt.h:had,q:q||"",a:lbHad(n),...(same&&n.bt.p?{p:n.bt.p}:prev?{p:prev}:{})};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],bt:n.bt};put(items[k])}}}
 const LBF=["qty","bags","use","res","lvl","fill","unit","bagU"];
 function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"", q=it0?lbQty(it0):"", prev=it0?Object.fromEntries(LBF.map(k=>[k,it0[k]===undefined?null:it0[k]])):null;try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had,q,prev)}}
@@ -2710,7 +2711,12 @@ function lbUndo(it){const L=it.bt;if(!L)return null;const n={...it}, num=t=>{con
   const qv=num(L.q)||(df>0?Math.round(df*100)/100:1);n.cart=1;n.buyNow=qv;n.lvl=Math.min(1,n.lvl??1);delete n.bt;delete n.skip;return n}
 function buyDone1(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
-    if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...(bagW(it)&&Array.isArray(it.buyW)&&it.buyW.length?it.buyW.map(Number).filter(x=>x>0):Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it)))]);delete n.skip;delete n.buyNow;delete n.buyW;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
+    /* Pedido (22/11): sacos com o peso (ou un.) de cada saco escolhido no carrinho (buyW, buyU); se passar a gramas, os sacos que já havia ficam com o peso médio */
+    if(it&&BAGC.includes(it.cat)&&(hasBags(it)||Array.isArray(it.buyW)&&it.buyW.length)){const W=Array.isArray(it.buyW)&&it.buyW.length?it.buyW.map(Number).filter(x=>x>0):null;
+      const u=it.buyU!==undefined?it.buyU:(bagW(it)?it.bagU:null), wasW=bagW(it);let old=hasBags(it)?[...it.bags]:Array(Math.max(0,Math.round(+it.qty||0))).fill(1);
+      if(W&&W.length&&u&&!wasW){const avg=Math.round(W.reduce((x,y)=>x+y,0)/W.length);old=old.map(()=>avg)}if(W&&!u&&wasW)old=old.map(()=>1);
+      const add=W&&W.length?W:Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it));
+      const n=setBags(it,[...old,...add],{bagU:W?(u||null):(it.bagU||null)});delete n.skip;delete n.buyNow;delete n.buyW;delete n.buyU;if(!n.bagU)delete n.bagU;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)||boxBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
     setLevel(id,2);toast("Comprado")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-bought]");if(!b)return;const row=b.closest(".buyrow");if(row)row.style.opacity=".4";setTimeout(()=>buyDone(b.dataset.bought),250)});
@@ -6891,7 +6897,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v386";
+const APPV="casa-v387";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
