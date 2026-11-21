@@ -2240,7 +2240,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b>${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?`<small>${i.shop?esc(i.shop):"sem loja"}</small>`:""}</span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
@@ -2263,7 +2263,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const sEdit=shopEdit&&editItem===shopEdit&&items.find(i=>i.id===shopEdit);if(!sEdit)shopEdit="";
   shop.innerHTML=(sEdit?`<div class="sedit"><div class="sedh">✏️ Detalhes de ${esc(sEdit.name)}</div>${(sEdit.lvl??2)<2?`<button type="button" class="btn danger" data-unlist="${sEdit.id}" style="width:100%;margin:0 0 10px">🗑️ Tirar da lista de compras</button>`:""}${itemFormFn(sEdit)}</div>`:"")+(showQty?qtyPanel():cartL.length?`<button type="button" class="qbanner" data-qtyopen="1">🛒 ${cartL.length} no carrinho · <b>Terminei, pôr as quantidades ›</b></button>`:"")+
     (!want.length&&!cartL.length?`<div class="empty">A lista está vazia. Junta produtos acima ou com o ＋ em “Tens pouco” e “Talvez comprar”.</div>`:
-    catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),inShop.filter(i=>i.cart)):
+    catSel.s?catHead(sk==="~"?"Sem loja definida":esc(sk),"s","Lojas")+twoCols(inShop.filter(i=>!i.cart),cartL):
     shopNames.length>1?shopGrid(shopNames,byShop):twoCols(want,cartL));
   const maybe=sorted.filter(isMaybe);
   /* Talvez comprar: em cima o que tem pouco (é o que é mesmo para comprar), em baixo o que ainda chega */
@@ -6764,7 +6764,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v367";
+const APPV="casa-v368";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
