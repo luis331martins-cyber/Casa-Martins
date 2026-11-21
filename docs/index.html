@@ -179,6 +179,9 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .lbtag{color:#1f8a4c;font-weight:600}
+/* Pedido (22/11): no carrinho os produtos não ficam riscados — nome normal, "Em casa: …" por baixo e a quantidade comprada à direita, em verde */
+.bcol.cart .b2row.in .b2t b{text-decoration:none;color:var(--fg)}.bcol.cart .b2row.in .b2t small{color:var(--muted)}
+.bcol.cart .b2row.in .qv{color:#1f8a4c;font-weight:800}.bcol.cart .b2row.in .qv::before{content:"+"}
 .tobuy{flex:none;min-width:52px;height:36px;border-radius:18px;padding:0 8px;background:var(--fill);color:var(--accent);font-size:14px;font-weight:700;white-space:nowrap}.tobuy.on{background:#34c759;color:#fff}
 .tobuys{display:flex;gap:4px;flex:none;margin-left:6px}.tobuys .tobuy{min-width:44px;padding:0 6px}.item.rsi{position:relative}.item.rsi>.tobuys{position:absolute;top:10px;right:12px;margin:0}.b2row.in{flex-wrap:wrap}.b2row.in .qrow{margin-left:auto}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
@@ -2246,7 +2249,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
   /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b>${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?`<small>${i.shop?esc(i.shop):"sem loja"}</small>`:""}</span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b><small>Em casa: ${esc(pickHas(i))}${catSel.s&&(i.shop||"")!==(catSel.s==="~"?"":catSel.s)?` · ${i.shop?esc(i.shop):"sem loja"}`:""}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
@@ -6811,7 +6814,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v372";
+const APPV="casa-v373";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
