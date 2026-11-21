@@ -190,7 +190,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .lbtag{color:#1f8a4c;font-weight:600}
 /* Pedido (22/11): o que foi comprado hoje fica num balão verde em Em casa */
 
-.bnewp{display:inline-block;vertical-align:middle;background:#34c759;color:#fff;font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.bnewp{display:block;width:max-content;max-width:100%;margin:2px 0;background:#34c759;color:#fff;font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item.rsi.bnew>.tobuys{top:10px}
 .boughtbox{border-color:color-mix(in srgb,#34c759 45%,transparent)}.boughtbox .chip.on{background:#34c759;color:#fff}.boughtbox.shut>:not(.mboxh){display:none}.brow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--line)}.brow .mt{flex:1;min-width:0;display:flex;flex-direction:column}.brow small{color:var(--muted);font-size:13px}.brow .bq{color:#1f8a4c;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
 /* Pedido (22/11): no carrinho os produtos não ficam riscados — nome normal, "Em casa: …" por baixo e a quantidade comprada à direita, em verde */
@@ -2239,7 +2239,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
       <div class="item rsi${bNow?" bnew":""}">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)} ${bTop}</div></button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div>${bTop}</button>
         <div class="rsctl">
           <span class="rsl"><button type="button" class="usep${on?" on":""}" data-use="${i.id}" aria-pressed="${on}">${on?"✓ Em uso":"Em uso"}</button>${gaugeOn(i)?`<button type="button" class="fillb" data-fill="${i.id}" aria-label="${esc(i.name)}: ${on?FILL[fillOf(i)][0].toLowerCase()+". Toca para mudar":"acabou"}">${fillSVG(i,!on)}</button>`:""}${(i.lvl??2)<2&&!gaugeOn(i)?`<span class="lvlb ${lc}">${lt}</span>`:""}</span>
           <div class="qrow" role="group" aria-label="Stock de ${esc(i.name)}"><span class="bql">Stock</span>
@@ -2250,10 +2250,10 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       </div>`}
     return `
       <div class="item${bNow?" bnew":""}">
-        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)} ${bTop}</div><div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
+        <button type="button" class="bname" data-edititem="${i.id}" aria-label="Editar ${esc(i.name)}"><div class="name">${esc(i.name)}</div>${bTop}<div class="meta">${MEAT.includes(i.cat)&&(i.lvl??2)===2?"":`<span class="lvlb ${lc}" ${i.qty==null?`data-cyc="${i.id}" role="button"`:""}>${lt}</span>`}${m?(MEAT.includes(i.cat)&&(i.lvl??2)===2?"":" · ")+m:""}</div></button>
         <div class="qrow" role="group" aria-label="Quantidade de ${esc(i.name)}">
           <button type="button" class="qb" data-q="${i.id}|-1" aria-label="Menos ${esc(i.name)}">−</button>
-          <span class="qv">${i.qty==null?"—":String(i.qty).replace(".",",")}<small>${i.qty==null?"qtd.":bagW(i)?(i.qty===1?"saco":"sacos"):unitShort(i)}</small></span>
+          <span class="qv">${hasBags(i)?`${i.bags.length}<small>${i.bags.length===1?"saco":"sacos"}</small>`:`${i.qty==null?"—":String(i.qty).replace(".",",")}<small>${i.qty==null?"qtd.":unitShort(i)}</small>`}</span>
           <button type="button" class="qb" data-q="${i.id}|1" aria-label="Mais ${esc(i.name)}">+</button>
         </div>${tb}
       </div>`};
@@ -2372,7 +2372,7 @@ document.addEventListener("submit",e=>{
   if(!isNaN(lo))n.low=lo;if(!isNaN(bu)&&bu>0)n.buy=bu;
   const pn=parseFloat(String(f.pn.value).replace(",","."));delete n.packN;delete n.packU;if(!isNaN(pn)&&pn>0){n.packN=pn;n.packU=f.pu.value}
   if(!isNaN(q)){n.qty=q;n.unit=f.u.value;n.lvl=autoLvl(n,q)}
-  if(hasBags(n)){n.qty=bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
+  if(hasBags(n)){n.qty=bagW(n)?n.bags.length:bagSum(n.bags);n.unit="un";n.lvl=autoLvl(n,n.qty)}
   if(isRes(n)&&f.rv){const rv=parseInt(f.rv.value), wv=parseInt(f.wv.value);delete n.qty;delete n.low;delete n.want;if(wv>=0)n.want=wv;
     if(f.gg){if(f.gg.value===(autoShape(n)||"tag"))delete n.gauge;else n.gauge=f.gg.value}
     if(f.iu)n.use=f.iu.checked;if(rv>=0)n.res=rv;else if(f.iu&&n.res==null&&!n.use)n.res=0;if(n.res!=null)n.lvl=resLvl(n)}
@@ -2396,7 +2396,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b)
     /* em uso + reserva: o −/+ mexe nos guardados */
     if(isRes(it)){if(it.res==null){setRes(it,it.lvl>0,+d>0?1:0);return}if(+d<0&&!it.res)return;setRes(it,it.use,it.res+(+d));return}
     /* com sacos: tira (ou repõe) 1 un. do saco mais pequeno, que é o que está aberto */
-    if(bagW(it)){const bg=[...it.bags];if(+d<0){if(!bg.length)return;bg.splice(bg.indexOf(Math.min(...bg)),1)}else bg.push(bagSize(it));setBags(it,bg);return}
+    /* Pedido (22/11): em Em casa conta-se ao saco (− tira o saco mais pequeno, + junta um saco do tamanho habitual) */
+    if(hasBags(it)){const bg=[...it.bags];if(+d<0){if(!bg.length)return;bg.splice(bg.indexOf(Math.min(...bg)),1)}else bg.push(bagSize(it));setBags(it,bg);return}
     if(hasBags(it)){const bg=[...it.bags];if(+d<0){if(!bg.length)return;const k=bg.indexOf(Math.min(...bg));bg[k]=Math.round((bg[k]-1)*100)/100;if(bg[k]<=0)bg.splice(k,1)}
       else if(bg.length)bg[bg.indexOf(Math.min(...bg))]+=1;else bg.push(1);setBags(it,bg);return}
     if(it.qty==null){setQty(id,+d>0?(it.lvl===0?1:it.lvl===1?lowOf(it):lowOf(it)+unitStep(it.unit)):0);return}
@@ -6903,7 +6904,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v388";
+const APPV="casa-v389";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
