@@ -2254,7 +2254,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
       <input name="n" list="itemNames" placeholder="Produto (ex.: pilhas)" required autocapitalize="sentences" class="wide">
       <label>Quantidade<input name="q" type="number" min="0" step="any" inputmode="decimal" value="1"></label>
       <label>Unidade<select name="u">${unitOpts("un")}</select></label>
-      <label>Categoria<select name="c">${[...PCATS].map(c=>`<option>${c}</option>`).join("")}</select></label>
+      <label>Categoria<select name="c">${[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option>${c}</option>`).join("")}</select></label>
       <label>Loja<input name="s" list="shopList" placeholder="opcional" autocapitalize="words" value="${catSel.s&&catSel.s!=="~"?esc(catSel.s):""}"></label>
       <button class="btn" type="submit" style="grid-column:1/-1">Juntar ao carrinho</button></form>
     <button type="button" class="btn" data-cartdone="1" style="margin-top:8px;width:100%">✓ Guardar quantidades</button></div>`;
@@ -2619,6 +2619,12 @@ async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)
     L.forEach(([g,name,room,type,shop,pp])=>{const parts=hmParts(pp), value=Math.round(parts.reduce((t,x)=>t+x,0)*100)/100, key=noAcc(name)+"|"+value.toFixed(2);if(have.has(key))return;have.add(key);
       putBill({id:uid(),kind:"home",name,grp:g,room:HM_ROOMS.includes(room)?room:"Toda a casa",type:HM_TYPES.some(x=>x[0]===type)?type:"Outros",value,...(parts.length>1?{parts}:{}),...(shop?{shop}:{})});n++});
     hmSort="grp";try{localStorage.setItem("casa-hmsort","grp")}catch(e){}renderHome();toast(`${n} compra${n===1?"":"s"} juntada${n===1?"":"s"}`);return}
+  /* Pedido (22/11): #juntar-carrinho:Pernas de frango|… → põe esses produtos já no carrinho das Compras (cria em Carne se não existirem) */
+  if(h.startsWith("#juntar-carrinho:")){if(!P.length)return;const nn=t=>noAcc(String(t||"").toLowerCase()).trim();
+    P.forEach(name=>{const it=items.find(i=>nn(i.name)===nn(name));let n;
+      if(it){n={...it,cart:1};delete n.skip;delete n.mb;if((n.lvl??2)===2)n.lvl=1}
+      else{n={id:uid(),name:name[0].toUpperCase()+name.slice(1),cat:guessCat(name),lvl:0,cart:1,cnt:true,qty:0,unit:"un",tidy:1,rtidy:1,rt2:1,added:Date.now()}}
+      upsert(n);put(n)});catSel.s="";qtyOpen=true;show("lista");render();window.scrollTo(0,0);toast(`🛒 No carrinho: ${P.join(", ")}`);return}
   show("escola");
   if(h.startsWith("#juntar-aula:")){const [name,from,to,who]=P;if(!name||!/^\d{1,2}:\d{2}$/.test(from||""))return;
     if(!confirm(`Juntar "${name}" das ${from}${to?" às "+to:""}, de segunda a sexta${who?" ("+who+")":""}?`))return;let n=0;
@@ -2628,7 +2634,7 @@ async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)
     const have=new Set(escOf("mat").map(m=>noAcc(m.name)));let n=0;P.forEach(t=>{if(have.has(noAcc(t)))return;have.add(noAcc(t));putBill({id:uid(),kind:"esc",t:"mat",name:t,done:true});n++});
     renderEscola();toast(`${n} juntado${n===1?"":"s"}`)}}
 /* Guarda o pedido até a app estar pronta (por exemplo, depois de entrar com o PIN) */
-function route(h){if(/^#juntar-(aula|material|casa):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
+function route(h){if(/^#juntar-(aula|material|casa|carrinho):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
   if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
   if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
@@ -6764,7 +6770,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v368";
+const APPV="casa-v369";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
