@@ -180,7 +180,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
 .lbtag{color:#1f8a4c;font-weight:600}
 .tobuy{flex:none;min-width:52px;height:36px;border-radius:18px;padding:0 8px;background:var(--fill);color:var(--accent);font-size:14px;font-weight:700;white-space:nowrap}.tobuy.on{background:#34c759;color:#fff}
-.item .tobuy{margin-left:6px}.item.rsi{position:relative}.item.rsi>.tobuy{position:absolute;top:10px;right:12px;margin:0}.b2row.in{flex-wrap:wrap}.b2row.in .qrow{margin-left:auto}
+.tobuys{display:flex;gap:4px;flex:none;margin-left:6px}.tobuys .tobuy{min-width:44px;padding:0 6px}.item.rsi{position:relative}.item.rsi>.tobuys{position:absolute;top:10px;right:12px;margin:0}.b2row.in{flex-wrap:wrap}.b2row.in .qrow{margin-left:auto}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
 .qrow .qv{min-width:48px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.1}
 .qrow .qv small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
@@ -2200,9 +2200,9 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const revB=i=>i.rev?` <span class="revok" title="Já atualizado">✓</span>`:"";
   const listB=i=>{const on=(i.lvl??2)<2&&!skipOn(i);return`<button type="button" class="tolist${on?" on":""}" data-tolist="${i.id}" aria-pressed="${on}" aria-label="${on?"Tirar das compras":"Pôr nas compras"}: ${esc(i.name)}">${on?"🛒✓":"🛒"}</button>`};
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e,lbTag(i)].filter(Boolean).join(" · ");
-    const [lt,lc]=LV[i.lvl??2], inL=i.cart||((i.lvl??2)<2&&!skipOn(i));
-    /* Pedido (22/11): em Em casa, 🛒 põe o produto na lista de compras (vê-se que tens pouco e junta-se logo); com ✓ já está na lista — tocar tira */
-    const tb=`<button type="button" class="tobuy${inL?" on":""}" data-tobuy="${i.id}" aria-label="${inL?"Tirar "+esc(i.name)+" da lista de compras":"Pôr "+esc(i.name)+" na lista de compras"}">${inL?"🛒✓":"🛒＋"}</button>`;
+    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i);
+    /* Pedido (22/11): em Em casa, sem abrir o produto: "Lista" põe na lista de compras e "Carrinho" põe já no carrinho (verde = já está; tocar tira) */
+    const tb=`<span class="tobuys"><button type="button" class="tobuy${inL?" on":""}" data-tobuy="${i.id}" aria-label="${inL?"Tirar "+esc(i.name)+" da lista de compras":"Pôr "+esc(i.name)+" na lista de compras"}">📝${inL?"✓":"＋"}</button><button type="button" class="tobuy${i.cart?" on":""}" data-tocart="${i.id}" aria-label="${i.cart?"Tirar "+esc(i.name)+" do carrinho":"Pôr "+esc(i.name)+" no carrinho"}">🛒${i.cart?"✓":"＋"}</button></span>`;
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
       <div class="item rsi">
@@ -2441,10 +2441,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-skipbuy]")
 document.addEventListener("click",e=>{const b=e.target.closest("[data-unlist]");if(!b)return;e.preventDefault();const it=items.find(i=>i.id===b.dataset.unlist);if(!it)return;
   const n={...it,lvl:2};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);editItem=shopEdit="";upsert(n);render();put(n);toast(`${it.name} saiu da lista`)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-tobuy]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.tobuy);if(!it)return;
-  const inL=it.cart||((it.lvl??2)<2&&!skipOn(it));let n;
+  const inL=!it.cart&&(it.lvl??2)<2&&!skipOn(it);let n;
   if(inL){n={...it};["mb","skip","cart","buyNow"].forEach(k=>delete n[k]);if((n.lvl??2)<2&&(isRes(n)?(n.use||(+n.res||0)>0):(+n.qty||0)>0))n.lvl=2;toast(`${it.name} saiu da lista de compras`)}
   else{n={...it,mb:1};delete n.skip;if((n.lvl??2)===2)n.lvl=1;toast(`🛒 ${it.name} na lista de compras${n.shop?` · ${n.shop}`:""}`)}
   upsert(n);render();put(n)},true);
+document.addEventListener("click",e=>{const b=e.target.closest("[data-tocart]");if(!b)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===b.dataset.tocart);if(!it)return;let n;
+  if(it.cart){n={...it};delete n.cart;delete n.buyNow;toast(`${it.name} saiu do carrinho (fica na lista)`)}
+  else{n={...it,cart:1};delete n.skip;if((n.lvl??2)===2){n.lvl=1;n.mb=1}toast(`🛒 ${it.name} no carrinho · acerta a quantidade nas Compras`)}
+  qtyOpen=true;upsert(n);render();put(n)},true);
 /* Carrinho: ✓ põe no carrinho (sem mexer no stock); no fim "Guardar quantidades" atualiza tudo */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-cart],[data-uncart]");if(!b)return;e.preventDefault();const id=b.dataset.cart||b.dataset.uncart, it=items.find(i=>i.id===id);if(!it)return;
   if(b.closest(".qpanel"))qtyOpen=true;const n={...it};if(b.dataset.cart)n.cart=1;else delete n.cart;upsert(n);render();put(n)});
@@ -6807,7 +6811,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v371";
+const APPV="casa-v372";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
