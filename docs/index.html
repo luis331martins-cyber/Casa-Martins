@@ -178,6 +178,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .rsctl .bql{font-size:13px;color:var(--muted);margin-right:2px}
 .opn{margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--accent);font-size:13px;font-weight:600}
 .qrow{display:flex;align-items:center;gap:6px;flex:none}
+.lbtag{color:#1f8a4c;font-weight:600}.b2row.in{flex-wrap:wrap}.b2row.in .qrow{margin-left:auto}
 .qrow .qb{width:34px;height:34px;border-radius:50%;padding:0;background:var(--fill);color:var(--accent);font-size:22px;font-weight:500;line-height:1;display:grid;place-items:center}
 .qrow .qv{min-width:48px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.1}
 .qrow .qv small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
@@ -2194,7 +2195,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   /* ✓ = já atualizei este produto (guardado no editar) · 🛒 = pôr já nas compras (ou tirar) */
   const revB=i=>i.rev?` <span class="revok" title="Já atualizado">✓</span>`:"";
   const listB=i=>{const on=(i.lvl??2)<2&&!skipOn(i);return`<button type="button" class="tolist${on?" on":""}" data-tolist="${i.id}" aria-pressed="${on}" aria-label="${on?"Tirar das compras":"Pôr nas compras"}: ${esc(i.name)}">${on?"🛒✓":"🛒"}</button>`};
-  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e].filter(Boolean).join(" · ");
+  const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e,lbTag(i)].filter(Boolean).join(" · ");
     const [lt,lc]=LV[i.lvl??2];
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
     if(isRes(i)){const rs=i.res!=null, on=i.use!=null?!!i.use:(i.lvl??2)>0;return `
@@ -2238,7 +2239,8 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const shopNames=Object.keys(byShop).sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,"pt"));
   const metaOf=i=>i.lvl===0?"Acabou":"Está a acabar";
   const leftRow=i=>`<div class="b2row"><button type="button" class="b2main" data-cart="${i.id}" aria-label="Pôr ${esc(i.name)} no carrinho"><span class="b2chk" aria-hidden="true"></span><span class="b2t"><b>${esc(i.name)}</b><small>${metaOf(i)}</small></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><button type="button" class="b2x" data-skip="${i.id}" aria-label="Não comprei ${esc(i.name)}">✕</button></div>`;
-  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button></div>`;
+  /* Pedido (21/11): no carrinho acerta-se logo a quantidade que se trouxe (− / +) */
+  const rightRow=i=>`<div class="b2row in"><button type="button" class="b2main" data-uncart="${i.id}" aria-label="Tirar ${esc(i.name)} do carrinho"><span class="b2chk on" aria-hidden="true">✓</span><span class="b2t"><b>${esc(i.name)}</b></span></button><button type="button" class="b2e" data-sedit="${i.id}" aria-label="Editar ${esc(i.name)}">✏️</button><div class="qrow" role="group" aria-label="Quanto trouxe de ${esc(i.name)}"><button type="button" class="qb" data-bq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(buyAmt(i)).replace(".",",")}<small>${boxBuy(i)?(buyAmt(i)===1?"caixa":"caixas"):unitShort({...i,qty:buyAmt(i),unit:packBuy(i)?"sacos":isRes(i)?"un":i.unit})}</small></span><button type="button" class="qb" data-bq="${i.id}|1" aria-label="Mais">+</button></div></div>`;
   /* Cada categoria com o seu ícone e cor, em destaque */
   const ALLC=[...new Set([...PCATS,...CATS,...MEAT,"Farmácia"])];
   const catHd=c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"];return`<div class="b2cat" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span>${c}</div>`};
@@ -2585,7 +2587,12 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-revfix],[d
   if(t.dataset.revedit){const it=items.find(i=>i.id===t.dataset.revedit);if(!it)return;if(MEAT.includes(it.cat))catSel.m=it.cat;else catSel.p=it.cat;editItem=it.id;render();setTimeout(()=>{const f=document.querySelector(`#pantry [data-itemform="${it.id}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},80);return}
   const r=R[+t.dataset.revfix.split("|")[1]];if(r){revApply(r);render();revRender();toast("Corrigido")}});
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
-function buyDone0(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
+/* Pedido (21/11): saber o que foi comprado agora e o que já cá estava — ao comprar guarda-se lb={d (dia), h (o que havia antes)}; em Em casa aparece "🆕 comprado a …, antes tinhas …" durante 7 dias */
+const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<-7)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.lb.d)}${i.lb.h?` · antes tinhas ${esc(i.lb.h)}`:""}</span>`};
+const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
+function lbMark(n,had){if(n){n.lb={d:ymd(new Date()),h:had};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],lb:n.lb};put(items[k])}}}
+function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"";try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had)}}
+function buyDone1(id){const it=items.find(i=>i.id===id);if(it&&it.med&&meds().some(m=>m.id===it.med&&m.box)){medBought(it.med);return}
     if(it&&isRes(it)){const u=!!(it.use||(it.res==null&&it.lvl>0)), q=(+it.res||0)+Math.ceil(buyAmt(it))*(boxBuy(it)?Math.round(+it.packN):1);const n=setRes(it,true,u?q:q-1,null,["skip","buyNow","mb",...(u?[]:["fill"])]);n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${resText(n)}`);return}
     if(it&&hasBags(it)){const n=setBags(it,[...it.bags,...Array(Math.max(1,Math.round(buyAmt(it)))).fill(bagSize(it))]);delete n.skip;delete n.buyNow;n.lvl=Math.max(2,n.lvl);upsert(n);render();put(n);toast(`Comprado · ${bagText(n)}`);return}
     if(it){const q=Math.max(0,+it.qty||0)+buyAmt(it)*(packBuy(it)||boxBuy(it)?+it.packN:1);const n={...it,qty:q,unit:it.unit||"un",lvl:Math.max(2,autoLvl(it,q))};delete n.skip;delete n.buyNow;upsert(n);render();put(n);toast(`Comprado · tens ${String(q).replace(".",",")} ${n.unit==="un"?"un.":n.unit}`);return}
@@ -6756,7 +6763,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v364";
+const APPV="casa-v365";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
