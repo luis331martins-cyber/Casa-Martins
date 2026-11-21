@@ -2587,8 +2587,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-revfix],[d
   if(t.dataset.revedit){const it=items.find(i=>i.id===t.dataset.revedit);if(!it)return;if(MEAT.includes(it.cat))catSel.m=it.cat;else catSel.p=it.cat;editItem=it.id;render();setTimeout(()=>{const f=document.querySelector(`#pantry [data-itemform="${it.id}"]`);if(f)f.scrollIntoView({block:"center",behavior:"smooth"})},80);return}
   const r=R[+t.dataset.revfix.split("|")[1]];if(r){revApply(r);render();revRender();toast("Corrigido")}});
 function buyDone(id,quiet){const k0=items.findIndex(x=>x.id===id);if(k0>=0&&items[k0].mb){items[k0]={...items[k0]};delete items[k0].mb}const toast0=toast;if(quiet)toast=()=>{};try{buyDone0(id)}finally{toast=toast0}}
-/* Pedido (21/11): saber o que foi comprado agora e o que já cá estava — ao comprar guarda-se lb={d (dia), h (o que havia antes)}; em Em casa aparece "🆕 comprado a …, antes tinhas …" durante 7 dias */
-const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<-7)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.lb.d)}${i.lb.h?` · antes tinhas ${esc(i.lb.h)}`:""}</span>`};
+/* Pedido (21/11): saber o que foi comprado agora e o que já cá estava — ao comprar guarda-se lb={d (dia), h (o que havia antes)}; em Em casa aparece "🆕 comprado a …, antes tinhas …" durante 2 semanas */
+const lbTag=i=>{if(!i.lb||!i.lb.d)return"";const d=daysTo(i.lb.d);if(d==null||d<-14)return"";return`<span class="lbtag">🆕 comprado ${d===0?"hoje":d===-1?"ontem":"a "+dShort(i.lb.d)}${i.lb.h?` · antes tinhas ${esc(i.lb.h)}`:""}</span>`};
 const lbHad=it=>{try{return useHas(it)?useAmt(it):"nada"}catch(e){return""}};
 function lbMark(n,had){if(n){n.lb={d:ymd(new Date()),h:had};const k=items.findIndex(x=>x.id===n.id);if(k>=0){items[k]={...items[k],lb:n.lb};put(items[k])}}}
 function buyDone0(id){const it0=items.find(i=>i.id===id), had=it0?lbHad(it0):"";try{buyDone1(id)}finally{if(it0&&!it0.med)lbMark(items.find(i=>i.id===id),had)}}
@@ -6763,7 +6763,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v365";
+const APPV="casa-v366";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
