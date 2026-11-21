@@ -135,6 +135,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 @keyframes srfl{0%,60%{box-shadow:0 0 0 3px #ff9f0a}100%{box-shadow:none}}.srflash{animation:srfl 1.8s ease-out;border-radius:12px}
 .acccol input[type=color]{width:100%;height:48px;padding:4px;border-radius:12px;border:0;background:var(--fill)}
 .bwrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0 6px 30px}.bwch{display:inline-flex;align-items:center;gap:4px;background:var(--fill);border-radius:999px;padding:3px 8px;font-size:13px;color:var(--muted)}
+.picknew{border:2px dashed #34c759;border-radius:14px;padding:10px;margin-top:8px;display:flex;flex-direction:column;gap:8px}.picknew .pnr{display:flex;gap:6px}.picknew select{flex:1;min-width:0;font:inherit;font-size:15px;padding:8px;border-radius:10px;border:0;background:var(--fill);color:var(--fg)}
 .bwu{font:inherit;font-size:14px;border-radius:999px;padding:4px 8px;border:0;background:var(--fill);color:var(--fg)}
 .bwch input{width:58px;text-align:right;font:inherit;font-size:15px;font-weight:700;color:var(--fg);background:var(--surface);border:0;border-radius:8px;padding:4px 6px}.bwch button{background:none;color:var(--muted);padding:0 2px;font-size:14px}
 .qaddd{margin-top:8px}.qaddd summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 2px}
@@ -2506,7 +2507,8 @@ document.addEventListener("click",e=>{if(!e.target.closest("[data-cartdone]"))re
 function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.toLowerCase()===n.toLowerCase());if(q)return q[1];
   if(FRUIT.test(n)||/batata|cebola|\balho\b|cenoura|tomate|alface|courgette|br[oó]colos|espinafre|pepino|pimento|ab[oó]bora|legume|salada|cogumelo|feij[aã]o verde|nabo|couve/i.test(n))return"Frutas e legumes";if(/detergente|l[ií]xivia|limpa|esponja|amaciador|air ?wick|ambientador|sacos? do lixo|pastilhas/i.test(n))return"Limpeza";
   if(/champ[oô]|\bgel\b|sabonete|pasta de dentes|desodori|creme|papel higi|fralda|pensos|cotonete|algod|escova|toalhitas|protetor/i.test(n))return"Higiene";
-  if(/congelad|gelado|pizza|douradinhos|ervilhas/i.test(n))return"Congelados";if(/frango|vaca|porco|picada|bife|salsicha|peru|fiambre|chouri|bacon|hamb[uú]rguer/i.test(n))return"Carne";
+  if(/congelad|gelado|pizza|douradinhos|ervilhas/i.test(n))return"Congelados";if(/frango|vaca|porco|picada|bife|salsicha|peru|fiambre|chouri|bacon|hamb[uú]rguer|entrecosto|costeleta|lombo|febra|entremeada|alm[oô]ndega|espetada|rolo de carne|borrego|cabrito|coelho|\bpato\b|vitela|novilho|alheira|farinheira|morcela|secretos|plumas|pernas?\b|coxas?\b|asas?\b|peito/i.test(n))return"Carne";
+  if(/bacalhau|salm[aã]o|pescada|dourada|robalo|polvo|lulas?\b|choco|camar[aã]o|sardinha|carapau|peixe|marisco|gambas/i.test(n))return"Peixe";
   if(/leite|iogurte|queijo|manteiga|natas|ovos|bechamel|requeij|presunto/i.test(n))return"Laticínios e frios";return"Mercearia"}
 {const f=document.getElementById("shopAdd"), x=f.querySelector(".saddx");f.c.innerHTML=[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option>${c}</option>`).join("");
   const fill=()=>{const v=f.n.value.trim(), it=items.find(i=>i.name.toLowerCase()===v.toLowerCase());x.hidden=!v;if(!v)return;f.c.value=it?it.cat:guessCat(v);if(!f.s.dataset.touched)f.s.value=(catSel.s&&catSel.s!=="~"?catSel.s:"")||it&&it.shop||""};
@@ -2602,7 +2604,8 @@ function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pic
   const row=i=>{const v=pickSel[i.id]||0, st=i.lvl===0?" · <b style=\"color:var(--bad)\">acabou</b>":i.lvl===1?" · <b style=\"color:var(--warn)\">pouco</b>":"";return`<div class="userow${v?" on":""}"><button type="button" class="usetog" data-picktog="${i.id}" aria-pressed="${!!v}"><span class="usechk">${v?"✓":""}</span><span class="mt"><b>${esc(i.name)}</b><small>Tens ${esc(pickHas(i))}${st}${i.cart?" · já no carrinho":""}</small></span></button>
     ${v?`<div class="qrow"><button type="button" class="qb" data-pickq="${i.id}|-1" aria-label="Menos">−</button><span class="qv">${String(v).replace(".",",")}<small>${pickU(i)}</small></span><button type="button" class="qb" data-pickq="${i.id}|1" aria-label="Mais">+</button></div>`:""}</div>`};
   let body;
-  if(q){const L=ALL.filter(i=>srNorm(i.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt"));body=(L.map(row).join("")||`<p class="srnone">Não existe. Junta-o na caixa “＋ Juntar à lista” por baixo.</p>`)}
+  if(q){const L=ALL.filter(i=>srNorm(i.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"pt"));/* Pedido (22/11): produto novo — cria-se aqui (categoria adivinhada, pode mudar-se) e fica logo escolhido */
+    const nm=pickQ.trim(), ex=ALL.some(i=>srNorm(i.name)===q);body=L.map(row).join("")+(nm&&!ex?`<div class="picknew"><b>＋ “${esc(nm[0].toUpperCase()+nm.slice(1))}” é novo</b><div class="pnr"><select id="pickNewC" aria-label="Categoria">${[...PCATS,...MEAT.filter(c=>!PCATS.includes(c))].map(c=>`<option${guessCat(nm)===c?" selected":""}>${c}</option>`).join("")}</select><select id="pickNewU" aria-label="Unidade">${["un","kg","g","L"].map(u=>`<option value="${u}">${u==="un"?"un.":u}</option>`).join("")}</select><button type="button" class="btn" data-picknew="1" style="background:#34c759">Juntar</button></div></div>`:"")}
   else if(pickCat){const L=ALL.filter(i=>i.cat===pickCat).sort((a,b)=>(a.lvl??2)-(b.lvl??2)||a.name.localeCompare(b.name,"pt"));body=`<button type="button" class="catback" data-pickcat=""><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Categorias</button><div class="usecath"><span>${esc(pickCat)}</span></div>`+L.map(row).join("")}
   else{const cats=[...new Set([...PCATS,...MEAT,...ALL.map(i=>i.cat)])].filter(c=>ALL.some(i=>i.cat===c));
     body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
@@ -2614,12 +2617,15 @@ function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pic
   const qi=document.getElementById("pickQ");qi.oninput=()=>{pickQ=qi.value;const pos=qi.selectionStart;pickRender();const nq=document.getElementById("pickQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
 document.addEventListener("click",e=>{if(!e.target.closest("[data-pickgo]"))return;e.preventDefault();const b=document.getElementById("pickBox");pickReg=false;b.hidden=false;pickSel={};pickQ="";pickCat="";pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})});
 document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");pickReg=false;b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
-document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
+document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],[data-picknew],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
   if(t.id==="pickCancel"){document.getElementById("pickBox").hidden=true;pickSel={};return}
   if(t.id==="pickGo"&&pickReg){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n=lbReg(it,v);upsert(n);put(n)});
     pickSel={};pickReg=false;document.getElementById("pickBox").hidden=true;boughtPer="h";try{localStorage.setItem("casa-shut-bought","0")}catch(e){}render();setTimeout(()=>{const x=document.querySelector(".boughtbox");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60);toast(`🧾 ${L.length} registado${L.length===1?"":"s"} em “O que comprei”`);return}
   if(t.id==="pickGo"){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n={...it,cart:1,buyNow:isRes(it)?Math.max(1,Math.round(v)):v};delete n.skip;delete n.mb;if((n.lvl??2)===2)n.lvl=1;upsert(n);put(n)});
     pickSel={};document.getElementById("pickBox").hidden=true;qtyOpen=true;render();window.scrollTo(0,0);toast(`🛒 ${L.length} no carrinho · confirma e guarda as quantidades`);return}
+  if(ds.picknew){const nm=pickQ.trim();if(!nm)return;const cat=document.getElementById("pickNewC").value, unit=document.getElementById("pickNewU").value, st=catSel.s&&catSel.s!=="~"?catSel.s:"";
+    const n={id:uid(),name:nm[0].toUpperCase()+nm.slice(1),cat,lvl:0,cnt:true,qty:0,unit,tidy:1,rtidy:1,rt2:1,added:Date.now(),...(st?{shop:st}:{}),...(BAGC.includes(cat)&&unit==="un"?{bags:[]}:{})};
+    upsert(n);put(n);pickSel[n.id]=pickStep(n);pickRender();toast(`${n.name} criado · acerta a quantidade`);return}
   if(ds.pickcat!=null){pickCat=ds.pickcat;pickRender();document.getElementById("pickBox").scrollIntoView({block:"start",behavior:"smooth"});return}
   if(ds.picktog){const it=items.find(i=>i.id===ds.picktog);pickSel[ds.picktog]=pickSel[ds.picktog]?0:(it?pickStep(it):1);pickRender();return}
   const [id,d]=ds.pickq.split("|"), it=items.find(i=>i.id===id), st=it?pickStep(it):1;pickSel[id]=Math.max(0,Math.round(((pickSel[id]||0)+st*(+d))*100)/100);pickRender()},true);
@@ -6897,7 +6903,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v387";
+const APPV="casa-v388";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
