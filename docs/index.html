@@ -5094,6 +5094,8 @@ document.addEventListener("submit",e=>{const f=e.target;
 /* ---------- Escola (kind:"esc", t: "aula" | "mat" | "cont"); as datas vão para o calendário (título com 🎒) ---------- */
 const escOf=t=>bills.filter(b=>b.kind==="esc"&&b.t===t);
 const ESC_WD=["Seg","Ter","Qua","Qui","Sex"];
+/* Pedido (22/11): mostrar todas as datas da escola (antes só as 12 primeiras) */
+let escAll=false;document.addEventListener("click",e=>{if(!e.target.closest("[data-escall]"))return;escAll=!escAll;renderEscola()});
 let escDay=Math.min(4,Math.max(0,new Date().getDay()-1)), escEdit={aula:"",data:"",cont:""};
 function aulaForm(a){const v=x=>x==null?"":esc(x);return`<form class="bill-edit" data-escform="aula|${a?a.id:"new"}" autocomplete="off">
     <label class="f wide">O quê<input name="n" required value="${a?esc(a.name):""}" placeholder="ex.: Matemática, Natação" autocapitalize="sentences"></label>
@@ -5124,8 +5126,8 @@ function renderEscola(){const el=document.getElementById("escAulas");if(!el)retu
   const A=escOf("aula").filter(a=>+a.wd===escDay).sort((a,b)=>(a.from||"").localeCompare(b.from||""));
   el.innerHTML=A.map(a=>a.id===escEdit.aula?aulaForm(a):`<button type="button" class="esc-row${isToday&&tMin(a.from)<=nm&&(!a.to||tMin(a.to)>nm)?" now":""}" data-escedit="aula|${a.id}"><span class="t">${esc(a.from||"")}${a.to?"–"+esc(a.to):""}</span><span style="min-width:0"><b>${esc(a.name)}</b><small>${[a.who,a.notes].filter(Boolean).map(esc).join(" · ")}</small></span><span class="edit">›</span></button>`).join("")||`<div class="esc-empty">Nada em ${ESC_WD[escDay]}.</div>`;
   document.getElementById("aulaNew").innerHTML=escEdit.aula==="new"?aulaForm(null):"";
-  const td=ymd(new Date()), D=events.filter(e=>/^🎒/.test(e.title||"")&&evEnd(e)>=td).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,12);
-  document.getElementById("escDatas").innerHTML=D.map(e=>`<div class="esc-row"><span class="t">${fmtD(e.date).replace(/ \d{4}$/,"")}${e.end&&e.end>e.date?"<small>até "+fmtD(e.end).replace(/ \d{4}$/,"")+"</small>":""}</span><span style="min-width:0"><b>${esc(e.title.replace(/^🎒\s*/,""))}</b><small>${e.time?e.time+" · ":""}${dueTag(e.date,7)}</small></span><button type="button" class="back" data-escdelev="${e.id}" aria-label="Apagar">×</button></div>`).join("")||`<div class="esc-empty">Sem datas marcadas. As datas que juntares também aparecem na Agenda e no calendário.</div>`;
+  const td=ymd(new Date()), DA=events.filter(e=>/^🎒/.test(e.title||"")&&evEnd(e)>=td).sort((a,b)=>a.date.localeCompare(b.date)), D=escAll?DA:DA.slice(0,12);
+  document.getElementById("escDatas").innerHTML=(D.map(e=>`<div class="esc-row"><span class="t">${fmtD(e.date).replace(/ \d{4}$/,"")}${e.end&&e.end>e.date?"<small>até "+fmtD(e.end).replace(/ \d{4}$/,"")+"</small>":""}</span><span style="min-width:0"><b>${esc(e.title.replace(/^🎒\s*/,""))}</b><small>${e.time?e.time+" · ":""}${dueTag(e.date,7)}</small></span><button type="button" class="back" data-escdelev="${e.id}" aria-label="Apagar">×</button></div>`).join("")||`<div class="esc-empty">Sem datas marcadas. As datas que juntares também aparecem na Agenda e no calendário.</div>`)+(DA.length>12?`<button type="button" class="btn ghost" data-escall="1" style="width:100%;margin-top:6px">${escAll?"Ver menos":`Ver todas as datas (mais ${DA.length-12})`}</button>`:"");
   document.getElementById("dataNew").innerHTML=escEdit.data==="new"?dataForm():"";
   const Mt=escOf("mat").sort((a,b)=>(a.done?1:0)-(b.done?1:0));
   document.getElementById("escMat").innerHTML=Mt.map(m=>`<label class="mat${m.done?" done":""}"><input type="checkbox" data-escmat="${m.id}"${m.done?" checked":""}><span>${esc(m.name)}</span><button type="button" data-escdel="${m.id}" aria-label="Apagar">×</button></label>`).join("")||`<div class="esc-empty">Ainda não há material. Junta o que falta comprar ou o que já compraste.</div>`;
@@ -6910,7 +6912,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v390";
+const APPV="casa-v391";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
