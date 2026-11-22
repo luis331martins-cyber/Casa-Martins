@@ -140,6 +140,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .bwch input{width:58px;text-align:right;font:inherit;font-size:15px;font-weight:700;color:var(--fg);background:var(--surface);border:0;border-radius:8px;padding:4px 6px}.bwch button{background:none;color:var(--muted);padding:0 2px;font-size:14px}
 .qaddd{margin-top:8px}.qaddd summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 2px}
 .qpcat{margin-top:8px}
+.hnf{display:flex;flex-direction:column;gap:6px}.hnr{display:flex;gap:6px;align-items:center}.hnf select,.hnf input{font:inherit;font-size:16px;padding:9px 10px;border-radius:12px;border:0;background:var(--fill);color:var(--fg);min-width:0}.hnf select{flex:1}.hnf input[type=date]{flex:1.3}.hnf .hnt{width:64px;flex:none;text-align:center}
 .qin{width:50px;text-align:center;font:inherit;font-size:17px;font-weight:800;color:#1f8a4c;background:var(--surface);border:1.5px solid color-mix(in srgb,#34c759 50%,transparent);border-radius:10px;padding:4px 2px;display:block;margin:0 auto 2px}
 .bcol.cart .b2row.in .qv::before{content:none}
 .bnewpill{background:#34c759!important;color:#fff!important;font-weight:700;border:0;font:inherit;font-size:14px}.tdbox{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}
@@ -1637,6 +1638,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <div class="seg" role="group" aria-label="Pessoa" id="hWho" style="align-self:flex-start"></div>
     <div class="group" style="gap:8px"><h2>Próximas</h2><div id="hNext" class="rlist"></div>
       <button class="btn ghost" type="button" id="addHealth">+ Juntar consulta, análises ou vacina</button><div id="hNew"></div></div>
+    <div class="group" style="gap:8px"><h2>📝 Como tem estado</h2>
+      <form id="hnForm" class="hnf" autocomplete="off"><div class="hnr"><select name="w" aria-label="Quem"></select><input name="d" type="date" aria-label="Dia"><input name="t" type="text" inputmode="decimal" placeholder="°C" aria-label="Febre (opcional)" class="hnt"></div>
+        <div class="hnr"><input name="x" required placeholder="ex.: Hoje doeu o ouvido" autocapitalize="sentences" style="flex:1;min-width:0"><button class="btn" type="submit" style="padding:8px 14px">Guardar</button></div></form>
+      <div id="hNotes" class="rlist"></div></div>
     <div class="group" style="gap:8px"><h2>Médicos</h2><div id="hDocs" class="rlist"></div>
       <button class="btn ghost" type="button" id="addDoctor">+ Juntar médico</button><div id="dNew"></div></div>
     <div class="group" style="gap:8px"><h2>Histórico</h2><div id="hPast" class="rlist"></div></div>
@@ -6099,7 +6104,23 @@ document.getElementById("docPaste").addEventListener("submit",e=>{e.preventDefau
   document.getElementById("docPasteTxt").value="";document.getElementById("docPaste").hidden=true;document.getElementById("docPasteBtn").hidden=false;
   renderDocs();toast(`${n} juntado${n===1?"":"s"}${u?`, ${u} atualizado${u===1?"":"s"}`:""}`)});
 let hWho="";
-function renderHealth(){const el=document.getElementById("hNext");if(!el)return;const today=ymd(new Date());
+/* Pedido (22/11): Saúde — "Como tem estado": notas do dia por pessoa (ex.: "Hoje doeu o ouvido"), com febre opcional. kind:"hnote" {who,date,text,temp} */
+let hnEdit="", hnAll=false;
+function renderHNotes(){const el=document.getElementById("hNotes");if(!el)return;const f=document.getElementById("hnForm"), td=ymd(new Date());
+  if(f&&!f.w.options.length){f.w.innerHTML=PEOPLE.map(p=>`<option${p==="Maria"?" selected":""}>${esc(p)}</option>`).join("")}if(f&&!f.d.value)f.d.value=td;if(f&&hWho)f.w.value=hWho;
+  const N=bills.filter(b=>b.kind==="hnote"&&(!hWho||b.who===hWho)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.at||0)-(a.at||0)), S=hnAll?N:N.slice(0,10);
+  const day=d=>{const k=daysTo(d);return k===0?"Hoje":k===-1?"Ontem":fmtD(d).replace(/ \d{4}$/,"")};
+  el.innerHTML=N.length?`<div class="rcard">${S.map(n=>n.id===hnEdit?`<form class="hnf" data-hnedit="${n.id}" autocomplete="off" style="padding:8px 0"><div class="hnr"><select name="w">${PEOPLE.map(p=>`<option${p===n.who?" selected":""}>${esc(p)}</option>`).join("")}</select><input name="d" type="date" value="${esc(n.date||"")}"><input name="t" type="text" inputmode="decimal" placeholder="°C" class="hnt" value="${n.temp!=null?String(n.temp).replace(".",","):""}"></div>
+      <div class="hnr"><input name="x" required value="${esc(n.text)}" style="flex:1;min-width:0"></div><div class="hnr"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-hncancel="1">Cancelar</button><button class="btn danger" type="button" data-hndel="${n.id}">Apagar</button></div></form>`
+    :`<button type="button" class="rrow" data-hnopen="${n.id}" style="width:100%;background:transparent;color:var(--fg);font:inherit;text-align:left"><span class="rl">${esc(n.who)}: ${esc(n.text)}${n.temp!=null?` <b style="color:${+n.temp>=38?"var(--bad)":"var(--warn)"}">🌡️ ${String(n.temp).replace(".",",")} °C</b>`:""}</span><span class="rm">${day(n.date)}</span></button>`).join("")}</div>${N.length>10?`<button type="button" class="back" data-hnall="1">${hnAll?"Ver menos":`Ver todas (${N.length})`}</button>`:""}`:`<div class="rcard"><div class="rempty">Escreve aqui o que ${hWho||"a Maria"} teve (dores, febre, tosse…). Fica guardado com o dia, para mostrares ao médico.</div></div>`}
+document.getElementById("hnForm").addEventListener("submit",e=>{e.preventDefault();const f=e.target, x=f.x.value.trim();if(!x)return;const t=numIn(f.t.value);
+  putBill({id:uid(),kind:"hnote",who:f.w.value,date:f.d.value||ymd(new Date()),text:x,at:Date.now(),...(t>0?{temp:Math.round(t*10)/10}:{})});f.x.value="";f.t.value="";renderHNotes();toast("Guardado na Saúde")});
+document.addEventListener("submit",e=>{const f=e.target.closest("[data-hnedit]");if(!f)return;e.preventDefault();const o=bills.find(b=>b.id===f.dataset.hnedit);if(!o)return;const t=numIn(f.t.value);
+  const n={...o,who:f.w.value,date:f.d.value||o.date,text:f.x.value.trim()||o.text};if(t>0)n.temp=Math.round(t*10)/10;else delete n.temp;hnEdit="";putBill(n);renderHNotes();toast("Guardado")});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-hnopen],[data-hncancel],[data-hndel],[data-hnall]");if(!t)return;e.preventDefault();
+  if(t.dataset.hnopen)hnEdit=t.dataset.hnopen;else if(t.dataset.hncancel)hnEdit="";else if(t.dataset.hnall)hnAll=!hnAll;
+  else if(t.dataset.hndel){const o=bills.find(b=>b.id===t.dataset.hndel);if(!o||!confirm("Apagar esta nota?"))return;hnEdit="";delBill(o.id)}renderHNotes()});
+function renderHealth(){const el=document.getElementById("hNext");if(!el)return;const today=ymd(new Date());safe("Saúde (notas)",renderHNotes);
   const H=recsOf("health").filter(h=>!hWho||h.who===hWho), D=recsOf("doctor").filter(d=>!hWho||!d.who||d.who===hWho);
   const whos=[...new Set([...PEOPLE,...recsOf("health").map(h=>h.who).filter(Boolean)])];
   document.getElementById("hWho").innerHTML=[["","Todos"],...whos.map(w=>[w,w])].map(([v,l])=>`<button type="button" data-hwho="${esc(v)}" aria-pressed="${hWho===v}">${esc(l)}</button>`).join("");
@@ -6925,7 +6946,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v393";
+const APPV="casa-v394";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
