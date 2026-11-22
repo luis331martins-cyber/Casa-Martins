@@ -2747,6 +2747,12 @@ async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)
     L.forEach(([g,name,room,type,shop,pp])=>{const parts=hmParts(pp), value=Math.round(parts.reduce((t,x)=>t+x,0)*100)/100, key=noAcc(name)+"|"+value.toFixed(2);if(have.has(key))return;have.add(key);
       putBill({id:uid(),kind:"home",name,grp:g,room:HM_ROOMS.includes(room)?room:"Toda a casa",type:HM_TYPES.some(x=>x[0]===type)?type:"Outros",value,...(parts.length>1?{parts}:{}),...(shop?{shop}:{})});n++});
     hmSort="grp";try{localStorage.setItem("casa-hmsort","grp")}catch(e){}renderHome();toast(`${n} compra${n===1?"":"s"} juntada${n===1?"":"s"}`);return}
+  /* Pedido (22/11): #juntar-datas:AAAA-MM-DD~AAAA-MM-DD~Título|… → datas da escola no calendário (🎒); o fim é opcional; as que já lá estão são saltadas */
+  if(h.startsWith("#juntar-datas:")){show("escola");const L=P.map(x=>x.split("~")).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[0]||"")&&x[2]);if(!L.length)return;
+    const have=new Set(events.map(e=>e.date+"|"+noAcc(String(e.title||"").replace(/^🎒\s*/,"")).toLowerCase()));
+    const N=L.filter(([a,,t])=>!have.has(a+"|"+noAcc(t).toLowerCase()));if(!N.length){toast("Essas datas já estão todas no calendário");return}
+    if(!confirm(`Juntar ${N.length} datas da escola ao calendário?\n\n${N.slice(0,12).map(([a,b,t])=>`• ${a.split("-").reverse().join("/")}${b&&b>a?" a "+b.split("-").reverse().join("/"):""} — ${t}`).join("\n")}${N.length>12?`\n… e mais ${N.length-12}`:""}`))return;
+    N.forEach(([a,b,t])=>putEv({id:uid(),date:a,time:"",title:"🎒 "+t,...(b&&b>a?{end:b}:{}),...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})}));renderEscola();toast(`${N.length} datas juntadas à Escola e ao calendário`);return}
   /* Pedido (22/11): #juntar-desfazer:hoje → desfaz as compras de hoje (voltam ao que havia antes e ficam no carrinho) e mostra o que se tinha e o que se comprou */
   if(h.startsWith("#juntar-desfazer:")){const td=ymd(new Date()), L=items.filter(i=>!i.med&&i.bt&&i.bt.d===td);show("lista");catSel.s="";boughtPer="h";
     if(!L.length){render();toast("Não há compras de hoje para desfazer");return}
@@ -2768,7 +2774,7 @@ async function linkAdd(h){const raw=decodeURIComponent(h.slice(h.indexOf(":")+1)
     const have=new Set(escOf("mat").map(m=>noAcc(m.name)));let n=0;P.forEach(t=>{if(have.has(noAcc(t)))return;have.add(noAcc(t));putBill({id:uid(),kind:"esc",t:"mat",name:t,done:true});n++});
     renderEscola();toast(`${n} juntado${n===1?"":"s"}`)}}
 /* Guarda o pedido até a app estar pronta (por exemplo, depois de entrar com o PIN) */
-function route(h){if(/^#juntar-(aula|material|casa|carrinho|desfazer):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
+function route(h){if(/^#juntar-(aula|material|casa|carrinho|desfazer|datas):/.test(h)){try{localStorage.setItem("casa-pendente",h)}catch(e){}history.replaceState(null,"",location.pathname);return}
   if(/^#tomei:/.test(h)){const [id,d,t]=decodeURIComponent(h.slice(7)).split("|");show("meds");setTimeout(()=>medTake(id,t,true,d),800);history.replaceState(null,"",location.pathname+"#medicamentos");return}
   if(ROUTES[h])show(ROUTES[h])}
 route(location.hash);
@@ -6904,7 +6910,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v389";
+const APPV="casa-v390";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
