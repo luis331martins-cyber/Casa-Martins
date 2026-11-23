@@ -124,7 +124,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .mcat{margin-top:8px}.mcat .b2cat{font-size:12px;padding:4px 8px}.mcat .b2cat+.mrow{border-top:0}.lowbox .mput{background:#ff3b30}
 .sadd{display:flex;flex-direction:column;gap:8px}.sadd>input{width:100%;padding:13px 14px;border-radius:14px;border:1.5px dashed var(--accent);background:var(--surface);font-size:16px;color:var(--fg)}
 .saddx{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}.saddx select,.saddx input{min-width:0;padding:10px;border-radius:10px;border:0;background:var(--surface);color:var(--fg);font-size:15px}
-.aifab{width:40px;height:40px;border-radius:10px;padding:0;display:grid;place-items:center;font-size:21px;background:linear-gradient(135deg,#c4b5fd,#6d4fe0);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);border:0}
+.aifab{position:relative;width:40px;height:40px;border-radius:10px;padding:0;display:grid;place-items:center;font-size:21px;background:linear-gradient(135deg,#c4b5fd,#6d4fe0);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);border:0}
 .lupa{width:40px;height:40px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);margin-left:auto;color:var(--accent)}.lupa svg,.srbar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 .navbar>span:last-child{display:flex;justify-content:flex-end}
 #srch{position:fixed;inset:0;z-index:300;background:color-mix(in srgb,var(--bg,#f2f2f7) 96%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 14px 14px}
@@ -412,7 +412,7 @@ form.join{display:flex;flex-direction:column;gap:8px}
 #clock{font-family:-apple-system,"SF Pro Display",system-ui,var(--display);font-weight:600;font-size:52px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
 /* Início compacto: data e engrenagem em cima; "Olá" e o relógio na mesma linha */
 header.hdr{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding-top:16px}
-header.hdr .hicons .chatfab{order:-1}header.hdr .hicons{grid-column:1/-1;grid-row:1;justify-self:end;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+header.hdr .hicons .chatfab{order:-1}header.hdr .hicons .aifab{order:-2}header.hdr .hicons{grid-column:1/-1;grid-row:1;justify-self:end;display:flex;align-items:center;gap:10px;margin-bottom:4px}
 header.hdr #today{grid-column:1/-1;grid-row:2;font-size:clamp(19px,6.1vw,24px)}
 header.hdr .calfab,header.hdr .chatfab{width:40px;height:40px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 header.hdr .calfab .cal-wd{font-size:8px;margin-top:0}header.hdr .calfab .cal-d{font-size:20px}header.hdr .chatfab svg{width:24px;height:24px}
@@ -496,7 +496,7 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 :root{--icoRing:#c9a24a}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--icoRing:#e2bf6a}}
 :root[data-theme="dark"]{--icoRing:#e2bf6a}
-#tab-inicio .ico.ios,.calfab,.chatfab,#tab-inicio .iosgear{outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
+#tab-inicio .ico.ios,.calfab,.chatfab,.aifab,#tab-inicio .iosgear{outline:2.5px solid var(--icoRing);outline-offset:-2.5px}
 /* Modo escuro: como os ícones escuros do iOS 18 (fundo preto, símbolo com a cor da app) */
 @media (prefers-color-scheme:dark){:root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios{background:linear-gradient(180deg,#2c2c2e,#121214)!important;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.12)}
 :root[data-icons="ios"]:not([data-theme="light"]) #tab-inicio .ico.ios svg.sf{fill:color-mix(in srgb,var(--v1) 70%,#fff)}}
@@ -521,7 +521,7 @@ header.hdr #sub{grid-column:1/-1;margin:0}header.hdr #sub:empty{display:none}
 .chatfab{position:relative;width:58px;height:58px;border-radius:14px;
   background:linear-gradient(180deg,#5cf777,#0bbd2a);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);padding:0}
 .chatfab svg{width:36px;height:36px;fill:#fff;stroke:none}
-.chatfab::before,.calfab::before,.iosgear::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.chatfab::before,.calfab::before,.aifab::before,.iosgear::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 /* Definições: como a app Definições do iPhone (cinzento com a roda dentada) */
 #tab-inicio .iosgear{position:relative;width:40px;height:40px;border-radius:10px;padding:0;display:grid;place-items:center;background:linear-gradient(180deg,#a2a2a8,#6c6c72);box-shadow:0 2px 6px rgba(0,0,0,.2)}
 #tab-inicio .iosgear img{position:relative;width:32px;height:32px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
@@ -6958,7 +6958,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v396";
+const APPV="casa-v397";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
