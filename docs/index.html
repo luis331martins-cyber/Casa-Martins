@@ -309,7 +309,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .rdovl{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .rdsheet{width:100%;max-width:520px;background:var(--surface);color:var(--fg);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
 .rdh{font-size:19px;font-weight:700}.rdm{color:var(--muted);margin-bottom:4px}
-#tab-docs[data-dt="doc"] [data-dt="bank"],#tab-docs[data-dt="bank"] [data-dt="doc"]{display:none!important}
+#tab-docs[data-dt="doc"] [data-dt="bank"],#tab-docs[data-dt="doc"] [data-dt="pwd"],#tab-docs[data-dt="bank"] [data-dt="doc"],#tab-docs[data-dt="bank"] [data-dt="pwd"],#tab-docs[data-dt="pwd"] [data-dt="doc"],#tab-docs[data-dt="pwd"] [data-dt="bank"]{display:none!important}
 #tab-despesas[data-ct="mes"] [data-ctp]:not([data-ctp~="mes"]),#tab-despesas[data-ct="pagar"] [data-ctp]:not([data-ctp~="pagar"]),#tab-despesas[data-ct="receitas"] [data-ctp]:not([data-ctp~="receitas"]),#tab-despesas[data-ct="gastos"] [data-ctp]:not([data-ctp~="gastos"]),#tab-despesas[data-ct="cartao"] [data-ctp]:not([data-ctp~="cartao"]){display:none!important}
 .chero{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .chero .tot{background:none!important;border:0!important;padding:0!important;box-shadow:none!important}
@@ -1624,7 +1624,10 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Documentos</span><span></span></nav>
     <h1 class="large">Documentos</h1>
     <div id="docShowSeg" hidden></div>
-    <div class="seg" role="group" aria-label="Ver" id="docTabs" style="align-self:flex-start"><button type="button" data-doctab="doc" aria-pressed="true">🪪 Documentos</button><button type="button" data-doctab="bank" aria-pressed="false">🏦 Dados bancários</button></div>
+    <div class="seg" role="group" aria-label="Ver" id="docTabs" style="align-self:flex-start"><button type="button" data-doctab="doc" aria-pressed="true">🪪 Documentos</button><button type="button" data-doctab="bank" aria-pressed="false">🏦 Bancos</button><button type="button" data-doctab="pwd" aria-pressed="false">🔑 Palavras-passe</button></div>
+    <div id="pwdList" class="rlist" data-dt="pwd"></div>
+    <button class="btn ghost" type="button" id="addPwd" data-dt="pwd">+ Juntar palavra-passe</button>
+    <p class="note" style="margin:0" data-dt="pwd">Finanças (AT), Segurança Social, SNS 24, escola… A palavra-passe fica <b>encriptada</b> com o código do cofre (o mesmo dos bancos); o utilizador (ex.: NIF) fica visível para copiares.</p>
     <div id="docList" class="rlist" data-dt="doc"></div>
     <button class="btn ghost" type="button" id="addDoc" data-dt="doc">+ Juntar documento</button>
     <div id="docNew" data-dt="doc"></div>
@@ -2539,7 +2542,7 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;if(addToCart){addToCart=false;f.n.placeholder="＋ Juntar à lista (ex.: atum, pilhas…)"}})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
 const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",eventos:"Eventos",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
-const SR_KIND={bankd:"docs",bankc:"docs",evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
+const SR_KIND={bankd:"docs",bankc:"docs",pwd:"docs",evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
 const srNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 let srFrom="inicio";
 function srIndex(){const R=[];Object.entries(SR_TABS).forEach(([t,n])=>{if(document.getElementById("tab-"+t))R.push({t:n,s:"Abrir",ic:"📂",go:t})});
@@ -6026,7 +6029,7 @@ function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recf
   ${rec?`<button class="btn danger wide" type="button" data-recdel="${kind}|${rec.id}">Apagar</button>`:""}</form>`}
 const whoChips=(cur)=>`<div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-setwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setwho]");if(!b)return;const f=b.closest("form");if(f&&f.who)f.who.value=b.dataset.setwho});
-var editRec={car:"",doc:"",health:"",doctor:"",bankd:"",bankc:""};
+var editRec={car:"",doc:"",health:"",doctor:"",bankd:"",bankc:"",pwd:""};
 /* Documentos e números: tipos conhecidos (pela ordem em que aparecem) e nomes usados na lista colada */
 const DOC_TYPES=["Cartão de Cidadão","NIF","Segurança Social (NISS)","Nº de utente (SNS)","Seguro Medicare","Seguro AdvanceCare","Nº de utente SAMS","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Chave Móvel Digital","Sócio do Benfica","Autorização de residência","Outro"];
 const DOC_ALIAS=[[/^c\.?\s?c\.?$|cart[aã]o de cidad/i,"Cartão de Cidadão"],[/^nif$|contribuinte/i,"NIF"],[/niss|seguran[cç]a social/i,"Segurança Social (NISS)"],[/sams/i,"Nº de utente SAMS"],
@@ -6049,6 +6052,7 @@ const RECS={
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
   bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["notes","Notas","text",1,"opcional"]]},
+  pwd:{list:"pwdList",add:"addPwd",render:()=>renderPwds(),fields:[["name","Serviço","text",1,"ex.: Finanças (AT), Segurança Social"],["who","De quem","text",1,"ex.: Luís"],["user","Utilizador","text",1,"ex.: NIF"],["pw","Palavra-passe (fica encriptada)","password",1,"deixa vazio para manter a que está"],["url","Site","text",1,"opcional (ex.: portaldasfinancas.gov.pt)"],["notes","Notas","text",1,"opcional"]]},
   bankc:{list:"ctrList",add:"addCtr",render:()=>renderBanks(),fields:[["name","Banco","text",1,"ex.: CGD"],["who","Titular","text",1,"ex.: Luís"],["contrato","Nº de contrato / utilizador","text",1,"ex.: 12345678"],["pw","Palavra-passe (fica encriptada com o código do cofre)","password",1,"deixa vazio para manter a que está"],["mc","Código multicanal (fica encriptado)","password",1,"deixa vazio para manter o que está"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
 const recsOf=k=>bills.filter(b=>b.kind===k);
@@ -6085,6 +6089,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
       events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
+  if(k==="pwd"){const pw=x.pw;delete x.pw;if(x.url&&!/^https?:/i.test(x.url))x.url="https://"+x.url;if(pw){editRec[k]="";vaultEnc(pw).then(c=>{if(c)x.pwc=c;putBill(x);F.render();toast(c?"Guardado · encriptado 🔒":"Guardado sem a palavra-passe (cofre fechado)")});return}}
   if(k==="bankc"){const pw=x.pw, mc=x.mc;delete x.pw;delete x.mc;if(pw||mc){editRec[k]="";(async()=>{
       if(pw){const c=await vaultEnc(pw);if(c)x.pwc=c}if(mc){const c=await vaultEnc(mc);if(c)x.mcc=c}
       putBill(x);F.render();toast((pw&&!x.pwc)||(mc&&!x.mcc)?"Guardado sem os códigos (cofre fechado)":"Guardado · encriptado 🔒")})();return}}
@@ -6146,6 +6151,12 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-vaul
   const close=()=>{o.remove()};setTimeout(close,30000);
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-vs]");if(ev.target!==o&&!q)return;if(q&&(q.dataset.vs==="copy"||q.dataset.vs==="copym")){(navigator.clipboard?navigator.clipboard.writeText(q.dataset.vs==="copy"?t:m):Promise.reject()).then(()=>toast("Copiado")).catch(()=>{});return}close()});document.body.appendChild(o)});
 /* Pedido (23/11): dados bancários (IBAN, BIC, titular) — kind:"bankd"; IBAN mostrado em grupos de 4, com Copiar */
+/* Pedido (23/11): palavras-passe de outros serviços (AT, Segurança Social…) — kind "pwd", encriptadas com o mesmo cofre */
+function renderPwds(){const el=document.getElementById("pwdList");if(!el)return;const L=recsOf("pwd").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt")||(a.who||"").localeCompare(b.who||"","pt"));
+  el.innerHTML=(L.length?`<div class="rcard">${L.map(d=>d.id===editRec.pwd?recFormFor("pwd",d):`<div class="rrow"><button type="button" data-recedit="pwd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Serviço")}${d.who?` · ${esc(d.who)}`:""}</span>${d.user?`<span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:700">${esc(d.user)}</span>`:""}${d.notes?`<span class="rm" style="display:block">${esc(d.notes)}</span>`:""}</button>
+    <span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${d.user?`<button type="button" class="bump" data-copyusr="${d.id}">Copiar utilizador</button>`:""}${d.pwc?`<button type="button" class="bump" data-vaultshow="${d.id}">🔒 Ver pass</button>`:""}${d.url?`<a class="bump" href="${esc(d.url)}" target="_blank" rel="noopener" style="text-decoration:none">Abrir site ↗</a>`:""}</span></div>`).join("")}</div>`:"")+(editRec.pwd==="new"?recFormFor("pwd",null):"")||`<div class="rcard"><div class="rempty">Junta as palavras-passe de serviços como as Finanças ou a Segurança Social.</div></div>`;
+  document.getElementById("addPwd").hidden=editRec.pwd==="new"}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copyusr]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copyusr);if(!d)return;(navigator.clipboard?navigator.clipboard.writeText(String(d.user)):Promise.reject()).then(()=>toast("Utilizador copiado")).catch(()=>{prompt("Copia:",d.user)})});
 let bankMigOn=false;
 const ibanFmt=t=>String(t||"").replace(/\s+/g,"").toUpperCase().replace(/(.{4})/g,"$1 ").trim();
 function renderBanks(){const el=document.getElementById("bankList");if(!el)return;const L=recsOf("bankd").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt"));
@@ -6164,7 +6175,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-copyiban]"
 /* Pedido (23/11): separadores no topo — Documentos / Dados bancários (lembra o último) */
 let docTab=(()=>{try{return localStorage.getItem("casa-doctab")||"doc"}catch(e){return"doc"}})();
 document.addEventListener("click",e=>{const b=e.target.closest("[data-doctab]");if(!b)return;docTab=b.dataset.doctab;try{localStorage.setItem("casa-doctab",docTab)}catch(err){}renderDocs()});
-function renderDocs(){const sec=document.getElementById("tab-docs");if(sec)sec.dataset.dt=docTab;document.querySelectorAll("[data-doctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.doctab===docTab));safe("Dados bancários",renderBanks);const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
+function renderDocs(){safe("Palavras-passe",renderPwds);const sec=document.getElementById("tab-docs");if(sec)sec.dataset.dt=docTab;document.querySelectorAll("[data-doctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.doctab===docTab));safe("Dados bancários",renderBanks);const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
   const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
   document.querySelectorAll("[data-docshow]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.docshow==="1")===docShow));
   const ord=t=>{const i=DOC_TYPES.indexOf(t);return i<0?DOC_TYPES.length-1:i};
@@ -7028,7 +7039,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v406";
+const APPV="casa-v407";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
