@@ -1631,6 +1631,9 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <button class="btn ghost" type="button" id="docPasteBtn" data-dt="doc">Colar lista de números</button>
     <div id="bankList" class="rlist" data-dt="bank"></div>
     <button class="btn ghost" type="button" id="addBank" data-dt="bank">+ Juntar conta (IBAN)</button>
+    <h2 style="margin:10px 0 0" data-dt="bank">🔐 Contratos (entrar no homebanking)</h2>
+    <div id="ctrList" class="rlist" data-dt="bank"></div>
+    <button class="btn ghost" type="button" id="addCtr" data-dt="bank">+ Juntar contrato</button>
     <p class="note" style="margin:0" data-dt="bank">IBAN e BIC para dares a quem te paga ou transfere; o contrato e a palavra-passe do homebanking. A palavra-passe fica <b>encriptada</b> com um código do cofre que só vocês sabem (não fica guardado em lado nenhum — se o esquecerem, não se recupera). Números de cartão, CVV e PIN não.</p>
     <form id="docPaste" class="bill-edit" hidden>
       <label class="f wide">Cola a lista<textarea id="docPasteTxt" rows="8" style="font:inherit;font-size:15px;border-radius:10px;border:0;background:var(--fill);padding:10px;color:var(--fg)" placeholder="Luís&#10;- NIF: 123 456 789&#10;- N.Utente: 123456789&#10;Bianca&#10;- NIF: …"></textarea></label>
@@ -2536,7 +2539,7 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;if(addToCart){addToCart=false;f.n.placeholder="＋ Juntar à lista (ex.: atum, pilhas…)"}})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
 const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",eventos:"Eventos",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
-const SR_KIND={bankd:"docs",evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
+const SR_KIND={bankd:"docs",bankc:"docs",evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
 const srNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 let srFrom="inicio";
 function srIndex(){const R=[];Object.entries(SR_TABS).forEach(([t,n])=>{if(document.getElementById("tab-"+t))R.push({t:n,s:"Abrir",ic:"📂",go:t})});
@@ -6023,7 +6026,7 @@ function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recf
   ${rec?`<button class="btn danger wide" type="button" data-recdel="${kind}|${rec.id}">Apagar</button>`:""}</form>`}
 const whoChips=(cur)=>`<div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-setwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setwho]");if(!b)return;const f=b.closest("form");if(f&&f.who)f.who.value=b.dataset.setwho});
-var editRec={car:"",doc:"",health:"",doctor:"",bankd:""};
+var editRec={car:"",doc:"",health:"",doctor:"",bankd:"",bankc:""};
 /* Documentos e números: tipos conhecidos (pela ordem em que aparecem) e nomes usados na lista colada */
 const DOC_TYPES=["Cartão de Cidadão","NIF","Segurança Social (NISS)","Nº de utente (SNS)","Seguro Medicare","Seguro AdvanceCare","Nº de utente SAMS","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Chave Móvel Digital","Sócio do Benfica","Autorização de residência","Outro"];
 const DOC_ALIAS=[[/^c\.?\s?c\.?$|cart[aã]o de cidad/i,"Cartão de Cidadão"],[/^nif$|contribuinte/i,"NIF"],[/niss|seguran[cç]a social/i,"Segurança Social (NISS)"],[/sams/i,"Nº de utente SAMS"],
@@ -6045,7 +6048,8 @@ const RECS={
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revUlt","Última revisão: data","date"],["revUltKm","Última revisão: km","number",0,"ex.: 134010"],["revIntKm","Revisão a cada (km)","number",0,"25000"],["revIntAnos","…ou a cada (anos)","number",0,"1"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
-  bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["contrato","Nº de contrato / utilizador do homebanking","text",1,"ex.: 12345678"],["pw","Palavra-passe (fica encriptada com o código do cofre)","password",1,"deixa vazio para manter a que está"],["notes","Notas","text",1,"opcional"]]},
+  bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["notes","Notas","text",1,"opcional"]]},
+  bankc:{list:"ctrList",add:"addCtr",render:()=>renderBanks(),fields:[["name","Banco","text",1,"ex.: CGD"],["who","Titular","text",1,"ex.: Luís"],["contrato","Nº de contrato / utilizador","text",1,"ex.: 12345678"],["pw","Palavra-passe (fica encriptada com o código do cofre)","password",1,"deixa vazio para manter a que está"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
 const recsOf=k=>bills.filter(b=>b.kind===k);
 function recFormFor(k,rec){const F=RECS[k];return recForm(k,rec,F.fields.filter(f=>f[0]!=="who"||true).map(f=>f),(k==="doc"||k==="health")&&rec&&rec.id&&bills.some(b=>b.id===rec.id)?attBlock(rec):"").replace(/(<label class="f wide">(?:De quem|Para quem)<input[^>]*><\/label>)/,"$1"+whoChips())}
@@ -6081,7 +6085,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
       events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
-  if(k==="bankd"){const pw=x.pw;delete x.pw;if(pw){editRec[k]="";vaultEnc(pw).then(c=>{if(!c){toast("A palavra-passe não foi guardada");putBill(x);F.render();return}x.pwc=c;putBill(x);F.render();toast("Guardado · palavra-passe encriptada 🔒")});return}}
+  if(k==="bankc"){const pw=x.pw;delete x.pw;if(pw){editRec[k]="";vaultEnc(pw).then(c=>{if(!c){toast("A palavra-passe não foi guardada");putBill(x);F.render();return}x.pwc=c;putBill(x);F.render();toast("Guardado · palavra-passe encriptada 🔒")});return}}
   editRec[k]="";putBill(x);F.render();toast("Guardado")});
 /* Logótipo da marca (Simple Icons, carregado da internet): pela marca escrita no nome do carro */
 const CARBRANDS=[[/mercedes|benz/,"mercedes"],[/\bbmw\b/,"bmw"],[/\baudi\b/,"audi"],[/volkswagen|\bvw\b/,"volkswagen"],[/renault/,"renault"],[/peugeot/,"peugeot"],[/citroen/,"citroen"],
@@ -6139,12 +6143,16 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-vaul
   const close=()=>{o.remove()};setTimeout(close,30000);
   o.addEventListener("click",ev=>{const q=ev.target.closest("[data-vs]");if(ev.target!==o&&!q)return;if(q&&q.dataset.vs==="copy"){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Copiada")).catch(()=>{});return}close()});document.body.appendChild(o)});
 /* Pedido (23/11): dados bancários (IBAN, BIC, titular) — kind:"bankd"; IBAN mostrado em grupos de 4, com Copiar */
+let bankMigOn=false;
 const ibanFmt=t=>String(t||"").replace(/\s+/g,"").toUpperCase().replace(/(.{4})/g,"$1 ").trim();
 function renderBanks(){const el=document.getElementById("bankList");if(!el)return;const L=recsOf("bankd").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt"));
   el.innerHTML=(L.length?`<div class="rcard">${L.map(d=>d.id===editRec.bankd?recFormFor("bankd",d):`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg)">${esc(ibanFmt(d.iban))}</span>${d.bic||d.notes?`<span class="rm" style="display:block">${[d.bic?"BIC "+esc(d.bic):"",d.notes?esc(d.notes):""].filter(Boolean).join(" · ")}</span>`:""}</button>
     <span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${d.iban?`<button type="button" class="bump" data-copyiban="${d.id}">Copiar IBAN</button>`:""}</span></div>`).join("")}</div>`:"")+(editRec.bankd==="new"?recFormFor("bankd",null):"")||`<div class="rcard"><div class="rempty">Junta o IBAN das vossas contas para o teres à mão.</div></div>`;
-  /* Pedido (23/11): os contratos (para entrar no homebanking) numa lista à parte, por baixo dos IBAN */
-  const C=L.filter(d=>d.contrato||d.pwc);el.innerHTML+=`<h2 style="margin:14px 0 6px">🔐 Contratos (entrar no homebanking)</h2>`+(C.length?`<div class="rcard">${C.map(d=>`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:700">${esc(d.contrato)}</span></button><span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><button type="button" class="bump" data-copyctr="${d.id}">Copiar</button>${d.pwc?`<button type="button" class="bump" data-vaultshow="${d.id}">🔒 Ver pass</button>`:""}</span></div>`).join("")}</div>`:`<div class="rcard"><div class="rempty">Toca numa conta acima e escreve o “Nº de contrato / utilizador”. Aparece aqui.</div></div>`);
+  /* Pedido (23/11): contratos à parte dos IBAN (kind "bankc"), com o seu próprio "+ Juntar contrato"; os que estavam dentro de uma conta passam para aqui */
+  if(!bankMigOn){const M=recsOf("bankd").filter(d=>d.contrato||d.pwc);if(M.length){bankMigOn=true;setTimeout(()=>{M.forEach(d=>{const n={...d};delete n.contrato;delete n.pwc;putBill(n);putBill({id:uid(),kind:"bankc",name:d.name,...(d.who?{who:d.who}:{}),...(d.contrato?{contrato:d.contrato}:{}),...(d.pwc?{pwc:d.pwc}:{})})});bankMigOn=false;renderBanks()},0)}}
+  const C=recsOf("bankc").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt")), ce=document.getElementById("ctrList");
+  if(ce)ce.innerHTML=(C.length?`<div class="rcard">${C.map(d=>d.id===editRec.bankc?recFormFor("bankc",d):`<div class="rrow"><button type="button" data-recedit="bankc|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Banco")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:700">${esc(d.contrato||"")}</span></button><span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${d.contrato?`<button type="button" class="bump" data-copyctr="${d.id}">Copiar</button>`:""}${d.pwc?`<button type="button" class="bump" data-vaultshow="${d.id}">🔒 Ver pass</button>`:""}</span></div>`).join("")}</div>`:"")+(editRec.bankc==="new"?recFormFor("bankc",null):"")||`<div class="rcard"><div class="rempty">Junta o nº de contrato de cada banco (e, se quiseres, a palavra-passe encriptada).</div></div>`;
+  const ac=document.getElementById("addCtr");if(ac)ac.hidden=editRec.bankc==="new";
   document.getElementById("addBank").hidden=editRec.bankd==="new"}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-copyctr]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copyctr);if(!d)return;
   (navigator.clipboard?navigator.clipboard.writeText(String(d.contrato)):Promise.reject()).then(()=>toast("Nº de contrato copiado")).catch(()=>{prompt("Copia o contrato:",d.contrato)})});
@@ -7017,7 +7025,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v404";
+const APPV="casa-v405";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
