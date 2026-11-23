@@ -1622,17 +1622,21 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
   <section id="tab-docs" class="group" style="gap:16px" hidden>
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Documentos</span><span></span></nav>
     <h1 class="large">Documentos</h1>
-    <div class="seg" role="group" aria-label="Números" id="docShowSeg" style="align-self:flex-start"><button type="button" data-docshow="0">Escondidos</button><button type="button" data-docshow="1">Mostrar números</button></div>
+    <div id="docShowSeg" hidden></div>
     <div id="docList" class="rlist"></div>
     <button class="btn ghost" type="button" id="addDoc">+ Juntar documento</button>
     <div id="docNew"></div>
     <button class="btn ghost" type="button" id="docPasteBtn">Colar lista de números</button>
+    <h2 style="margin:8px 0 0">🏦 Dados bancários</h2>
+    <div id="bankList" class="rlist"></div>
+    <button class="btn ghost" type="button" id="addBank">+ Juntar conta (IBAN)</button>
+    <p class="note" style="margin:0">IBAN e BIC para dares a quem te paga ou transfere. Por segurança, nunca guardes aqui números de cartão, códigos (CVV), PIN nem palavras-passe do homebanking.</p>
     <form id="docPaste" class="bill-edit" hidden>
       <label class="f wide">Cola a lista<textarea id="docPasteTxt" rows="8" style="font:inherit;font-size:15px;border-radius:10px;border:0;background:var(--fill);padding:10px;color:var(--fg)" placeholder="Luís&#10;- NIF: 123 456 789&#10;- N.Utente: 123456789&#10;Bianca&#10;- NIF: …"></textarea></label>
       <p class="note wide" id="docPasteMsg" style="margin:0">Uma linha com o nome da pessoa e depois uma linha por número (“NIF: …”). Se já existir, o número é atualizado.</p>
       <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" id="docPasteCancel">Cancelar</button>
     </form>
-    <p class="note" style="margin:0">Os números ficam só na vossa casa no Firebase e aparecem escondidos: toca em “Mostrar números” para os ver. Recebes uma notificação 90, 30 e 7 dias antes de um documento com validade terminar.</p>
+    <p class="note" style="margin:0">Os números ficam só na vossa casa (Firebase), não no código da app. Recebes uma notificação 90, 30 e 7 dias antes de um documento com validade terminar.</p>
   </section>
 
   <section id="tab-saude" class="group" style="gap:16px" hidden>
@@ -2531,7 +2535,7 @@ function guessCat(n){n=String(n||"");const q=[...QUICK,...MQUICK].find(([x])=>x.
     f.n.value="";delete f.s.dataset.touched;x.hidden=true;if(addToCart){addToCart=false;f.n.placeholder="＋ Juntar à lista (ex.: atum, pilhas…)"}})}
 /* ---------- Lupa: procura em toda a app (produtos, contas, aniversários, agenda, medicamentos, carro, casa…) ---------- */
 const SR_TABS={inicio:"Início",despensa:"Em casa",lista:"Compras",comer:"O que comer",plano:"Plano",despesas:"Contas",calendario:"Agenda",meds:"Medicamentos",anos:"Aniversários",escola:"Escola",viagens:"Viagens",eventos:"Eventos",casa:"Casa",carro:"Carro",docs:"Documentos",saude:"Saúde",creditos:"Créditos",cartoes:"Cartões",poupancas:"Poupanças",graficos:"Gráficos",chat:"Mensagens",definicoes:"Definições",videos:"Vídeos",jogos:"Jogos"};
-const SR_KIND={evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
+const SR_KIND={bankd:"docs",evento:"eventos",med:"meds",bday:"anos",card:"cartoes",hold:"poupancas",saving:"poupancas",loan:"creditos",car:"carro",carlog:"carro",iuc:"carro",seguro:"carro",revisao:"carro",inspecao:"carro",home:"casa",hins:"casa",trip:"viagens",esc:"escola",doc:"docs",health:"saude",recipe:"comer",video:"videos",msg:"chat",account:"despesas",income:"despesas",budget:"despesas"};
 const srNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 let srFrom="inicio";
 function srIndex(){const R=[];Object.entries(SR_TABS).forEach(([t,n])=>{if(document.getElementById("tab-"+t))R.push({t:n,s:"Abrir",ic:"📂",go:t})});
@@ -6013,7 +6017,7 @@ function recForm(kind,rec,fields,extra){return`<form class="bill-edit" data-recf
   ${rec?`<button class="btn danger wide" type="button" data-recdel="${kind}|${rec.id}">Apagar</button>`:""}</form>`}
 const whoChips=(cur)=>`<div class="chips wide">${PEOPLE.map(p=>`<button type="button" class="chip" data-setwho="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
 document.addEventListener("click",e=>{const b=e.target.closest("[data-setwho]");if(!b)return;const f=b.closest("form");if(f&&f.who)f.who.value=b.dataset.setwho});
-var editRec={car:"",doc:"",health:"",doctor:""};
+var editRec={car:"",doc:"",health:"",doctor:"",bankd:""};
 /* Documentos e números: tipos conhecidos (pela ordem em que aparecem) e nomes usados na lista colada */
 const DOC_TYPES=["Cartão de Cidadão","NIF","Segurança Social (NISS)","Nº de utente (SNS)","Seguro Medicare","Seguro AdvanceCare","Nº de utente SAMS","Passaporte","Carta de condução","Cartão Europeu de Seguro de Doença","Chave Móvel Digital","Sócio do Benfica","Autorização de residência","Outro"];
 const DOC_ALIAS=[[/^c\.?\s?c\.?$|cart[aã]o de cidad/i,"Cartão de Cidadão"],[/^nif$|contribuinte/i,"NIF"],[/niss|seguran[cç]a social/i,"Segurança Social (NISS)"],[/sams/i,"Nº de utente SAMS"],
@@ -6029,12 +6033,13 @@ function parseDocs(txt){let who="";const L=[];
     if(!m){who=docWho(line.replace(/:$/,""));continue}
     if(!who||!m[2].trim())continue;L.push({who,type:docType(m[1]),num:m[2].trim()})}
   return L}
-let docShow=false;
+let docShow=true; /* Pedido (23/11): números dos documentos sempre visíveis */
 const RECS={
   car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome (com a marca, ex.: Mercedes CLA)","text",1,"ex.: Mercedes CLA"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revUlt","Última revisão: data","date"],["revUltKm","Última revisão: km","number",0,"ex.: 134010"],["revIntKm","Revisão a cada (km)","number",0,"25000"],["revIntAnos","…ou a cada (anos)","number",0,"1"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
+  bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["notes","Notas","text",1,"opcional"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
 const recsOf=k=>bills.filter(b=>b.kind===k);
 function recFormFor(k,rec){const F=RECS[k];return recForm(k,rec,F.fields.filter(f=>f[0]!=="who"||true).map(f=>f),(k==="doc"||k==="health")&&rec&&rec.id&&bills.some(b=>b.id===rec.id)?attBlock(rec):"").replace(/(<label class="f wide">(?:De quem|Para quem)<input[^>]*><\/label>)/,"$1"+whoChips())}
@@ -6065,6 +6070,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
     if(v===""||v===null||(typeof v==="number"&&isNaN(v)))delete x[n];else x[n]=v}
   if(k==="car"&&x.km!=null&&(!old||old.km!==x.km))x.kmAt=Date.now();
   if(k==="car")carRevCalc(x);
+  if(k==="bankd"&&x.iban){x.iban=String(x.iban).replace(/\s+/g,"").toUpperCase();if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(x.iban))setTimeout(()=>toast("Confirma o IBAN: parece ter um erro"),600)}
   if(k==="doc")x.name=`${x.type} (${x.who})`;if(k==="health")x.name=`${x.who}: ${x.title||x.type}`;
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
@@ -6096,7 +6102,15 @@ function renderCars(){const el=document.getElementById("carList");if(!el)return;
     ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${revRow(c)}
     ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}${carLogBlock(c)}${attBlock(c)}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
   document.getElementById("addCar").hidden=editRec.car==="new"}
-function renderDocs(){const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
+/* Pedido (23/11): dados bancários (IBAN, BIC, titular) — kind:"bankd"; IBAN mostrado em grupos de 4, com Copiar */
+const ibanFmt=t=>String(t||"").replace(/\s+/g,"").toUpperCase().replace(/(.{4})/g,"$1 ").trim();
+function renderBanks(){const el=document.getElementById("bankList");if(!el)return;const L=recsOf("bankd").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt"));
+  el.innerHTML=(L.length?`<div class="rcard">${L.map(d=>d.id===editRec.bankd?recFormFor("bankd",d):`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg)">${esc(ibanFmt(d.iban))}</span>${d.bic||d.notes?`<span class="rm" style="display:block">${[d.bic?"BIC "+esc(d.bic):"",d.notes?esc(d.notes):""].filter(Boolean).join(" · ")}</span>`:""}</button>
+    <span class="rs">${d.iban?`<button type="button" class="bump" data-copyiban="${d.id}">Copiar</button>`:""}</span></div>`).join("")}</div>`:"")+(editRec.bankd==="new"?recFormFor("bankd",null):"")||`<div class="rcard"><div class="rempty">Junta o IBAN das vossas contas para o teres à mão.</div></div>`;
+  document.getElementById("addBank").hidden=editRec.bankd==="new"}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copyiban]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copyiban);if(!d)return;const t=String(d.iban).replace(/\s+/g,"").toUpperCase();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("IBAN copiado")).catch(()=>{prompt("Copia o IBAN:",t)})});
+function renderDocs(){safe("Dados bancários",renderBanks);const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
   const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
   document.querySelectorAll("[data-docshow]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.docshow==="1")===docShow));
   const ord=t=>{const i=DOC_TYPES.indexOf(t);return i<0?DOC_TYPES.length-1:i};
@@ -6960,7 +6974,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v398";
+const APPV="casa-v399";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
