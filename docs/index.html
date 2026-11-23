@@ -309,6 +309,7 @@ form.addbill{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-i
 .rdovl{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .rdsheet{width:100%;max-width:520px;background:var(--surface);color:var(--fg);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
 .rdh{font-size:19px;font-weight:700}.rdm{color:var(--muted);margin-bottom:4px}
+#tab-docs[data-dt="doc"] [data-dt="bank"],#tab-docs[data-dt="bank"] [data-dt="doc"]{display:none!important}
 #tab-despesas[data-ct="mes"] [data-ctp]:not([data-ctp~="mes"]),#tab-despesas[data-ct="pagar"] [data-ctp]:not([data-ctp~="pagar"]),#tab-despesas[data-ct="receitas"] [data-ctp]:not([data-ctp~="receitas"]),#tab-despesas[data-ct="gastos"] [data-ctp]:not([data-ctp~="gastos"]),#tab-despesas[data-ct="cartao"] [data-ctp]:not([data-ctp~="cartao"]){display:none!important}
 .chero{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .chero .tot{background:none!important;border:0!important;padding:0!important;box-shadow:none!important}
@@ -1623,20 +1624,20 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <nav class="navbar"><button class="navback" type="button" data-go="inicio"><svg viewBox="0 0 12 21" aria-hidden="true"><path d="M10.5 1.5 1.5 10.5l9 9"/></svg>Início</button><span class="navtitle" aria-hidden="true">Documentos</span><span></span></nav>
     <h1 class="large">Documentos</h1>
     <div id="docShowSeg" hidden></div>
-    <div id="docList" class="rlist"></div>
-    <button class="btn ghost" type="button" id="addDoc">+ Juntar documento</button>
-    <div id="docNew"></div>
-    <button class="btn ghost" type="button" id="docPasteBtn">Colar lista de números</button>
-    <h2 style="margin:8px 0 0">🏦 Dados bancários</h2>
-    <div id="bankList" class="rlist"></div>
-    <button class="btn ghost" type="button" id="addBank">+ Juntar conta (IBAN)</button>
-    <p class="note" style="margin:0">IBAN e BIC para dares a quem te paga ou transfere, e o nº de contrato (utilizador) para entrar no homebanking. Por segurança, nunca guardes aqui a palavra-passe ou código de acesso, números de cartão, CVV nem PIN.</p>
+    <div class="seg" role="group" aria-label="Ver" id="docTabs" style="align-self:flex-start"><button type="button" data-doctab="doc" aria-pressed="true">🪪 Documentos</button><button type="button" data-doctab="bank" aria-pressed="false">🏦 Dados bancários</button></div>
+    <div id="docList" class="rlist" data-dt="doc"></div>
+    <button class="btn ghost" type="button" id="addDoc" data-dt="doc">+ Juntar documento</button>
+    <div id="docNew" data-dt="doc"></div>
+    <button class="btn ghost" type="button" id="docPasteBtn" data-dt="doc">Colar lista de números</button>
+    <div id="bankList" class="rlist" data-dt="bank"></div>
+    <button class="btn ghost" type="button" id="addBank" data-dt="bank">+ Juntar conta (IBAN)</button>
+    <p class="note" style="margin:0" data-dt="bank">IBAN e BIC para dares a quem te paga ou transfere, e o nº de contrato (utilizador) para entrar no homebanking. Por segurança, nunca guardes aqui a palavra-passe ou código de acesso, números de cartão, CVV nem PIN.</p>
     <form id="docPaste" class="bill-edit" hidden>
       <label class="f wide">Cola a lista<textarea id="docPasteTxt" rows="8" style="font:inherit;font-size:15px;border-radius:10px;border:0;background:var(--fill);padding:10px;color:var(--fg)" placeholder="Luís&#10;- NIF: 123 456 789&#10;- N.Utente: 123456789&#10;Bianca&#10;- NIF: …"></textarea></label>
       <p class="note wide" id="docPasteMsg" style="margin:0">Uma linha com o nome da pessoa e depois uma linha por número (“NIF: …”). Se já existir, o número é atualizado.</p>
       <button class="btn" type="submit">Juntar</button><button class="btn ghost" type="button" id="docPasteCancel">Cancelar</button>
     </form>
-    <p class="note" style="margin:0">Os números ficam só na vossa casa (Firebase), não no código da app. Recebes uma notificação 90, 30 e 7 dias antes de um documento com validade terminar.</p>
+    <p class="note" style="margin:0" data-dt="doc">Os números ficam só na vossa casa (Firebase), não no código da app. Recebes uma notificação 90, 30 e 7 dias antes de um documento com validade terminar.</p>
   </section>
 
   <section id="tab-saude" class="group" style="gap:16px" hidden>
@@ -6117,7 +6118,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-copyctr]")
   (navigator.clipboard?navigator.clipboard.writeText(String(d.contrato)):Promise.reject()).then(()=>toast("Nº de contrato copiado")).catch(()=>{prompt("Copia o contrato:",d.contrato)})});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-copyiban]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copyiban);if(!d)return;const t=String(d.iban).replace(/\s+/g,"").toUpperCase();
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("IBAN copiado")).catch(()=>{prompt("Copia o IBAN:",t)})});
-function renderDocs(){safe("Dados bancários",renderBanks);const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
+/* Pedido (23/11): separadores no topo — Documentos / Dados bancários (lembra o último) */
+let docTab=(()=>{try{return localStorage.getItem("casa-doctab")||"doc"}catch(e){return"doc"}})();
+document.addEventListener("click",e=>{const b=e.target.closest("[data-doctab]");if(!b)return;docTab=b.dataset.doctab;try{localStorage.setItem("casa-doctab",docTab)}catch(err){}renderDocs()});
+function renderDocs(){const sec=document.getElementById("tab-docs");if(sec)sec.dataset.dt=docTab;document.querySelectorAll("[data-doctab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.doctab===docTab));safe("Dados bancários",renderBanks);const el=document.getElementById("docList");if(!el)return;const L=recsOf("doc");
   const whos=[...new Set([...PEOPLE.filter(p=>L.some(d=>d.who===p)),...L.map(d=>d.who)])];
   document.querySelectorAll("[data-docshow]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.docshow==="1")===docShow));
   const ord=t=>{const i=DOC_TYPES.indexOf(t);return i<0?DOC_TYPES.length-1:i};
@@ -6981,7 +6985,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v401";
+const APPV="casa-v402";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
