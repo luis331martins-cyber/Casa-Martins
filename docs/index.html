@@ -1631,7 +1631,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <button class="btn ghost" type="button" id="docPasteBtn" data-dt="doc">Colar lista de números</button>
     <div id="bankList" class="rlist" data-dt="bank"></div>
     <button class="btn ghost" type="button" id="addBank" data-dt="bank">+ Juntar conta (IBAN)</button>
-    <p class="note" style="margin:0" data-dt="bank">IBAN e BIC para dares a quem te paga ou transfere, e o nº de contrato (utilizador) para entrar no homebanking. Por segurança, nunca guardes aqui a palavra-passe ou código de acesso, números de cartão, CVV nem PIN.</p>
+    <p class="note" style="margin:0" data-dt="bank">IBAN e BIC para dares a quem te paga ou transfere; o contrato e a palavra-passe do homebanking. A palavra-passe fica <b>encriptada</b> com um código do cofre que só vocês sabem (não fica guardado em lado nenhum — se o esquecerem, não se recupera). Números de cartão, CVV e PIN não.</p>
     <form id="docPaste" class="bill-edit" hidden>
       <label class="f wide">Cola a lista<textarea id="docPasteTxt" rows="8" style="font:inherit;font-size:15px;border-radius:10px;border:0;background:var(--fill);padding:10px;color:var(--fg)" placeholder="Luís&#10;- NIF: 123 456 789&#10;- N.Utente: 123456789&#10;Bianca&#10;- NIF: …"></textarea></label>
       <p class="note wide" id="docPasteMsg" style="margin:0">Uma linha com o nome da pessoa e depois uma linha por número (“NIF: …”). Se já existir, o número é atualizado.</p>
@@ -6045,7 +6045,7 @@ const RECS={
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revUlt","Última revisão: data","date"],["revUltKm","Última revisão: km","number",0,"ex.: 134010"],["revIntKm","Revisão a cada (km)","number",0,"25000"],["revIntAnos","…ou a cada (anos)","number",0,"1"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
   doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
-  bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["contrato","Nº de contrato / utilizador do homebanking","text",1,"ex.: 12345678 (só o número, nunca a palavra-passe)"],["notes","Notas","text",1,"opcional"]]},
+  bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["contrato","Nº de contrato / utilizador do homebanking","text",1,"ex.: 12345678"],["pw","Palavra-passe (fica encriptada com o código do cofre)","password",1,"deixa vazio para manter a que está"],["notes","Notas","text",1,"opcional"]]},
   doctor:{list:"hDocs",add:"addDoctor",render:()=>renderHealth(),fields:[["name","Nome","text",1,"ex.: Dra. Ana Silva"],["spec","Especialidade","text",0,"ex.: Pediatra"],["who","De quem","text",0,"ex.: Maria"],["phone","Telefone","tel",1,"ex.: 912 345 678"],["place","Local","text",1,"ex.: Clínica de Lisboa"]]}};
 const recsOf=k=>bills.filter(b=>b.kind===k);
 function recFormFor(k,rec){const F=RECS[k];return recForm(k,rec,F.fields.filter(f=>f[0]!=="who"||true).map(f=>f),(k==="doc"||k==="health")&&rec&&rec.id&&bills.some(b=>b.id===rec.id)?attBlock(rec):"").replace(/(<label class="f wide">(?:De quem|Para quem)<input[^>]*><\/label>)/,"$1"+whoChips())}
@@ -6081,6 +6081,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
       events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
+  if(k==="bankd"){const pw=x.pw;delete x.pw;if(pw){editRec[k]="";vaultEnc(pw).then(c=>{if(!c){toast("A palavra-passe não foi guardada");putBill(x);F.render();return}x.pwc=c;putBill(x);F.render();toast("Guardado · palavra-passe encriptada 🔒")});return}}
   editRec[k]="";putBill(x);F.render();toast("Guardado")});
 /* Logótipo da marca (Simple Icons, carregado da internet): pela marca escrita no nome do carro */
 const CARBRANDS=[[/mercedes|benz/,"mercedes"],[/\bbmw\b/,"bmw"],[/\baudi\b/,"audi"],[/volkswagen|\bvw\b/,"volkswagen"],[/renault/,"renault"],[/peugeot/,"peugeot"],[/citroen/,"citroen"],
@@ -6108,13 +6109,42 @@ function renderCars(){const el=document.getElementById("carList");if(!el)return;
     ${row(c,"seguro","Seguro",c.seguroVal?eur(c.seguroVal):"")}${row(c,"inspecao","Inspeção")}${row(c,"iuc","IUC")}${revRow(c)}
     ${c.notes?`<div class="rrow"><span class="rm">${esc(c.notes)}</span></div>`:""}${carLogBlock(c)}${attBlock(c)}</div>`).join("")+(editRec.car==="new"?recFormFor("car",null):"")||`<div class="rcard"><div class="rempty">Ainda não há carros. Junta o carro com as datas do seguro, inspeção, IUC e revisão.</div></div>`;
   document.getElementById("addCar").hidden=editRec.car==="new"}
+/* Pedido (23/11): cofre — a palavra-passe do homebanking guarda-se encriptada (AES-GCM, chave tirada do código do cofre com PBKDF2).
+   O código nunca é guardado: sem ele ninguém lê a palavra-passe (nem na base de dados). Doc "vault" guarda só uma prova para confirmar o código. */
+const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a))), ub64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+async function vKey(code,salt){const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function vEnc(code,txt,salt){const iv=crypto.getRandomValues(new Uint8Array(12)), k=await vKey(code,salt);return{iv:b64(iv),ct:b64(await crypto.subtle.encrypt({name:"AES-GCM",iv},k,new TextEncoder().encode(txt)))}}
+async function vDec(code,o,salt){const k=await vKey(code,salt);return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:ub64(o.iv)},k,ub64(o.ct)))}
+let vCode="", vCodeT=0;
+function askCode(title,msg,twice){return new Promise(res=>{const o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">🔒 ${esc(title)}</div><div class="rdm">${msg}</div>
+    <input id="vc1" type="password" autocomplete="off" placeholder="Código do cofre" style="font:inherit;font-size:18px;padding:12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg)">
+    ${twice?`<input id="vc2" type="password" autocomplete="off" placeholder="Repete o código" style="font:inherit;font-size:18px;padding:12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg)">`:""}
+    <button type="button" class="btn" data-vc="ok">Continuar</button><button type="button" class="btn ghost" data-vc="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-vc]");if(ev.target!==o&&!q)return;if(!q||q.dataset.vc==="x"){o.remove();res("");return}
+    const a=o.querySelector("#vc1").value, b=twice?o.querySelector("#vc2").value:a;if(a.length<6){toast("O código tem de ter pelo menos 6 caracteres");return}if(a!==b){toast("Os códigos não são iguais");return}o.remove();res(a)});
+  document.body.appendChild(o);setTimeout(()=>o.querySelector("#vc1").focus(),50)})}
+async function vaultCode(){if(vCode&&Date.now()-vCodeT<5*60e3)return vCode;const V=bills.find(b=>b.id==="vault");
+  if(!V){const c=await askCode("Criar o código do cofre","Escolhe um código (6 ou mais caracteres) só teu e da Bianca. <b>Não fica guardado em lado nenhum</b>: se o esqueceres, as palavras-passe não se recuperam.",true);if(!c)return"";
+    const salt=crypto.getRandomValues(new Uint8Array(16)), pr=await vEnc(c,"casa-ok",salt);putBill({id:"vault",kind:"vault",salt:b64(salt),...pr});vCode=c;vCodeT=Date.now();return c}
+  const c=await askCode("Código do cofre","Escreve o código do cofre para continuar.");if(!c)return"";
+  try{if(await vDec(c,V,ub64(V.salt))!=="casa-ok")throw 0}catch(e){toast("Código errado");return""}vCode=c;vCodeT=Date.now();return c}
+async function vaultEnc(txt){const c=await vaultCode();if(!c)return null;const V=bills.find(b=>b.id==="vault");return vEnc(c,txt,ub64(V.salt))}
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-vaultshow]");if(!b)return;e.preventDefault();const d=bills.find(x=>x.id===b.dataset.vaultshow);if(!d||!d.pwc)return;
+  const c=await vaultCode();if(!c)return;const V=bills.find(x=>x.id==="vault");let t="";try{t=await vDec(c,d.pwc,ub64(V.salt))}catch(err){toast("Não foi possível abrir");return}
+  const o=document.createElement("div");o.className="rdovl";o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">🔒 ${esc(d.name||"Conta")}</div><div class="rdm">Fecha sozinho em 30 segundos.</div>
+    <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;word-break:break-all;background:var(--fill);border-radius:12px;padding:12px">${esc(t)}</div>
+    <button type="button" class="btn" data-vs="copy">Copiar</button><button type="button" class="btn ghost" data-vs="x">Fechar</button></div>`;
+  const close=()=>{o.remove()};setTimeout(close,30000);
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-vs]");if(ev.target!==o&&!q)return;if(q&&q.dataset.vs==="copy"){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Copiada")).catch(()=>{});return}close()});document.body.appendChild(o)});
 /* Pedido (23/11): dados bancários (IBAN, BIC, titular) — kind:"bankd"; IBAN mostrado em grupos de 4, com Copiar */
 const ibanFmt=t=>String(t||"").replace(/\s+/g,"").toUpperCase().replace(/(.{4})/g,"$1 ").trim();
 function renderBanks(){const el=document.getElementById("bankList");if(!el)return;const L=recsOf("bankd").sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt"));
   el.innerHTML=(L.length?`<div class="rcard">${L.map(d=>d.id===editRec.bankd?recFormFor("bankd",d):`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg)">${esc(ibanFmt(d.iban))}</span>${d.bic||d.notes?`<span class="rm" style="display:block">${[d.bic?"BIC "+esc(d.bic):"",d.notes?esc(d.notes):""].filter(Boolean).join(" · ")}</span>`:""}</button>
     <span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${d.iban?`<button type="button" class="bump" data-copyiban="${d.id}">Copiar IBAN</button>`:""}</span></div>`).join("")}</div>`:"")+(editRec.bankd==="new"?recFormFor("bankd",null):"")||`<div class="rcard"><div class="rempty">Junta o IBAN das vossas contas para o teres à mão.</div></div>`;
   /* Pedido (23/11): os contratos (para entrar no homebanking) numa lista à parte, por baixo dos IBAN */
-  const C=L.filter(d=>d.contrato);el.innerHTML+=`<h2 style="margin:14px 0 6px">🔐 Contratos (entrar no homebanking)</h2>`+(C.length?`<div class="rcard">${C.map(d=>`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:700">${esc(d.contrato)}</span></button><span class="rs"><button type="button" class="bump" data-copyctr="${d.id}">Copiar</button></span></div>`).join("")}</div>`:`<div class="rcard"><div class="rempty">Toca numa conta acima e escreve o “Nº de contrato / utilizador”. Aparece aqui.</div></div>`);
+  const C=L.filter(d=>d.contrato||d.pwc);el.innerHTML+=`<h2 style="margin:14px 0 6px">🔐 Contratos (entrar no homebanking)</h2>`+(C.length?`<div class="rcard">${C.map(d=>`<div class="rrow"><button type="button" data-recedit="bankd|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.name||"Conta")}${d.who?` · ${esc(d.who)}`:""}</span><span class="rm" style="display:block;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:700">${esc(d.contrato)}</span></button><span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><button type="button" class="bump" data-copyctr="${d.id}">Copiar</button>${d.pwc?`<button type="button" class="bump" data-vaultshow="${d.id}">🔒 Ver pass</button>`:""}</span></div>`).join("")}</div>`:`<div class="rcard"><div class="rempty">Toca numa conta acima e escreve o “Nº de contrato / utilizador”. Aparece aqui.</div></div>`);
   document.getElementById("addBank").hidden=editRec.bankd==="new"}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-copyctr]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copyctr);if(!d)return;
   (navigator.clipboard?navigator.clipboard.writeText(String(d.contrato)):Promise.reject()).then(()=>toast("Nº de contrato copiado")).catch(()=>{prompt("Copia o contrato:",d.contrato)})});
@@ -6987,7 +7017,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v403";
+const APPV="casa-v404";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
