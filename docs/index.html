@@ -124,6 +124,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:10px}
 .mcat{margin-top:8px}.mcat .b2cat{font-size:12px;padding:4px 8px}.mcat .b2cat+.mrow{border-top:0}.lowbox .mput{background:#ff3b30}
 .sadd{display:flex;flex-direction:column;gap:8px}.sadd>input{width:100%;padding:13px 14px;border-radius:14px;border:1.5px dashed var(--accent);background:var(--surface);font-size:16px;color:var(--fg)}
 .saddx{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}.saddx select,.saddx input{min-width:0;padding:10px;border-radius:10px;border:0;background:var(--surface);color:var(--fg);font-size:15px}
+.navbar>span:last-child{display:flex;gap:6px;justify-content:flex-end}.lupa.aib{font-size:19px;margin-left:auto}.lupa.aib+.lupa{margin-left:0}
 .lupa{width:40px;height:40px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);margin-left:auto;color:var(--accent)}.lupa svg,.srbar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 .navbar>span:last-child{display:flex;justify-content:flex-end}
 #srch{position:fixed;inset:0;z-index:300;background:color-mix(in srgb,var(--bg,#f2f2f7) 96%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 14px 14px}
@@ -2557,8 +2558,19 @@ document.getElementById("srRes").addEventListener("click",e=>{const b=e.target.c
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElementById("srch").hidden)srClose()});
 /* a lupa vai para o canto direito de todas as barras de cima */
 document.querySelectorAll(".navbar").forEach(n=>{let sp=n.lastElementChild;if(!sp||sp.tagName!=="SPAN"||sp.classList.contains("navtitle")){sp=document.createElement("span");n.appendChild(sp)}
-  if(!sp.children.length&&!sp.textContent.trim())sp.innerHTML=`<button type="button" class="lupa" aria-label="Procurar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>`});
-document.addEventListener("click",e=>{if(e.target.closest(".lupa"))srOpen()});
+  if(!sp.children.length&&!sp.textContent.trim())sp.innerHTML=`<button type="button" class="lupa aib" aria-label="Perguntar à IA da Google">✨</button><button type="button" class="lupa" aria-label="Procurar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>`});
+document.addEventListener("click",e=>{if(e.target.closest(".lupa")&&!e.target.closest(".aib"))srOpen()});
+/* Pedido (23/11): ✨ perguntar à IA — abre o Modo IA da Google com a pergunta (na Saúde, a pergunta pode começar pela última nota) */
+function aiAsk(pre){const o=document.createElement("div");o.className="rdovl";
+  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">✨ Perguntar à IA</div><div class="rdm">Abre o Modo IA da Google com a tua pergunta. Não ponhas nomes nem dados pessoais.</div>
+    <textarea id="aiQ" rows="4" placeholder="ex.: Criança de 5 anos com dor de ouvido e 38 °C — quando devo ir ao médico?" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg);resize:vertical">${esc(pre||"")}</textarea>
+    <button type="button" class="btn" data-ai="go">✨ Perguntar</button><button type="button" class="btn ghost" data-ai="x">Cancelar</button></div>`;
+  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ai]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ai==="x"){o.remove();return}
+    const t=o.querySelector("#aiQ").value.trim();if(!t){toast("Escreve a pergunta");return}o.remove();window.open("https://www.google.com/search?udm=50&q="+encodeURIComponent(t),"_blank","noopener")});
+  document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#aiQ");i.focus();i.setSelectionRange(i.value.length,i.value.length)},50)}
+document.addEventListener("click",e=>{const b=e.target.closest(".aib");if(!b)return;e.preventDefault();e.stopPropagation();
+  let pre="";if(!document.getElementById("tab-saude").hidden){const n=bills.filter(x=>x.kind==="hnote").sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.at||0)-(a.at||0))[0];if(n)pre=`${n.text}${n.temp!=null?`, febre ${String(n.temp).replace(".",",")} °C`:""}. `}
+  aiAsk(pre)},true);
 /* Cor da conta: ao mexer no quadrado de cor, passa sozinho para "Outra cor" */
 document.addEventListener("input",e=>{if(e.target.name==="cc"&&e.target.closest("[data-accform]")){const f=e.target.form;f.c.value="custom"}});
 /* Categorias com os nomes dos corredores (pedido 01/11): Despensa → Mercearia, Frigorífico → Laticínios e frios, Fruta → Frutas e legumes */
@@ -6946,7 +6958,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v394";
+const APPV="casa-v395";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
