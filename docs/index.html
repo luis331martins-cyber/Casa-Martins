@@ -1213,7 +1213,7 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
     <header class="top hdr">
       <p id="today"></p>
       <div class="hicons"><button class="calfab" type="button" data-go="calendario" aria-label="Calendário"><span class="cal-wd" id="icoWd"></span><span class="cal-d" id="icoD"></span><span class="nbadge" id="calBadge" hidden></span></button>
-<button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c5 0 9 3.3 9 7.5s-4 7.5-9 7.5c-1 0-2-.1-2.9-.4-1.3 1-3 1.7-4.9 1.9.8-.8 1.4-1.8 1.6-2.9C3.9 15.8 3 13.6 3 11.1c0-4.2 4-7.5 9-7.5z"/></svg><b id="chatBadge" hidden></b></button><button class="aifab aib" type="button" aria-label="Perguntar ao Gemini">✨</button><button class="aifab srfab" type="button" aria-label="Procurar na app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button><button class="gear iosgear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><img src="icons/3d/gear.webp" alt="" draggable="false"><svg class="sfg" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.00 4.60 L13.50 2.52 L14.97 2.87 L15.36 5.41 L16.35 6.01 L18.79 5.21 L19.77 6.36 L18.59 8.64 L19.04 9.71 L21.48 10.50 L21.60 12.00 L19.31 13.16 L19.04 14.29 L20.55 16.36 L19.77 17.64 L17.23 17.23 L16.35 17.99 L16.36 20.55 L14.97 21.13 L13.16 19.31 L12.00 19.40 L10.50 21.48 L9.03 21.13 L8.64 18.59 L7.65 17.99 L5.21 18.79 L4.23 17.64 L5.41 15.36 L4.96 14.29 L2.52 13.50 L2.40 12.00 L4.69 10.84 L4.96 9.71 L3.45 7.64 L4.23 6.36 L6.77 6.77 L7.65 6.01 L7.64 3.45 L9.03 2.87 L10.84 4.69Z M12 8.2a3.8 3.8 0 1 0 0 7.6a3.8 3.8 0 1 0 0-7.6Z"/></svg></button></div>
+<button class="chatfab" type="button" id="chatFab" data-go="chat" aria-label="Mensagens" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c5 0 9 3.3 9 7.5s-4 7.5-9 7.5c-1 0-2-.1-2.9-.4-1.3 1-3 1.7-4.9 1.9.8-.8 1.4-1.8 1.6-2.9C3.9 15.8 3 13.6 3 11.1c0-4.2 4-7.5 9-7.5z"/></svg><b id="chatBadge" hidden></b></button><button class="aifab aib" type="button" aria-label="Perguntar à IA">✨</button><button class="aifab srfab" type="button" aria-label="Procurar na app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button><button class="gear iosgear" type="button" id="gear" data-go="definicoes" aria-label="Definições" hidden><img src="icons/3d/gear.webp" alt="" draggable="false"><svg class="sfg" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.00 4.60 L13.50 2.52 L14.97 2.87 L15.36 5.41 L16.35 6.01 L18.79 5.21 L19.77 6.36 L18.59 8.64 L19.04 9.71 L21.48 10.50 L21.60 12.00 L19.31 13.16 L19.04 14.29 L20.55 16.36 L19.77 17.64 L17.23 17.23 L16.35 17.99 L16.36 20.55 L14.97 21.13 L13.16 19.31 L12.00 19.40 L10.50 21.48 L9.03 21.13 L8.64 18.59 L7.65 17.99 L5.21 18.79 L4.23 17.64 L5.41 15.36 L4.96 14.29 L2.52 13.50 L2.40 12.00 L4.69 10.84 L4.96 9.71 L3.45 7.64 L4.23 6.36 L6.77 6.77 L7.65 6.01 L7.64 3.45 L9.03 2.87 L10.84 4.69Z M12 8.2a3.8 3.8 0 1 0 0 7.6a3.8 3.8 0 1 0 0-7.6Z"/></svg></button></div>
       <h1 id="hello">A nossa casa</h1>
       <div id="clock" aria-label="Hora"></div>
       <p class="sub" id="sub"></p>
@@ -2578,15 +2578,39 @@ document.querySelectorAll(".navbar").forEach(n=>{let sp=n.lastElementChild;if(!s
   if(!sp.children.length&&!sp.textContent.trim())sp.innerHTML=`<button type="button" class="lupa" aria-label="Procurar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>`});
 document.addEventListener("click",e=>{if((e.target.closest(".lupa")||e.target.closest(".srfab"))&&!e.target.closest(".aib"))srOpen()});
 /* Pedido (23/11): ✨ perguntar à IA — abre o Modo IA da Google com a pergunta (na Saúde, a pergunta pode começar pela última nota) */
-function aiAsk(pre){const o=document.createElement("div");o.className="rdovl";
-  o.innerHTML=`<div class="rdsheet" role="dialog"><div class="rdh">✨ Perguntar ao Gemini</div><div class="rdm">A pergunta é copiada e o Gemini abre: <b>toca na caixa e cola</b>. Para respostas mais pensadas, escolhe no Gemini o modelo mais avançado (ex.: “Pro” / “Pensar”). Não ponhas nomes nem dados pessoais.</div>
+/* Pedido (24/11): ✨ responde dentro da app com o Tavily (pesquisa na internet + resposta com fontes); a chave fica só neste telemóvel (não vai para o código).
+   Sem chave (ou se falhar), continua o Gemini (copiar e colar). */
+const tvKey=()=>{try{return localStorage.getItem("casa-tavily")||""}catch(e){return""}};
+async function tvAsk(q){const r=await fetch("https://api.tavily.com/search",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tvKey()},
+  body:JSON.stringify({query:q.slice(0,390),search_depth:"advanced",include_answer:"advanced",max_results:6})});
+  if(r.status===401||r.status===403)throw new Error("chave");if(r.status===429||r.status===432)throw new Error("limite");if(!r.ok)throw new Error("erro "+r.status);return r.json()}
+function aiAsk(pre){const o=document.createElement("div");o.className="rdovl";const hasK=!!tvKey();
+  o.innerHTML=`<div class="rdsheet" role="dialog" style="max-height:92vh;overflow:auto"><div class="rdh">✨ Perguntar à IA</div><div class="rdm">${hasK?"Responde aqui mesmo (pesquisa na internet, com as fontes).":"Liga o Tavily (em baixo) para a resposta aparecer aqui. Sem isso, abre o Gemini."} Não ponhas nomes nem dados pessoais.</div>
     <textarea id="aiQ" rows="4" placeholder="ex.: Criança de 5 anos com dor de ouvido e 38 °C — quando devo ir ao médico?" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg);resize:vertical">${esc(pre||"")}</textarea>
-    <label class="tick"><input type="checkbox" class="switch" id="aiDeep" checked> Pedir uma resposta completa e explicada</label>
-    <button type="button" class="btn" data-ai="go">✨ Copiar e abrir o Gemini</button><button type="button" class="btn ghost" data-ai="x">Cancelar</button></div>`;
-  o.addEventListener("click",ev=>{const q=ev.target.closest("[data-ai]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ai==="x"){o.remove();return}
+    <div id="aiOut"></div>
+    ${hasK?`<button type="button" class="btn" data-ai="tv">✨ Perguntar</button>`:""}
+    <button type="button" class="btn ${hasK?"ghost":""}" data-ai="go">Abrir no Gemini (copiar e colar)</button>
+    <details style="margin-top:4px"><summary style="color:var(--accent);font-weight:600;cursor:pointer">⚙️ ${hasK?"Tavily ligado ✓ — mudar a chave":"Ligar o Tavily (resposta aqui na app)"}</summary>
+      <p class="note" style="margin:6px 0">Cria uma conta grátis em tavily.com, copia a chave (começa por “tvly-”) e cola aqui. Fica <b>só neste telemóvel</b>.</p>
+      <div style="display:flex;gap:6px"><input id="tvK" type="password" autocomplete="off" placeholder="tvly-…" style="flex:1;min-width:0;font:inherit;font-size:16px;padding:10px;border-radius:12px;border:0;background:var(--fill);color:var(--fg)"><button type="button" class="btn" data-ai="key" style="padding:8px 14px">Guardar</button></div>
+      ${hasK?`<button type="button" class="back" data-ai="nokey" style="color:var(--bad);margin-top:6px">Tirar a chave deste telemóvel</button>`:""}</details>
+    <button type="button" class="btn ghost" data-ai="x">Fechar</button></div>`;
+  o.addEventListener("click",async ev=>{const q=ev.target.closest("[data-ai]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ai==="x"){o.remove();return}const a=q.dataset.ai;
+    if(a==="key"){const k=o.querySelector("#tvK").value.trim();if(!/^tvly-/.test(k)){toast("A chave do Tavily começa por “tvly-”");return}try{localStorage.setItem("casa-tavily",k)}catch(e){}const t=o.querySelector("#aiQ").value;o.remove();toast("Tavily ligado ✓");aiAsk(t);return}
+    if(a==="nokey"){if(!confirm("Tirar a chave do Tavily deste telemóvel?"))return;try{localStorage.removeItem("casa-tavily")}catch(e){}const t=o.querySelector("#aiQ").value;o.remove();aiAsk(t);return}
     const t0=o.querySelector("#aiQ").value.trim();if(!t0){toast("Escreve a pergunta");return}
-    /* Pedido (23/11): Gemini — não aceita a pergunta pelo link, por isso copia-se e abre-se a app/site; com "resposta completa" junta-se um pedido de resposta detalhada */
-    const t=o.querySelector("#aiDeep").checked?`${t0}\n\nResponde em português de Portugal, de forma completa e bem fundamentada: explica o raciocínio, dá as opções com prós e contras, diz quando é preciso procurar um profissional e indica as fontes quando for possível.`:t0;
+    if(a==="tv"){const out=o.querySelector("#aiOut");q.disabled=true;q.textContent="A pesquisar…";out.innerHTML=`<p class="note" style="margin:6px 2px">⏳ A procurar e a preparar a resposta…</p>`;
+      try{const j=await tvAsk(t0), S=(j.results||[]).slice(0,6);
+        out.innerHTML=`<div style="background:color-mix(in srgb,#6d4fe0 8%,var(--surface));border:1.5px solid color-mix(in srgb,#6d4fe0 35%,transparent);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="white-space:pre-wrap;line-height:1.45">${esc(j.answer||"Não encontrei uma resposta direta — vê as fontes abaixo.")}</div>
+          ${S.length?`<div style="font-weight:700;font-size:13px;color:var(--muted)">FONTES</div>${S.map((r,i)=>`<a href="${esc(r.url)}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:14px">${i+1}. ${esc(r.title||r.url)} ↗</a>`).join("")}`:""}
+          <button type="button" class="back" data-ai="cp" style="align-self:flex-start">Copiar a resposta</button></div>`;
+        o._ans=(j.answer||"")+"\n\n"+S.map((r,i)=>`${i+1}. ${r.title} — ${r.url}`).join("\n")}
+      catch(err){out.innerHTML=`<p class="note" style="margin:6px 2px;color:var(--bad)">${err.message==="chave"?"A chave do Tavily não foi aceite. Confirma-a em ⚙️.":err.message==="limite"?"Chegaste ao limite do Tavily este mês. Usa o Gemini.":"Não foi possível ligar ao Tavily. Tenta outra vez ou usa o Gemini."}</p>`}
+      q.disabled=false;q.textContent="✨ Perguntar outra vez";return}
+    if(a==="cp"){(navigator.clipboard?navigator.clipboard.writeText(o._ans||""):Promise.reject()).then(()=>toast("Resposta copiada")).catch(()=>{});return}
+    /* Gemini: não aceita a pergunta pelo link — copia-se e abre-se a app/site */
+    const t=`${t0}\n\nResponde em português de Portugal, de forma completa e bem fundamentada: explica o raciocínio, dá as opções com prós e contras, diz quando é preciso procurar um profissional e indica as fontes quando for possível.`;
     o.remove();const go=()=>window.open("https://gemini.google.com/app","_blank","noopener");
     (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{toast("Pergunta copiada — cola no Gemini");go()}).catch(()=>{prompt("Copia a pergunta e cola no Gemini:",t);go()})});
   document.body.appendChild(o);setTimeout(()=>{const i=o.querySelector("#aiQ");i.focus();i.setSelectionRange(i.value.length,i.value.length)},50)}
@@ -7043,7 +7067,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v408";
+const APPV="casa-v409";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
