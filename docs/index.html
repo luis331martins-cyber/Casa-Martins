@@ -2596,17 +2596,15 @@ document.getElementById("tvSave").addEventListener("click",()=>{const i=document
 document.getElementById("tvDel").addEventListener("click",()=>{if(!confirm("Tirar a chave do Tavily deste telemóvel?"))return;try{localStorage.removeItem("casa-tavily")}catch(e){}tvRender();toast("Chave tirada")});
 document.addEventListener("click",e=>{if(e.target.closest('[data-sp="geral"]'))setTimeout(tvRender,30)});setTimeout(()=>{try{tvRender()}catch(e){}},500);
 function aiAsk(pre){const o=document.createElement("div");o.className="rdovl";const hasK=!!tvKey();
-  o.innerHTML=`<div class="rdsheet" role="dialog" style="max-height:92vh;overflow:auto"><div class="rdh">✨ Perguntar à IA</div><div class="rdm">${hasK?"Responde aqui mesmo (pesquisa na internet, com as fontes).":"Liga o Tavily (em baixo) para a resposta aparecer aqui. Sem isso, abre o Gemini."} Não ponhas nomes nem dados pessoais.</div>
+  o.innerHTML=`<div class="rdsheet" role="dialog" style="max-height:92vh;overflow:auto"><div class="rdh">✨ Perguntar à IA</div><div class="rdm">${hasK?"Responde aqui mesmo (pesquisa na internet, com as fontes).":"Liga o Tavily nas Definições para a resposta aparecer aqui. Sem isso, abre o Gemini."} Não ponhas nomes nem dados pessoais.</div>
     <textarea id="aiQ" rows="4" placeholder="ex.: Criança de 5 anos com dor de ouvido e 38 °C — quando devo ir ao médico?" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg);resize:vertical">${esc(pre||"")}</textarea>
     <div id="aiOut"></div>
     ${hasK?`<button type="button" class="btn" data-ai="tv">✨ Perguntar</button>`:""}
     <button type="button" class="btn ${hasK?"ghost":""}" data-ai="go">Abrir no Gemini (copiar e colar)</button>
-    <details style="margin-top:4px"><summary style="color:var(--accent);font-weight:600;cursor:pointer">⚙️ ${hasK?"Tavily ligado ✓ — mudar a chave":"Ligar o Tavily (resposta aqui na app)"}</summary>
-      <p class="note" style="margin:6px 0">Cria uma conta grátis em tavily.com, copia a chave (começa por “tvly-”) e cola aqui. Fica <b>só neste telemóvel</b>.</p>
-      <div style="display:flex;gap:6px"><input id="tvK" type="password" autocomplete="off" placeholder="tvly-…" style="flex:1;min-width:0;font:inherit;font-size:16px;padding:10px;border-radius:12px;border:0;background:var(--fill);color:var(--fg)"><button type="button" class="btn" data-ai="key" style="padding:8px 14px">Guardar</button></div>
-      ${hasK?`<button type="button" class="back" data-ai="nokey" style="color:var(--bad);margin-top:6px">Tirar a chave deste telemóvel</button>`:""}</details>
+    ${hasK?"":`<button type="button" class="back" data-ai="cfg" style="align-self:flex-start">⚙️ Ligar o Tavily (Definições → Geral)</button>`}
     <button type="button" class="btn ghost" data-ai="x">Fechar</button></div>`;
   o.addEventListener("click",async ev=>{const q=ev.target.closest("[data-ai]");if(ev.target!==o&&!q)return;if(!q||q.dataset.ai==="x"){o.remove();return}const a=q.dataset.ai;
+    if(a==="cfg"){o.remove();show("definicoes");setTimeout(()=>{const r=document.querySelector('.sprow[data-sp="geral"]');if(r)r.click()},80);return}
     if(a==="key"){const k=o.querySelector("#tvK").value.trim();if(!/^tvly-/.test(k)){toast("A chave do Tavily começa por “tvly-”");return}try{localStorage.setItem("casa-tavily",k)}catch(e){}const t=o.querySelector("#aiQ").value;o.remove();toast("Tavily ligado ✓");aiAsk(t);return}
     if(a==="nokey"){if(!confirm("Tirar a chave do Tavily deste telemóvel?"))return;try{localStorage.removeItem("casa-tavily")}catch(e){}const t=o.querySelector("#aiQ").value;o.remove();aiAsk(t);return}
     const t0=o.querySelector("#aiQ").value.trim();if(!t0){toast("Escreve a pergunta");return}
@@ -7078,7 +7076,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v410";
+const APPV="casa-v411";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
