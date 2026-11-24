@@ -6037,7 +6037,8 @@ document.getElementById("vChart").addEventListener("click",e=>{const g=e.target.
 const CARF=[["seguro","Seguro"],["inspecao","Inspeção"],["iuc","IUC"],["revisao","Revisão"]];
 function deadlines(){const L=[];
   bills.filter(b=>b.kind==="car").forEach(c=>CARF.forEach(([f,n])=>{if(c[f])L.push({date:c[f],t:`${c.name}: ${n}`,m:"Carro",go:"carro",alert:7,past:"Passou"})}));
-  bills.filter(b=>b.kind==="doc"&&b.date).forEach(d=>L.push({date:d.date,t:`${d.type} (${d.who})`,m:"Documento termina",go:"docs",alert:30,past:"Caducou"}));
+  /* Pedido (24/11): documento com a renovação pedida (d.ren) deixa de dar alerta de caducado */
+  bills.filter(b=>b.kind==="doc"&&b.date&&!b.ren).forEach(d=>L.push({date:d.date,t:`${d.type} (${d.who})`,m:"Documento termina",go:"docs",alert:30,past:"Caducou"}));
   bills.filter(b=>b.kind==="hins"&&b.renew).forEach(x=>L.push({date:x.renew,t:`Seguro da casa (${x.name})`,m:"Renovação",go:"casa",alert:60,past:"Renovação passou"}));
   bills.filter(b=>b.kind==="carlog"&&b.date&&b.items).forEach(x=>x.items.forEach(i=>{const w=clWarEnd(x.date,i.g);if(w)L.push({date:w,t:`Garantia: ${i.t}`,m:"Carro · garantia acaba",go:"carro",alert:30,past:"Acabou"})}));
   bills.filter(b=>b.kind==="home"&&b.date&&b.war).forEach(h=>{const w=hmWarEnd(h);if(w)L.push({date:w,t:`Garantia: ${h.name}`,m:"Garantia acaba",go:"casa",alert:60,past:"Acabou"})});
@@ -6086,7 +6087,7 @@ let docShow=true; /* Pedido (23/11): números dos documentos sempre visíveis */
 const RECS={
   car:{list:"carList",add:"addCar",render:()=>renderCars(),fields:[["name","Nome (com a marca, ex.: Mercedes CLA)","text",1,"ex.: Mercedes CLA"],["plate","Matrícula","text",0,"AA-00-BB"],["km","Quilómetros atuais","number",0,"ex.: 85000"],
     ["seguro","Seguro: renovação","date"],["seguroVal","Seguro: valor (€)","number",0,"opcional"],["inspecao","Inspeção","date"],["iuc","IUC (pagar até)","date"],["revUlt","Última revisão: data","date"],["revUltKm","Última revisão: km","number",0,"ex.: 134010"],["revIntKm","Revisão a cada (km)","number",0,"25000"],["revIntAnos","…ou a cada (anos)","number",0,"1"],["notes","Notas","text",1,"ex.: seguradora, apólice"]]},
-  doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["notes","Notas","text",1,"opcional"]]},
+  doc:{list:"docList",add:"addDoc",render:()=>renderDocs(),fields:[["who","De quem","text",1,"ex.: Maria"],["type","Documento","select",1,"",DOC_TYPES],["num","Número","text",1,"opcional"],["date","Válido até","date",1],["ren","Renovação pedida em (opcional)","date",1],["notes","Notas","text",1,"opcional"]]},
   health:{list:"hNext",add:"addHealth",render:()=>renderHealth(),fields:[["who","Para quem","text",1,"ex.: Maria"],["type","Tipo","select",0,"",["Consulta","Análises","Exame","Vacina","Dentista","Oftalmologista","Outro"]],["title","Especialidade ou médico","text",0,"ex.: Pediatria"],["date","Dia","date"],["time","Hora","time"],["place","Local","text",1,"ex.: Hospital da Luz"],["notes","Notas","text",1,"ex.: levar o boletim"],["cal","Pôr no calendário (com lembrete 1 hora antes)","check"]]},
   bankd:{list:"bankList",add:"addBank",render:()=>renderBanks(),fields:[["name","Banco / conta","text",1,"ex.: CGD — conta à ordem"],["who","Titular","text",1,"ex.: Luís"],["iban","IBAN","text",1,"PT50 0000 0000 0000 0000 0000 0"],["bic","BIC / SWIFT","text",0,"opcional"],["notes","Notas","text",1,"opcional"]]},
   pwd:{list:"pwdList",add:"addPwd",render:()=>renderPwds(),fields:[["name","Serviço","text",1,"ex.: Finanças (AT), Segurança Social"],["who","De quem","text",1,"ex.: Luís"],["user","Utilizador","text",1,"ex.: NIF"],["pw","Palavra-passe (fica encriptada)","password",1,"deixa vazio para manter a que está"],["url","Site","text",1,"opcional (ex.: portaldasfinancas.gov.pt)"],["notes","Notas","text",1,"opcional"]]},
@@ -6122,7 +6123,7 @@ document.addEventListener("submit",e=>{const ref=e.target.dataset.recform;if(!re
   if(k==="car"&&x.km!=null&&(!old||old.km!==x.km))x.kmAt=Date.now();
   if(k==="car")carRevCalc(x);
   if(k==="bankd"&&x.iban){x.iban=String(x.iban).replace(/\s+/g,"").toUpperCase();if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(x.iban))setTimeout(()=>toast("Confirma o IBAN: parece ter um erro"),600)}
-  if(k==="doc")x.name=`${x.type} (${x.who})`;if(k==="health")x.name=`${x.who}: ${x.title||x.type}`;
+  if(k==="doc")x.name=`${x.type} (${x.who})`;if(k==="doc"&&old&&old.ren&&x.date&&x.date!==old.date&&x.date>ymd(new Date())&&x.ren===old.ren){delete x.ren;setTimeout(()=>toast("Documento novo ✓ — validade atualizada"),500)}if(k==="health")x.name=`${x.who}: ${x.title||x.type}`;
   /* Consultas: marcação ligada no calendário (dá o lembrete e a notificação) */
   if(k==="health"){if(x.cal&&x.date){const evId=x.ev||"s-"+x.id;x.ev=evId;const ev={id:evId,date:x.date,time:x.time||"",title:`🩺 ${x.who}: ${x.title||x.type}`,...(store&&meId?{by:meId}:{}),...(myName()?{byName:myName()}:{})};
       events=events.filter(y=>y.id!==evId);putEv(ev)}else if(x.ev){delEv(x.ev);delete x.ev}}
@@ -6219,10 +6220,12 @@ function renderDocs(){safe("Palavras-passe",renderPwds);const sec=document.getEl
   const mask=n=>docShow?esc(n):"•••• "+esc(String(n).replace(/\s/g,"").slice(-3));
   el.innerHTML=whos.map(w=>`<div class="rcard"><div class="rhead" style="cursor:default"><b>${esc(w)}</b></div>${L.filter(d=>d.who===w).sort((a,b)=>ord(a.type)-ord(b.type)||a.type.localeCompare(b.type,"pt")).map(d=>d.id===editRec.doc?recFormFor("doc",d):
     `<div class="rrow"><button type="button" data-recedit="doc|${d.id}" style="background:transparent;padding:0;text-align:left;color:var(--fg);font:inherit;grid-column:1"><span class="rl" style="display:block">${esc(d.type)}</span><span class="rm" style="display:block">${[d.num?`<span style="font-variant-numeric:tabular-nums;color:var(--fg)">${mask(d.num)}</span>`:"",d.date?"Válido até "+fmtD(d.date):"",d.notes?esc(d.notes):"",(d.files||[]).length?"📎 "+d.files.length:""].filter(Boolean).join(" · ")}</span></button>
-      <span class="rs">${d.num?`<button type="button" class="bump" data-copydoc="${d.id}">Copiar</button>`:""}${dueTag(d.date,90)}</span></div>`).join("")}</div>`).join("")
+      <span class="rs" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${d.num?`<button type="button" class="bump" data-copydoc="${d.id}">Copiar</button>`:""}${d.ren?`<span class="due ok">🔄 Renovação pedida a ${esc(fmtD(d.ren).replace(/ \d{4}$/,""))}</span>`:dueTag(d.date,90)}${!d.ren&&d.date&&daysTo(d.date)<=90?`<button type="button" class="bump" data-docren="${d.id}">🔄 Já pedi a renovação</button>`:""}</span></div>`).join("")}</div>`).join("")
     +(editRec.doc==="new"?recFormFor("doc",null):"")||`<div class="rcard"><div class="rempty">Ainda não há documentos. Junta o Cartão de Cidadão, passaportes e cartas de condução para seres avisado antes de terminarem.</div></div>`;
   document.getElementById("addDoc").hidden=editRec.doc==="new"}
 document.getElementById("docShowSeg").addEventListener("click",e=>{const b=e.target.closest("[data-docshow]");if(b){docShow=b.dataset.docshow==="1";renderDocs()}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-docren]");if(!b)return;e.preventDefault();const d=bills.find(x=>x.id===b.dataset.docren);if(!d)return;
+  putBill({...d,ren:ymd(new Date())});renderDocs();if(typeof renderAlerts==="function")safe("Alertas",renderAlerts);toast(`🔄 ${d.type} (${d.who}): renovação pedida · o alerta sai. Quando chegar o novo, atualiza o número e a validade.`)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-copydoc]");if(!b)return;const d=bills.find(x=>x.id===b.dataset.copydoc);if(!d)return;
   (navigator.clipboard?navigator.clipboard.writeText(d.num):Promise.reject()).then(()=>toast(d.type+" copiado")).catch(()=>{prompt("Copia o número:",d.num)})});
 document.getElementById("docPasteBtn").addEventListener("click",()=>{document.getElementById("docPaste").hidden=false;document.getElementById("docPasteBtn").hidden=true;document.getElementById("docPasteTxt").focus()});
@@ -7076,7 +7079,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v411";
+const APPV="casa-v412";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
