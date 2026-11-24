@@ -1355,6 +1355,12 @@ form[data-medform] input[type=time],form[data-medform] input[type=date]{-webkit-
         <div id="appsOnList" class="group" style="gap:0"></div></div>
     </div></div>
     <div class="sp" data-spp="geral" hidden>
+    <div class="item" style="display:flex;flex-direction:column;align-items:stretch;gap:8px">
+      <div><div class="name">✨ IA dentro da app (Tavily)</div><div class="meta" id="tvState"></div></div>
+      <div style="display:flex;gap:6px"><input id="tvKeyDef" type="password" autocomplete="off" placeholder="tvly-…" style="flex:1;min-width:0;font:inherit;font-size:16px;padding:10px;border-radius:12px;border:0;background:var(--fill);color:var(--fg)"><button class="btn" type="button" id="tvSave" style="padding:8px 14px">Guardar</button></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap"><a href="https://app.tavily.com" target="_blank" rel="noopener" class="back" style="text-decoration:none">Criar conta / ver a chave ↗</a><button class="back" type="button" id="tvDel" style="color:var(--bad)">Tirar a chave</button></div>
+      <p class="note" style="margin:0">A chave fica só neste telemóvel (não vai para a base de dados nem para o código). Com ela, o ✨ do Início responde dentro da app, com as fontes.</p>
+    </div>
     <div id="houseShared" class="group" hidden>
       <div class="item">
         <div style="min-width:0"><div class="code" id="houseCode"></div><div class="meta">Código da casa. Escreve-o no telemóvel da outra pessoa.</div></div>
@@ -2584,6 +2590,11 @@ const tvKey=()=>{try{return localStorage.getItem("casa-tavily")||""}catch(e){ret
 async function tvAsk(q){const r=await fetch("https://api.tavily.com/search",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tvKey()},
   body:JSON.stringify({query:q.slice(0,390),search_depth:"advanced",include_answer:"advanced",max_results:6})});
   if(r.status===401||r.status===403)throw new Error("chave");if(r.status===429||r.status===432)throw new Error("limite");if(!r.ok)throw new Error("erro "+r.status);return r.json()}
+/* Pedido (24/11): a chave do Tavily também nas Definições → Geral */
+function tvRender(){const st=document.getElementById("tvState");if(!st)return;const k=tvKey();st.innerHTML=k?`Ligado ✓ · chave ${esc(k.slice(0,9))}…`:"Não ligado — cola a tua chave (começa por “tvly-”).";document.getElementById("tvDel").hidden=!k}
+document.getElementById("tvSave").addEventListener("click",()=>{const i=document.getElementById("tvKeyDef"), k=i.value.trim();if(!/^tvly-/.test(k)){toast("A chave do Tavily começa por “tvly-”");return}try{localStorage.setItem("casa-tavily",k)}catch(e){}i.value="";tvRender();toast("Tavily ligado ✓")});
+document.getElementById("tvDel").addEventListener("click",()=>{if(!confirm("Tirar a chave do Tavily deste telemóvel?"))return;try{localStorage.removeItem("casa-tavily")}catch(e){}tvRender();toast("Chave tirada")});
+document.addEventListener("click",e=>{if(e.target.closest('[data-sp="geral"]'))setTimeout(tvRender,30)});setTimeout(()=>{try{tvRender()}catch(e){}},500);
 function aiAsk(pre){const o=document.createElement("div");o.className="rdovl";const hasK=!!tvKey();
   o.innerHTML=`<div class="rdsheet" role="dialog" style="max-height:92vh;overflow:auto"><div class="rdh">✨ Perguntar à IA</div><div class="rdm">${hasK?"Responde aqui mesmo (pesquisa na internet, com as fontes).":"Liga o Tavily (em baixo) para a resposta aparecer aqui. Sem isso, abre o Gemini."} Não ponhas nomes nem dados pessoais.</div>
     <textarea id="aiQ" rows="4" placeholder="ex.: Criança de 5 anos com dor de ouvido e 38 °C — quando devo ir ao médico?" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:0;background:var(--fill);color:var(--fg);resize:vertical">${esc(pre||"")}</textarea>
@@ -7067,7 +7078,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v409";
+const APPV="casa-v410";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
