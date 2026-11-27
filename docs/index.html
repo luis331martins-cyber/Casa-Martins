@@ -3242,7 +3242,7 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
       <label class="f wide">Pedir o valor no dia (fecho do cartão, fatura…)<input name="askd" type="number" min="1" max="31" inputmode="numeric" value="${askDayOf(b)||""}" placeholder="Sem dia: pede a partir do dia 20"></label>`}
       ${!accounts().length?"":`<label class="f wide">${isInc(b)?"Entra na conta":isBud(b)?"Os gastos saem da conta":"Sai da conta"} (o saldo atualiza-se ${isBud(b)?"a cada gasto":"ao marcar"})<select name="acc"><option value="">Não atualizar o saldo</option>${accounts().map(a=>`<option value="${a.id}"${b.acc===a.id?" selected":""}>${esc(bankLabel(a.name))}</option>`).join("")}</select></label>`}
       ${isCaixa(b)?`<label class="f wide">Para a empresa (o que levantas, habitual €)<input name="emp" type="number" min="0" step="0.01" inputmode="decimal" value="${b.emp||""}" placeholder="ex.: 300,00"></label>`:""}
-      ${isInc(b)||isBud(b)||!b.acm?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label>
+      ${isInc(b)||isBud(b)||!b.acm?"":`<label class="f wide">Acerto com outra pessoa<select name="acm"><option value="">Não</option><option value="all"${b.acm==="all"?" selected":""}>Paga por outra pessoa (acerta-se no início do mês seguinte)</option><option value="half"${b.acm==="half"?" selected":""}>Outra pessoa paga metade (acerta-se no início do mês)</option></select></label><label class="f wide">Entra no acerto até ao acerto de (opcional)<input name="acto" type="month" value="${esc(b.acTo||"")}"></label>
       <label class="f wide">Quem<input name="acw" value="${esc(b.ac||"")}" placeholder="ex.: Mãe" autocapitalize="words"></label>`}
       ${isInc(b)||isBud(b)?"":(()=>{const P=b.part||{};return`<details class="wide autod"${P.v?" open":""}><summary>➗ Dividir esta conta <small>${P.v?`${esc(P.n||"parte")} ${eur(+P.v)}/mês`:"ex.: mensalidade + prestação do telemóvel"}</small></summary><div class="autob" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <label class="f" style="grid-column:1/-1">Parte que vem dentro desta conta<input name="pn" value="${esc(P.n||"")}" placeholder="ex.: iPhone"></label>
@@ -3343,7 +3343,7 @@ function renderBills(){clearTimeout(hbsT);hbsT=setTimeout(()=>{if(typeof holdBil
     (pd.length?`<button type="button" class="paidfold" data-paidfold="1" aria-expanded="${pOpen}"><span>✓ Pagas (${pd.length}) · ${eur(pd.reduce((t,b)=>t+monthAmt(b,k),0))}</span><span class="go">${pOpen?"⌃":"›"}</span></button>`+(pOpen?pd.map(billRow).join(""):""):""):`<div class="empty">Ainda não há contas fixas.<br>Toca em <b>＋ Adicionar</b> para juntar a renda, a luz ou a água.</div>`;
   /* Acerto com outra pessoa (ex.: Mãe): no início do mês ela passa metade da Medicare desse mês e desconta a Água do mês anterior (que os pais pagaram) */
   const acL=[];
-  {const box=document.getElementById("acertoBox"), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm), whos=[...new Set(AC.map(b=>b.ac))];
+  {const box=document.getElementById("acertoBox"), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm&&(!b.acTo||k<=b.acTo)), whos=[...new Set(AC.map(b=>b.ac))];
     /* Pedido (05/11): acerto já feito desce para baixo das receitas e fica numa linha (toca para abrir) */
     {const allDn=whos.length&&whos.every(w=>{const rc=bills.find(x=>x.kind==="acerto"&&x.who===w);return rc&&rc.done&&rc.done[k]}), sec=document.getElementById("incSec");
      const tl=document.getElementById("timeline");if(sec&&tl){if(allDn)sec.after(box);else tl.before(box)}}
@@ -3447,7 +3447,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-ctab]");if
 /* Dia do acerto com a outra pessoa (ex.: a Mãe passa o dinheiro a dia 5) */
 const AC_DAY=5;
 /* Acerto do mês k para o Início e notificações: {w, tot} por pessoa (metade das contas "half" de k menos as "all" do mês anterior) */
-function acertoTotals(k){const pk=ymOf(new Date(+k.slice(0,4),+k.slice(5)-2,1)), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm);
+function acertoTotals(k){const pk=ymOf(new Date(+k.slice(0,4),+k.slice(5)-2,1)), AC=bills.filter(b=>!b.kind&&b.ac&&b.acm&&(!b.acTo||k<=b.acTo));
   return [...new Set(AC.map(b=>b.ac))].map(w=>{const rec=bills.find(x=>x.kind==="acerto"&&x.who===w);
     return {w,done:!!(rec&&rec.done&&rec.done[k]),tot:AC.filter(b=>b.ac===w).reduce((t,b)=>t+(b.acm==="half"?monthAmt(b,k)/2:-monthAmt(b,pk)),0)}})}
 /* Pedido (14/11): transferir de um banco para o outro (ex.: o ordenado da Bianca entra na CGD e passa para o ActivoBank);
@@ -3694,6 +3694,8 @@ document.addEventListener("submit",e=>{
   if(e.target.rd){const rd=parseInt(e.target.rd.value)||0;if(rd>0)nb.rd=Math.min(rd,31);else delete nb.rd}
   if(e.target.pv){const pv=parseFloat(String(e.target.pv.value).replace(",","."));if(pv>0)nb.part={n:e.target.pn.value.trim()||"Prestação",v:Math.round(pv*100)/100,...(+e.target.pc.value>0?{cnt:Math.round(+e.target.pc.value)}:{}),first:e.target.pf.value||ymOf(new Date())};else delete nb.part}
   if(e.target.acm){const m=e.target.acm.value, w=e.target.acw.value.trim();delete nb.acm;delete nb.ac;if(m){nb.acm=m;nb.ac=w||"Mãe"}}
+  /* Pedido (27/11): uma conta pode sair do acerto a partir de um mês (ex.: Água no acerto só até novembro) */
+  if(e.target.acto){if(e.target.acto.value)nb.acTo=e.target.acto.value;else delete nb.acTo}
   if(e.target.acc){const a=e.target.acc.value;if(a!==(b.acc||"")){if(a&&isBud(nb)){nb.acc=a}else if(a){nb.acc=a;const accd={};Object.keys(nb.paid||{}).forEach(m=>{if(nb.paid[m]===true)accd[m]=0});nb.accd=accd}else{delete nb.acc;delete nb.accd}}}
   /* Valor antigo guardado como número em paid[mês] passa para amounts[mês] */
   if(typeof(nb.paid&&nb.paid[k])==="number")nb.paid={...nb.paid,[k]:true};
@@ -7085,7 +7087,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v414";
+const APPV="casa-v415";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;

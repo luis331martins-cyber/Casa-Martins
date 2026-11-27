@@ -209,7 +209,7 @@ async function morning(code, now) {
   /* Acerto com a Mãe (ou outra pessoa): a dia 5 lembra quanto passa (metade das contas "half" do mês menos as "all" do mês anterior) */
   if (now.d === 5 && mk >= START) {
     const pk = now.m === 1 ? `${now.y - 1}-12` : `${now.y}-${String(now.m - 1).padStart(2, "0")}`;
-    const AC = bills.filter((b) => !b.kind && b.ac && b.acm);
+    const AC = bills.filter((b) => !b.kind && b.ac && b.acm && (!b.acTo || mk <= b.acTo));
     for (const w of [...new Set(AC.map((b) => b.ac))]) {
       const rec = bills.find((x) => x.kind === "acerto" && x.who === w);
       if (rec && rec.done && rec.done[mk]) continue;
