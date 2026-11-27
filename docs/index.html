@@ -2262,7 +2262,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const revB=i=>i.rev?` <span class="revok" title="Já atualizado">✓</span>`:"";
   const listB=i=>{const on=(i.lvl??2)<2&&!skipOn(i);return`<button type="button" class="tolist${on?" on":""}" data-tolist="${i.id}" aria-pressed="${on}" aria-label="${on?"Tirar das compras":"Pôr nas compras"}: ${esc(i.name)}">${on?"🛒✓":"🛒"}</button>`};
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e,lbTag(i)].filter(Boolean).join(" · ");
-    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i), bNow=i.bt&&i.bt.d===ymd(new Date()), bTop=bNow?`<span class="bnewp">🛒 Comprei hoje ${i.bt.q?esc(String(i.bt.q).replace(/^\+/,"")):""}${i.bt.h?` · antes ${esc(i.bt.h)}`:""}</span>`:"";
+    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i), bNow=i.bt&&i.bt.d===ymd(new Date()), bTop=bNow?`<span class="bnewp">🛒 Comprei hoje ${i.bt.q?esc(String(i.bt.q).replace(/^\+/,"")):""}${i.bt.h?` · antes ${esc(i.bt.h)}`:""}</span>${!i.bt.p&&i.bt.q?`<span class="bnewp" data-btadd="${i.id}" role="button" style="background:#0a84ff;cursor:pointer">➕ Somar ${esc(String(i.bt.q).replace(/^\+/,""))} ao stock</span>`:""}`:"";
     /* Pedido (22/11): em Em casa, sem abrir o produto: "Lista" põe na lista de compras e "Carrinho" põe já no carrinho (verde = já está; tocar tira) */
     const tb=`<span class="tobuys"><button type="button" class="tobuy${inL?" on":""}" data-tobuy="${i.id}" aria-label="${inL?"Tirar "+esc(i.name)+" da lista de compras":"Pôr "+esc(i.name)+" na lista de compras"}">📝${inL?"✓":"＋"}</button><button type="button" class="tobuy${i.cart?" on":""}" data-tocart="${i.id}" aria-label="${i.cart?"Tirar "+esc(i.name)+" do carrinho":"Pôr "+esc(i.name)+" no carrinho"}">🛒${i.cart?"✓":"＋"}</button></span>`;
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
@@ -2662,6 +2662,9 @@ function useApply(it,k){if(!k)return;
   setQty(it.id,(+it.qty||0)-k*(packBuy(it)?1:unitStep(it.unit)))}
 /* Pedido (22/11): nas Compras, escolher produtos vendo quanto há em casa e pôr logo a quantidade que se compra (vão para o carrinho) */
 let pickSel={}, pickQ="", pickCat="", pickReg=false, regAdd=true;
+/* Pedido (27/11): compras só registadas (sem somar) — o botão azul soma ao stock */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-btadd]");if(!t)return;e.preventDefault();e.stopPropagation();const it=items.find(i=>i.id===t.dataset.btadd);if(!it||!it.bt)return;
+  const m=String(it.bt.q||"").match(/(\d+(?:[.,]\d+)?)/), v=m?parseFloat(m[1].replace(",",".")):0;if(!(v>0))return;const n0={...it,buyNow:isRes(it)||packBuy(it)||boxBuy(it)?Math.max(1,Math.round(v)):v};delete n0.bt;upsert(n0);buyDone(it.id,true);render();toast(`${it.name}: somado ✓`)},true);
 document.addEventListener("change",e=>{if(e.target.id==="regAdd")regAdd=e.target.checked});
 /* Pedido (22/11): registar compras que já foram arrumadas (sem mexer no stock) — fica em "O que comprei" com o que havia antes e o que se comprou */
 function lbReg(it,v){const st=pickStep(it);let h;
@@ -7082,7 +7085,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v413";
+const APPV="casa-v414";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
