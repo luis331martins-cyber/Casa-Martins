@@ -2262,7 +2262,7 @@ function render(){document.body.classList.toggle("qopen",!qLock);
   const revB=i=>i.rev?` <span class="revok" title="Já atualizado">✓</span>`:"";
   const listB=i=>{const on=(i.lvl??2)<2&&!skipOn(i);return`<button type="button" class="tolist${on?" on":""}" data-tolist="${i.id}" aria-pressed="${on}" aria-label="${on?"Tirar das compras":"Pôr nas compras"}: ${esc(i.name)}">${on?"🛒✓":"🛒"}</button>`};
   const row=i=>{if(i.id===editItem)return itemForm(i);const e=expText(i.exp), m=[hasBags(i)&&i.bags.length?bagText(i):packText(i),e,lbTag(i)].filter(Boolean).join(" · ");
-    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i), bNow=i.bt&&i.bt.d===ymd(new Date()), bTop=bNow?`<span class="bnewp" title="Comprado hoje${i.bt.h?" · antes "+esc(i.bt.h):""}">${i.bt.q?esc(i.bt.q):"🆕 hoje"}</span>`:"";
+    const [lt,lc]=LV[i.lvl??2], inL=!i.cart&&(i.lvl??2)<2&&!skipOn(i), bNow=i.bt&&i.bt.d===ymd(new Date()), bTop=bNow?`<span class="bnewp">🛒 Comprei hoje ${i.bt.q?esc(String(i.bt.q).replace(/^\+/,"")):""}${i.bt.h?` · antes ${esc(i.bt.h)}`:""}</span>`:"";
     /* Pedido (22/11): em Em casa, sem abrir o produto: "Lista" põe na lista de compras e "Carrinho" põe já no carrinho (verde = já está; tocar tira) */
     const tb=`<span class="tobuys"><button type="button" class="tobuy${inL?" on":""}" data-tobuy="${i.id}" aria-label="${inL?"Tirar "+esc(i.name)+" da lista de compras":"Pôr "+esc(i.name)+" na lista de compras"}">📝${inL?"✓":"＋"}</button><button type="button" class="tobuy${i.cart?" on":""}" data-tocart="${i.id}" aria-label="${i.cart?"Tirar "+esc(i.name)+" do carrinho":"Pôr "+esc(i.name)+" no carrinho"}">🛒${i.cart?"✓":"＋"}</button></span>`;
     /* em uso + reserva: só botões — "Em uso" liga/desliga e os guardados com −/+; o estado só aparece se for Pouco/Acabou */
@@ -2661,7 +2661,8 @@ function useApply(it,k){if(!k)return;
   if(it.qty==null){setLevel(it.id,0);return}
   setQty(it.id,(+it.qty||0)-k*(packBuy(it)?1:unitStep(it.unit)))}
 /* Pedido (22/11): nas Compras, escolher produtos vendo quanto há em casa e pôr logo a quantidade que se compra (vão para o carrinho) */
-let pickSel={}, pickQ="", pickCat="", pickReg=false;
+let pickSel={}, pickQ="", pickCat="", pickReg=false, regAdd=true;
+document.addEventListener("change",e=>{if(e.target.id==="regAdd")regAdd=e.target.checked});
 /* Pedido (22/11): registar compras que já foram arrumadas (sem mexer no stock) — fica em "O que comprei" com o que havia antes e o que se comprou */
 function lbReg(it,v){const st=pickStep(it);let h;
   if(bagW(it)){const k=Math.max(0,it.bags.length-v);h=k?`${k} ${k===1?"saco":"sacos"}`:"nada"}
@@ -2684,7 +2685,7 @@ function pickRender(){const box=document.getElementById("pickBox"), q=srNorm(pic
     body=`<div class="usegrid">${cats.map(c=>{const [g1,g2,ic]=CATICO[c]||CATICO["Mercearia"], k=sel.filter(([id])=>(items.find(x=>x.id===id)||{}).cat===c).length;
       return`<button type="button" class="usecat" data-pickcat="${esc(c)}" style="--c1:${g1};--c2:${g2}"><span class="b2ci"><svg viewBox="0 0 24 24">${ic}</svg></span><b>${esc(c)}</b>${k?`<i>${k}</i>`:""}</button>`}).join("")}</div>`}
   box.innerHTML=`<div class="useh"><b>${pickReg?"🧾 Registar o que comprei hoje":"🛒 Juntar compras"}</b><input id="pickQ" type="search" placeholder="Procurar produto (ex.: pernas de frango)" value="${esc(pickQ)}" autocomplete="off"></div>
-    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on" style="background:#34c759">${esc(it.name)} +${String(v).replace(".",",")}</span>`:""}).join("")}</div>`:(pickReg?`<p class="note" style="margin:0">Para o que já arrumaste: toca no que compraste hoje e põe quanto foi. <b>Não muda o que tens em casa</b> — só fica registado em “O que comprei”.</p>`:`<p class="note" style="margin:0">Vês quanto tens em casa; toca no que compras e acerta a quantidade com − / +. Vai tudo para 🛒 No carrinho.</p>`)}
+    ${n?`<div class="usesel">${sel.map(([id,v])=>{const it=items.find(x=>x.id===id);return it?`<span class="chip on" style="background:#34c759">${esc(it.name)} +${String(v).replace(".",",")}</span>`:""}).join("")}</div>`:(pickReg?`<p class="note" style="margin:0">Toca no que compraste hoje e põe quanto foi.</p><label class="tick"><input type="checkbox" class="switch" id="regAdd"${regAdd?" checked":""}> Somar ao que tenho em casa (desliga se já tinhas acertado as quantidades)</label>`:`<p class="note" style="margin:0">Vês quanto tens em casa; toca no que compras e acerta a quantidade com − / +. Vai tudo para 🛒 No carrinho.</p>`)}
     <div class="usel">${body}</div>
     <div class="usebar"><button type="button" class="btn ghost" id="pickCancel">Fechar</button><button type="button" class="btn" id="pickGo" style="background:#34c759"${n?"":" disabled"}>${pickReg?"✓ Registar":"🛒 Pôr no carrinho"}${n?` (${n})`:""}</button></div>`;
   const qi=document.getElementById("pickQ");qi.oninput=()=>{pickQ=qi.value;const pos=qi.selectionStart;pickRender();const nq=document.getElementById("pickQ");nq.focus();try{nq.setSelectionRange(pos,pos)}catch(e){}}}
@@ -2692,7 +2693,9 @@ document.addEventListener("click",e=>{if(!e.target.closest("[data-pickgo]"))retu
 document.getElementById("pickOpen").addEventListener("click",()=>{const b=document.getElementById("pickBox");pickReg=false;b.hidden=!b.hidden;pickSel={};pickQ="";pickCat="";if(!b.hidden){pickRender();b.scrollIntoView({block:"start",behavior:"smooth"})}});
 document.addEventListener("click",e=>{const t=e.target.closest("[data-picktog],[data-pickq],[data-pickcat],[data-picknew],#pickCancel,#pickGo");if(!t||!t.closest("#pickBox"))return;e.preventDefault();e.stopPropagation();const ds=t.dataset;
   if(t.id==="pickCancel"){document.getElementById("pickBox").hidden=true;pickSel={};return}
-  if(t.id==="pickGo"&&pickReg){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n=lbReg(it,v);upsert(n);put(n)});
+  /* Pedido (27/11): por defeito registar também soma ao que há em casa (como uma compra); desligado, só regista */
+  if(t.id==="pickGo"&&pickReg){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;
+      if(regAdd){const n0={...it,buyNow:isRes(it)||packBuy(it)||boxBuy(it)?Math.max(1,Math.round(v)):v};upsert(n0);buyDone(id,true)}else{const n=lbReg(it,v);upsert(n);put(n)}});
     pickSel={};pickReg=false;document.getElementById("pickBox").hidden=true;boughtPer="h";try{localStorage.setItem("casa-shut-bought","0")}catch(e){}render();setTimeout(()=>{const x=document.querySelector(".boughtbox");if(x)x.scrollIntoView({block:"start",behavior:"smooth"})},60);toast(`🧾 ${L.length} registado${L.length===1?"":"s"} em “O que comprei”`);return}
   if(t.id==="pickGo"){const L=Object.entries(pickSel).filter(([,v])=>v>0);L.forEach(([id,v])=>{const it=items.find(i=>i.id===id);if(!it)return;const n={...it,cart:1,buyNow:isRes(it)?Math.max(1,Math.round(v)):v};delete n.skip;delete n.mb;if((n.lvl??2)===2)n.lvl=1;upsert(n);put(n)});
     pickSel={};document.getElementById("pickBox").hidden=true;qtyOpen=true;render();window.scrollTo(0,0);toast(`🛒 ${L.length} no carrinho · confirma e guarda as quantidades`);return}
@@ -7079,7 +7082,7 @@ if("serviceWorker" in navigator){
 }
 /* ---------- versão nova ----------
    O GitHub guarda uma cópia da app até 10 minutos. Pedir os ficheiros com "?v=hora" passa por cima dessa cópia. */
-const APPV="casa-v412";
+const APPV="casa-v413";
 document.getElementById("appVer").textContent=APPV.replace("casa-v","Versão ");
 if(/[?&]v=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash);
 let updChecked=0;
